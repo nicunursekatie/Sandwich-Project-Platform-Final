@@ -16,6 +16,13 @@ import {
 import { NotificationService } from '../notification-service';
 import { logger } from '../utils/production-safe-logger';
 import { getLinkedUserIds } from '../lib/linked-accounts';
+import {
+  formatUserDisplayName,
+  resolveKudosRecipientName,
+  resolveKudosSenderName,
+  resolveUserDisplayName,
+} from '../lib/user-display-name';
+import { resolveKudosEntityName } from '../lib/kudos-entity-name';
 
 export interface MessageWithSender extends Message {
   senderName?: string;
@@ -75,6 +82,8 @@ export class MessagingService {
       // Get sender details
       const sender = await db
         .select({
+          firstName: users.firstName,
+          lastName: users.lastName,
           displayName: users.displayName,
           email: users.email,
         })
@@ -82,9 +91,10 @@ export class MessagingService {
         .where(eq(users.id, senderId))
         .limit(1);
 
-      const senderName = sender[0]
-        ? sender[0].displayName || sender[0].email || 'Unknown User'
-        : 'Unknown User';
+      const senderName =
+        formatUserDisplayName(sender[0]) ||
+        sender[0]?.email?.trim() ||
+        'Unknown User';
 
       // If this is a reply, get the original message content
       let replyToMessageId: number | null = null;
@@ -729,6 +739,7 @@ export class MessagingService {
         recipientId,
         contextType,
         contextId,
+        entityName,
         messageId: message.id,
       });
 
@@ -885,6 +896,7 @@ export class MessagingService {
           contextType: kudosTracking.contextType,
           contextId: kudosTracking.contextId,
           senderId: kudosTracking.senderId,
+          entityName: kudosTracking.entityName,
           createdAt: kudosTracking.sentAt,
         })
         .from(kudosTracking)
@@ -916,10 +928,11 @@ export class MessagingService {
                 content: messages.content,
                 createdAt: messages.createdAt,
                 senderId: messages.senderId,
-                senderName:
-                  sql<string>`COALESCE(${users.firstName} || ' ' || ${users.lastName}, ${users.displayName}, ${users.email})`.as(
-                    'senderName'
-                  ),
+                storedSenderName: messages.sender,
+                senderFirstName: users.firstName,
+                senderLastName: users.lastName,
+                senderDisplayName: users.displayName,
+                senderEmail: users.email,
                 isRead: messageRecipients.read,
               })
               .from(messages)
@@ -938,46 +951,37 @@ export class MessagingService {
 
             if (!messageResult) return null;
 
-            // Determine entity name based on context
-            let entityName = 'Unknown';
-            if (entry.contextType === 'task') {
-              try {
-                const [task] = await db
-                  .select({ title: sql<string>`title` })
-                  .from(sql`project_tasks`)
-                  .where(sql`id = ${entry.contextId}`)
-                  .limit(1);
-                entityName = task?.title || `Task ${entry.contextId}`;
-              } catch (error) {
-                entityName = `Task ${entry.contextId}`;
-              }
-            } else if (entry.contextType === 'project') {
-              try {
-                const [project] = await db
-                  .select({ title: sql<string>`title` })
-                  .from(sql`projects`)
-                  .where(sql`id = ${entry.contextId}`)
-                  .limit(1);
-                entityName = project?.title || `Project ${entry.contextId}`;
-              } catch (error) {
-                entityName = `Project ${entry.contextId}`;
-              }
-            }
+            const senderName = resolveKudosSenderName({
+              joinedUser: {
+                firstName: messageResult.senderFirstName,
+                lastName: messageResult.senderLastName,
+                displayName: messageResult.senderDisplayName,
+                email: messageResult.senderEmail,
+              },
+              storedSenderName: messageResult.storedSenderName,
+            });
+
+            if (!senderName) return null;
+
+            const entityName = await resolveKudosEntityName({
+              contextType: entry.contextType,
+              contextId: entry.contextId,
+              storedEntityName: entry.entityName,
+            });
 
             return {
               id: messageResult.id,
               content: messageResult.content,
               sender: messageResult.senderId,
-              senderName: messageResult.senderName || 'Unknown User',
+              senderName,
               contextType: entry.contextType,
               contextId: entry.contextId,
               entityName,
-              projectTitle: entityName, // Add projectTitle alias for display
-              message: messageResult.content, // Add message alias for display
+              projectTitle: entityName,
+              message: messageResult.content,
               createdAt: messageResult.createdAt,
-              // Return both field names for compatibility
               isRead: messageResult.isRead || false,
-              read: messageResult.isRead || false, // Client expects 'read' field
+              read: messageResult.isRead || false,
             };
           } catch (error) {
             logger.error(
@@ -1018,6 +1022,7 @@ export class MessagingService {
           contextId: kudosTracking.contextId,
           senderId: kudosTracking.senderId,
           recipientId: kudosTracking.recipientId,
+          entityName: kudosTracking.entityName,
           createdAt: kudosTracking.sentAt,
         })
         .from(kudosTracking)
@@ -1027,16 +1032,17 @@ export class MessagingService {
       const feed = await Promise.all(
         kudosEntries.map(async (entry) => {
           try {
-            // Message content + sender display name
             const [messageResult] = await db
               .select({
                 id: messages.id,
                 content: messages.content,
                 createdAt: messages.createdAt,
                 senderId: messages.senderId,
-                senderName: sql<string>`COALESCE(${users.firstName} || ' ' || ${users.lastName}, ${users.displayName}, ${users.email})`.as(
-                  'senderName',
-                ),
+                storedSenderName: messages.sender,
+                senderFirstName: users.firstName,
+                senderLastName: users.lastName,
+                senderDisplayName: users.displayName,
+                senderEmail: users.email,
               })
               .from(messages)
               .leftJoin(users, eq(messages.senderId, users.id))
@@ -1045,52 +1051,40 @@ export class MessagingService {
 
             if (!messageResult) return null;
 
-            // Recipient display name (separate lookup because the recipient
-            // isn't on the messages row — it's on the kudos tracking row).
-            let recipientName = 'Someone';
-            if (entry.recipientId) {
-              const [recipientUser] = await db
-                .select({
-                  displayName: sql<string>`COALESCE(${users.firstName} || ' ' || ${users.lastName}, ${users.displayName}, ${users.email})`,
-                })
-                .from(users)
-                .where(eq(users.id, entry.recipientId))
-                .limit(1);
-              recipientName = recipientUser?.displayName || 'Someone';
+            const senderName = resolveKudosSenderName({
+              joinedUser: {
+                firstName: messageResult.senderFirstName,
+                lastName: messageResult.senderLastName,
+                displayName: messageResult.senderDisplayName,
+                email: messageResult.senderEmail,
+              },
+              storedSenderName: messageResult.storedSenderName,
+            });
+
+            const lookedUpRecipientName = await resolveUserDisplayName(
+              entry.recipientId
+            );
+            const recipientName = resolveKudosRecipientName({
+              lookedUpName: lookedUpRecipientName,
+              messageContent: messageResult.content,
+            });
+
+            if (!senderName || !recipientName) {
+              return null;
             }
 
-            // Entity name (task title, project title, etc.) for context
-            let entityName = 'Unknown';
-            if (entry.contextType === 'task') {
-              try {
-                const [task] = await db
-                  .select({ title: sql<string>`title` })
-                  .from(sql`project_tasks`)
-                  .where(sql`id = ${entry.contextId}`)
-                  .limit(1);
-                entityName = task?.title || `Task ${entry.contextId}`;
-              } catch {
-                entityName = `Task ${entry.contextId}`;
-              }
-            } else if (entry.contextType === 'project') {
-              try {
-                const [project] = await db
-                  .select({ title: sql<string>`title` })
-                  .from(sql`projects`)
-                  .where(sql`id = ${entry.contextId}`)
-                  .limit(1);
-                entityName = project?.title || `Project ${entry.contextId}`;
-              } catch {
-                entityName = `Project ${entry.contextId}`;
-              }
-            }
+            const entityName = await resolveKudosEntityName({
+              contextType: entry.contextType,
+              contextId: entry.contextId,
+              storedEntityName: entry.entityName,
+            });
 
             return {
               id: messageResult.id,
               content: messageResult.content,
               message: messageResult.content,
               senderId: messageResult.senderId,
-              senderName: messageResult.senderName || 'Unknown User',
+              senderName,
               recipientId: entry.recipientId,
               recipientName,
               contextType: entry.contextType,
@@ -1773,7 +1767,7 @@ export class MessagingService {
           ...row.message,
           senderName: row.senderName || 'Unknown User',
           senderEmail: row.senderEmail || undefined,
-          entityName: row.entityName || 'Unknown Entity',
+          entityName: row.entityName || undefined,
         }))
       );
     } catch (error) {

@@ -1197,20 +1197,32 @@ export default function DashboardOverview({
               </div>
 
               {/* Surge Capacity — When We Mobilize (Dark Teal).
-                  This card carries the longest number (range like 24,580–40,966)
-                  so we render the range as a single inline-block unit that
-                  break-words can wrap as a whole, never mid-digit. */}
+                  Range is shown as stacked From/To lines so long numbers
+                  never break mid-digit in a narrow grid column. */}
               <div className="min-w-0 overflow-hidden premium-card-elevated border-l-4 border-l-brand-teal p-4 sm:p-5 flex flex-col">
                 <div className="text-sm font-semibold text-brand-teal uppercase tracking-wide">
                   <span aria-hidden="true">⚡</span> When We Mobilize
                 </div>
-                <div className="mt-3 mb-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
-                  <span className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-brand-teal leading-tight break-all">
-                    {organizationalStats.surgeMin}–{organizationalStats.surgeMax}
-                  </span>
-                  <span className="text-sm text-gray-600 font-medium">
+                <div className="mt-3 mb-1 space-y-1">
+                  <div className="flex items-baseline gap-2 min-w-0">
+                    <span className="text-xs font-semibold text-gray-500 uppercase shrink-0 w-9">
+                      From
+                    </span>
+                    <span className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-brand-teal leading-none tabular-nums">
+                      {organizationalStats.surgeMin}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-2 min-w-0">
+                    <span className="text-xs font-semibold text-gray-500 uppercase shrink-0 w-9">
+                      To
+                    </span>
+                    <span className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-brand-teal leading-none tabular-nums">
+                      {organizationalStats.surgeMax}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 font-medium pl-11">
                     sandwiches
-                  </span>
+                  </p>
                 </div>
                 <p className="text-sm text-gray-700 leading-snug mt-2 break-words">
                   What we've reached when the call goes out — 3 to 5 times a

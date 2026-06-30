@@ -185,6 +185,11 @@ export const MyAssignmentsTab: React.FC = () => {
               setToolkitEventRequest(request);
               openDialog('toolkitSent');
             }}
+            onSendToolkit={() => {
+              setSelectedEventRequest(request);
+              setToolkitEventRequest(request);
+              openDialog('sendToolkit');
+            }}
             onScheduleCall={() => {
               setSelectedEventRequest(request);
               openDialog('scheduleCall');
@@ -474,6 +479,11 @@ export const MyAssignmentsTab: React.FC = () => {
               setSelectedEventRequest(request);
               setToolkitEventRequest(request);
               openDialog('toolkitSent');
+            }}
+            onSendToolkit={() => {
+              setSelectedEventRequest(request);
+              setToolkitEventRequest(request);
+              openDialog('sendToolkit');
             }}
             onScheduleCall={() => {
               setSelectedEventRequest(request);

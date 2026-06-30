@@ -33,15 +33,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import {
+  isDisplayableKudosEntityName,
+  kudosContextLabel,
+} from '@/lib/kudos-display';
 
 interface KudosMessage {
   id: number;
   content: string;
   sender: string;
   senderName: string;
-  contextType: 'task' | 'project' | 'general';
+  contextType: 'task' | 'project' | 'general' | string;
   contextId: string;
-  entityName: string;
+  entityName?: string;
   createdAt: string;
   read: boolean;
 }
@@ -343,13 +347,14 @@ export function KudosInbox() {
                       </p>
                       <p className="text-gray-700 mb-2">{kudos.content}</p>
 
-                      {/* Context info */}
-                      {kudos.contextType !== 'general' && (
+                      {/* Context info — omit project/task tag when name can't be resolved */}
+                      {kudos.contextType !== 'general' &&
+                        isDisplayableKudosEntityName(kudos.entityName) && (
                         <div className="flex items-center gap-2 text-xs text-gray-500">
                           <Badge variant="outline" className="text-xs">
-                            {kudos.contextType === 'task' ? 'Task' : 'Project'}
+                            {kudosContextLabel(kudos.contextType)}
                           </Badge>
-                          <span>"{kudos.entityName}"</span>
+                          <span>{kudos.entityName}</span>
                         </div>
                       )}
                       {kudos.contextType === 'general' && (

@@ -188,24 +188,24 @@ body {
     font-weight: 400;
   }
 
-  input[type="text"],
+  input[type="text"]:not(.top-nav-search),
   input[type="email"],
   input[type="password"],
   input[type="number"],
   input[type="tel"],
-  input[type="search"],
+  input[type="search"]:not(.top-nav-search),
   input[type="date"],
   input[type="time"],
   input[type="datetime-local"],
   input[type="url"],
   textarea,
   select,
-  input[type="text"]:focus,
+  input[type="text"]:not(.top-nav-search):focus,
   input[type="email"]:focus,
   input[type="password"]:focus,
   input[type="number"]:focus,
   input[type="tel"]:focus,
-  input[type="search"]:focus,
+  input[type="search"]:not(.top-nav-search):focus,
   input[type="date"]:focus,
   input[type="time"]:focus,
   input[type="datetime-local"]:focus,
@@ -213,6 +213,23 @@ body {
   textarea:focus,
   select:focus {
     @apply bg-white;
+  }
+
+  /* Top nav universal search — must stay translucent on the dark header.
+     Global input bg-white above was making typed text invisible (white on white). */
+  input.top-nav-search,
+  input.top-nav-search:focus {
+    background-color: rgb(255 255 255 / 0.1);
+    color: #fff;
+    caret-color: #fff;
+  }
+
+  input.top-nav-search:focus {
+    background-color: rgb(255 255 255 / 0.2);
+  }
+
+  input.top-nav-search::placeholder {
+    color: rgb(255 255 255 / 0.75);
   }
 
   /* Sidebar nav scroll — visible thumb on light sidebar background */
