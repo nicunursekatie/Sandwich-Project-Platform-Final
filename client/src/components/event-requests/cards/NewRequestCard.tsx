@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEventQueries } from '../hooks/useEventQueries';
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
-import EventEmailLogDisplay from '@/components/event-email-log-display';
+import { getEventRequestSourceIndicator } from '@/lib/event-request-source';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,6 +41,8 @@ import {
   Lock,
   Unlock,
   Ban,
+  Globe,
+  FileText,
 } from 'lucide-react';
 import { statusIcons, statusOptions, statusBorderColors, indicatorTooltips } from '@/components/event-requests/constants';
 import { formatEventDate } from '@/components/event-requests/utils';
@@ -79,7 +81,13 @@ interface NewRequestCardProps {
   onCall?: () => void;
   onIntakeCall?: () => void;
   onContact: () => void;
+  /** Opens the LOGGING dialog — record that the toolkit was already
+   *  sent (date/time + optional call notes) and move event to In Process. */
   onToolkit: () => void;
+  /** Opens the email composer directly to ACTUALLY send the toolkit
+   *  right now. Send-time becomes the toolkit-sent timestamp and the
+   *  event moves to In Process automatically. */
+  onSendToolkit?: () => void;
   onScheduleCall: () => void;
   onAssignTspContact: () => void;
   onEditTspContact: () => void;
@@ -672,7 +680,10 @@ interface CardContactInfoProps {
   onCall?: () => void;
   onIntakeCall?: () => void;
   onContact?: () => void;
+  /** "Mark as sent" — opens the LOGGING dialog for previously-sent toolkits. */
   onToolkit?: () => void;
+  /** "Send now" — opens the email composer to actually send the toolkit. */
+  onSendToolkit?: () => void;
 }
 
 const CardContactInfo: React.FC<CardContactInfoProps> = ({
@@ -681,6 +692,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
   onIntakeCall,
   onContact,
   onToolkit,
+  onSendToolkit,
 }) => {
   const hasBackupContact = (request as any).backupContactFirstName || (request as any).backupContactLastName || (request as any).backupContactEmail || (request as any).backupContactPhone;
 
@@ -772,15 +784,40 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               Email
             </Button>
           )}
-          {onToolkit && (
+          {/* Two distinct toolkit actions, intentionally separated:
+                - "Send Toolkit": opens the email composer to actually
+                   send the toolkit right now. Send-time auto-becomes
+                   the toolkit-sent timestamp + status moves to In
+                   Process when the email leaves the composer.
+                - "Mark Toolkit Sent": opens the logging dialog for
+                   cases where the toolkit was sent OUTSIDE the app
+                   (forwarded from a personal inbox, hand-delivered,
+                   etc.) and the user just needs to record the date.
+              Bundling these behind one button forced users to discover
+              a sub-action inside a dialog, which masked one path from
+              the other. Two buttons = two clear intents. */}
+          {onSendToolkit && (
             <Button
               size="sm"
               variant="default"
-              onClick={onToolkit}
+              onClick={onSendToolkit}
               className="text-sm h-8 bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
+              data-testid="button-send-toolkit"
+            >
+              <Mail className="w-4 h-4 mr-1" />
+              Send Toolkit
+            </Button>
+          )}
+          {onToolkit && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onToolkit}
+              className="text-sm h-8 border-[#FBAD3F]/40 text-[#92400E] hover:bg-[#FBAD3F]/10"
+              data-testid="button-mark-toolkit-sent"
             >
               <Package className="w-4 h-4 mr-1" />
-              Send Toolkit
+              Mark Toolkit Sent
             </Button>
           )}
         </div>
@@ -839,6 +876,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   onIntakeCall,
   onContact,
   onToolkit,
+  onSendToolkit,
   onScheduleCall,
   onAssignTspContact,
   onEditTspContact,
@@ -1166,6 +1204,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               onIntakeCall={onIntakeCall}
               onContact={onContact}
               onToolkit={onToolkit}
+              onSendToolkit={onSendToolkit}
             />
 
             {/* TSP Contact Assignment Status */}
@@ -1475,6 +1514,33 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
 
         {/* Email Log - shows if any template emails have been sent */}
         <EventEmailLogDisplay eventId={request.id} compact />
+
+        {/* Request-source indicator — mutually exclusive: website submission
+            (Google Sheets sync) vs manual entry by an app user. */}
+        {(() => {
+          const source = getEventRequestSourceIndicator(request as any);
+          if (!source) return null;
+
+          if (source.kind === 'website') {
+            return (
+              <div className="mt-3 flex items-center gap-1.5 text-[11px] text-gray-500 italic">
+                <Globe className="w-3 h-3 text-gray-400" aria-hidden="true" />
+                <span>Submitted via website</span>
+              </div>
+            );
+          }
+
+          return (
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-gray-500 italic">
+              <FileText className="w-3 h-3 text-gray-400" aria-hidden="true" />
+              <span>
+                {source.channelLabel
+                  ? `Manually entered (${source.channelLabel})`
+                  : 'Manually entered in app'}
+              </span>
+            </div>
+          );
+        })()}
 
         {/* Confirmation Toggle Dialog */}
         <ConfirmationDialog

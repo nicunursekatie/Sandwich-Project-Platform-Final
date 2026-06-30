@@ -984,8 +984,10 @@ export default function Dashboard({
             </h1>
           </div>
 
-          {/* Flexible spacer - min width to ensure buttons don't get pushed off */}
-          <div className="flex-1 min-w-0" />
+          {/* Center: universal search — primary navigation affordance */}
+          <div className="hidden sm:flex flex-1 justify-center px-2 sm:px-4 min-w-0 max-w-xl mx-auto">
+            <UnifiedTopSearch />
+          </div>
 
           {/* Right side container - optimized for tablets/mobile */}
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
@@ -999,16 +1001,6 @@ export default function Dashboard({
             {/* Header actions - organized into logical groups */}
             <TooltipProvider delayDuration={300}>
             <div className="flex items-center gap-1 sm:gap-2 relative z-50 flex-shrink-0">
-
-              {/* Unified search — replaces the dashboard's large search card
-                  AND the sidebar's smart search. Searches both pages/actions
-                  and people/orgs in one box. Hidden on the smallest screens
-                  to keep the header clean on mobile; users can still reach
-                  search via the global Cmd/Ctrl+K shortcut (which focuses
-                  this input when present, no-ops otherwise). */}
-              <div className="hidden md:block">
-                <UnifiedTopSearch />
-              </div>
 
               {/* Communications cluster — all "is something happening?" tools
                   share a single translucent tray so they read as one group:

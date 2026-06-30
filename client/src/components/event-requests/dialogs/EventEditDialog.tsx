@@ -35,6 +35,7 @@ import {
   Save,
   Loader2,
   X,
+  AlertTriangle,
   UserPlus,
   Search,
   Building,
@@ -370,6 +371,19 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     return userEmail && allowedEmails.includes(userEmail);
   }, [user?.email]);
 
+  // Persistent save-error state. Toasts are easy to miss (auto-dismiss,
+  // can be covered by other UI), so when a save attempt is rejected we
+  // ALSO surface a persistent banner inside the dialog that names the
+  // reason. The banner stays until the user either fixes the issue and
+  // retries, edits any field (which is probably an attempt to fix it),
+  // or closes the dialog. The toast still fires too — that's the
+  // notification; this is the durable context.
+  const [saveError, setSaveError] = useState<{
+    title: string;
+    message: string;
+    missingFields?: string[];
+  } | null>(null);
+
   // Form state for logistics
   const [driversNeeded, setDriversNeeded] = useState('');
   const [speakersNeeded, setSpeakersNeeded] = useState('');
@@ -597,8 +611,10 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       return apiRequest('PATCH', `/api/event-requests/${event.id}`, data);
     },
     onSuccess: async (updatedEvent, variables) => {
-      // Save succeeded — clear the autosaved draft for this event.
+      // Save succeeded — clear the autosaved draft for this event AND
+      // clear any leftover save-error banner from a prior attempt.
       if (event) clearDraft(`event-edit:${event.id}`);
+      setSaveError(null);
       await applyPatchResponseToCache(queryClient, updatedEvent, {
         previousStatus: event?.status,
         touchedFields: Object.keys(variables),
@@ -621,6 +637,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       // Check for missing fields info from server
       const missingFields = error?.data?.missingFields;
 
+      let errorTitle = 'Update failed';
       let errorDescription = serverMessage;
 
       // If server provided missing fields, include them in the message
@@ -632,11 +649,16 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       // guard reports one, but client-side _expectedVersion is no longer sent.
       const isConflict = error?.status === 409 || error?.data?.error === 'CONFLICT';
       if (isConflict) {
+        errorTitle = 'Edit Conflict';
+        errorDescription =
+          'This event was modified by another user. Please close and reopen this dialog to see the latest data.';
         toast({
-          title: 'Edit Conflict',
-          description: 'This event was modified by another user. Please close and reopen this dialog to see the latest data.',
+          title: errorTitle,
+          description: errorDescription,
           variant: 'destructive',
         });
+        // Also surface as a persistent banner so the user can't miss it.
+        setSaveError({ title: errorTitle, message: errorDescription });
         return;
       }
 
@@ -645,19 +667,34 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                              error?.message?.includes('Failed to fetch') ||
                              error?.message?.includes('Request timeout');
       if (isNetworkError) {
+        errorTitle = 'Connection issue';
         errorDescription = 'Could not save changes due to a network issue. Please check your connection and try again.';
       }
 
+      // Both signals: a notification toast (in case the user is looking
+      // elsewhere) and a persistent banner inside the form (so the
+      // reason is still there when they come back to it).
       toast({
-        title: 'Update failed',
+        title: errorTitle,
         description: errorDescription,
         variant: 'destructive',
         duration: 10000,
+      });
+      setSaveError({
+        title: errorTitle,
+        message: errorDescription,
+        missingFields:
+          Array.isArray(missingFields) && missingFields.length > 0
+            ? missingFields
+            : undefined,
       });
     },
   });
 
   const handleSave = () => {
+    // Clear any previous save-error banner; a fresh attempt deserves a
+    // fresh state. If this attempt also fails, onError will repopulate it.
+    setSaveError(null);
     const updates: any = {};
     console.log('[EventEditDialog] handleSave called');
     console.log('[EventEditDialog] Current state - tspContact:', tspContact, ', customTspContact:', customTspContact);
@@ -1264,6 +1301,40 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Persistent save-error banner. Sits directly above the Save
+            button so the reason a save was rejected is impossible to
+            miss — and stays visible until the user retries or closes
+            the dialog. Complements (does not replace) the destructive
+            toast that fires on the same error path. */}
+        {saveError && (
+          <div
+            role="alert"
+            className="mx-6 mb-2 rounded-md border-2 border-[#A31C41] bg-red-50 px-4 py-3 text-sm text-[#A31C41] flex items-start gap-3"
+            data-testid="banner-save-error"
+          >
+            <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0" aria-hidden="true" />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold">{saveError.title}</p>
+              <p className="mt-0.5 text-[#7a1530]">{saveError.message}</p>
+              {saveError.missingFields && saveError.missingFields.length > 0 && (
+                <ul className="mt-1.5 list-disc list-inside text-[#7a1530] space-y-0.5">
+                  {saveError.missingFields.map((f) => (
+                    <li key={f}>{f}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSaveError(null)}
+              className="text-[#A31C41]/70 hover:text-[#A31C41] flex-shrink-0"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         <div className="flex items-center justify-between gap-2 pt-4 pb-6 px-6 border-t flex-shrink-0">
           <div className="text-xs text-gray-500 italic min-h-[1rem]">

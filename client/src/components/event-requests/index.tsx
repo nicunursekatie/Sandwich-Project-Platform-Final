@@ -51,6 +51,7 @@ import { VanConflictsButton } from '@/components/event-requests/VanConflictsButt
 import EventSchedulingForm from '@/components/event-requests/EventSchedulingForm';
 import EventCollectionLog from '@/components/event-requests/EventCollectionLog';
 import ToolkitSentDialog from '@/components/event-requests/ToolkitSentDialog';
+import SendToolkitDialog from '@/components/event-requests/SendToolkitDialog';
 import FollowUpDialog from '@/components/event-requests/FollowUpDialog';
 import { ScheduleCallDialog } from '@/components/event-requests/ScheduleCallDialog';
 import ContactOrganizerDialog from '@/components/ContactOrganizerDialog';
@@ -960,7 +961,10 @@ const EventRequestsManagementContent: React.FC = () => {
           />
         )}
 
-        {/* Toolkit Sent Dialog */}
+        {/* Toolkit Sent Dialog — LOG-ONLY path: record that a toolkit
+            was sent outside the app (forwarded from a personal inbox,
+            hand-delivered, etc.). Sets the date + optional call-log
+            and moves status to In Process. */}
         {(activeDialog === 'toolkitSent') && toolkitEventRequest && (
           <ToolkitSentDialog
             eventRequest={toolkitEventRequest}
@@ -980,6 +984,31 @@ const EventRequestsManagementContent: React.FC = () => {
               }
             }}
             isLoading={markToolkitSentMutation.isPending}
+          />
+        )}
+
+        {/* Send Toolkit Dialog — SEND-NOW path: opens the email
+            composer pre-loaded with the toolkit. When the email
+            actually leaves, the send-time becomes the toolkit-sent
+            timestamp and the same markToolkitSent mutation fires,
+            flipping the event to In Process automatically. */}
+        {(activeDialog === 'sendToolkit') && toolkitEventRequest && (
+          <SendToolkitDialog
+            eventRequest={toolkitEventRequest}
+            isOpen={(activeDialog === 'sendToolkit')}
+            onClose={() => {
+              closeDialog('sendToolkit');
+              setToolkitEventRequest(null);
+            }}
+            onToolkitEmailSent={(toolkitSentDate: string) => {
+              if (toolkitEventRequest) {
+                trackButtonClick('send_toolkit_email', 'event_requests');
+                markToolkitSentMutation.mutate({
+                  id: toolkitEventRequest.id,
+                  toolkitSentDate,
+                });
+              }
+            }}
           />
         )}
 

@@ -250,6 +250,11 @@ export const NewRequestsTab: React.FC = () => {
                 setToolkitEventRequest(request);
                 openDialog('toolkitSent');
               }}
+              onSendToolkit={() => {
+                setSelectedEventRequest(request);
+                setToolkitEventRequest(request);
+                openDialog('sendToolkit');
+              }}
               onScheduleCall={() => {
                 setSelectedEventRequest(request);
                 openDialog('scheduleCall');

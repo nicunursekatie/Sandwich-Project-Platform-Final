@@ -47,6 +47,7 @@ export type ActiveDialog =
   | 'eventDetailsPreview'
   | 'scheduling'
   | 'toolkitSent'
+  | 'sendToolkit'
   | 'scheduleCall'
   | 'oneDayFollowUp'
   | 'oneMonthFollowUp'

@@ -309,7 +309,15 @@ export const useEventMutations = () => {
         setSelectedEventRequest(updatedEvent);
       }
 
-      closeDialog('toolkitSent');
+      // markToolkitSentMutation is shared by two dialogs:
+      //   - 'toolkitSent'  (log-only path)
+      //   - 'sendToolkit'  (send-email path)
+      // Passing the dialog name to closeDialog would only close it if
+      // that name happens to be the active one — when the OTHER dialog
+      // is the active one, the call silently no-ops and leaves the
+      // dialog stuck open after a successful save. Close whichever
+      // dialog is active by omitting the argument.
+      closeDialog();
       setToolkitEventRequest(null);
     },
     onError: (error: any) => {

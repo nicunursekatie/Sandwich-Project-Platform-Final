@@ -75,7 +75,6 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
                   <SelectItem value="social_media">Social Media DM</SelectItem>
                   <SelectItem value="in_person">In Person</SelectItem>
                   <SelectItem value="referral">Referral</SelectItem>
-                  <SelectItem value="website_form">Website Form (manual re-entry)</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
