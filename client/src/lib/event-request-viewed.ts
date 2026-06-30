@@ -48,13 +48,28 @@ export function getViewedEventIds(userId: string): Set<number> {
 }
 
 export function markEventRequestViewed(userId: string, eventId: number): boolean {
+  return markEventRequestsViewed(userId, [eventId]) > 0;
+}
+
+/** Mark multiple new requests as seen (e.g. when the user opens the New tab). */
+export function markEventRequestsViewed(
+  userId: string,
+  eventIds: Iterable<number>,
+): number {
   const store = loadStore(userId);
-  const key = String(eventId);
-  if (store[key]) return false;
-  store[key] = Date.now();
-  saveStore(userId, store);
-  notify();
-  return true;
+  const now = Date.now();
+  let marked = 0;
+  for (const eventId of eventIds) {
+    const key = String(eventId);
+    if (store[key]) continue;
+    store[key] = now;
+    marked += 1;
+  }
+  if (marked > 0) {
+    saveStore(userId, store);
+    notify();
+  }
+  return marked;
 }
 
 export function pruneViewedEventIds(userId: string, activeNewEventIds: Iterable<number>): void {

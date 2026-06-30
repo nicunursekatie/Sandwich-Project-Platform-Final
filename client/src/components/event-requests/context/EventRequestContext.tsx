@@ -11,6 +11,7 @@ import { useIssueReport } from '@/contexts/issue-report-context';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 import {
   computeUnviewedNewCount,
+  markEventRequestsViewed,
   pruneViewedEventIds,
   subscribeEventRequestViewedChanges,
 } from '@/lib/event-request-viewed';
@@ -447,6 +448,26 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
         .map((event) => event.id)
     );
   }, [user?.id, newEventsForUnviewedCount]);
+
+  // Visiting the New tab means the user has seen what's there — clear the
+  // tab dot without changing workflow status. New arrivals while they're on
+  // another tab will bump unviewedNewCount again.
+  useEffect(() => {
+    if (activeTab !== 'new' || !user?.id || statusCounts.new === 0) return;
+
+    const newEventIds = newEventsForUnviewedCount
+      .filter((event) => event.status === 'new')
+      .map((event) => event.id);
+
+    if (newEventIds.length === 0) return;
+
+    markEventRequestsViewed(user.id, newEventIds);
+  }, [
+    activeTab,
+    user?.id,
+    statusCounts.new,
+    newEventsForUnviewedCount,
+  ]);
 
   const unviewedNewCount = useMemo(() => {
     void viewedRevision;

@@ -1261,27 +1261,34 @@ export default function GmailStyleInbox() {
                             </div>
                           </div>
                           
-                          {/* Show subject for kudos */}
+                          {/* Subject — primary inbox navigation affordance */}
                           {isKudos && message.subject && (
-                            <p className="text-sm font-semibold text-yellow-700 mb-1">
+                            <p className="text-sm font-semibold text-yellow-700 mb-1 truncate">
                               🎉 {message.subject}
+                            </p>
+                          )}
+                          {!isKudos && (
+                            <p
+                              className={`text-sm truncate mb-1 ${
+                                !message.isRead
+                                  ? 'font-semibold text-gray-900'
+                                  : 'font-medium text-gray-800'
+                              }`}
+                            >
+                              {message.subject?.trim() || '(No subject)'}
                             </p>
                           )}
                           
                           <p
-                            className={`text-sm leading-relaxed ${
+                            className={`text-sm leading-relaxed truncate ${
                               isKudos
                                 ? 'font-medium text-gray-700'
                                 : !message.isRead
                                 ? 'font-bold text-gray-900'
                                 : 'font-normal text-gray-600'
                             }`}
-                            style={{
-                              wordBreak: 'break-word',
-                              whiteSpace: 'pre-wrap',
-                            }}
                           >
-                            {message.content || message.subject || '(No content)'}
+                            {message.content?.trim() || '(No preview)'}
                           </p>
 
                           {/* Show attachment indicator */}
