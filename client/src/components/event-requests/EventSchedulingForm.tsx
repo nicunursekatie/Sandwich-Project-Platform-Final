@@ -1002,10 +1002,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         return;
       }
 
-      // FULL-FORM SAVE (B5): send the entire built payload, not a change-detected
-      // subset. The event list now provides the full record shape, so the form has
-      // one authoritative server baseline instead of a partial→full upgrade path.
-
       // The single date box maps to BOTH desiredEventDate and scheduledEventDate.
       // In edit mode, if the user didn't change the date box, omit both date
       // columns so a non-date save can't overwrite a scheduled event's CONFIRMED
@@ -1017,7 +1013,57 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         delete eventData.desiredEventDate;
       }
 
-      logger.log('🔄 Updating event (full-form save):', eventRequest.id, 'field count:', Object.keys(eventData).length, 'van:', eventData.vanDriverNeeded);
+      // DIFF-BASED SAVE: send only the fields the user actually changed in this
+      // form session, not the entire record. Re-serialize the ORIGINAL form
+      // snapshot through the same builder and drop every key whose value is
+      // unchanged. This closes the lost-update / clobber vector: a field left
+      // untouched here can no longer overwrite a value that changed elsewhere
+      // (an inline card edit, a background Sheets/toolkit write, another editor)
+      // between when this dialog loaded and when it saves — untouched fields
+      // simply aren't in the payload, so the server preserves them.
+      //
+      // Both sides go through buildEventDataForServer, so the comparison is in
+      // server-field space and immune to form→server key renames/transforms.
+      // A key is dropped only when the baseline ALSO produced it and the values
+      // match, so genuinely new keys (e.g. scheduledEventDate that appears only
+      // once status becomes 'scheduled') are always kept. The baseline is built
+      // WITHOUT fieldOverrides so a value just entered this session (e.g. the
+      // standby follow-up date) correctly registers as a change.
+      if (originalFormDataRef.current) {
+        const baselineData = buildEventDataForServer(originalFormDataRef.current as any, {
+          mode,
+          hasEventRequest: !!eventRequest,
+          eventRequestStatus: eventRequest?.status,
+          sandwichMode,
+          actualSandwichMode,
+        });
+        const omittedFields: string[] = [];
+        for (const key of Object.keys(eventData)) {
+          if (
+            Object.prototype.hasOwnProperty.call(baselineData, key) &&
+            JSON.stringify(eventData[key]) === JSON.stringify(baselineData[key])
+          ) {
+            delete eventData[key];
+            omittedFields.push(key);
+          }
+        }
+        if (omittedFields.length > 0) {
+          logger.log(`🧮 Diff-based save: omitted ${omittedFields.length} unchanged field(s):`, omittedFields.join(', '));
+        }
+      }
+
+      // No-op guard: if nothing changed, skip the round-trip entirely (matches
+      // EventEditDialog's behavior) so an accidental Save on an untouched form
+      // doesn't bump updatedAt or fire activity/audit logs for a non-change.
+      if (Object.keys(eventData).length === 0) {
+        logger.log('🟰 Diff-based save: no changes detected, closing without a write');
+        setIsSubmitting(false);
+        toast({ description: 'No changes to save.' });
+        onClose();
+        return;
+      }
+
+      logger.log('🔄 Updating event (diff-based save):', eventRequest.id, 'changed field count:', Object.keys(eventData).length, 'van:', eventData.vanDriverNeeded);
       // Extra status-transition diagnostic: any standby-related save logs the
       // exact status payload being sent. Helps debug the "save closes but
       // status reverts" symptom when it shows up in production.
