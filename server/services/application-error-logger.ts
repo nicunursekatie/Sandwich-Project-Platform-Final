@@ -2,6 +2,7 @@ import { db } from '../db';
 import { applicationErrorLogs } from '@shared/schema';
 import { and, eq, gte } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
+import { appendErrorLogToSheet } from '../services/error-log-sheet-sync';
 
 export type ApplicationErrorSource =
   | 'sms_parser'
@@ -149,6 +150,23 @@ export function logApplicationError(input: ApplicationErrorInput): void {
         if (canEmail) {
           await sendAdminNotification(input, row.id);
         }
+      }
+
+      if (
+        row?.id &&
+        input.source !== 'client' &&
+        (severity === 'error' || severity === 'critical')
+      ) {
+        appendErrorLogToSheet({
+          type: 'app_error',
+          timestamp: new Date(),
+          userName: null,
+          userEmail: null,
+          page: input.requestPath || null,
+          summary: input.message,
+          details: input.details ? JSON.stringify(input.details).slice(0, 4000) : null,
+          sourceId: row.id,
+        });
       }
     } catch (err) {
       logger.error('[ApplicationErrorLogger] Failed to persist error log:', err);

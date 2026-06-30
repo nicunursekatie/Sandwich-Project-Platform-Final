@@ -1414,6 +1414,19 @@ export function createMainRoutes(deps: RouterDependencies) {
           })
           .returning({ id: clientErrorLogs.id });
         dbErrorId = inserted?.id ?? null;
+
+        const { appendErrorLogToSheet } = await import('../services/error-log-sheet-sync');
+        appendErrorLogToSheet({
+          type: 'client_crash',
+          timestamp: new Date(timestamp || Date.now()),
+          userName,
+          userEmail,
+          page: url || null,
+          summary: message || 'Unknown error',
+          stack: stack || componentStack || null,
+          details: componentStack ? 'React component stack captured' : null,
+          sourceId: dbErrorId,
+        });
       } catch (dbErr) {
         logger.error('Failed to persist client error to DB:', dbErr);
       }

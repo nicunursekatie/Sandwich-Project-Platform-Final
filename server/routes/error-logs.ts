@@ -4,6 +4,7 @@ import { z } from 'zod';
 import type { IStorage } from '../storage';
 import { logger } from '../utils/production-safe-logger';
 import { logApplicationError } from '../services/application-error-logger';
+import { appendErrorLogToSheet } from '../services/error-log-sheet-sync';
 
 const errorLogSchema = z.object({
   error: z.string(),
@@ -59,6 +60,24 @@ export function createErrorLogsRoutes(storage: IStorage) {
         userId: errorData.context.userId,
         requestPath: errorData.context.currentPage,
         notifyAdmin: false,
+      });
+
+      appendErrorLogToSheet({
+        type: 'dynamic_error',
+        timestamp: new Date(errorData.timestamp),
+        userName: null,
+        userEmail: null,
+        page: errorData.context.currentPage || null,
+        summary: errorData.error,
+        details: [
+          errorData.context.attemptedAction
+            ? `Action: ${errorData.context.attemptedAction}`
+            : '',
+          errorData.context.userRole ? `Role: ${errorData.context.userRole}` : '',
+        ]
+          .filter(Boolean)
+          .join('\n'),
+        sourceId: errorData.context.userId || null,
       });
 
       // In a production app, you might want to:

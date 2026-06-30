@@ -1355,25 +1355,48 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           )}
 
 
-          {/* Status Badges */}
+          {/* Status & Action Badges — visually tiered.
+              Two-tier rule of thumb applied across all chips below:
+                STATUS (informational, no action required): muted gray
+                  background, no icon. Reader knows the state but isn't
+                  asked to do anything.
+                ACTION (something is wrong, missing, or undecided): solid
+                  red / amber background with ⚠️ icon prefix and white
+                  text so the eye lands on them first when scanning a
+                  list of 25 cards.
+              The previous styling treated "Date Confirmed" and "On
+              Volunteer Hub" with the same visual weight as warning
+              chips, which is why the row looked flat — every chip was
+              demanding attention equally. */}
           <div className="flex flex-wrap items-center gap-1 xs:gap-1.5 sm:gap-2 min-w-0">
             <Badge
               onClick={(e) => { e.stopPropagation(); canEdit && quickToggleBoolean('isConfirmed', request.isConfirmed); }}
-              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+              className={`cursor-pointer hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium ${
                 request.isConfirmed
-                  ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C]'
-                  : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
+                  ? // STATUS: date is confirmed — informational, mute it
+                    'bg-gray-100 text-gray-700 border border-gray-300'
+                  : // ACTION: date is still pending — needs attention
+                    'bg-amber-500 text-white border border-amber-600 inline-flex items-center gap-1'
               }`}
             >
-              {request.isConfirmed ? 'Date Confirmed' : 'Date Pending'}
+              {request.isConfirmed ? (
+                'Date Confirmed'
+              ) : (
+                <>
+                  <AlertTriangle className="w-3 h-3" />
+                  Date Pending
+                </>
+              )}
             </Badge>
 
             <Badge
               onClick={(e) => { e.stopPropagation(); canEdit && quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet); }}
-              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium flex items-center gap-1 ${
+              className={`cursor-pointer hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium flex items-center gap-1 ${
                 request.addedToOfficialSheet
-                  ? 'bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383]'
-                  : 'bg-amber-500 text-white border border-amber-600'
+                  ? // STATUS: on the calendar — mute
+                    'bg-gray-100 text-gray-700 border border-gray-300'
+                  : // ACTION: not on calendar — needs attention
+                    'bg-amber-500 text-white border border-amber-600'
               }`}
             >
               {request.addedToOfficialSheet ? (
@@ -1388,10 +1411,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
             <Badge
               onClick={(e) => { e.stopPropagation(); canEdit && quickToggleBoolean('showOnVolunteerHub', (request as any).showOnVolunteerHub); }}
-              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+              className={`cursor-pointer hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium ${
+                // STATUS in both states: hub is informational, not a
+                // call to action either way.
                 (request as any).showOnVolunteerHub
-                  ? 'bg-gradient-to-br from-[#9333EA] to-[#A855F7] text-white border border-[#9333EA]'
-                  : 'bg-gradient-to-br from-gray-400 to-gray-500 text-white border border-gray-400'
+                  ? 'bg-gray-100 text-gray-700 border border-gray-300'
+                  : 'bg-gray-50 text-gray-500 border border-gray-200'
               }`}
             >
               {(request as any).showOnVolunteerHub ? 'On Volunteer Hub' : 'Not on Hub'}
@@ -1414,15 +1439,37 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               className="text-xs sm:text-sm"
             />
 
-            {/* Sandwich count badge */}
-            <Badge
-              className="bg-amber-50 text-amber-800 border border-amber-400 text-xs sm:text-sm font-medium flex items-center gap-1 min-w-0 max-w-full"
-              title={sandwichInfo}
-            >
-              <span aria-hidden="true">🥪</span>
-              <span className="min-w-0 truncate">{sandwichCountBadgeText}</span>
-              <span className="hidden sm:inline opacity-90">&nbsp;sandwiches</span>
-            </Badge>
+            {/* Sandwich count badge.
+                STATUS when we have a real count (just informational).
+                ACTION when count is TBD — escalate to warning so it
+                stands out alongside other "data missing" chips. */}
+            {(() => {
+              const isTbd = sandwichCountBadgeText === 'TBD';
+              return (
+                <Badge
+                  className={`text-xs sm:text-sm font-medium flex items-center gap-1 min-w-0 max-w-full ${
+                    isTbd
+                      ? 'bg-amber-500 text-white border border-amber-600'
+                      : 'bg-gray-100 text-gray-700 border border-gray-300'
+                  }`}
+                  title={sandwichInfo}
+                >
+                  {isTbd ? (
+                    <AlertTriangle className="w-3 h-3" />
+                  ) : (
+                    <span aria-hidden="true">🥪</span>
+                  )}
+                  <span className="min-w-0 truncate">
+                    {isTbd ? 'Sandwich count needed' : sandwichCountBadgeText}
+                  </span>
+                  {!isTbd && (
+                    <span className="hidden sm:inline opacity-90">
+                      &nbsp;sandwiches
+                    </span>
+                  )}
+                </Badge>
+              );
+            })()}
 
             {/* Attendance badge - show when attendance is set */}
             {(request.attendanceAdults || request.attendanceTeens || request.attendanceKids) && (

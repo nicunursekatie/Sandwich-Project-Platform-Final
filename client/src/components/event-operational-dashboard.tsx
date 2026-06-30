@@ -1,5 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
 import { useLocation } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -170,6 +172,40 @@ const DATE_RANGE_OPTIONS = [
 export default function EventOperationalDashboard() {
   const [, setLocation] = useLocation();
   const [volumeDateRange, setVolumeDateRange] = useState<string>('30');
+  // Post-event data section: defaults to the last 90 days so the badge
+  // shows a number people will actually act on. Toggle to "all" surfaces
+  // every completed event still missing post-event info.
+  const [postEventWindow, setPostEventWindow] = useState<'90' | 'all'>('90');
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  // Quick "mark as followed up" — flips the social-media-post-completed
+  // flag to true, which is the more common reason an item is sitting in
+  // this list. Setting actualSandwichCount requires real data so we leave
+  // that to the event detail flow; this just clears the social-media
+  // half of the missing-data check so simple post-promotion items can
+  // be dismissed without leaving the dashboard.
+  const markFollowedUpMutation = useMutation({
+    mutationFn: async (eventId: number) => {
+      return apiRequest('PATCH', `/api/event-requests/${eventId}`, {
+        socialMediaPostCompleted: true,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/event-requests'] });
+      toast({
+        title: 'Marked as followed up',
+        description: 'Social-media post recorded for this event.',
+      });
+    },
+    onError: () => {
+      toast({
+        title: 'Could not update',
+        description: 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
 
   // Fetch all event requests
   const { data: events = [], isLoading } = useQuery<EventRequest[]>({
@@ -311,11 +347,12 @@ export default function EventOperationalDashboard() {
       });
 
     // Post-event follow-up needed: completed events missing social media or final count.
-    // Only surface events from the past 90 days — older completed events are realistically
-    // never going to get a social post or a final count, and including them balloons this
-    // list into the thousands, which trains users to ignore the section entirely.
-    const followUpCutoff = new Date();
-    followUpCutoff.setDate(followUpCutoff.getDate() - 90);
+    // Defaults to the past 90 days so the badge shows a number people will
+    // actually act on. Toggling to "all" surfaces every completed event
+    // still missing post-event info (which can be in the thousands — by
+    // design, used sparingly during data clean-up sweeps).
+    const followUpCutoff = postEventWindow === '90' ? new Date() : null;
+    if (followUpCutoff) followUpCutoff.setDate(followUpCutoff.getDate() - 90);
     const postEventFollowUp: AttentionItem[] = events
       .filter((e) => {
         if (e.status !== 'completed') return false;
@@ -323,7 +360,9 @@ export default function EventOperationalDashboard() {
         // parsed as UTC midnight drift to the prior day in Eastern time, which
         // would wrongly drop events sitting right on the 90-day boundary.
         const eventDate = parseEventDate(getEffectiveEventDate(e));
-        if (!eventDate || eventDate < followUpCutoff) return false;
+        if (followUpCutoff) {
+          if (!eventDate || eventDate < followUpCutoff) return false;
+        }
         const missing: string[] = [];
         if (!e.socialMediaPostCompleted) missing.push('Social media post');
         if (!e.actualSandwichCount) missing.push('Final sandwich count');
@@ -351,7 +390,7 @@ export default function EventOperationalDashboard() {
       });
 
     return { stalledIntakes, incompleteScheduled, postEventFollowUp };
-  }, [events, users]);
+  }, [events, users, postEventWindow]);
 
   // Calculate request volume for selected date range
   // Uses createdAt which reflects when the form was submitted to Google Sheets
@@ -606,45 +645,131 @@ export default function EventOperationalDashboard() {
             )}
           </CollapsibleSection>
 
-          {/* Post-Event Follow-up Needed */}
+          {/* Missing Post-Event Data — renamed from "Post-Event Follow-up
+              Needed" because the old title was vague about what action
+              was needed. The new title names the missing data directly. */}
           <CollapsibleSection
-            title="Post-Event Follow-up Needed"
+            title="Missing Post-Event Data"
             count={attentionItems.postEventFollowUp.length}
             icon={<CheckCircle2 className="w-5 h-5 text-teal-600" />}
             color="bg-teal-50 border-teal-200"
             defaultOpen={attentionItems.postEventFollowUp.length > 0 && attentionItems.postEventFollowUp.length <= 5}
           >
+            {/* Time-window toggle. Defaults to last 90 days so the badge
+                reflects events someone might actually act on. Toggle to
+                all-time for periodic data clean-up sweeps. */}
+            <div className="flex items-center justify-between pb-3 border-b border-teal-100 mb-3">
+              <div className="text-xs text-gray-600">
+                Showing:{' '}
+                <span className="font-semibold text-gray-800">
+                  {postEventWindow === '90'
+                    ? 'Last 90 days'
+                    : 'All time'}
+                </span>
+              </div>
+              <Select
+                value={postEventWindow}
+                onValueChange={(v) => setPostEventWindow(v as '90' | 'all')}
+              >
+                <SelectTrigger
+                  className="h-7 w-[140px] text-xs"
+                  data-testid="select-post-event-window"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="90">Last 90 days</SelectItem>
+                  <SelectItem value="all">All time</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
             {attentionItems.postEventFollowUp.length === 0 ? (
-              <p className="text-gray-500 text-sm">All recent completed events have follow-up data!</p>
+              <p className="text-gray-500 text-sm">
+                {postEventWindow === '90'
+                  ? 'No completed events in the last 90 days are missing post-event data. Nice work!'
+                  : 'Every completed event has post-event data on file.'}
+              </p>
             ) : (
               <div className="space-y-2">
-                <p className="text-xs text-gray-400 pb-1">
-                  Showing completed events from the past 90 days that still need a social post or final count.
+                <p className="text-xs text-gray-500 pb-1">
+                  Completed events still missing a social-media post or a final sandwich count.
                 </p>
-                {attentionItems.postEventFollowUp.slice(0, 10).map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer"
-                    onClick={() => navigateToEvent(item.id)}
-                  >
-                    <div>
-                      <p className="font-medium text-gray-900">{item.organizationName}</p>
-                      <p className="text-sm text-gray-500">Completed: {item.eventDate}</p>
+                {attentionItems.postEventFollowUp.slice(0, 10).map((item) => {
+                  const needsSocial = item.missingPostEvent?.includes('Social media post');
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex items-start sm:items-center justify-between gap-3 p-3 bg-gray-50 rounded-lg hover:bg-gray-100 flex-wrap"
+                    >
+                      <div
+                        className="flex-1 min-w-0 cursor-pointer"
+                        onClick={() => navigateToEvent(item.id)}
+                      >
+                        <p className="font-medium text-gray-900">
+                          {item.organizationName}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Completed: {item.eventDate}
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        {item.missingPostEvent?.map((field) => (
+                          <Badge
+                            key={field}
+                            variant="outline"
+                            className="text-teal-700 border-teal-300"
+                          >
+                            Needs: {field}
+                          </Badge>
+                        ))}
+                        {/* Quick "social post done" action. Only shown
+                            when that's the missing field — clicking
+                            flips the boolean server-side and the row
+                            drops out on the next refetch. For final
+                            count, the user still goes to the event
+                            detail because that needs a real number. */}
+                        {needsSocial && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              markFollowedUpMutation.mutate(item.id);
+                            }}
+                            disabled={markFollowedUpMutation.isPending}
+                            className="text-xs font-medium text-teal-700 hover:text-teal-900 hover:underline disabled:opacity-50"
+                            data-testid={`mark-followed-up-${item.id}`}
+                          >
+                            Social post done
+                          </button>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex flex-wrap gap-1">
-                      {item.missingPostEvent?.map((field) => (
-                        <Badge key={field} variant="outline" className="text-teal-700 border-teal-300">
-                          Needs: {field}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {attentionItems.postEventFollowUp.length > 10 && (
                   <p className="text-sm text-gray-500 text-center pt-2">
-                    +{attentionItems.postEventFollowUp.length - 10} more...
+                    +{attentionItems.postEventFollowUp.length - 10} more
                   </p>
                 )}
+
+                {/* Jump-out link for bulk processing. Filters the Event
+                    Requests page to completed events so the user can
+                    sweep through the whole list there if needed. */}
+                <div className="pt-3 border-t border-teal-100 text-right">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setLocation(
+                        '/dashboard?section=event-requests&status=completed',
+                      )
+                    }
+                    className="text-sm font-medium text-teal-700 hover:text-teal-900 hover:underline inline-flex items-center gap-1"
+                  >
+                    View all in Event Requests
+                    <span aria-hidden="true">→</span>
+                  </button>
+                </div>
               </div>
             )}
           </CollapsibleSection>
