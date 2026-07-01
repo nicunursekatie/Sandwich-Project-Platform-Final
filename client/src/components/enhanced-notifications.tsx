@@ -37,6 +37,10 @@ import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { NotificationActionButton } from './NotificationActionButton';
+import {
+  getNotificationActions,
+  normalizeNotificationFields,
+} from '@/lib/notification-actions';
 import { useNotificationSocket } from '@/hooks/useNotificationSocket';
 import { useStreamChatUnread } from '@/hooks/useStreamChatUnread';
 import { OnboardingTooltip } from '@/components/ui/onboarding-tooltip';
@@ -291,17 +295,82 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
     },
   });
 
+  const handleShareNotification = React.useCallback(
+    async (shareText: string, e?: React.MouseEvent) => {
+      e?.stopPropagation();
+      try {
+        if (navigator.share) {
+          await navigator.share({
+            title: 'The Sandwich Project',
+            text: shareText,
+          });
+        } else {
+          await navigator.clipboard.writeText(shareText);
+          toast({
+            title: 'Copied to clipboard',
+            description: 'Paste anywhere to share this milestone with your team.',
+          });
+        }
+      } catch (err) {
+        if ((err as Error)?.name !== 'AbortError') {
+          toast({
+            title: 'Could not share',
+            description: 'Try copying the notification text manually.',
+            variant: 'destructive',
+          });
+        }
+      }
+    },
+    [toast],
+  );
+
+  const renderNotificationActions = (notification: Notification) => {
+    const actions = getNotificationActions(notification);
+    if (actions.length === 0) return null;
+
+    return (
+      <div
+        className="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {actions.map((action) =>
+          action.type === 'share_milestone' ? (
+            <Button
+              key={action.type}
+              type="button"
+              variant="outline"
+              size="sm"
+              className="text-xs sm:text-sm"
+              onClick={(e) => handleShareNotification(action.shareText || '', e)}
+            >
+              {action.text}
+            </Button>
+          ) : (
+            <NotificationActionButton
+              key={action.type}
+              notificationId={notification.id}
+              actionType={action.type}
+              actionText={action.text}
+              actionUrl={action.url}
+            />
+          ),
+        )}
+      </div>
+    );
+  };
+
   const handleNotificationClick = (notification: Notification) => {
+    const normalized = normalizeNotificationFields(notification);
     if (!notification.isRead) {
       markAsReadMutation.mutate(notification.id);
     }
 
-    // If there's an action button, don't auto-navigate - let the button handle it
-    if (notification.actionUrl && !notification.actionText) {
-      if (notification.actionUrl.startsWith('http')) {
-        window.open(notification.actionUrl, '_blank');
+    // If there's an action button, don't auto-navigate — let the button handle it
+    if (normalized.actionUrl && getNotificationActions(normalized).length === 0) {
+      if (normalized.actionUrl.startsWith('http')) {
+        window.open(normalized.actionUrl, '_blank');
       } else {
-        window.location.href = notification.actionUrl;
+        window.location.href = normalized.actionUrl;
       }
     }
   };
@@ -621,24 +690,7 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
                             </span>
                           </div>
 
-                          {notification.actionText && (
-                            <div
-                              className="flex items-center gap-2 mt-3 pt-3 border-t"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <NotificationActionButton
-                                notificationId={notification.id}
-                                actionType={notification.actionText
-                                  .toLowerCase()
-                                  .replace(/\s+/g, '_')}
-                                actionText={notification.actionText}
-                                actionUrl={notification.actionUrl}
-                                onSuccess={() => {
-                                  // Notification list will auto-refresh via query invalidation
-                                }}
-                              />
-                            </div>
-                          )}
+                          {renderNotificationActions(notification)}
                         </div>
 
                         <DropdownMenu>
@@ -758,24 +810,7 @@ function EnhancedNotifications({ user }: EnhancedNotificationsProps) {
                             </span>
                           </div>
 
-                          {notification.actionText && (
-                            <div
-                              className="flex items-center gap-2 mt-3 pt-3 border-t"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <NotificationActionButton
-                                notificationId={notification.id}
-                                actionType={notification.actionText
-                                  .toLowerCase()
-                                  .replace(/\s+/g, '_')}
-                                actionText={notification.actionText}
-                                actionUrl={notification.actionUrl}
-                                onSuccess={() => {
-                                  // Notification list will auto-refresh via query invalidation
-                                }}
-                              />
-                            </div>
-                          )}
+                          {renderNotificationActions(notification)}
                         </div>
 
                         <DropdownMenu>
