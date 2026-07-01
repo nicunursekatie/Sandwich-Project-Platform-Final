@@ -6,6 +6,14 @@ import { ADMIN_EMAIL } from './config/organization';
 
 const mailService = new MailService();
 
+/**
+ * Holds the most recent SendGrid rejection reason so route handlers can report
+ * an actionable message. sendEmail() returns a boolean for backwards
+ * compatibility; callers that need the reason read this immediately after a
+ * false return.
+ */
+export let lastSendError: string | null = null;
+
 if (process.env.SENDGRID_API_KEY) {
   mailService.setApiKey(process.env.SENDGRID_API_KEY);
 } else {
@@ -36,11 +44,13 @@ interface EmailParams {
 }
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
+  lastSendError = null;
   if (!process.env.SENDGRID_API_KEY) {
     logger.warn('Email sending skipped - SENDGRID_API_KEY not configured');
+    lastSendError = 'SENDGRID_API_KEY is not configured';
     return false;
   }
-  
+
   try {
     logger.log(
       `Attempting to send email to ${params.to} from ${params.from} with subject: ${params.subject}`
@@ -181,11 +191,21 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     return true;
   } catch (error) {
     logger.error('SendGrid email error:', error);
-    if (error.response && error.response.body) {
+    // Surface the real SendGrid rejection reason (e.g. "from address does not
+    // match a verified Sender Identity") so callers can report something
+    // actionable instead of a generic "check API key configuration".
+    const sendGridErrors = error?.response?.body?.errors;
+    if (Array.isArray(sendGridErrors) && sendGridErrors.length > 0) {
       logger.error(
         'SendGrid error details:',
         JSON.stringify(error.response.body, null, 2)
       );
+      lastSendError = sendGridErrors
+        .map((e: { message?: string }) => e?.message)
+        .filter(Boolean)
+        .join('; ');
+    } else {
+      lastSendError = error instanceof Error ? error.message : 'Unknown SendGrid error';
     }
     return false;
   }
