@@ -10,6 +10,8 @@ import type {
   InsertAvailabilitySlot,
   EventRequest,
   InsertEventRequest,
+  InsertEmailTemplateSection,
+  UpdateEmailTemplateSection,
 } from '@shared/schema';
 
 class StorageWrapper implements IStorage {
@@ -2037,6 +2039,38 @@ class StorageWrapper implements IStorage {
       () => this.primaryStorage.updateDashboardDocumentOrder(updates),
       () => this.fallbackStorage.updateDashboardDocumentOrder(updates)
     );
+  }
+
+  // ==================== Email Template Sections ====================
+  // Delegated DIRECTLY to primary (database) storage — these are DB-backed
+  // admin customizations with no MemStorage implementation, so there is no
+  // meaningful in-memory fallback (executeWithFallback would just hit the same
+  // missing method). Errors propagate to the route, which handles the
+  // "table missing" case gracefully. Without these passthroughs the wrapper
+  // silently lacked the methods and `storage.getEmailTemplateSections is not a
+  // function` was thrown at runtime, 500ing the email composer's section fetch.
+  async getEmailTemplateSections(templateType?: string) {
+    return this.primaryStorage.getEmailTemplateSections(templateType);
+  }
+
+  async getEmailTemplateSection(templateType: string, sectionKey: string) {
+    return this.primaryStorage.getEmailTemplateSection(templateType, sectionKey);
+  }
+
+  async getEmailTemplateSectionById(id: number) {
+    return this.primaryStorage.getEmailTemplateSectionById(id);
+  }
+
+  async createEmailTemplateSection(data: InsertEmailTemplateSection) {
+    return this.primaryStorage.createEmailTemplateSection(data);
+  }
+
+  async updateEmailTemplateSection(id: number, data: UpdateEmailTemplateSection) {
+    return this.primaryStorage.updateEmailTemplateSection(id, data);
+  }
+
+  async resetEmailTemplateSectionToDefault(id: number) {
+    return this.primaryStorage.resetEmailTemplateSectionToDefault(id);
   }
 
   // Event Collaboration Comments
