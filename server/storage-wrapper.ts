@@ -120,7 +120,9 @@ class StorageWrapper implements IStorage {
           break;
         }
         const delay = Math.min(200 * Math.pow(2, attempt), 2000);
-        logger.warn(`Primary storage operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`, error?.message);
+        // Log the full error object (not just .message) so Winston preserves
+        // the stack/structured context for diagnosing repeated transient failures.
+        logger.warn(`Primary storage operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`, error);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }

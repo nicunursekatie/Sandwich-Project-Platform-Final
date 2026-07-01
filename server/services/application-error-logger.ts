@@ -3,6 +3,7 @@ import { applicationErrorLogs } from '@shared/schema';
 import { and, eq, gte, inArray, desc } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 import { appendErrorLogToSheet } from '../services/error-log-sheet-sync';
+import { FROM_EMAIL } from '../config/organization';
 
 export type ApplicationErrorSource =
   | 'sms_parser'
@@ -72,7 +73,7 @@ async function sendAdminNotification(
 
     await sendEmail({
       to: ADMIN_EMAIL,
-      from: 'noreply@thesandwichproject.org',
+      from: FROM_EMAIL,
       subject: `[TSP App ${severity.toUpperCase()}] ${input.source}: ${input.message.slice(0, 80)}`,
       text: [
         `Source: ${input.source}`,
@@ -128,6 +129,16 @@ function normalizeMessage(message: string): string {
     .slice(0, 200);
 }
 
+/** Escape user-influenced text before interpolating into the digest email HTML. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 interface ErrorDigestGroup {
   source: string;
   category: string | null;
@@ -148,8 +159,9 @@ export async function sendDailyErrorDigest(): Promise<{
   total: number;
   groups: number;
 }> {
-  const since = new Date();
-  since.setHours(since.getHours() - 24);
+  // Millisecond offset keeps the window exactly 24h regardless of DST shifts
+  // (setHours(getHours()-24) would be 23h/25h across a transition).
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
   const rows = await db
     .select({
@@ -193,7 +205,10 @@ export async function sendDailyErrorDigest(): Promise<{
     }
   }
 
-  const sorted = [...groups.values()].sort((a, b) => b.count - a.count);
+  // Most frequent first (best for triage), ties broken by most recent.
+  const sorted = [...groups.values()].sort(
+    (a, b) => b.count - a.count || b.last.getTime() - a.last.getTime()
+  );
   const criticalCount = rows.filter((r) => r.severity === 'critical').length;
 
   const textLines = sorted.map(
@@ -201,22 +216,26 @@ export async function sendDailyErrorDigest(): Promise<{
       `• [${g.severity}] ${g.source}/${g.category || 'general'} ×${g.count} — ${g.sample.slice(0, 140)} (last: ${g.last.toISOString()})`
   );
   const htmlRows = sorted
-    .map(
-      (g) => `
+    .map((g) => {
+      // Error messages are user-influenced — escape every interpolated field.
+      const severity = escapeHtml(g.severity);
+      const sourceLabel = escapeHtml(`${g.source}/${g.category || 'general'}`);
+      const sample = escapeHtml(g.sample.slice(0, 160));
+      return `
         <tr>
-          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${g.severity === 'critical' ? '🔴' : '🟠'} ${g.severity}</td>
-          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${g.source}/${g.category || 'general'}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${g.severity === 'critical' ? '🔴' : '🟠'} ${severity}</td>
+          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${sourceLabel}</td>
           <td style="padding:6px 10px;border-bottom:1px solid #eee;text-align:right;font-weight:bold;">${g.count}</td>
-          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${g.sample.slice(0, 160).replace(/</g, '&lt;')}</td>
-        </tr>`
-    )
+          <td style="padding:6px 10px;border-bottom:1px solid #eee;">${sample}</td>
+        </tr>`;
+    })
     .join('');
 
   try {
     const { sendEmailWithResult } = await import('../sendgrid');
     const sendResult = await sendEmailWithResult({
       to: ADMIN_EMAIL,
-      from: 'noreply@thesandwichproject.org',
+      from: FROM_EMAIL,
       subject: `[TSP App] Daily error digest — ${rows.length} errors, ${sorted.length} types${criticalCount ? `, ${criticalCount} critical` : ''}`,
       text: [
         `Errors in the last 24 hours: ${rows.length} (${sorted.length} distinct types${criticalCount ? `, ${criticalCount} critical` : ''}).`,
