@@ -382,8 +382,14 @@ collectionsRouter.post(
                 title: `🎉 Milestone Reached: ${crossedMilestone.toLocaleString()} Sandwiches!`,
                 message: `Congratulations! The organization has now distributed ${totalSandwiches.toLocaleString()} sandwiches this year!`,
                 category: 'updates',
-                actionUrl: '/sandwich-collections',
-                actionText: 'View Collections',
+                relatedType: 'collection',
+                actionUrl: '/dashboard?section=analytics',
+                actionText: 'View Analytics',
+                metadata: {
+                  milestone: crossedMilestone,
+                  totalSandwiches,
+                  shareText: `🎉 The Sandwich Project just hit ${crossedMilestone.toLocaleString()} sandwiches! We've now distributed ${totalSandwiches.toLocaleString()} sandwiches this year.`,
+                },
               });
             } catch (notifError) {
               logger.error(`Failed to create milestone notification for ${admin.id}:`, notifError);
