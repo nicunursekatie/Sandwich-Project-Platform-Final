@@ -213,8 +213,8 @@ export async function sendDailyErrorDigest(): Promise<{
     .join('');
 
   try {
-    const { sendEmail } = await import('../sendgrid');
-    await sendEmail({
+    const { sendEmailWithResult } = await import('../sendgrid');
+    const sendResult = await sendEmailWithResult({
       to: ADMIN_EMAIL,
       from: 'noreply@thesandwichproject.org',
       subject: `[TSP App] Daily error digest — ${rows.length} errors, ${sorted.length} types${criticalCount ? `, ${criticalCount} critical` : ''}`,
@@ -244,6 +244,15 @@ export async function sendDailyErrorDigest(): Promise<{
         </div>
       `,
     });
+    // sendEmail resolves false (not throws) on a missing key or SendGrid
+    // rejection, so check the result explicitly — otherwise a failed delivery
+    // would be recorded as a successful digest and that 24h window lost.
+    if (!sendResult.success) {
+      logger.error(
+        `[ApplicationErrorLogger] Daily digest email failed: ${sendResult.error || 'unknown'}`
+      );
+      return { sent: false, total: rows.length, groups: sorted.length };
+    }
     logger.log(`[ApplicationErrorLogger] Daily digest sent: ${rows.length} errors, ${sorted.length} groups`);
     return { sent: true, total: rows.length, groups: sorted.length };
   } catch (err) {
