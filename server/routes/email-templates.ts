@@ -19,8 +19,13 @@ export function createEmailTemplatesRouter(): Router {
       );
       res.json(sections);
     } catch (error) {
-      logger.error('Failed to fetch email template sections:', error);
-      res.status(500).json({ error: 'Failed to fetch email template sections' });
+      // Template sections are OPTIONAL customizations — every consumer (the
+      // event email composer, etc.) falls back to hardcoded defaults when the
+      // list is empty. If the table is missing/unseeded in this environment the
+      // query throws; degrade to an empty list instead of a 500 so the composer
+      // (and "Send Toolkit") keep working and the console isn't flooded.
+      logger.error('Failed to fetch email template sections, returning empty list:', error);
+      res.json([]);
     }
   });
 
