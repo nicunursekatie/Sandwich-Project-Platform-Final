@@ -21,11 +21,21 @@ export function createEmailTemplatesRouter(): Router {
     } catch (error) {
       // Template sections are OPTIONAL customizations — every consumer (the
       // event email composer, etc.) falls back to hardcoded defaults when the
-      // list is empty. If the table is missing/unseeded in this environment the
-      // query throws; degrade to an empty list instead of a 500 so the composer
-      // (and "Send Toolkit") keep working and the console isn't flooded.
-      logger.error('Failed to fetch email template sections, returning empty list:', error);
-      res.json([]);
+      // list is empty. ONLY the specific "table doesn't exist" case (unmigrated
+      // environment) is swallowed into an empty list so the composer (and "Send
+      // Toolkit") keep working and the console isn't flooded. Any OTHER failure
+      // (DB outage, permission error, bug) still returns 500 so real
+      // operational problems aren't silently masked.
+      const code = (error as { code?: string })?.code;
+      const isUndefinedTable =
+        code === '42P01' ||
+        /relation ".*" does not exist/i.test((error as Error)?.message || '');
+      if (isUndefinedTable) {
+        logger.warn('email_template_sections table unavailable, returning empty list:', error);
+        return res.json([]);
+      }
+      logger.error('Failed to fetch email template sections:', error);
+      res.status(500).json({ error: 'Failed to fetch email template sections' });
     }
   });
 
