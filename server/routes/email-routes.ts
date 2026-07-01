@@ -596,7 +596,7 @@ export function createEmailRouter(deps: RouterDependencies) {
     }
 
     // For actual emails, send directly via SendGrid without wrapper
-    const { sendEmail: sendGridEmail } = await import('../sendgrid');
+    const { sendEmailWithResult } = await import('../sendgrid');
     const { documents } = await import('@shared/schema');
     const { inArray } = await import('drizzle-orm');
     const path = await import('path');
@@ -846,17 +846,16 @@ export function createEmailRouter(deps: RouterDependencies) {
       hasApiKey: !!process.env.SENDGRID_API_KEY,
     });
 
-    const sendResult = await sendGridEmail(emailPayload);
+    const sendResult = await sendEmailWithResult(emailPayload);
 
-    if (!sendResult) {
-      // Re-read the sendgrid module's captured rejection reason so we report the
-      // ACTUAL SendGrid error (e.g. sender-identity not verified) instead of a
-      // misleading generic "check API key configuration".
-      const { lastSendError } = await import('../sendgrid');
+    if (!sendResult.success) {
+      // Report the ACTUAL SendGrid rejection reason (e.g. sender-identity not
+      // verified) carried back with this specific send, instead of a misleading
+      // generic "check API key configuration".
       logger.error(
-        `[Event Email API] SendGrid returned false - email not sent. Reason: ${lastSendError || 'unknown'}`
+        `[Event Email API] SendGrid send failed - email not sent. Reason: ${sendResult.error || 'unknown'}`
       );
-      throw new Error(lastSendError || 'SendGrid rejected the email. Please try again or contact support.');
+      throw new Error(sendResult.error || 'SendGrid rejected the email. Please try again or contact support.');
     }
 
     // Save a record in internal email system (without sending duplicate)
