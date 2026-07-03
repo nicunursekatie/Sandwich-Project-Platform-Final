@@ -30,6 +30,7 @@ import { WEEK_SCOPE_LABELS } from './lib/eventRequestsListQuery';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
+import { ButtonTooltip } from '@/components/ui/button-tooltip';
 import { EventCalendarView } from '@/components/event-calendar-view';
 const EventMapView = React.lazy(() => import('./EventMapView'));
 import {
@@ -765,16 +766,21 @@ const EventRequestsManagementContent: React.FC = () => {
               read consistently as "ways to view data." */}
 
           {/* Driver Planning Map link */}
-          <Link href="/driver-planning">
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
-            >
-              <MapPin className="w-4 h-4 mr-1.5" />
-              {!isMobile && 'Driver Planning Map'}
-            </Button>
-          </Link>
+          <ButtonTooltip
+            explanation="Opens the Driver Planning Map to match upcoming events with volunteer drivers. See events, nearby hosts and recipients, and suggested drivers on one map. Start the full walkthrough anytime from the help button (bottom-right)."
+            size="md"
+          >
+            <Link href="/driver-planning">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
+              >
+                <MapPin className="w-4 h-4 mr-1.5" />
+                {!isMobile && 'Driver Planning Map'}
+              </Button>
+            </Link>
+          </ButtonTooltip>
 
           {/* Spacer */}
           <div className="flex-1" />

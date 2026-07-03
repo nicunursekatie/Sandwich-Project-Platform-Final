@@ -71,6 +71,7 @@ import { OnlineUsers } from '@/components/online-users';
 import { useOnlinePresenceNotifications } from '@/hooks/useOnlinePresenceNotifications';
 import { RealTimeKudosNotifier } from '@/components/real-time-kudos-notifier';
 import { LoginMessageNotifier } from '@/components/login-message-notifier';
+import { FirstLoginTourPrompt } from '@/components/FirstLoginTourPrompt';
 import { GuidedTour } from '@/components/GuidedTour';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { DashboardNavigationProvider } from '@/contexts/dashboard-navigation-context';
@@ -940,6 +941,7 @@ export default function Dashboard({
       {/* Real-Time Kudos Notifier */}
       <RealTimeKudosNotifier />
       <LoginMessageNotifier />
+      <FirstLoginTourPrompt />
       <TextIdeaAnnouncementModal />
       <WhatsNewModal />
 
