@@ -81,6 +81,55 @@ class StorageWrapper implements IStorage {
    * MemStorage writes are lost on restart. Instead we throw the error so
    * the API route can return a proper error to the client.
    */
+  /** Transient DB errors worth retrying (Neon cold start, brief connection hiccups). */
+  private isTransientError(error: any): boolean {
+    return error?.message?.includes('connection') ||
+      error?.message?.includes('timeout') ||
+      error?.message?.includes('ECONNREFUSED') ||
+      error?.message?.includes('ECONNRESET') ||
+      error?.message?.includes('socket hang up') ||
+      error?.message?.includes('fetch failed') ||
+      error?.code === 'ETIMEDOUT' ||
+      error?.code === 'ECONNRESET' ||
+      // PostgreSQL transient error codes
+      error?.code === '40001' || // serialization_failure
+      error?.code === '40P01' || // deadlock_detected
+      error?.code === '08006' || // connection_failure
+      error?.code === '08001' || // sqlclient_unable_to_establish_sqlconnection
+      error?.code === '57P01';   // admin_shutdown (Neon cold start)
+  }
+
+  /**
+   * Retry a PRIMARY-storage operation on transient errors with the same
+   * backoff as executeWithFallback, but WITHOUT a MemStorage fallback. Use for
+   * operations MemStorage can't serve (falling back would just throw) and where
+   * a valid `undefined` result (not-found) must NOT be treated as a fallback
+   * trigger. Non-transient errors and exhausted retries re-throw so the route
+   * can handle them.
+   */
+  private async executePrimaryWithRetry<T>(operation: () => Promise<T>): Promise<T> {
+    const maxRetries = 2;
+    let lastError: any = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error: any) {
+        lastError = error;
+        if (!this.isTransientError(error) || attempt === maxRetries) {
+          break;
+        }
+        const delay = Math.min(200 * Math.pow(2, attempt), 2000);
+        // Log the full error object (not just .message) so Winston preserves
+        // the stack/structured context for diagnosing repeated transient failures.
+        logger.warn(`Primary storage operation failed (attempt ${attempt + 1}/${maxRetries + 1}), retrying in ${delay}ms:`, error);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    throw lastError;
+  }
+
   private async executeWithFallback<T>(
     operation: () => Promise<T>,
     fallbackOperation: () => Promise<T>,
@@ -106,20 +155,7 @@ class StorageWrapper implements IStorage {
       } catch (error: any) {
         lastError = error;
         // Don't retry non-transient errors (validation, not-found, etc.)
-        const isTransient = error?.message?.includes('connection') ||
-          error?.message?.includes('timeout') ||
-          error?.message?.includes('ECONNREFUSED') ||
-          error?.message?.includes('ECONNRESET') ||
-          error?.message?.includes('socket hang up') ||
-          error?.message?.includes('fetch failed') ||
-          error?.code === 'ETIMEDOUT' ||
-          error?.code === 'ECONNRESET' ||
-          // PostgreSQL transient error codes
-          error?.code === '40001' || // serialization_failure
-          error?.code === '40P01' || // deadlock_detected
-          error?.code === '08006' || // connection_failure
-          error?.code === '08001' || // sqlclient_unable_to_establish_sqlconnection
-          error?.code === '57P01';   // admin_shutdown (Neon cold start)
+        const isTransient = this.isTransientError(error);
 
         if (!isTransient || attempt === maxRetries) {
           break; // Don't retry non-transient errors or if we've exhausted retries
@@ -2042,35 +2078,50 @@ class StorageWrapper implements IStorage {
   }
 
   // ==================== Email Template Sections ====================
-  // Delegated DIRECTLY to primary (database) storage — these are DB-backed
-  // admin customizations with no MemStorage implementation, so there is no
-  // meaningful in-memory fallback (executeWithFallback would just hit the same
-  // missing method). Errors propagate to the route, which handles the
-  // "table missing" case gracefully. Without these passthroughs the wrapper
-  // silently lacked the methods and `storage.getEmailTemplateSections is not a
-  // function` was thrown at runtime, 500ing the email composer's section fetch.
+  // Delegated to primary (database) storage via executePrimaryWithRetry —
+  // these are DB-backed admin customizations with no MemStorage implementation,
+  // so there is no meaningful in-memory fallback (executeWithFallback would just
+  // hit the same missing method, and would also treat a valid `undefined`
+  // not-found as a fallback trigger). The retry-only helper still recovers from
+  // transient DB errors (Neon cold starts) without those hazards. Errors
+  // propagate to the route, which handles the "table missing" case gracefully.
+  // Without these passthroughs the wrapper silently lacked the methods and
+  // `storage.getEmailTemplateSections is not a function` was thrown at runtime,
+  // 500ing the email composer's section fetch.
   async getEmailTemplateSections(templateType?: string) {
-    return this.primaryStorage.getEmailTemplateSections(templateType);
+    return this.executePrimaryWithRetry(() =>
+      this.primaryStorage.getEmailTemplateSections(templateType)
+    );
   }
 
   async getEmailTemplateSection(templateType: string, sectionKey: string) {
-    return this.primaryStorage.getEmailTemplateSection(templateType, sectionKey);
+    return this.executePrimaryWithRetry(() =>
+      this.primaryStorage.getEmailTemplateSection(templateType, sectionKey)
+    );
   }
 
   async getEmailTemplateSectionById(id: number) {
-    return this.primaryStorage.getEmailTemplateSectionById(id);
+    return this.executePrimaryWithRetry(() =>
+      this.primaryStorage.getEmailTemplateSectionById(id)
+    );
   }
 
   async createEmailTemplateSection(data: InsertEmailTemplateSection) {
-    return this.primaryStorage.createEmailTemplateSection(data);
+    return this.executePrimaryWithRetry(() =>
+      this.primaryStorage.createEmailTemplateSection(data)
+    );
   }
 
   async updateEmailTemplateSection(id: number, data: UpdateEmailTemplateSection) {
-    return this.primaryStorage.updateEmailTemplateSection(id, data);
+    return this.executePrimaryWithRetry(() =>
+      this.primaryStorage.updateEmailTemplateSection(id, data)
+    );
   }
 
   async resetEmailTemplateSectionToDefault(id: number) {
-    return this.primaryStorage.resetEmailTemplateSectionToDefault(id);
+    return this.executePrimaryWithRetry(() =>
+      this.primaryStorage.resetEmailTemplateSectionToDefault(id)
+    );
   }
 
   // Event Collaboration Comments
