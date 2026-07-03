@@ -2925,6 +2925,11 @@ router.patch(
               ? dropColumnKey(attemptUpdates, missingColumn)
               : null;
             if (droppedKey && attempt < MAX_COLUMN_DROP_RETRIES) {
+              // Keep processedUpdates in sync with what we actually persist.
+              // Downstream logic (the activity-log change summary, side effects)
+              // keys off processedUpdates, so a dropped-but-still-present field
+              // would be reported as saved when it wasn't.
+              delete (processedUpdates as any)[droppedKey];
               logger.warn(
                 `[PATCH /:id] Column "${missingColumn}" is not on this DB branch; dropping "${droppedKey}" and retrying: ${updateError?.message}`
               );
@@ -3072,15 +3077,20 @@ router.patch(
           message: classified.message,
           error: classified.error,
           column: classified.column,
-          // Keep the raw DB message on the response so error reports remain
-          // diagnosable; it's not shown to the user (the client uses `message`).
+          // Same structured DB detail on both the 4xx and 500 paths so the
+          // client's error report captures the raw message, SQLSTATE code, and
+          // column consistently. None of these are shown to the user (the
+          // client renders `message`).
           dbError: pg.message,
+          dbCode: pg.code,
+          dbColumn: pg.column,
         });
       }
 
       res.status(500).json({
         message: 'Failed to update event request',
         error: err?.message || 'Unknown error',
+        dbError: pg.message,
         dbCode: pg.code,
         dbColumn: pg.column,
         details: process.env.NODE_ENV === 'development' ? err?.stack : undefined
