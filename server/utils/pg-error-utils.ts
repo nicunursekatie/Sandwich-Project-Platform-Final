@@ -60,20 +60,23 @@ export function parsePgError(error: unknown): PgErrorInfo {
   }
   const err = (error ?? {}) as Record<string, any>;
   const message = typeof err.message === 'string' ? err.message : String(err.message ?? 'Unknown database error');
+  const code = typeof err.code === 'string' ? err.code : undefined;
 
   let column: string | undefined =
     typeof err.column === 'string' && err.column.length > 0 ? err.column : undefined;
 
-  // 42703 (and some driver versions) leave `.column` empty — the name is in the
+  // undefined_column (42703) leaves `.column` empty — the name is only in the
   // message: `column "foo" of relation "event_requests" does not exist` or
-  // `column "foo" does not exist`.
-  if (!column) {
+  // `column "foo" does not exist`. Restrict this message-parsing fallback to
+  // that code so we don't misattribute a column for other errors whose message
+  // merely mentions one (e.g. check-constraint text).
+  if (!column && code === PG_ERROR_CODES.UNDEFINED_COLUMN) {
     const m = message.match(/column "([^"]+)"/i);
     if (m) column = m[1];
   }
 
   return {
-    code: typeof err.code === 'string' ? err.code : undefined,
+    code,
     column,
     constraint: typeof err.constraint === 'string' ? err.constraint : undefined,
     detail: typeof err.detail === 'string' ? err.detail : undefined,

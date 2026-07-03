@@ -101,6 +101,20 @@ describe('classifyDbError', () => {
     expect(c?.error).toBe('NUMBER_OUT_OF_RANGE');
   });
 
+  it('classifies string-too-long (22001) as 400', () => {
+    const c = classifyDbError(
+      pgError({ code: PG_ERROR_CODES.STRING_DATA_RIGHT_TRUNCATION, message: 'value too long for type character varying(10)' })
+    );
+    expect(c?.status).toBe(400);
+    expect(c?.error).toBe('VALUE_TOO_LONG');
+  });
+
+  it('classifies datetime overflow (22008) as 400', () => {
+    const c = classifyDbError(pgError({ code: PG_ERROR_CODES.DATETIME_FIELD_OVERFLOW, message: 'date/time field value out of range' }));
+    expect(c?.status).toBe(400);
+    expect(c?.error).toBe('INVALID_DATE');
+  });
+
   it('classifies foreign-key violations as 400', () => {
     const c = classifyDbError(pgError({ code: PG_ERROR_CODES.FOREIGN_KEY_VIOLATION, message: 'fk' }));
     expect(c?.status).toBe(400);

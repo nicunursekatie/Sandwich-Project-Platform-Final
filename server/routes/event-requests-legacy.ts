@@ -3077,22 +3077,23 @@ router.patch(
           message: classified.message,
           error: classified.error,
           column: classified.column,
-          // Same structured DB detail on both the 4xx and 500 paths so the
-          // client's error report captures the raw message, SQLSTATE code, and
-          // column consistently. None of these are shown to the user (the
-          // client renders `message`).
-          dbError: pg.message,
+          // Stable, non-sensitive diagnostics on both the 4xx and 500 paths so
+          // the client's error report can identify the field/error class. The
+          // raw DB message can name internal schema/constraints, so it's gated
+          // to development (same convention as `details` below); the full
+          // message is always written to the server logs regardless of env.
           dbCode: pg.code,
           dbColumn: pg.column,
+          dbError: process.env.NODE_ENV === 'development' ? pg.message : undefined,
         });
       }
 
       res.status(500).json({
         message: 'Failed to update event request',
         error: err?.message || 'Unknown error',
-        dbError: pg.message,
         dbCode: pg.code,
         dbColumn: pg.column,
+        dbError: process.env.NODE_ENV === 'development' ? pg.message : undefined,
         details: process.env.NODE_ENV === 'development' ? err?.stack : undefined
       });
     }
