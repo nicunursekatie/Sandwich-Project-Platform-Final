@@ -72,7 +72,6 @@ interface IntakeCallDialogProps {
   isOpen: boolean;
   onClose: () => void;
   eventRequest: EventRequest | null;
-  onCallComplete?: () => void;
 }
 
 interface ChecklistItem {
@@ -329,7 +328,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   isOpen,
   onClose,
   eventRequest,
-  onCallComplete,
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -727,10 +725,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         title: 'Moved to Non-Event',
         description: 'The request was marked as Non-Event. Directed the organizer to the host finder.',
       });
-      // NOTE: deliberately do NOT call onCallComplete() here. The parent's
-      // onCallComplete patches status to 'in_process', which would immediately
-      // undo the Non-Event move. "Move to Non-Event" must always leave the
-      // event in non_event status.
+      // NOTE: do not set status to in_process here — this path must stay non_event.
       onClose();
     } catch (error: any) {
       toast({
@@ -1000,6 +995,11 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
           : newActionBlock;
       }
 
+      // Completing intake moves new requests into the normal workflow.
+      if (markCallComplete && eventRequest.status === 'new') {
+        updates.status = 'in_process';
+      }
+
       const updated = await apiRequest('PATCH', `/api/event-requests/${eventRequest?.id}`, updates);
 
       await applyPatchResponseToCache(queryClient, updated, {
@@ -1067,9 +1067,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       setContactPhone('');
       setContactEmail('');
       setHasUserInteracted(false);
-      if (markCallComplete) {
-        onCallComplete?.();
-      }
       onClose();
     } catch (error: any) {
       toast({

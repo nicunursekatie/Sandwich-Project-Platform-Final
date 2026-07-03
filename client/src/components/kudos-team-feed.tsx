@@ -13,9 +13,18 @@ interface TeamFeedKudos {
   recipientName: string;
   contextType: 'task' | 'project' | 'general' | string;
   contextId: string;
-  entityName: string;
-  projectTitle: string;
+  entityName?: string;
+  projectTitle?: string;
   createdAt: string;
+}
+
+import { isDisplayableKudosEntityName } from '@/lib/kudos-display';
+
+const PLACEHOLDER_NAMES = new Set(['unknown user', 'someone']);
+
+function isDisplayableName(name: string | undefined): boolean {
+  if (!name?.trim()) return false;
+  return !PLACEHOLDER_NAMES.has(name.trim().toLowerCase());
 }
 
 /**
@@ -41,7 +50,11 @@ export function KudosTeamFeed() {
     );
   }
 
-  if (feed.length === 0) {
+  const visibleFeed = feed.filter(
+    (k) => isDisplayableName(k.senderName) && isDisplayableName(k.recipientName),
+  );
+
+  if (visibleFeed.length === 0) {
     return (
       <Card>
         <CardContent className="py-12 text-center text-gray-500">
@@ -58,7 +71,7 @@ export function KudosTeamFeed() {
 
   return (
     <div className="space-y-3">
-      {feed.map((k) => (
+      {visibleFeed.map((k) => (
         <Card key={k.id} className="border-l-4 border-l-amber-400">
           <CardContent className="py-3 px-4">
             <div className="flex items-start gap-3">
@@ -74,7 +87,7 @@ export function KudosTeamFeed() {
                   <span className="font-semibold text-gray-900">
                     {k.recipientName}
                   </span>
-                  {k.entityName && k.entityName !== 'Unknown' && (
+                  {isDisplayableKudosEntityName(k.entityName) && (
                     <>
                       {' '}for{' '}
                       <span className="text-gray-800">{k.entityName}</span>

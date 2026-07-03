@@ -51,6 +51,28 @@ const STATUS_TAB_TIPS: Record<string, string> = {
   all: 'All events across every status — useful for searching or auditing.',
 };
 
+/**
+ * Per-status brand color for the filter tabs. Mirrors the colors used by
+ * the card-level badges (statusBorderColors in constants.ts) so the tab
+ * row and the card content read as one consistent visual system.
+ *
+ * Tab values that aren't workflow statuses (e.g. 'all', 'my_assignments')
+ * get a neutral teal so they read as "view filters" rather than statuses.
+ */
+const STATUS_TAB_COLOR: Record<string, string> = {
+  all: '#236383',
+  new: '#007E8C',
+  in_process: '#FBAD3F',
+  scheduled: '#236383',
+  rescheduled: '#236383',
+  completed: '#47B3CB',
+  declined: '#A31C41',
+  non_event: '#78716C',
+  standby: '#9333EA',
+  stalled: '#6B7280',
+  my_assignments: '#236383',
+};
+
 interface RequestFiltersProps {
   // Search and filter states
   searchQuery: string;
@@ -86,6 +108,8 @@ interface RequestFiltersProps {
     my_assignments: number;
   };
   statusCountsLoading?: boolean;
+  /** Unopened new requests for this user (tab dot only). */
+  unviewedNewCount?: number;
 
   // Content for each tab
   children: {
@@ -125,6 +149,7 @@ export default function RequestFilters({
   onItemsPerPageChange,
   statusCounts,
   statusCountsLoading,
+  unviewedNewCount = 0,
   children,
   totalItems,
   totalPages,
@@ -183,7 +208,7 @@ export default function RequestFilters({
       shortLabel: 'New',
       icon: Star,
       count: statusCounts.new,
-      hasNotification: statusCounts.new > 0,
+      hasNotification: unviewedNewCount > 0,
     },
     {
       value: 'in_process',
@@ -362,27 +387,64 @@ export default function RequestFilters({
           </div>
         )}
 
-        {/* Status filter tabs — the primary filter mechanism */}
+        {/* Status filter tabs — the primary filter mechanism.
+            Each tab is color-coded by workflow stage so the eye can
+            distinguish "Scheduled" from "In Process" at a glance even
+            in the inactive state, and the active state strongly fills
+            with the matching brand color. Inactive: tinted icon + tinted
+            border, transparent bg. Active: filled bg, white text, hard
+            border. Card-level badges already use these same colors so
+            the tab strip and the card content now read as one system. */}
         <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
           <div className="w-full overflow-x-auto pb-1">
-            <TabsList className="inline-flex w-auto min-w-full gap-1">
-              {tabConfig.filter(tab => !navTabs.some(nt => nt.value === tab.value)).map((tab) => (
+            <TabsList className="inline-flex w-auto min-w-full gap-1 bg-transparent">
+              {tabConfig.filter(tab => !navTabs.some(nt => nt.value === tab.value)).map((tab) => {
+                const color = STATUS_TAB_COLOR[tab.value] || STATUS_TAB_COLOR.all;
+                const isActive = activeTab === tab.value;
+                return (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="relative text-xs lg:text-sm whitespace-nowrap px-2 lg:px-4"
+                    data-state={isActive ? 'active' : 'inactive'}
+                    className="relative text-xs lg:text-sm whitespace-nowrap px-2 lg:px-4 border-2 transition-colors data-[state=active]:shadow-sm"
+                    style={
+                      isActive
+                        ? {
+                            // Active: filled brand color, white text +
+                            // icon, matching darker border.
+                            backgroundColor: color,
+                            borderColor: color,
+                            color: '#ffffff',
+                          }
+                        : {
+                            // Inactive: transparent fill, brand-tinted
+                            // text + border so the workflow stage is
+                            // still recognizable without selection.
+                            backgroundColor: 'transparent',
+                            borderColor: `${color}55`,
+                            color: color,
+                          }
+                    }
                   >
                     <div className="flex items-center justify-center space-x-1">
                       <tab.icon className="w-3 h-3 flex-shrink-0" />
                       <span className="hidden lg:inline">{tab.label}</span>
                       <span className="lg:hidden">{tab.shortLabel}</span>
-                      {tab.count !== undefined && <span className="text-xs opacity-70">({formatCount(tab.count)})</span>}
+                      {tab.count !== undefined && (
+                        <span
+                          className="text-xs"
+                          style={{ opacity: isActive ? 0.85 : 0.7 }}
+                        >
+                          ({formatCount(tab.count)})
+                        </span>
+                      )}
                     </div>
                     {tab.hasNotification && !statusCountsLoading && (
                       <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
                     )}
                   </TabsTrigger>
-              ))}
+                );
+              })}
             </TabsList>
           </div>
         </Tabs>

@@ -63,6 +63,7 @@ import { RecentlyAccessedResources } from '@/components/recently-accessed-resour
 import { VolunteerOpportunitiesSpotlight } from '@/components/volunteer-opportunities-spotlight';
 import OperationalOverview from '@/components/operational-overview';
 import { LowVolumeAlert } from '@/components/low-volume-alert';
+import { WEEK_OFFSET_TO_SCOPE } from '@/components/event-requests/lib/eventRequestsListQuery';
 import { adminDocuments } from '@/pages/important-documents';
 
 // Dark mode toggle removed per user request
@@ -125,7 +126,7 @@ const TSP_APPS: ReadonlyArray<{
       'Track hosts being onboarded — will eventually include all existing hosts.',
     url: 'https://sandwich-steward.lovable.app',
     icon: Building2,
-    accent: '#5B9EA6',
+    accent: '#47B3CB', // brand-light-blue token (tailwind.config.ts)
   },
   {
     name: 'Donation Receipt Generator',
@@ -1127,7 +1128,7 @@ export default function DashboardOverview({
             </h2>
             <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-full">
               {/* Peak Week — Our Best Week Ever (Burgundy) */}
-              <div className="min-w-0 overflow-hidden bg-white rounded-lg p-4 sm:p-5 border border-brand-burgundy border-l-4 border-l-brand-burgundy elevation-1 hover:elevation-2 transition-all flex flex-col">
+              <div className="min-w-0 overflow-hidden premium-card-elevated border-l-4 border-l-brand-burgundy p-4 sm:p-5 flex flex-col">
                 <div className="text-sm font-semibold text-brand-burgundy uppercase tracking-wide">
                   <span aria-hidden="true">🏆</span> Our Best Week Ever
                 </div>
@@ -1149,7 +1150,7 @@ export default function DashboardOverview({
               </div>
 
               {/* Annual Goal — This Year's Goal (Orange) */}
-              <div className="min-w-0 overflow-hidden bg-white rounded-lg p-4 sm:p-5 border border-brand-orange border-l-4 border-l-brand-orange elevation-1 hover:elevation-2 transition-all flex flex-col">
+              <div className="min-w-0 overflow-hidden premium-card-elevated border-l-4 border-l-brand-orange p-4 sm:p-5 flex flex-col">
                 <div className="text-sm font-semibold text-brand-orange uppercase tracking-wide">
                   <span aria-hidden="true">🎯</span> This Year's Goal
                 </div>
@@ -1171,7 +1172,7 @@ export default function DashboardOverview({
               </div>
 
               {/* Weekly Baseline — What a Typical Week Looks Like (Light Blue) */}
-              <div className="min-w-0 overflow-hidden bg-white rounded-lg p-4 sm:p-5 border border-brand-light-blue border-l-4 border-l-brand-light-blue elevation-1 hover:elevation-2 transition-all flex flex-col">
+              <div className="min-w-0 overflow-hidden premium-card-elevated border-l-4 border-l-brand-light-blue p-4 sm:p-5 flex flex-col">
                 <div className="text-sm font-semibold text-brand-light-blue uppercase tracking-wide">
                   <span aria-hidden="true">📦</span> A Typical Week
                 </div>
@@ -1197,20 +1198,32 @@ export default function DashboardOverview({
               </div>
 
               {/* Surge Capacity — When We Mobilize (Dark Teal).
-                  This card carries the longest number (range like 24,580–40,966)
-                  so we render the range as a single inline-block unit that
-                  break-words can wrap as a whole, never mid-digit. */}
-              <div className="min-w-0 overflow-hidden bg-white rounded-lg p-4 sm:p-5 border border-brand-teal border-l-4 border-l-brand-teal elevation-1 hover:elevation-2 transition-all flex flex-col">
+                  Range is shown as stacked From/To lines so long numbers
+                  never break mid-digit in a narrow grid column. */}
+              <div className="min-w-0 overflow-hidden premium-card-elevated border-l-4 border-l-brand-teal p-4 sm:p-5 flex flex-col">
                 <div className="text-sm font-semibold text-brand-teal uppercase tracking-wide">
                   <span aria-hidden="true">⚡</span> When We Mobilize
                 </div>
-                <div className="mt-3 mb-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
-                  <span className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-brand-teal leading-tight break-all">
-                    {organizationalStats.surgeMin}–{organizationalStats.surgeMax}
-                  </span>
-                  <span className="text-sm text-gray-600 font-medium">
+                <div className="mt-3 mb-1 space-y-1">
+                  <div className="flex items-baseline gap-2 min-w-0">
+                    <span className="text-xs font-semibold text-gray-500 uppercase shrink-0 w-9">
+                      From
+                    </span>
+                    <span className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-brand-teal leading-none tabular-nums">
+                      {organizationalStats.surgeMin}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-2 min-w-0">
+                    <span className="text-xs font-semibold text-gray-500 uppercase shrink-0 w-9">
+                      To
+                    </span>
+                    <span className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-brand-teal leading-none tabular-nums">
+                      {organizationalStats.surgeMax}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 font-medium pl-11">
                     sandwiches
-                  </span>
+                  </p>
                 </div>
                 <p className="text-sm text-gray-700 leading-snug mt-2 break-words">
                   What we've reached when the call goes out — 3 to 5 times a
@@ -1232,7 +1245,20 @@ export default function DashboardOverview({
 
         {/* Group Event Forecast - current week progress and upcoming weeks */}
         <div className="mx-4">
-          <LowVolumeAlert onNavigateToEvents={() => onSectionChange?.('event-requests')} />
+          <LowVolumeAlert
+            onNavigateToWeek={(weekOffset) => {
+              const weekScope = WEEK_OFFSET_TO_SCOPE[weekOffset] ?? 'current';
+              try {
+                sessionStorage.setItem(
+                  'eventRequests.pendingFilter',
+                  JSON.stringify({ tab: 'all', weekScope }),
+                );
+              } catch {
+                // ignore unavailable sessionStorage
+              }
+              onSectionChange?.('event-requests');
+            }}
+          />
         </div>
 
         {/* ── TOOLS ── */}

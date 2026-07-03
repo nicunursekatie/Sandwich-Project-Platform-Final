@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Users, Package, HelpCircle, Calendar, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download, Filter, ChevronDown } from 'lucide-react';
+import { WEEK_SCOPE_LABELS } from './lib/eventRequestsListQuery';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
@@ -51,6 +52,7 @@ import { VanConflictsButton } from '@/components/event-requests/VanConflictsButt
 import EventSchedulingForm from '@/components/event-requests/EventSchedulingForm';
 import EventCollectionLog from '@/components/event-requests/EventCollectionLog';
 import ToolkitSentDialog from '@/components/event-requests/ToolkitSentDialog';
+import SendToolkitDialog from '@/components/event-requests/SendToolkitDialog';
 import FollowUpDialog from '@/components/event-requests/FollowUpDialog';
 import { ScheduleCallDialog } from '@/components/event-requests/ScheduleCallDialog';
 import ContactOrganizerDialog from '@/components/ContactOrganizerDialog';
@@ -61,6 +63,7 @@ import StaffingForecastWidget from '@/components/staffing-forecast-widget';
 
 // Import hooks
 import { useEventMutations } from './hooks/useEventMutations';
+import { useMarkNewEventViewedOnOpen } from './hooks/useMarkNewEventViewedOnOpen';
 import { useEventQueries } from './hooks/useEventQueries';
 import { useEventAssignments } from './hooks/useEventAssignments';
 import { useEventFilters } from './hooks/useEventFilters';
@@ -150,8 +153,11 @@ const EventRequestsManagementContent: React.FC = () => {
     setItemsPerPage,
     statusCounts,
     statusCountsLoading,
+    unviewedNewCount,
     quickFilter,
     setQuickFilter,
+    weekScope,
+    setWeekScope,
   } = useEventRequestContext();
 
   const {
@@ -269,6 +275,27 @@ const EventRequestsManagementContent: React.FC = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  const { markViewedIfNew } = useMarkNewEventViewedOnOpen(user?.id);
+
+  useEffect(() => {
+    const event =
+      activeDialog === 'intakeCall' ? intakeCallEventRequest : selectedEventRequest;
+    if (
+      (activeDialog === 'eventDetails' ||
+        activeDialog === 'eventDetailsPreview' ||
+        activeDialog === 'intakeCall') &&
+      event?.status === 'new'
+    ) {
+      markViewedIfNew(event);
+    }
+  }, [
+    activeDialog,
+    selectedEventRequest,
+    intakeCallEventRequest,
+    markViewedIfNew,
+    user?.id,
+  ]);
 
   const openManualEventRequest = useCallback(() => {
     closeDialog('scheduleCall');
@@ -758,10 +785,12 @@ const EventRequestsManagementContent: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className={quickFilter ? 'border-[#007E8C] text-[#007E8C] bg-[#007E8C]/5' : ''}
+                className={quickFilter || weekScope ? 'border-[#007E8C] text-[#007E8C] bg-[#007E8C]/5' : ''}
               >
                 <Filter className="w-4 h-4 mr-1.5" />
-                {quickFilter
+                {weekScope
+                  ? WEEK_SCOPE_LABELS[weekScope]
+                  : quickFilter
                   ? quickFilter === 'needsDriver' ? 'Needs Driver'
                   : quickFilter === 'needsVan' ? 'Needs Van'
                   : quickFilter === 'week' ? 'This Week'
@@ -775,40 +804,43 @@ const EventRequestsManagementContent: React.FC = () => {
             <PopoverContent className="w-52 p-2" align="end">
               <div className="space-y-1">
                 <button
-                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'needsDriver' ? null : 'needsDriver'); }}
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setWeekScope(null); setQuickFilter(quickFilter === 'needsDriver' ? null : 'needsDriver'); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'needsDriver' ? 'bg-[#236383] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
                 >
                   <Car className="w-4 h-4" /> Needs Driver
                 </button>
                 <button
-                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'needsVan' ? null : 'needsVan'); }}
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setWeekScope(null); setQuickFilter(quickFilter === 'needsVan' ? null : 'needsVan'); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'needsVan' ? 'bg-[#D68319] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
                 >
                   <Truck className="w-4 h-4" /> Needs Van
                 </button>
                 <button
-                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'week' ? null : 'week'); }}
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setWeekScope(null); setQuickFilter(quickFilter === 'week' ? null : 'week'); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'week' ? 'bg-[#007E8C] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
                 >
                   <Calendar className="w-4 h-4" /> This Week
                 </button>
                 <button
-                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'today' ? null : 'today'); }}
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setWeekScope(null); setQuickFilter(quickFilter === 'today' ? null : 'today'); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'today' ? 'bg-[#007E8C] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
                 >
                   <Calendar className="w-4 h-4" /> Today
                 </button>
                 <button
-                  onClick={() => { setSearchQuery(''); setQuickFilter(quickFilter === 'corporatePriority' ? null : 'corporatePriority'); }}
+                  onClick={() => { setSearchQuery(''); setWeekScope(null); setQuickFilter(quickFilter === 'corporatePriority' ? null : 'corporatePriority'); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'corporatePriority' ? 'bg-amber-600 text-white' : 'hover:bg-gray-100 text-amber-700'}`}
                 >
                   <Shield className="w-4 h-4" /> Corporate Priority
                 </button>
-                {quickFilter && (
+                {(quickFilter || weekScope) && (
                   <>
                     <div className="border-t border-gray-200 my-1" />
                     <button
-                      onClick={() => setQuickFilter(null)}
+                      onClick={() => {
+                        setQuickFilter(null);
+                        setWeekScope(null);
+                      }}
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-500 hover:bg-gray-100"
                     >
                       <X className="w-4 h-4" /> Clear Filter
@@ -865,6 +897,7 @@ const EventRequestsManagementContent: React.FC = () => {
             onItemsPerPageChange={setItemsPerPage}
             statusCounts={statusCounts}
             statusCountsLoading={statusCountsLoading}
+            unviewedNewCount={unviewedNewCount}
             totalItems={totalItems}
             totalPages={totalPages}
             children={tabChildren}
@@ -936,7 +969,10 @@ const EventRequestsManagementContent: React.FC = () => {
           />
         )}
 
-        {/* Toolkit Sent Dialog */}
+        {/* Toolkit Sent Dialog — LOG-ONLY path: record that a toolkit
+            was sent outside the app (forwarded from a personal inbox,
+            hand-delivered, etc.). Sets the date + optional call-log
+            and moves status to In Process. */}
         {(activeDialog === 'toolkitSent') && toolkitEventRequest && (
           <ToolkitSentDialog
             eventRequest={toolkitEventRequest}
@@ -956,6 +992,31 @@ const EventRequestsManagementContent: React.FC = () => {
               }
             }}
             isLoading={markToolkitSentMutation.isPending}
+          />
+        )}
+
+        {/* Send Toolkit Dialog — SEND-NOW path: opens the email
+            composer pre-loaded with the toolkit. When the email
+            actually leaves, the send-time becomes the toolkit-sent
+            timestamp and the same markToolkitSent mutation fires,
+            flipping the event to In Process automatically. */}
+        {(activeDialog === 'sendToolkit') && toolkitEventRequest && (
+          <SendToolkitDialog
+            eventRequest={toolkitEventRequest}
+            isOpen={(activeDialog === 'sendToolkit')}
+            onClose={() => {
+              closeDialog('sendToolkit');
+              setToolkitEventRequest(null);
+            }}
+            onToolkitEmailSent={(toolkitSentDate: string) => {
+              if (toolkitEventRequest) {
+                trackButtonClick('send_toolkit_email', 'event_requests');
+                markToolkitSentMutation.mutate({
+                  id: toolkitEventRequest.id,
+                  toolkitSentDate,
+                });
+              }
+            }}
           />
         )}
 
@@ -1194,15 +1255,6 @@ const EventRequestsManagementContent: React.FC = () => {
               setIntakeCallEventRequest(null);
             }}
             eventRequest={intakeCallEventRequest}
-            onCallComplete={() => {
-              // Optionally update status to in_process after call
-              if (intakeCallEventRequest) {
-                updateEventRequestMutation.mutate({
-                  id: intakeCallEventRequest.id,
-                  data: { status: 'in_process' },
-                });
-              }
-            }}
           />
         )}
 

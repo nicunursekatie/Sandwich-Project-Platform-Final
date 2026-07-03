@@ -31,6 +31,7 @@ import { safeJsonParse } from '../utils/safe-json';
 import { geocodeAddress } from '../utils/geocoding';
 import { rateLimiter } from '../utils/rate-limiter';
 import { getEffectiveEventDate, getAssignmentUrgentGaps, daysSinceSubmitted, daysUntilEventDate } from '../../shared/event-validation-utils';
+import { filterEventsByWeekScope, parseWeekScopeOffset } from '../lib/event-week-filter';
 
 const router = Router();
 
@@ -1161,27 +1162,9 @@ router.get(
         eventRequests = await storage.getAllEventRequests();
       }
 
-      // Filter to the current Monday-Sunday calendar week in Eastern Time.
-      // Mirrors the /list handler (and thisWeekEventsCount in /operational-stats)
-      // so the dashboard "This Week" tile and the list it opens stay in lockstep
-      // even when the client falls back from /list to this endpoint.
-      if (weekParam === 'current') {
-        const today = parseDateOnly(getTodayString())!;
-        const startOfWeek = new Date(today);
-        const dayOfWeek = startOfWeek.getDay();
-        const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday = 0 days back
-        startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6);
-        endOfWeek.setHours(23, 59, 59, 999);
-
-        eventRequests = eventRequests.filter(event => {
-          const eventDate = getEffectiveEventDate(event);
-          if (!eventDate) return false;
-          const date = parseDateOnly(eventDate);
-          if (!date) return false;
-          return date >= startOfWeek && date <= endOfWeek;
-        });
+      // Filter to a Monday–Sunday calendar week (current, next, +2, +3).
+      if (weekParam && parseWeekScopeOffset(weekParam) !== null) {
+        eventRequests = filterEventsByWeekScope(eventRequests, weekParam);
       }
 
       // Filter by days (next N days from today) - done in memory since date logic is complex
@@ -1329,26 +1312,9 @@ router.get(
         eventRequests = await storage.getAllEventRequests();
       }
 
-      // Filter to the current Monday-Sunday calendar week in Eastern Time. This
-      // mirrors the thisWeekEventsCount logic in /operational-stats so the
-      // dashboard "This Week" tile and the list it opens stay in lockstep.
-      if (weekParam === 'current') {
-        const today = parseDateOnly(getTodayString())!;
-        const startOfWeek = new Date(today);
-        const dayOfWeek = startOfWeek.getDay();
-        const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday = 0 days back
-        startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6);
-        endOfWeek.setHours(23, 59, 59, 999);
-
-        eventRequests = eventRequests.filter(event => {
-          const eventDate = getEffectiveEventDate(event);
-          if (!eventDate) return false;
-          const date = parseDateOnly(eventDate);
-          if (!date) return false;
-          return date >= startOfWeek && date <= endOfWeek;
-        });
+      // Filter to a Monday–Sunday calendar week (current, next, +2, +3).
+      if (weekParam && parseWeekScopeOffset(weekParam) !== null) {
+        eventRequests = filterEventsByWeekScope(eventRequests, weekParam);
       }
 
       // Apply date filter in memory (complex date logic is harder to do in SQL)

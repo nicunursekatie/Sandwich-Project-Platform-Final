@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { ResourceAdminModal } from '../components/resource-admin-modal';
-import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import {
   Search,
@@ -1280,11 +1279,6 @@ export function Resources() {
       </AlertDialog>
 
       <div className="max-w-7xl mx-auto">
-        <PageBreadcrumbs segments={[
-          { label: 'Documentation' },
-          { label: 'Resources' }
-        ]} />
-
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">

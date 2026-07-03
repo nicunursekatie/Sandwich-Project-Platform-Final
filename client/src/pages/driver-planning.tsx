@@ -28,6 +28,7 @@ import {
   getVolunteerIds, getVolunteerCount
 } from '@/lib/assignment-utils';
 import { getRecipientDisplayRegion } from '@/lib/atlanta-regions';
+import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -518,32 +519,27 @@ const formatTime12Hour = (time: string | null): string => {
   }
 };
 
-const formatSandwichType = (type: string | null | undefined): string => {
-  const normalized = (type || '').trim().toLowerCase();
-  if (!normalized) return 'type not set';
-  if (normalized === 'pbj' || normalized === 'pb&j' || normalized.includes('peanut')) return 'PB&J';
-  if (normalized.includes('deli')) return 'deli';
-  return type!.trim();
-};
-
-const formatSandwichBreakdown = (sandwichTypes: EventMapData['sandwichTypes']): string => {
-  if (!Array.isArray(sandwichTypes) || sandwichTypes.length === 0) return '';
-
-  return sandwichTypes
-    .filter((item) => item && (item.quantity || item.type))
-    .map((item) => {
-      const quantity = Number(item.quantity || 0);
-      const type = formatSandwichType(item.type);
-      return quantity > 0 ? `${quantity} ${type}` : type;
-    })
-    .join(', ');
-};
-
+// Sandwich summary used across the driver-planning surfaces (event
+// popups, side panel, map markers, etc.). Previously this file had its
+// own per-type formatter that flattened the stored values "deli_turkey"
+// and "deli_ham" down to plain "deli" — which both lost the meaningful
+// distinction AND made events with turkey/ham read as "(type not set)"
+// when the breakdown ended up empty. We now defer to the canonical
+// formatter in @/lib/sandwich-utils (the same one ScheduledCard uses),
+// so the Driver Planning tool and the Scheduled card always agree on
+// what a given event is making.
 const formatSandwichSummary = (event: Pick<EventMapData, 'estimatedSandwichCount' | 'sandwichTypes'>): string => {
   const count = event.estimatedSandwichCount || 0;
-  const breakdown = formatSandwichBreakdown(event.sandwichTypes);
   const countText = count > 0 ? `~${count} sandwiches` : 'Sandwich count not set';
-  return breakdown ? `${countText} (${breakdown})` : `${countText} (type not set)`;
+  const breakdown = formatSandwichTypesDisplay(event.sandwichTypes, undefined);
+  // formatSandwichTypesDisplay returns 'Not specified' when there are
+  // truly no usable types — only show a "type not set" suffix in that
+  // case, not when we have a real breakdown.
+  const hasBreakdown =
+    breakdown &&
+    breakdown !== 'Not specified' &&
+    !breakdown.endsWith(' total');
+  return hasBreakdown ? `${countText} (${breakdown})` : `${countText} (type not set)`;
 };
 
 // Extract city from address

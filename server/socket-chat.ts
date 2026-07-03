@@ -114,6 +114,8 @@ export function setupSocketChat(httpServer: HttpServer) {
       async (data: { channel: string; userId: string; userName: string }) => {
         try {
           const { channel, userId, userName } = data;
+          const isPresenceChannel = channel === 'presence';
+          const OFFLINE_THRESHOLD_MS = 15 * 60 * 1000;
 
           // Check if this user was already tracked (reconnect or joining additional channel)
           const existingUser = activeUsers.get(socket.id);
@@ -136,50 +138,77 @@ export function setupSocketChat(httpServer: HttpServer) {
             `User ${userName} (${userId}) joined channel: ${channel}`
           );
 
-          // Update lastActiveAt in the database so the HTTP /api/users/online endpoint
-          // reflects this user as online immediately (not just after next heartbeat)
-          try {
-            await storage.updateUserLastActive(userId);
-          } catch (err) {
-            logger.error('Error updating lastActiveAt on channel join:', err);
+          // Passive presence subscriptions (dashboard socket) must NOT bump
+          // lastActiveAt or broadcast "user online" — that caused toast notifications
+          // for people who hadn't meaningfully used the app (User Activity still
+          // showed them inactive for days). Heartbeats + real API/chat activity
+          // track genuine online status instead.
+          let wasOfflineLongEnough = false;
+          if (!isPresenceChannel) {
+            try {
+              const [userRow] = await db
+                .select({ lastActiveAt: users.lastActiveAt })
+                .from(users)
+                .where(eq(users.id, userId))
+                .limit(1);
+              if (!userRow?.lastActiveAt) {
+                wasOfflineLongEnough = true;
+              } else {
+                wasOfflineLongEnough =
+                  Date.now() - new Date(userRow.lastActiveAt).getTime() >=
+                  OFFLINE_THRESHOLD_MS;
+              }
+            } catch (err) {
+              logger.error('Error checking lastActiveAt before online broadcast:', err);
+              wasOfflineLongEnough = false;
+            }
+
+            try {
+              await storage.updateUserLastActive(userId);
+            } catch (err) {
+              logger.error('Error updating lastActiveAt on channel join:', err);
+            }
           }
 
-          // Load and send message history (latest 50 messages in reverse chronological order)
-          try {
-            const messageHistory = await storage.getChatMessages(channel, 50);
-            // Convert database timestamps to proper Date objects and reverse to send oldest first
-            const formattedMessages = messageHistory
-              .map((msg) => ({
-                ...msg,
-                timestamp: new Date(msg.createdAt),
-                room: msg.channel, // Add room property for client compatibility
-              }))
-              .reverse();
-            socket.emit('message-history', {
-              room: channel,
-              messages: formattedMessages,
-            });
-
-            // Auto-mark all messages in this channel as read for the joining user
+          // Load and send message history (chat channels only)
+          if (!isPresenceChannel) {
             try {
-              await storage.markChannelMessagesAsRead(userId, channel);
-              logger.log(
-                `Marked all messages in ${channel} as read for user ${userId}`
-              );
-            } catch (markReadError) {
-              logger.error('Error marking messages as read:', markReadError);
+              const messageHistory = await storage.getChatMessages(channel, 50);
+              // Convert database timestamps to proper Date objects and reverse to send oldest first
+              const formattedMessages = messageHistory
+                .map((msg) => ({
+                  ...msg,
+                  timestamp: new Date(msg.createdAt),
+                  room: msg.channel, // Add room property for client compatibility
+                }))
+                .reverse();
+              socket.emit('message-history', {
+                room: channel,
+                messages: formattedMessages,
+              });
+
+              // Auto-mark all messages in this channel as read for the joining user
+              try {
+                await storage.markChannelMessagesAsRead(userId, channel);
+                logger.log(
+                  `Marked all messages in ${channel} as read for user ${userId}`
+                );
+              } catch (markReadError) {
+                logger.error('Error marking messages as read:', markReadError);
+              }
+            } catch (error) {
+              logger.error('Error loading message history:', error);
+              socket.emit('message-history', []);
             }
-          } catch (error) {
-            logger.error('Error loading message history:', error);
-            socket.emit('message-history', []);
           }
 
           // Send confirmation
           socket.emit('joined-channel', { channel, userName });
 
-          // Only broadcast user-online for genuinely new connections (not reconnects
-          // or additional channel joins) to avoid repeated toast notifications
-          if (!wasAlreadyOnline) {
+          // Only broadcast user-online after real engagement (chat join), and only
+          // when they were genuinely away — not on socket blips or server restarts
+          // while still active within the last 15 minutes.
+          if (!wasAlreadyOnline && !isPresenceChannel && wasOfflineLongEnough) {
             io.emit('user-online', {
               id: userId,
               userName,
@@ -187,7 +216,14 @@ export function setupSocketChat(httpServer: HttpServer) {
             });
             logger.log(`Broadcasted user-online event for ${userName} (${userId})`);
           } else {
-            logger.log(`Skipped user-online broadcast for ${userName} (${userId}) - already online`);
+            logger.log(
+              `Skipped user-online broadcast for ${userName} (${userId})` +
+                (wasAlreadyOnline
+                  ? ' - already online'
+                  : isPresenceChannel
+                    ? ' - presence channel only'
+                    : ' - active within last 15 minutes'),
+            );
           }
         } catch (error) {
           logger.error('Error joining channel:', error);

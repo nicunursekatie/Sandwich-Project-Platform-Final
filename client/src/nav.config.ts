@@ -72,27 +72,6 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.NAV_COLLECTIONS_LOG,
     group: 'data',
     highlighted: true,
-    navigateAndExpand: true,
-  },
-  {
-    id: 'weekly-collections-report',
-    label: 'Weekly Collections Report',
-    icon: FileSpreadsheet,
-    href: 'weekly-collections-report',
-    permission: PERMISSIONS.NAV_WEEKLY_COLLECTIONS_REPORT,
-    group: 'data',
-    parentId: 'collections',
-    isSubItem: true,
-  },
-  {
-    id: 'group-collections',
-    label: 'Group Collections Viewer',
-    icon: Users,
-    href: 'group-collections',
-    permission: PERMISSIONS.NAV_GROUP_COLLECTIONS,
-    group: 'data',
-    parentId: 'collections',
-    isSubItem: true,
   },
 
   // ========================================
@@ -229,7 +208,6 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.NAV_EVENT_PLANNING,
     group: 'events',
     highlighted: true,
-    navigateAndExpand: true,
   },
   {
     id: 'event-planning',
@@ -238,8 +216,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'event-requests?tab=planning',
     permission: PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW,
     group: 'events',
-    parentId: 'event-requests',
-    isSubItem: true,
   },
   {
     id: 'volunteer-hub',
@@ -322,6 +298,16 @@ export const NAV_ITEMS: NavItem[] = [
     isSubItem: true,
   },
   {
+    id: 'recipients',
+    label: 'Recipients',
+    icon: Users,
+    href: 'recipients',
+    permission: PERMISSIONS.NAV_RECIPIENTS,
+    group: 'network',
+    parentId: 'directory',
+    isSubItem: true,
+  },
+  {
     id: 'partners',
     label: 'Partners',
     icon: Building,
@@ -329,16 +315,6 @@ export const NAV_ITEMS: NavItem[] = [
     // No permission - parent shows for everyone, children control their own visibility
     group: 'network',
     highlighted: true,
-  },
-  {
-    id: 'recipients',
-    label: 'Recipients',
-    icon: Users,
-    href: 'recipients',
-    permission: PERMISSIONS.NAV_RECIPIENTS,
-    group: 'network',
-    parentId: 'partners',
-    isSubItem: true,
   },
   {
     id: 'groups-catalog',
@@ -507,6 +483,22 @@ export const NAV_ITEMS: NavItem[] = [
     highlighted: true,
   },
   {
+    id: 'weekly-collections-report',
+    label: 'Weekly Collections Report',
+    icon: FileSpreadsheet,
+    href: 'weekly-collections-report',
+    permission: PERMISSIONS.NAV_WEEKLY_COLLECTIONS_REPORT,
+    group: 'data',
+  },
+  {
+    id: 'group-collections',
+    label: 'Group Collections Viewer',
+    icon: Users,
+    href: 'group-collections',
+    permission: PERMISSIONS.NAV_GROUP_COLLECTIONS,
+    group: 'data',
+  },
+  {
     id: 'weekly-monitoring',
     label: 'Weekly Monitoring',
     icon: Clock,
@@ -630,16 +622,6 @@ export const NAV_ITEMS: NavItem[] = [
   },
 
   // Items moved out of sidebar
-  {
-    id: 'my-actions',
-    label: 'My Actions',
-    icon: ListTodo,
-    href: 'my-actions',
-    permission: PERMISSIONS.NAV_MY_ACTIONS,
-    group: 'settings',
-    parentId: 'tools',
-    isSubItem: true,
-  },
   {
     id: 'donation-tracking',
     label: 'Distribution Tracking',

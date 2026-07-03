@@ -1,6 +1,7 @@
 import { ToastAction } from '@/components/ui/toast';
 import { toast } from '@/hooks/use-toast';
 import { reportProblem, type IssueReportDraft } from '@/contexts/issue-report-context';
+import { submitQuickIssueReport } from '@/lib/submit-issue-report';
 
 export type ErrorToastOptions = {
   title: string;
@@ -46,7 +47,20 @@ export function errorToast({
     action: draft ? (
       <ToastAction
         altText="Report this problem"
-        onClick={() => reportProblem(draft)}
+        onClick={(event) => {
+          event.preventDefault();
+          void submitQuickIssueReport(draft)
+            .then(() => {
+              toast({
+                title: 'Report submitted',
+                description: 'Thanks — the team will review what happened.',
+                duration: 8000,
+              });
+            })
+            .catch(() => {
+              reportProblem(draft);
+            });
+        }}
       >
         Report this
       </ToastAction>

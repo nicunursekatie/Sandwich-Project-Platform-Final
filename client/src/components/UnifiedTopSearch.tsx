@@ -32,6 +32,7 @@ import {
   Users,
   ChevronRight,
   Sparkles,
+  Sandwich,
 } from 'lucide-react';
 
 // ── Result types ────────────────────────────────────────────────────────
@@ -59,7 +60,15 @@ interface PersonResult {
   link: string;
 }
 
-type UnifiedResult = PageResult | PersonResult;
+interface CollectionResult {
+  kind: 'collection';
+  id: number | string;
+  title: string;
+  description?: string;
+  route: string;
+}
+
+type UnifiedResult = PageResult | PersonResult | CollectionResult;
 
 // People-source iconography (mirrors DashboardSearch).
 const PERSON_ICONS: Record<string, typeof User> = {
@@ -112,6 +121,7 @@ export function UnifiedTopSearch() {
   const [query, setQuery] = useState('');
   const [pageResults, setPageResults] = useState<PageResult[]>([]);
   const [personResults, setPersonResults] = useState<PersonResult[]>([]);
+  const [collectionResults, setCollectionResults] = useState<CollectionResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
@@ -120,7 +130,11 @@ export function UnifiedTopSearch() {
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const [, setLocation] = useLocation();
 
-  const flatResults: UnifiedResult[] = [...pageResults, ...personResults];
+  const flatResults: UnifiedResult[] = [
+    ...pageResults,
+    ...personResults,
+    ...collectionResults,
+  ];
 
   // ── Parallel search across both endpoints ─────────────────────────────
   const runSearch = useCallback(async (searchQuery: string) => {
@@ -128,14 +142,16 @@ export function UnifiedTopSearch() {
     if (trimmed.length < 2) {
       setPageResults([]);
       setPersonResults([]);
+      setCollectionResults([]);
       setIsOpen(false);
       return;
     }
 
     setIsLoading(true);
+    setIsOpen(true);
 
     try {
-      const [pagesRes, peopleRes] = await Promise.allSettled([
+      const [pagesRes, peopleRes, collectionsRes] = await Promise.allSettled([
         fetch('/api/smart-search/fuzzy', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -143,6 +159,9 @@ export function UnifiedTopSearch() {
           body: JSON.stringify({ query: trimmed, limit: 6 }),
         }),
         fetch(`/api/people/search?q=${encodeURIComponent(trimmed)}`, {
+          credentials: 'include',
+        }),
+        fetch(`/api/search/collections?q=${encodeURIComponent(trimmed)}&limit=5`, {
           credentials: 'include',
         }),
       ]);
@@ -189,10 +208,30 @@ export function UnifiedTopSearch() {
         }
       }
 
+      // Collections.
+      let nextCollections: CollectionResult[] = [];
+      if (collectionsRes.status === 'fulfilled' && collectionsRes.value.ok) {
+        try {
+          const data = await collectionsRes.value.json();
+          nextCollections = (data.results || []).map(
+            (r: any): CollectionResult => ({
+              kind: 'collection',
+              id: r.id,
+              title: r.title || 'Collection',
+              description: r.description,
+              route: '/dashboard?section=collections',
+            }),
+          );
+        } catch {
+          // ignore parse error
+        }
+      }
+
       setPageResults(nextPages);
       setPersonResults(nextPeople);
+      setCollectionResults(nextCollections);
       setSelectedIndex(-1);
-      setIsOpen(nextPages.length + nextPeople.length > 0);
+      setIsOpen(true);
     } finally {
       setIsLoading(false);
     }
@@ -212,16 +251,17 @@ export function UnifiedTopSearch() {
     setQuery('');
     setPageResults([]);
     setPersonResults([]);
+    setCollectionResults([]);
     if (result.kind === 'page') {
       setLocation(result.route);
       if (result.action) {
         // Defer so the route mounts before the dialog event fires.
         setTimeout(() => triggerFeatureAction(result.action, result.route), 200);
       }
+    } else if (result.kind === 'collection') {
+      setLocation(result.route);
     } else {
-      window.history.pushState({}, '', result.link);
-      // Fire a popstate so the dashboard's router-listening hook picks it up.
-      window.dispatchEvent(new PopStateEvent('popstate'));
+      setLocation(result.link);
     }
   };
 
@@ -281,22 +321,23 @@ export function UnifiedTopSearch() {
   let rowIdx = -1;
 
   return (
-    <div ref={containerRef} className="relative w-full max-w-[420px]">
+    <div ref={containerRef} className="relative w-full">
       {/* Compact dark-friendly search input designed for the top nav bar. */}
       <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60" />
+        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60 pointer-events-none" />
         <input
           ref={inputRef}
-          type="text"
-          placeholder="Search events, volunteers, or hosts..."
+          type="search"
+          placeholder="Search pages, people, events, collections…"
           value={query}
           onChange={(e) => handleQueryChange(e.target.value)}
           onKeyDown={handleKeyDown}
-          onFocus={() => {
-            if (flatResults.length > 0) setIsOpen(true);
-          }}
-          className="w-full h-9 pl-8 pr-16 rounded-md text-sm bg-white/10 text-white placeholder:text-white placeholder:opacity-80 placeholder:font-normal border border-white/15 focus:outline-none focus:bg-white/20 focus:border-white/30 transition-colors"
+          onFocus={() => setIsOpen(true)}
+          className="top-nav-search w-full h-9 pl-8 pr-16 rounded-md text-sm border border-white/15 focus:outline-none focus:border-white/30 transition-colors"
           aria-label="Universal search"
+          aria-expanded={isOpen}
+          aria-controls="unified-top-search-results"
+          autoComplete="off"
           data-testid="unified-top-search"
         />
         {/* Trailing affordance: clear button when typing, Cmd+K hint otherwise. */}
@@ -309,6 +350,7 @@ export function UnifiedTopSearch() {
                 setQuery('');
                 setPageResults([]);
                 setPersonResults([]);
+                setCollectionResults([]);
                 setIsOpen(false);
                 inputRef.current?.focus();
               }}
@@ -327,10 +369,25 @@ export function UnifiedTopSearch() {
 
       {/* Results dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-slate-200 shadow-xl max-h-[420px] overflow-y-auto z-[10000]">
-          {pageResults.length === 0 && personResults.length === 0 ? (
+        <div
+          id="unified-top-search-results"
+          role="listbox"
+          className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-slate-200 shadow-xl max-h-[420px] overflow-y-auto z-[10000]"
+        >
+          {query.trim().length < 2 ? (
             <div className="p-4 text-center text-gray-500 text-sm">
-              {query.trim().length < 2 ? 'Type at least 2 characters…' : `No results for "${query}"`}
+              Type at least 2 characters to search pages, people, events, and collections
+            </div>
+          ) : isLoading && flatResults.length === 0 ? (
+            <div className="p-4 text-center text-gray-500 text-sm flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              Searching…
+            </div>
+          ) : pageResults.length === 0 &&
+            personResults.length === 0 &&
+            collectionResults.length === 0 ? (
+            <div className="p-4 text-center text-gray-500 text-sm">
+              No results for &ldquo;{query}&rdquo;
             </div>
           ) : (
             <div className="py-1">
@@ -346,11 +403,10 @@ export function UnifiedTopSearch() {
                       <button
                         key={`page-${r.id}`}
                         type="button"
+                        role="option"
+                        aria-selected={active}
                         onClick={() => navigateToResult(r)}
-                        onMouseEnter={(() => {
-                          const idx = pageResults.indexOf(r);
-                          return () => setSelectedIndex(idx);
-                        })()}
+                        onMouseEnter={() => setSelectedIndex(pageResults.indexOf(r))}
                         className={`w-full px-3 py-2 flex items-center gap-3 text-left transition-colors ${
                           active ? 'bg-[#007E8C]/10' : 'hover:bg-slate-50'
                         }`}
@@ -392,11 +448,12 @@ export function UnifiedTopSearch() {
                       <button
                         key={`person-${r.sourceType}-${r.id}`}
                         type="button"
+                        role="option"
+                        aria-selected={active}
                         onClick={() => navigateToResult(r)}
-                        onMouseEnter={(() => {
-                          const idx = pageResults.length + personResults.indexOf(r);
-                          return () => setSelectedIndex(idx);
-                        })()}
+                        onMouseEnter={() =>
+                          setSelectedIndex(pageResults.length + personResults.indexOf(r))
+                        }
                         className={`w-full px-3 py-2 flex items-start gap-3 text-left transition-colors ${
                           active ? 'bg-[#007E8C]/10' : 'hover:bg-slate-50'
                         }`}
@@ -436,6 +493,48 @@ export function UnifiedTopSearch() {
                             )}
                           </div>
                         </div>
+                      </button>
+                    );
+                  })}
+                </>
+              )}
+
+              {collectionResults.length > 0 && (
+                <>
+                  <div className="px-3 pt-2 pb-1 text-[10px] uppercase tracking-wider font-semibold text-slate-500">
+                    Collections
+                  </div>
+                  {collectionResults.map((r) => {
+                    rowIdx += 1;
+                    const active = rowIdx === selectedIndex;
+                    return (
+                      <button
+                        key={`collection-${r.id}`}
+                        type="button"
+                        role="option"
+                        aria-selected={active}
+                        onClick={() => navigateToResult(r)}
+                        onMouseEnter={() =>
+                          setSelectedIndex(
+                            pageResults.length + personResults.length + collectionResults.indexOf(r),
+                          )
+                        }
+                        className={`w-full px-3 py-2 flex items-center gap-3 text-left transition-colors ${
+                          active ? 'bg-[#007E8C]/10' : 'hover:bg-slate-50'
+                        }`}
+                      >
+                        <div className="w-7 h-7 rounded-md bg-amber-100 flex items-center justify-center shrink-0">
+                          <Sandwich className="w-3.5 h-3.5 text-amber-700" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-medium text-slate-800 truncate">
+                            {r.title}
+                          </div>
+                          {r.description && (
+                            <div className="text-xs text-slate-500 truncate">{r.description}</div>
+                          )}
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-slate-300" />
                       </button>
                     );
                   })}

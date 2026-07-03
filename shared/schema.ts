@@ -1500,6 +1500,34 @@ export const userResourceFavorites = pgTable(
   })
 );
 
+// User's personal "notable" collections — per-user bookmark on a
+// sandwich collection log entry. Used for the star icon on the
+// collection log (distinct from the kudos / send-recognition icon
+// which targets the SUBMITTER, not the entry).
+export const userCollectionFavorites = pgTable(
+  'user_collection_favorites',
+  {
+    id: serial('id').primaryKey(),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    collectionId: integer('collection_id')
+      .notNull()
+      .references(() => sandwichCollections.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdx: index('idx_user_collection_favorites_user').on(table.userId),
+    collectionIdx: index('idx_user_collection_favorites_collection').on(
+      table.collectionId
+    ),
+    uniqueFavorite: unique('unique_user_collection_favorite').on(
+      table.userId,
+      table.collectionId
+    ),
+  })
+);
+
 // Tag definitions for categorizing resources
 export const resourceTags = pgTable(
   'resource_tags',

@@ -6,12 +6,16 @@ import { useToast } from '@/hooks/use-toast';
 import { Trophy, X, Eye } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { logger } from '@/lib/logger';
+import {
+  isDisplayableKudosEntityName,
+  kudosContextLabel,
+} from '@/lib/kudos-display';
 
 interface UnnotifiedKudos {
   id: number;
   content: string;
   senderName: string;
-  entityName: string;
+  entityName?: string;
   contextType: 'task' | 'project';
   createdAt: string;
 }
@@ -20,7 +24,7 @@ interface KudosToast {
   id: number;
   message: string;
   senderName: string;
-  entityName: string;
+  entityName?: string;
   contextType: 'task' | 'project';
   createdAt: string;
 }
@@ -124,9 +128,12 @@ export function RealTimeKudosNotifier() {
       ) as any,
       description: (
         <div className="space-y-2">
-          <p className="text-sm text-gray-700 font-medium">
-            For {kudos.contextType}: <strong>{kudos.entityName}</strong>
-          </p>
+          {isDisplayableKudosEntityName(kudos.entityName) && (
+            <p className="text-sm text-gray-700 font-medium">
+              For {kudosContextLabel(kudos.contextType)}:{' '}
+              <strong>{kudos.entityName}</strong>
+            </p>
+          )}
           <p className="text-sm bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
             "{kudos.content}"
           </p>

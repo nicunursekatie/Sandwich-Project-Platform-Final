@@ -7,6 +7,7 @@ import {
 } from '@shared/error-management';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { errorToast } from './use-error-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { logger } from '@/lib/logger';
 
@@ -60,16 +61,19 @@ export function useErrorHandler() {
 
       // Show toast notification for user-friendly errors
       if (showToast && errorMessage.severity !== 'low') {
-        const toastVariant =
-          errorMessage.severity === 'critical' ? 'destructive' : 'default';
-
-        toast({
-          variant: toastVariant,
+        errorToast({
           title: `${DynamicErrorManager.getCategoryIcon(
             errorMessage.category
           )} ${errorMessage.title}`,
           description: errorMessage.userFriendlyExplanation,
-          duration: errorMessage.severity === 'critical' ? 0 : 5000, // Critical errors don't auto-dismiss
+          duration: errorMessage.severity === 'critical' ? 0 : 5000,
+          report: {
+            whatDoing: enhancedContext.attemptedAction || errorMessage.title,
+            expectedOutcome: 'The action should complete successfully.',
+            actualOutcome:
+              typeof error === 'string' ? error : error.message,
+            pageLabel: enhancedContext.currentPage,
+          },
         });
       }
 

@@ -2709,21 +2709,32 @@ export default function VolunteerEventHub() {
                         front so there's nothing to decode. */}
                     <div className="rounded-lg border border-[#007E8C]/15 bg-white px-3 py-3 space-y-2">
                       <p className="text-xs sm:text-sm text-gray-700 leading-snug">
-                        This calendar shows both completed and upcoming events so you can see the full month at a glance. Upcoming events are highlighted when help is still needed.
+                        This calendar shows both completed and upcoming events so you can see the full month at a glance. Teal-tinted days have open volunteer spots.
                       </p>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] sm:text-xs">
+                        {/* Cell-tint key. Each swatch is a tiny stand-in
+                            for the calendar cell so the legend visually
+                            mirrors the grid. The event-count badge was
+                            removed (its number could be mistaken for the
+                            date), so the legend now references only the
+                            cell background. */}
                         <span className="inline-flex items-center gap-1.5">
-                          <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#007E8C]" aria-hidden="true" />
-                          <span className="text-gray-700"><span className="font-semibold">Upcoming</span> — signups open</span>
+                          <span className="inline-block w-3.5 h-3.5 rounded-sm bg-[#e6f4f5] border border-[#47B3CB]" aria-hidden="true" />
+                          <span className="text-gray-700"><span className="font-semibold">Open spots</span> — sign up here</span>
                         </span>
                         <span className="text-gray-300" aria-hidden="true">·</span>
                         <span className="inline-flex items-center gap-1.5">
-                          <span className="inline-block w-2.5 h-2.5 rounded-full bg-gray-400" aria-hidden="true" />
+                          <span className="inline-block w-3.5 h-3.5 rounded-sm bg-white border border-gray-300" aria-hidden="true" />
+                          <span className="text-gray-700"><span className="font-semibold">Fully staffed</span></span>
+                        </span>
+                        <span className="text-gray-300" aria-hidden="true">·</span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="inline-block w-3.5 h-3.5 rounded-sm bg-gray-50 border border-gray-200" aria-hidden="true" />
                           <span className="text-gray-700"><span className="font-semibold">Completed</span> — past event</span>
                         </span>
                         <span className="text-gray-300" aria-hidden="true">·</span>
                         <span className="inline-flex items-center gap-1.5">
-                          <span className="inline-block w-2.5 h-2.5 rounded-full bg-[#47B3CB] ring-2 ring-[#47B3CB]/30" aria-hidden="true" />
+                          <span className="inline-block w-3.5 h-3.5 rounded-sm bg-white border-2 border-[#007E8C]" aria-hidden="true" />
                           <span className="text-gray-700"><span className="font-semibold">Today</span></span>
                         </span>
                       </div>
@@ -2757,6 +2768,14 @@ export default function VolunteerEventHub() {
                         // gray date number, no orange count badge, and a
                         // "Completed ✓" pill instead of "X spots open."
                         const isPastWithEvents = isPast && hasEvents;
+                        // Days with at least one open volunteer slot get
+                        // the at-a-glance "available" treatment: tinted
+                        // cell background + stronger badge color. Fully-
+                        // staffed days still show the badge but in gray
+                        // so the visual signal is reserved for cells
+                        // where help is actually needed.
+                        const hasOpenSpots =
+                          hasEvents && !isPastWithEvents && roleOpenings > 0;
                         // Hover preview — native title shows the event
                         // org names when you hover any day with events, so
                         // you don't have to click just to see what's there.
@@ -2786,8 +2805,16 @@ export default function VolunteerEventHub() {
                             className={cn(
                               'relative min-h-[60px] sm:min-h-[76px] lg:min-h-[120px] rounded-xl border p-2 text-left transition-all',
                               !hasEvents && 'bg-gray-50 border-gray-100 cursor-default',
-                              hasEvents && !isPastWithEvents &&
+                              hasEvents && !isPastWithEvents && !hasOpenSpots &&
+                                // Upcoming + fully-staffed: white cell,
+                                // neutral border. There's an event, but no
+                                // volunteer action required.
                                 'bg-white border-[#47B3CB]/35 hover:border-[#007E8C] hover:shadow-md cursor-pointer',
+                              hasOpenSpots &&
+                                // Upcoming + has open spots: tint the
+                                // entire cell soft teal so available days
+                                // visually pop out of the white grid.
+                                'bg-[#e6f4f5] border-[#47B3CB] hover:border-[#007E8C] hover:shadow-md cursor-pointer',
                               isPastWithEvents &&
                                 'bg-gray-50 border-gray-200 hover:border-gray-300 hover:shadow-sm cursor-pointer',
                               isSelected && 'ring-2 ring-[#FBAD3F] border-[#007E8C] shadow-md bg-[#FAF8F4]',
@@ -2813,22 +2840,12 @@ export default function VolunteerEventHub() {
                               >
                                 {format(day, 'd')}
                               </span>
-                              {hasEvents && (
-                                <span
-                                  className={cn(
-                                    'inline-flex min-w-[20px] h-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold leading-none',
-                                    isPastWithEvents
-                                      ? 'bg-gray-200 text-gray-600'
-                                      // Solid gold "notification dot" so days with
-                                      // open opportunities pop out of the grid at a
-                                      // glance instead of being a faint tint.
-                                      : 'bg-[#FBAD3F] text-white shadow-sm ring-2 ring-white',
-                                  )}
-                                  title={`${dayEvents.length} ${dayEvents.length === 1 ? 'event' : 'events'} ${isPastWithEvents ? 'completed' : 'open'}`}
-                                >
-                                  {dayEvents.length}
-                                </span>
-                              )}
+                              {/* Event-count badge removed — having a
+                                  second number in the cell (next to the
+                                  date number) was read as part of the
+                                  date. The body text below ("1 event" /
+                                  "2 events") already carries the count
+                                  unambiguously. */}
                             </div>
 
                             {hasEvents ? (

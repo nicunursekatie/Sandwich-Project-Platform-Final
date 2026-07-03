@@ -1002,10 +1002,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         return;
       }
 
-      // FULL-FORM SAVE (B5): send the entire built payload, not a change-detected
-      // subset. The event list now provides the full record shape, so the form has
-      // one authoritative server baseline instead of a partial→full upgrade path.
-
       // The single date box maps to BOTH desiredEventDate and scheduledEventDate.
       // In edit mode, if the user didn't change the date box, omit both date
       // columns so a non-date save can't overwrite a scheduled event's CONFIRMED
@@ -1017,7 +1013,57 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         delete eventData.desiredEventDate;
       }
 
-      logger.log('🔄 Updating event (full-form save):', eventRequest.id, 'field count:', Object.keys(eventData).length, 'van:', eventData.vanDriverNeeded);
+      // DIFF-BASED SAVE: send only the fields the user actually changed in this
+      // form session, not the entire record. Re-serialize the ORIGINAL form
+      // snapshot through the same builder and drop every key whose value is
+      // unchanged. This closes the lost-update / clobber vector: a field left
+      // untouched here can no longer overwrite a value that changed elsewhere
+      // (an inline card edit, a background Sheets/toolkit write, another editor)
+      // between when this dialog loaded and when it saves — untouched fields
+      // simply aren't in the payload, so the server preserves them.
+      //
+      // Both sides go through buildEventDataForServer, so the comparison is in
+      // server-field space and immune to form→server key renames/transforms.
+      // A key is dropped only when the baseline ALSO produced it and the values
+      // match, so genuinely new keys (e.g. scheduledEventDate that appears only
+      // once status becomes 'scheduled') are always kept. The baseline is built
+      // WITHOUT fieldOverrides so a value just entered this session (e.g. the
+      // standby follow-up date) correctly registers as a change.
+      if (originalFormDataRef.current) {
+        const baselineData = buildEventDataForServer(originalFormDataRef.current as any, {
+          mode,
+          hasEventRequest: !!eventRequest,
+          eventRequestStatus: eventRequest?.status,
+          sandwichMode,
+          actualSandwichMode,
+        });
+        const omittedFields: string[] = [];
+        for (const key of Object.keys(eventData)) {
+          if (
+            Object.prototype.hasOwnProperty.call(baselineData, key) &&
+            JSON.stringify(eventData[key]) === JSON.stringify(baselineData[key])
+          ) {
+            delete eventData[key];
+            omittedFields.push(key);
+          }
+        }
+        if (omittedFields.length > 0) {
+          logger.log(`🧮 Diff-based save: omitted ${omittedFields.length} unchanged field(s):`, omittedFields.join(', '));
+        }
+      }
+
+      // No-op guard: if nothing changed, skip the round-trip entirely (matches
+      // EventEditDialog's behavior) so an accidental Save on an untouched form
+      // doesn't bump updatedAt or fire activity/audit logs for a non-change.
+      if (Object.keys(eventData).length === 0) {
+        logger.log('🟰 Diff-based save: no changes detected, closing without a write');
+        setIsSubmitting(false);
+        toast({ description: 'No changes to save.' });
+        onClose();
+        return;
+      }
+
+      logger.log('🔄 Updating event (diff-based save):', eventRequest.id, 'changed field count:', Object.keys(eventData).length, 'van:', eventData.vanDriverNeeded);
       // Extra status-transition diagnostic: any standby-related save logs the
       // exact status payload being sent. Helps debug the "save closes but
       // status reverts" symptom when it shows up in production.
@@ -1095,7 +1141,19 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         targetStatus: formData.status,
         existingDate,
       });
-      setShowStandbyFollowUpDialog(true);
+      // Defer opening to a settled tick instead of opening synchronously inside
+      // this click handler. The form lives in a non-modal parent Dialog
+      // (<Dialog modal={false} onOpenChange={onClose}>), whose dismissable layer
+      // watches for focus/pointer leaving its content. When the modal reminder
+      // AlertDialog mounted during the SAME click that opened it, the in-flight
+      // focus churn from that click could trip the parent's outside-interaction
+      // detection, firing the parent's onClose — which unmounts the whole form.
+      // That is the "popup flashes then disappears and the edit form refreshes"
+      // bug: the parent closed and re-rendered from server data, reverting the
+      // status. The van/speaker dialogs never hit this because they open after
+      // an awaited fetch (a later, settled tick). Matching that timing here lets
+      // the originating click fully resolve before the AlertDialog mounts.
+      setTimeout(() => setShowStandbyFollowUpDialog(true), 0);
       return;
     }
 
@@ -1123,10 +1181,36 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const completedSections = Object.values(sectionStatus).filter(Boolean).length;
   const totalSections = Object.keys(sectionStatus).length;
 
+  // True whenever ANY nested confirmation/reminder dialog is mounted. The parent
+  // form lives in a non-modal <Dialog modal={false}>, whose dismissable layer
+  // treats focus/pointer churn from a child dialog mounting as an "interaction
+  // outside" and fires the parent's onClose — unmounting the form and reverting
+  // it from server data. (That's the "popup flashes then the edit form refreshes
+  // and my change is gone" bug.) Suppressing onClose while any child is open
+  // covers every nested dialog, not just the standby reminder that was patched
+  // case-by-case before. Each child owns its own close + cleanup, so none of
+  // them rely on the parent closing.
+  const anyNestedDialogOpen =
+    showDateConfirmation ||
+    showSpeakerWarningDialog ||
+    showVanConflictDialog ||
+    showStandbyFollowUpDialog ||
+    showDeleteConfirmation;
+
   // ── Render ─────────────────────────────────────────────────────────
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={onClose} modal={false}>
+    <Dialog
+      open={dialogOpen}
+      // Don't let the form be dismissed out from under any nested dialog. While
+      // a child confirmation/reminder is open it owns the interaction; a close
+      // request to the parent here (e.g. a stray focus/pointer-outside from the
+      // non-modal layer, including the focus churn of a child mounting) must be
+      // ignored so the flow isn't torn down mid-decision. The user closes each
+      // child via its own Cancel/Save. See anyNestedDialogOpen above.
+      onOpenChange={(open) => { if (!open && !anyNestedDialogOpen) onClose(); }}
+      modal={false}
+    >
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col p-0">
         <DialogHeader className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-3">
           <div className="flex items-center justify-between">

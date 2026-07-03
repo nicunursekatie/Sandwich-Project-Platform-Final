@@ -29,6 +29,7 @@ import {
   ChevronRight,
   HelpCircle,
   Heart,
+  Star,
   CheckCircle,
   AlertCircle,
   MessageCircle,
@@ -860,6 +861,73 @@ export default function SandwichCollectionLog() {
       const response = await fetch('/api/sandwich-collections/stats');
       if (!response.ok) throw new Error('Failed to fetch stats');
       return response.json();
+    },
+  });
+
+  // The user's personal "notable" bookmarks. Kept as a Set for O(1)
+  // membership checks when rendering each row. Loaded once and updated
+  // optimistically on toggle so the star fills/empties instantly.
+  const { data: favoritesData } = useQuery<{ collectionIds: number[] }>({
+    queryKey: ['/api/collection-favorites'],
+    queryFn: async () => {
+      const response = await fetch('/api/collection-favorites', {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to load favorites');
+      return response.json();
+    },
+  });
+  const favoritedIds = React.useMemo(
+    () => new Set(favoritesData?.collectionIds ?? []),
+    [favoritesData],
+  );
+
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async (params: { collectionId: number; favorited: boolean }) => {
+      const { collectionId, favorited } = params;
+      // Toggle: if currently favorited, send DELETE; otherwise POST.
+      const method = favorited ? 'DELETE' : 'POST';
+      const response = await fetch(`/api/collection-favorites/${collectionId}`, {
+        method,
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to update favorite');
+      return response.json();
+    },
+    onMutate: async ({ collectionId, favorited }) => {
+      // Optimistic update so the star flips immediately on click.
+      await queryClient.cancelQueries({
+        queryKey: ['/api/collection-favorites'],
+      });
+      const previous = queryClient.getQueryData<{ collectionIds: number[] }>([
+        '/api/collection-favorites',
+      ]);
+      queryClient.setQueryData<{ collectionIds: number[] }>(
+        ['/api/collection-favorites'],
+        (current) => {
+          const set = new Set(current?.collectionIds ?? []);
+          if (favorited) set.delete(collectionId);
+          else set.add(collectionId);
+          return { collectionIds: Array.from(set) };
+        },
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          ['/api/collection-favorites'],
+          context.previous,
+        );
+      }
+      toast({
+        title: 'Could not update favorite',
+        description: 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/collection-favorites'] });
     },
   });
 
@@ -3262,10 +3330,55 @@ export default function SandwichCollectionLog() {
                     {/* Actions — each icon-only button is wrapped in a
                         Tooltip so users who aren't used to icon-only
                         interfaces get a hover label explaining what the
-                        button does (heart = kudos, comment = message,
-                        pencil = edit, trash = delete). */}
+                        button does (star = personal favorite, kudos =
+                        send recognition to the submitter, comment =
+                        message, pencil = edit, trash = delete). */}
                     <TooltipProvider delayDuration={200}>
                       <div className="flex items-center gap-1.5 shrink-0 justify-self-end">
+                        {/* Star = personal "notable" bookmark. Distinct
+                            from the kudos icon: this stays on the entry
+                            for the current user, not on the submitter. */}
+                        {(() => {
+                          const isFavorited = favoritedIds.has(collection.id);
+                          return (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={toggleFavoriteMutation.isPending}
+                                  onClick={() =>
+                                    toggleFavoriteMutation.mutate({
+                                      collectionId: collection.id,
+                                      favorited: isFavorited,
+                                    })
+                                  }
+                                  aria-label={
+                                    isFavorited
+                                      ? 'Remove from your favorites'
+                                      : 'Mark this entry as notable'
+                                  }
+                                  aria-pressed={isFavorited}
+                                  data-testid={`button-favorite-${collection.id}`}
+                                  className={`h-8 w-8 p-0 bg-white border-gray-300 ${
+                                    isFavorited
+                                      ? 'text-amber-500 hover:text-amber-600'
+                                      : 'text-gray-500 hover:text-amber-500'
+                                  } hover:bg-amber-50`}
+                                >
+                                  <Star
+                                    className={`w-4 h-4 ${isFavorited ? 'fill-amber-500' : ''}`}
+                                  />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {isFavorited
+                                  ? 'Remove from your favorites'
+                                  : 'Mark this entry as notable'}
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })()}
                         {collection.createdBy &&
                           collection.createdByName && (
                             <Tooltip>

@@ -20,6 +20,7 @@ import { isNotificationSuppressed } from '../utils/notification-suppression';
 import { processAdminWeeklyDigest, processAdminWeeklySms } from './admin-weekly-digest-service';
 import { processPredictionAlerts } from './prediction-alert-service';
 import { processCheckInReminders } from './check-in-reminder-service';
+import { sendDailyErrorDigest } from './application-error-logger';
 import { ALERT_TYPES } from '@shared/alert-catalog';
 import { getEffectivePrefs } from './notifications/preferences';
 import { getEffectiveEventDate } from '../../shared/event-validation-utils';
@@ -1552,6 +1553,41 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
+  // Daily error digest — one grouped summary of the last 24h of error/critical
+  // logs at 7:05 AM ET. Critical errors are still paged immediately when they
+  // occur; this rolls up the rest so a busy day is one email, not a flood.
+  const errorDigestJob = cron.schedule('5 7 * * *', async () => {
+    if (!isProduction) {
+      cronLogger.info('Skipping daily error digest - not production environment');
+      return;
+    }
+    cronLogger.info('Running daily error digest...');
+    try {
+      const result = await sendDailyErrorDigest();
+      cronLogger.info('Daily error digest completed', {
+        sent: result.sent,
+        total: result.total,
+        groups: result.groups,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running daily error digest cron job',
+        undefined,
+        { jobType: 'error-digest' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York',
+  });
+
+  cronLogger.info('Daily error digest job scheduled successfully', {
+    schedule: 'Daily at 7:05 AM',
+    timezone: 'America/New_York',
+  });
+
   // Return job references in case we need to manage them later
   return {
     hostScraperJob,
@@ -1571,6 +1607,7 @@ export function initializeCronJobs() {
     predictionAlertJob,
     checkInReminderJob,
     integrationHealthJob,
+    errorDigestJob,
   };
 }
 
@@ -1596,5 +1633,6 @@ export function stopAllCronJobs(jobs: ReturnType<typeof initializeCronJobs>) {
   jobs.predictionAlertJob.stop();
   jobs.checkInReminderJob.stop();
   jobs.integrationHealthJob.stop();
+  jobs.errorDigestJob.stop();
   cronLogger.info('All cron jobs stopped successfully');
 }

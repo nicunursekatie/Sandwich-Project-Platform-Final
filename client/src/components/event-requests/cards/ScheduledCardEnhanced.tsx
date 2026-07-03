@@ -482,6 +482,20 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const driverNeeded = request.driversNeeded || 0;
   const speakerNeeded = request.speakersNeeded || 0;
   const volunteerNeeded = request.volunteersNeeded || 0;
+  const showMarkVanNeeded =
+    canEdit &&
+    !request.selfTransport &&
+    !request.assignedVanDriverId &&
+    !request.isDhlVan &&
+    !request.vanDriverNeeded;
+  const showSpeakerSection =
+    !request.selfTransport &&
+    (speakerNeeded > 0 || (isEditingThisCard && editingField === 'speakersNeeded'));
+  const showVolunteerSection =
+    !request.selfTransport &&
+    (volunteerNeeded > 0 || (isEditingThisCard && editingField === 'volunteersNeeded'));
+  const showCondensedStaffingAdds =
+    !request.selfTransport && !showSpeakerSection && !showVolunteerSection && canEdit;
   // Include van driver in staffing totals as a separate slot
   const vanDriverNeededCount = (request.vanDriverNeeded && !request.assignedVanDriverId && !request.isDhlVan) ? 1 : 0;
   const vanDriverAssignedCount = (request.assignedVanDriverId || request.isDhlVan) ? 1 : 0;
@@ -916,37 +930,96 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         <div className="flex flex-col gap-2 mb-3">
           {/* Top: Date + Organization Name */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-            {/* Organization Name */}
+            {/* Organization Name + Department (separate edit targets) */}
             <div className="min-w-0 flex-1">
-              {isEditingThisCard && editingField === 'organizationName' ? (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Input
-                    value={editingValue}
-                    onChange={(e) => setEditingValue(e.target.value)}
-                    className="h-9 text-lg sm:text-xl font-bold w-full sm:w-64"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') saveEdit();
-                      if (e.key === 'Escape') cancelEdit();
-                    }}
-                  />
-                  <Button size="sm" variant="ghost" onClick={saveEdit} className="h-8 w-8 p-0">
-                    <Save className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 w-8 p-0">
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <h2
-                  className={`text-lg sm:text-xl font-bold text-[#236383] break-words ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
-                  onClick={() => canEdit && startEditing('organizationName', request.organizationName || '')}
-                >
-                  {request.organizationName}
-                  {request.department && <span className="text-[#236383]/70 font-medium"> • {request.department}</span>}
-                  {canEdit && <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
-                </h2>
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                {isEditingThisCard && editingField === 'organizationName' ? (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Input
+                      value={editingValue}
+                      onChange={(e) => setEditingValue(e.target.value)}
+                      className="h-9 text-lg sm:text-xl font-bold w-full sm:w-64"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveEdit();
+                        if (e.key === 'Escape') cancelEdit();
+                      }}
+                    />
+                    <Button size="sm" variant="ghost" onClick={saveEdit} className="h-8 w-8 p-0">
+                      <Save className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 w-8 p-0">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 group">
+                    <h2 className="text-lg sm:text-xl font-bold text-[#236383] break-words">
+                      {request.organizationName}
+                    </h2>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('organizationName', request.organizationName || '')}
+                        className="h-6 px-2 hidden group-hover:inline-flex"
+                        title="Edit organization name"
+                        data-testid="button-edit-org-name"
+                      >
+                        <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {(request.department || (isEditingThisCard && editingField === 'department') || canEdit) && (
+                  <>
+                    <span className="text-gray-500 text-lg">&bull;</span>
+                    {isEditingThisCard && editingField === 'department' ? (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Input
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="h-8 text-base sm:text-lg font-medium text-[#236383] w-full sm:w-48"
+                          placeholder="Department"
+                          autoFocus
+                          data-testid="input-department"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveEdit();
+                            if (e.key === 'Escape') cancelEdit();
+                          }}
+                        />
+                        <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0" data-testid="button-save-department">
+                          <Save className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0" data-testid="button-cancel-department">
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 group">
+                        {request.department ? (
+                          <span className="text-base sm:text-lg font-medium text-[#236383]/70 break-words">{request.department}</span>
+                        ) : canEdit ? (
+                          <span className="text-base sm:text-lg font-normal text-gray-400 italic">No department</span>
+                        ) : null}
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('department', request.department || '')}
+                            className="h-6 px-2 hidden group-hover:inline-flex"
+                            title={request.department ? 'Edit department' : 'Add department'}
+                            data-testid="button-edit-department"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
               {/* Date — placed directly under the org name so every card leads
                   with date/time (consistent card skeleton). Moved here from the
                   former top-right position. */}
@@ -1282,25 +1355,48 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           )}
 
 
-          {/* Status Badges */}
+          {/* Status & Action Badges — visually tiered.
+              Two-tier rule of thumb applied across all chips below:
+                STATUS (informational, no action required): muted gray
+                  background, no icon. Reader knows the state but isn't
+                  asked to do anything.
+                ACTION (something is wrong, missing, or undecided): solid
+                  red / amber background with ⚠️ icon prefix and white
+                  text so the eye lands on them first when scanning a
+                  list of 25 cards.
+              The previous styling treated "Date Confirmed" and "On
+              Volunteer Hub" with the same visual weight as warning
+              chips, which is why the row looked flat — every chip was
+              demanding attention equally. */}
           <div className="flex flex-wrap items-center gap-1 xs:gap-1.5 sm:gap-2 min-w-0">
             <Badge
               onClick={(e) => { e.stopPropagation(); canEdit && quickToggleBoolean('isConfirmed', request.isConfirmed); }}
-              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+              className={`cursor-pointer hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium ${
                 request.isConfirmed
-                  ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C]'
-                  : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
+                  ? // STATUS: date is confirmed — informational, mute it
+                    'bg-gray-100 text-gray-700 border border-gray-300'
+                  : // ACTION: date is still pending — needs attention
+                    'bg-amber-500 text-white border border-amber-600 inline-flex items-center gap-1'
               }`}
             >
-              {request.isConfirmed ? 'Date Confirmed' : 'Date Pending'}
+              {request.isConfirmed ? (
+                'Date Confirmed'
+              ) : (
+                <>
+                  <AlertTriangle className="w-3 h-3" />
+                  Date Pending
+                </>
+              )}
             </Badge>
 
             <Badge
               onClick={(e) => { e.stopPropagation(); canEdit && quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet); }}
-              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium flex items-center gap-1 ${
+              className={`cursor-pointer hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium flex items-center gap-1 ${
                 request.addedToOfficialSheet
-                  ? 'bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383]'
-                  : 'bg-amber-500 text-white border border-amber-600'
+                  ? // STATUS: on the calendar — mute
+                    'bg-gray-100 text-gray-700 border border-gray-300'
+                  : // ACTION: not on calendar — needs attention
+                    'bg-amber-500 text-white border border-amber-600'
               }`}
             >
               {request.addedToOfficialSheet ? (
@@ -1315,10 +1411,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
             <Badge
               onClick={(e) => { e.stopPropagation(); canEdit && quickToggleBoolean('showOnVolunteerHub', (request as any).showOnVolunteerHub); }}
-              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+              className={`cursor-pointer hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium ${
+                // STATUS in both states: hub is informational, not a
+                // call to action either way.
                 (request as any).showOnVolunteerHub
-                  ? 'bg-gradient-to-br from-[#9333EA] to-[#A855F7] text-white border border-[#9333EA]'
-                  : 'bg-gradient-to-br from-gray-400 to-gray-500 text-white border border-gray-400'
+                  ? 'bg-gray-100 text-gray-700 border border-gray-300'
+                  : 'bg-gray-50 text-gray-500 border border-gray-200'
               }`}
             >
               {(request as any).showOnVolunteerHub ? 'On Volunteer Hub' : 'Not on Hub'}
@@ -1341,15 +1439,37 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               className="text-xs sm:text-sm"
             />
 
-            {/* Sandwich count badge */}
-            <Badge
-              className="bg-amber-50 text-amber-800 border border-amber-400 text-xs sm:text-sm font-medium flex items-center gap-1 min-w-0 max-w-full"
-              title={sandwichInfo}
-            >
-              <span aria-hidden="true">🥪</span>
-              <span className="min-w-0 truncate">{sandwichCountBadgeText}</span>
-              <span className="hidden sm:inline opacity-90">&nbsp;sandwiches</span>
-            </Badge>
+            {/* Sandwich count badge.
+                STATUS when we have a real count (just informational).
+                ACTION when count is TBD — escalate to warning so it
+                stands out alongside other "data missing" chips. */}
+            {(() => {
+              const isTbd = sandwichCountBadgeText === 'TBD';
+              return (
+                <Badge
+                  className={`text-xs sm:text-sm font-medium flex items-center gap-1 min-w-0 max-w-full ${
+                    isTbd
+                      ? 'bg-amber-500 text-white border border-amber-600'
+                      : 'bg-gray-100 text-gray-700 border border-gray-300'
+                  }`}
+                  title={sandwichInfo}
+                >
+                  {isTbd ? (
+                    <AlertTriangle className="w-3 h-3" />
+                  ) : (
+                    <span aria-hidden="true">🥪</span>
+                  )}
+                  <span className="min-w-0 truncate">
+                    {isTbd ? 'Sandwich count needed' : sandwichCountBadgeText}
+                  </span>
+                  {!isTbd && (
+                    <span className="hidden sm:inline opacity-90">
+                      &nbsp;sandwiches
+                    </span>
+                  )}
+                </Badge>
+              );
+            })()}
 
             {/* Attendance badge - show when attendance is set */}
             {(request.attendanceAdults || request.attendanceTeens || request.attendanceKids) && (
@@ -1567,28 +1687,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
         )}
 
-        {/* Partner/Department editing modals */}
-        {isEditingThisCard && editingField === 'department' && (
-          <div className="flex items-center gap-2 mb-3">
-            <Input
-              value={editingValue}
-              onChange={(e) => setEditingValue(e.target.value)}
-              className="h-8 text-base w-48"
-              autoFocus
-              placeholder="Department"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') saveEdit();
-                if (e.key === 'Escape') cancelEdit();
-              }}
-            />
-            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0">
-              <Save className="h-3 w-3" />
-            </Button>
-            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
-              <X className="h-3 w-3" />
-            </Button>
-          </div>
-        )}
+        {/* Partner editing modals */}
         {isEditingThisCard && editingField?.startsWith('partnerOrg_') && (
           <div className="flex items-center gap-2 mb-3 flex-wrap">
             {(() => {
@@ -2607,27 +2706,42 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
                 Team Assignments
               </h3>
-              {/* TSP Contact — moved from Event Details so all people-on-our-side info
-                  sits next to the volunteer Team Assignments. */}
-              {tspContactDisplay && (
-                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 group">
-                  <UserPlus className="w-5 h-5 shrink-0 text-[#236383]" aria-hidden="true" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs uppercase text-gray-600 font-medium">TSP Contact</div>
-                    <div className="text-sm font-semibold text-gray-900 truncate" title={tspContactDisplay}>
-                      {tspContactDisplay}
-                    </div>
-                  </div>
-                  {canEditTspContact && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={onEditTspContact}
-                      className="h-7 px-2 text-[#007E8C] hover:bg-[#007E8C]/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                      aria-label="Edit TSP contact"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </Button>
+              {/* TSP Contact + Mark Van Needed — one compact row */}
+              {(tspContactDisplay || showMarkVanNeeded) && (
+                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 group flex-wrap">
+                  {tspContactDisplay ? (
+                    <>
+                      <UserPlus className="w-5 h-5 shrink-0 text-[#236383]" aria-hidden="true" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs uppercase text-gray-600 font-medium">TSP Contact</div>
+                        <div className="text-sm font-semibold text-gray-900 truncate" title={tspContactDisplay}>
+                          {tspContactDisplay}
+                        </div>
+                      </div>
+                      {canEditTspContact && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={onEditTspContact}
+                          className="h-7 px-2 text-[#007E8C] hover:bg-[#007E8C]/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label="Edit TSP contact"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex-1 min-w-0" />
+                  )}
+                  {showMarkVanNeeded && (
+                    <VanNeededBadgeAndButton
+                      eventRequestId={request.id}
+                      vanDriverNeeded={request.vanDriverNeeded}
+                      vanNeededLikely={(request as any).vanNeededLikely}
+                      canEdit={!!canEdit}
+                      simpleToggle
+                      mode="button"
+                    />
                   )}
                 </div>
               )}
@@ -3156,31 +3270,44 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </div>
                 ) : null}
 
-                {/* Van needed toggle — lives here in Team Assignments (next to the
-                    driver/transport controls) rather than in the bottom action row,
-                    since it switches the event between needing regular drivers and a
-                    van driver. Only the un-set "Mark Van Needed" call-to-action lives
-                    here; once a van is flagged needed the "Van Driver (Needed)" section
-                    above takes over, so this row is hidden then to avoid an empty strip
-                    (VanNeededBadgeAndButton renders nothing in that state). */}
-                {canEdit && !request.selfTransport && !request.assignedVanDriverId && !request.isDhlVan && !request.vanDriverNeeded && (
-                  <div className="flex items-center justify-between gap-2 pb-3 border-b border-gray-200">
-                    <span className="text-xs uppercase font-bold tracking-wide text-[#236383]/70">
-                      Van
-                    </span>
-                    <VanNeededBadgeAndButton
-                      eventRequestId={request.id}
-                      vanDriverNeeded={request.vanDriverNeeded}
-                      vanNeededLikely={(request as any).vanNeededLikely}
-                      canEdit={!!canEdit}
-                      simpleToggle
-                      mode="button"
-                    />
+                {/* Condensed add speaker/volunteer when neither role is needed */}
+                {showCondensedStaffingAdds && (
+                  <div className="flex items-center justify-end gap-1 py-0.5 pb-3 border-b border-gray-200">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('speakersNeeded', '1')}
+                          className="h-5 w-5 p-0 text-[#007E8C]"
+                        >
+                          <Megaphone className="w-3 h-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Add speaker need</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEditing('volunteersNeeded', '1')}
+                          className="h-5 w-5 p-0 text-[#007E8C]"
+                        >
+                          <Users className="w-3 h-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Add volunteer need</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </div>
                 )}
 
                 {/* Speakers */}
-                {!request.selfTransport ? ((speakerNeeded > 0 || (isEditingThisCard && editingField === 'speakersNeeded')) ? (
+                {showSpeakerSection && (
                   <div className="pb-3 border-b border-gray-200">
                     <div className="flex items-center justify-between mb-2">
                       {isEditingThisCard && editingField === 'speakersNeeded' ? (
@@ -3625,28 +3752,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       })}
                     </div>
                   </div>
-                ) : canEdit ? (
-                  <div className="flex items-center justify-end py-0.5 pb-3 border-b border-gray-200">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('speakersNeeded', '1')}
-                          className="h-5 w-5 p-0 text-[#007E8C]"
-                        >
-                          <Megaphone className="w-3 h-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Add speaker need</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                ) : null) : null}
+                )}
 
                 {/* Volunteers */}
-                {!request.selfTransport ? ((volunteerNeeded > 0 || (isEditingThisCard && editingField === 'volunteersNeeded')) ? (
+                {showVolunteerSection && (
                   <div className="pb-3 border-b border-gray-200">
                     <div className="flex items-center justify-between mb-2">
                       {isEditingThisCard && editingField === 'volunteersNeeded' ? (
@@ -4063,25 +4172,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       })}
                     </div>
                   </div>
-                ) : canEdit ? (
-                  <div className="flex items-center justify-end py-0.5 pb-3 border-b border-gray-200">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('volunteersNeeded', '1')}
-                          className="h-5 px-2 text-[#007E8C] text-xs"
-                        >
-                          <Users className="w-3 h-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Add volunteer need</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                ) : null) : null}
+                )}
 
                 {/* Attendance */}
                 <div className="flex items-start gap-2 pb-3 border-b border-gray-200">

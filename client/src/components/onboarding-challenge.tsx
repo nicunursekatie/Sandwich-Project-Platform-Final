@@ -154,8 +154,8 @@ const challengeNavigation: Record<string, { section: string; instructions: strin
     instructions: 'Visit the TSP Holding Zone and like a post from a team member.',
   },
   view_my_actions: {
-    section: 'my-actions',
-    instructions: 'Navigate to My Actions to see your assigned tasks and to-dos.',
+    section: 'analytics',
+    instructions: 'Open Analytics, then the Impact Dashboard tab, to see the Action Center.',
   },
   set_availability: {
     section: 'my-availability',
