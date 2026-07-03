@@ -149,21 +149,31 @@ export function createHostsRouter(deps: RouterDependencies) {
     })
   );
 
-  // Map endpoint - get host contacts with valid coordinates for map display
+  // Map endpoint - get host contacts with valid coordinates for map display.
+  //
+  // ONLY returns hosts whose status is exactly 'active'. Inactive hosts are
+  // ineligible for driver planning by definition — coordinators mark a host
+  // inactive precisely to remove it from active operations (collection log
+  // dropdown, driver routes, etc.). Including them here would let a
+  // coordinator accidentally route sandwiches to a location that shouldn't
+  // be receiving them. 'hidden' is also excluded (soft-delete tier).
+  //
+  // Contacts within an active host that carry 'former_host' role also drop
+  // out — they're historical directory entries, not usable route stops.
   router.get(
   '/hosts/map',
   requirePermission(PERMISSIONS.HOSTS_VIEW),
   asyncHandler(async (req, res) => {
     const hostsWithContacts = await storage.getAllHostsWithContacts();
 
-    // Show all hosts visible on the host management page (everything except 'hidden')
     const mapData = hostsWithContacts
-      .filter(host => host.status !== 'hidden')
+      .filter(host => host.status === 'active')
       .flatMap(host =>
         host.contacts
           .filter(contact =>
             contact.latitude !== null &&
-            contact.longitude !== null
+            contact.longitude !== null &&
+            !(contact as any).isFormerHost
           )
           .map(contact => ({
             id: contact.id,

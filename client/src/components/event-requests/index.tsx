@@ -26,6 +26,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Users, Package, HelpCircle, Calendar, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download, Filter, ChevronDown } from 'lucide-react';
+import { WEEK_SCOPE_LABELS } from './lib/eventRequestsListQuery';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
@@ -155,6 +156,8 @@ const EventRequestsManagementContent: React.FC = () => {
     unviewedNewCount,
     quickFilter,
     setQuickFilter,
+    weekScope,
+    setWeekScope,
   } = useEventRequestContext();
 
   const {
@@ -782,10 +785,12 @@ const EventRequestsManagementContent: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className={quickFilter ? 'border-[#007E8C] text-[#007E8C] bg-[#007E8C]/5' : ''}
+                className={quickFilter || weekScope ? 'border-[#007E8C] text-[#007E8C] bg-[#007E8C]/5' : ''}
               >
                 <Filter className="w-4 h-4 mr-1.5" />
-                {quickFilter
+                {weekScope
+                  ? WEEK_SCOPE_LABELS[weekScope]
+                  : quickFilter
                   ? quickFilter === 'needsDriver' ? 'Needs Driver'
                   : quickFilter === 'needsVan' ? 'Needs Van'
                   : quickFilter === 'week' ? 'This Week'
@@ -799,40 +804,43 @@ const EventRequestsManagementContent: React.FC = () => {
             <PopoverContent className="w-52 p-2" align="end">
               <div className="space-y-1">
                 <button
-                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'needsDriver' ? null : 'needsDriver'); }}
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setWeekScope(null); setQuickFilter(quickFilter === 'needsDriver' ? null : 'needsDriver'); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'needsDriver' ? 'bg-[#236383] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
                 >
                   <Car className="w-4 h-4" /> Needs Driver
                 </button>
                 <button
-                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'needsVan' ? null : 'needsVan'); }}
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setWeekScope(null); setQuickFilter(quickFilter === 'needsVan' ? null : 'needsVan'); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'needsVan' ? 'bg-[#D68319] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
                 >
                   <Truck className="w-4 h-4" /> Needs Van
                 </button>
                 <button
-                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'week' ? null : 'week'); }}
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setWeekScope(null); setQuickFilter(quickFilter === 'week' ? null : 'week'); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'week' ? 'bg-[#007E8C] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
                 >
                   <Calendar className="w-4 h-4" /> This Week
                 </button>
                 <button
-                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'today' ? null : 'today'); }}
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setWeekScope(null); setQuickFilter(quickFilter === 'today' ? null : 'today'); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'today' ? 'bg-[#007E8C] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
                 >
                   <Calendar className="w-4 h-4" /> Today
                 </button>
                 <button
-                  onClick={() => { setSearchQuery(''); setQuickFilter(quickFilter === 'corporatePriority' ? null : 'corporatePriority'); }}
+                  onClick={() => { setSearchQuery(''); setWeekScope(null); setQuickFilter(quickFilter === 'corporatePriority' ? null : 'corporatePriority'); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'corporatePriority' ? 'bg-amber-600 text-white' : 'hover:bg-gray-100 text-amber-700'}`}
                 >
                   <Shield className="w-4 h-4" /> Corporate Priority
                 </button>
-                {quickFilter && (
+                {(quickFilter || weekScope) && (
                   <>
                     <div className="border-t border-gray-200 my-1" />
                     <button
-                      onClick={() => setQuickFilter(null)}
+                      onClick={() => {
+                        setQuickFilter(null);
+                        setWeekScope(null);
+                      }}
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-500 hover:bg-gray-100"
                     >
                       <X className="w-4 h-4" /> Clear Filter
