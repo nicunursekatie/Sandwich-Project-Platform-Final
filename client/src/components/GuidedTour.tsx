@@ -282,6 +282,21 @@ export function GuidedTour({ onClose }: GuidedTourProps) {
     }
   }, []);
 
+  // Allow other components (e.g. FirstLoginTourPrompt) to start a tour programmatically.
+  useEffect(() => {
+    const handleExternalStart = (event: Event) => {
+      const tourId = (event as CustomEvent<{ tourId: string }>).detail?.tourId;
+      if (!tourId) return;
+      const tour = getTourById(tourId);
+      if (!tour) return;
+      if (!availableTours.some((t) => t.id === tour.id)) return;
+      startTour(tour);
+    };
+
+    window.addEventListener('guided-tour:start', handleExternalStart);
+    return () => window.removeEventListener('guided-tour:start', handleExternalStart);
+  }, [availableTours, startTour]);
+
   const nextStep = useCallback(() => {
     if (!activeTour) return;
     
