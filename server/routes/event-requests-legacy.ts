@@ -28,6 +28,7 @@ import { logger } from '../middleware/logger';
 import type { AuthenticatedRequest } from '../types/express';
 import { emitEventRequestUpdate } from '../socket-chat';
 import { safeJsonParse } from '../utils/safe-json';
+import { getUndefinedColumn, dropColumnKey, classifyDbError, parsePgError } from '../utils/pg-error-utils';
 import { geocodeAddress } from '../utils/geocoding';
 import { rateLimiter } from '../utils/rate-limiter';
 import { getEffectiveEventDate, getAssignmentUrgentGaps, daysSinceSubmitted, daysUntilEventDate } from '../../shared/event-validation-utils';
@@ -2899,24 +2900,42 @@ router.patch(
       }
 
       let updatedEventRequest;
-      try {
-        updatedEventRequest = await storage.updateEventRequest(id, {
-          ...processedUpdates,
-          updatedAt: new Date(),
-        });
-      } catch (updateError: any) {
-        // If the update fails and includes addedToOfficialSheetAt, retry without it
-        // (the column may not exist yet if migration 0043 hasn't run)
-        if (processedUpdates.addedToOfficialSheetAt !== undefined) {
-          logger.warn(`[PATCH /:id] Update failed with addedToOfficialSheetAt, retrying without it: ${updateError?.message}`);
-          droppedFields.push({ field: 'addedToOfficialSheetAt', reason: 'Database column not available on this branch (migration pending)' });
-          const { addedToOfficialSheetAt, ...updatesWithoutTimestamp } = processedUpdates;
-          updatedEventRequest = await storage.updateEventRequest(id, {
-            ...updatesWithoutTimestamp,
-            updatedAt: new Date(),
-          });
-        } else {
-          throw updateError;
+      {
+        // Some columns exist in the Drizzle schema but not on the current
+        // database branch — migrations are applied manually per Neon branch, so
+        // dev and production drift. Writing such a column throws Postgres 42703
+        // (undefined_column) and used to fail the ENTIRE save with an opaque
+        // 500 (the old code only special-cased addedToOfficialSheetAt). Instead,
+        // detect the missing column, drop it, record it for the client's
+        // partial-save warning, and retry. The loop handles several missing
+        // columns in a row; the bound prevents an infinite loop if a drop never
+        // resolves the error.
+        const attemptUpdates: Record<string, any> = { ...processedUpdates };
+        const MAX_COLUMN_DROP_RETRIES = 12;
+        for (let attempt = 0; ; attempt++) {
+          try {
+            updatedEventRequest = await storage.updateEventRequest(id, {
+              ...attemptUpdates,
+              updatedAt: new Date(),
+            });
+            break;
+          } catch (updateError: any) {
+            const missingColumn = getUndefinedColumn(updateError);
+            const droppedKey = missingColumn
+              ? dropColumnKey(attemptUpdates, missingColumn)
+              : null;
+            if (droppedKey && attempt < MAX_COLUMN_DROP_RETRIES) {
+              logger.warn(
+                `[PATCH /:id] Column "${missingColumn}" is not on this DB branch; dropping "${droppedKey}" and retrying: ${updateError?.message}`
+              );
+              droppedFields.push({
+                field: droppedKey,
+                reason: 'Database column not available on this branch (migration pending)',
+              });
+              continue;
+            }
+            throw updateError;
+          }
         }
       }
 
@@ -3035,21 +3054,35 @@ router.patch(
       res.json(responsePayload);
     } catch (error: unknown) {
       const err = error as Error;
+      const pg = parsePgError(error);
       logger.error('Error updating event request:', error);
       logger.error('Error stack:', err?.stack);
+      // Log the structured DB detail so the real cause (column/constraint/code)
+      // is recoverable from server logs even when the client only sees a
+      // friendly message.
+      logger.error(
+        `[PATCH /:id] DB error detail — code=${pg.code ?? 'n/a'}, column=${pg.column ?? 'n/a'}, constraint=${pg.constraint ?? 'n/a'}`
+      );
 
-      // Check for specific database errors
-      if (err?.message?.includes('invalid input syntax')) {
-        return res.status(400).json({
-          message: 'Invalid data format',
-          error: err.message,
-          details: 'Please check that all fields contain valid data'
+      // Translate recognized constraint/type errors into specific, actionable
+      // 4xx responses instead of a bare "Failed to update event request" 500.
+      const classified = classifyDbError(error);
+      if (classified) {
+        return res.status(classified.status).json({
+          message: classified.message,
+          error: classified.error,
+          column: classified.column,
+          // Keep the raw DB message on the response so error reports remain
+          // diagnosable; it's not shown to the user (the client uses `message`).
+          dbError: pg.message,
         });
       }
 
       res.status(500).json({
         message: 'Failed to update event request',
         error: err?.message || 'Unknown error',
+        dbCode: pg.code,
+        dbColumn: pg.column,
         details: process.env.NODE_ENV === 'development' ? err?.stack : undefined
       });
     }
