@@ -782,6 +782,20 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       const isNetworkError = error?.message?.includes('Failed to fetch') || error?.message?.includes('Request timeout');
       const orgName = eventRequest?.organizationName || formData.organizationName || 'this event';
 
+      // Capture the server's structured DB detail (see server pg-error-utils) so
+      // the auto-filed error report pinpoints the real cause — the raw DB
+      // message / SQLSTATE code / column — instead of just "Save Failed".
+      const dbDetail = [
+        error?.data?.dbError,
+        error?.data?.dbCode ? `code=${error.data.dbCode}` : null,
+        error?.data?.dbColumn || error?.data?.column
+          ? `column=${error.data.dbColumn || error.data.column}`
+          : null,
+        error?.status ? `http=${error.status}` : null,
+      ]
+        .filter(Boolean)
+        .join(' | ');
+
       let errorTitle = 'Save Failed';
       let errorDescription = mode === 'edit' ? 'Failed to update event.' : 'Failed to schedule event.';
 
@@ -806,6 +820,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         duration: 10000,
         report: {
           whatDoing: mode === 'edit' ? 'Save event edits in scheduling form' : 'Schedule an event in the scheduling form',
+          expectedOutcome: 'The event request should save successfully.',
+          actualOutcome: dbDetail
+            ? `${errorTitle}: ${errorDescription} [${dbDetail}]`
+            : `${errorTitle}: ${errorDescription}`,
           ...(eventRequest?.id
             ? {
                 recordType: 'event_request',
