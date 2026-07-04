@@ -28,9 +28,11 @@ import { logger } from '../middleware/logger';
 import type { AuthenticatedRequest } from '../types/express';
 import { emitEventRequestUpdate } from '../socket-chat';
 import { safeJsonParse } from '../utils/safe-json';
+import { getUndefinedColumn, dropColumnKey, classifyDbError, parsePgError } from '../utils/pg-error-utils';
 import { geocodeAddress } from '../utils/geocoding';
 import { rateLimiter } from '../utils/rate-limiter';
 import { getEffectiveEventDate, getAssignmentUrgentGaps, daysSinceSubmitted, daysUntilEventDate } from '../../shared/event-validation-utils';
+import { filterEventsByWeekScope, parseWeekScopeOffset } from '../lib/event-week-filter';
 
 const router = Router();
 
@@ -1161,27 +1163,9 @@ router.get(
         eventRequests = await storage.getAllEventRequests();
       }
 
-      // Filter to the current Monday-Sunday calendar week in Eastern Time.
-      // Mirrors the /list handler (and thisWeekEventsCount in /operational-stats)
-      // so the dashboard "This Week" tile and the list it opens stay in lockstep
-      // even when the client falls back from /list to this endpoint.
-      if (weekParam === 'current') {
-        const today = parseDateOnly(getTodayString())!;
-        const startOfWeek = new Date(today);
-        const dayOfWeek = startOfWeek.getDay();
-        const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday = 0 days back
-        startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6);
-        endOfWeek.setHours(23, 59, 59, 999);
-
-        eventRequests = eventRequests.filter(event => {
-          const eventDate = getEffectiveEventDate(event);
-          if (!eventDate) return false;
-          const date = parseDateOnly(eventDate);
-          if (!date) return false;
-          return date >= startOfWeek && date <= endOfWeek;
-        });
+      // Filter to a Monday–Sunday calendar week (current, next, +2, +3).
+      if (weekParam && parseWeekScopeOffset(weekParam) !== null) {
+        eventRequests = filterEventsByWeekScope(eventRequests, weekParam);
       }
 
       // Filter by days (next N days from today) - done in memory since date logic is complex
@@ -1329,26 +1313,9 @@ router.get(
         eventRequests = await storage.getAllEventRequests();
       }
 
-      // Filter to the current Monday-Sunday calendar week in Eastern Time. This
-      // mirrors the thisWeekEventsCount logic in /operational-stats so the
-      // dashboard "This Week" tile and the list it opens stay in lockstep.
-      if (weekParam === 'current') {
-        const today = parseDateOnly(getTodayString())!;
-        const startOfWeek = new Date(today);
-        const dayOfWeek = startOfWeek.getDay();
-        const daysToSubtract = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Monday = 0 days back
-        startOfWeek.setDate(startOfWeek.getDate() - daysToSubtract);
-        const endOfWeek = new Date(startOfWeek);
-        endOfWeek.setDate(endOfWeek.getDate() + 6);
-        endOfWeek.setHours(23, 59, 59, 999);
-
-        eventRequests = eventRequests.filter(event => {
-          const eventDate = getEffectiveEventDate(event);
-          if (!eventDate) return false;
-          const date = parseDateOnly(eventDate);
-          if (!date) return false;
-          return date >= startOfWeek && date <= endOfWeek;
-        });
+      // Filter to a Monday–Sunday calendar week (current, next, +2, +3).
+      if (weekParam && parseWeekScopeOffset(weekParam) !== null) {
+        eventRequests = filterEventsByWeekScope(eventRequests, weekParam);
       }
 
       // Apply date filter in memory (complex date logic is harder to do in SQL)
@@ -2933,24 +2900,47 @@ router.patch(
       }
 
       let updatedEventRequest;
-      try {
-        updatedEventRequest = await storage.updateEventRequest(id, {
-          ...processedUpdates,
-          updatedAt: new Date(),
-        });
-      } catch (updateError: any) {
-        // If the update fails and includes addedToOfficialSheetAt, retry without it
-        // (the column may not exist yet if migration 0043 hasn't run)
-        if (processedUpdates.addedToOfficialSheetAt !== undefined) {
-          logger.warn(`[PATCH /:id] Update failed with addedToOfficialSheetAt, retrying without it: ${updateError?.message}`);
-          droppedFields.push({ field: 'addedToOfficialSheetAt', reason: 'Database column not available on this branch (migration pending)' });
-          const { addedToOfficialSheetAt, ...updatesWithoutTimestamp } = processedUpdates;
-          updatedEventRequest = await storage.updateEventRequest(id, {
-            ...updatesWithoutTimestamp,
-            updatedAt: new Date(),
-          });
-        } else {
-          throw updateError;
+      {
+        // Some columns exist in the Drizzle schema but not on the current
+        // database branch — migrations are applied manually per Neon branch, so
+        // dev and production drift. Writing such a column throws Postgres 42703
+        // (undefined_column) and used to fail the ENTIRE save with an opaque
+        // 500 (the old code only special-cased addedToOfficialSheetAt). Instead,
+        // detect the missing column, drop it, record it for the client's
+        // partial-save warning, and retry. The loop handles several missing
+        // columns in a row; the bound prevents an infinite loop if a drop never
+        // resolves the error.
+        const attemptUpdates: Record<string, any> = { ...processedUpdates };
+        const MAX_COLUMN_DROP_RETRIES = 12;
+        for (let attempt = 0; ; attempt++) {
+          try {
+            updatedEventRequest = await storage.updateEventRequest(id, {
+              ...attemptUpdates,
+              updatedAt: new Date(),
+            });
+            break;
+          } catch (updateError: any) {
+            const missingColumn = getUndefinedColumn(updateError);
+            const droppedKey = missingColumn
+              ? dropColumnKey(attemptUpdates, missingColumn)
+              : null;
+            if (droppedKey && attempt < MAX_COLUMN_DROP_RETRIES) {
+              // Keep processedUpdates in sync with what we actually persist.
+              // Downstream logic (the activity-log change summary, side effects)
+              // keys off processedUpdates, so a dropped-but-still-present field
+              // would be reported as saved when it wasn't.
+              delete (processedUpdates as any)[droppedKey];
+              logger.warn(
+                `[PATCH /:id] Column "${missingColumn}" is not on this DB branch; dropping "${droppedKey}" and retrying: ${updateError?.message}`
+              );
+              droppedFields.push({
+                field: droppedKey,
+                reason: 'Database column not available on this branch (migration pending)',
+              });
+              continue;
+            }
+            throw updateError;
+          }
         }
       }
 
@@ -3069,21 +3059,41 @@ router.patch(
       res.json(responsePayload);
     } catch (error: unknown) {
       const err = error as Error;
+      const pg = parsePgError(error);
       logger.error('Error updating event request:', error);
       logger.error('Error stack:', err?.stack);
+      // Log the structured DB detail so the real cause (column/constraint/code)
+      // is recoverable from server logs even when the client only sees a
+      // friendly message.
+      logger.error(
+        `[PATCH /:id] DB error detail — code=${pg.code ?? 'n/a'}, column=${pg.column ?? 'n/a'}, constraint=${pg.constraint ?? 'n/a'}`
+      );
 
-      // Check for specific database errors
-      if (err?.message?.includes('invalid input syntax')) {
-        return res.status(400).json({
-          message: 'Invalid data format',
-          error: err.message,
-          details: 'Please check that all fields contain valid data'
+      // Translate recognized constraint/type errors into specific, actionable
+      // 4xx responses instead of a bare "Failed to update event request" 500.
+      const classified = classifyDbError(error);
+      if (classified) {
+        return res.status(classified.status).json({
+          message: classified.message,
+          error: classified.error,
+          column: classified.column,
+          // Stable, non-sensitive diagnostics on both the 4xx and 500 paths so
+          // the client's error report can identify the field/error class. The
+          // raw DB message can name internal schema/constraints, so it's gated
+          // to development (same convention as `details` below); the full
+          // message is always written to the server logs regardless of env.
+          dbCode: pg.code,
+          dbColumn: pg.column,
+          dbError: process.env.NODE_ENV === 'development' ? pg.message : undefined,
         });
       }
 
       res.status(500).json({
         message: 'Failed to update event request',
         error: err?.message || 'Unknown error',
+        dbCode: pg.code,
+        dbColumn: pg.column,
+        dbError: process.env.NODE_ENV === 'development' ? pg.message : undefined,
         details: process.env.NODE_ENV === 'development' ? err?.stack : undefined
       });
     }

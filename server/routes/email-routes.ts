@@ -6,6 +6,7 @@ import { kudosTracking, users, emailMessages } from '@shared/schema';
 import { eq } from 'drizzle-orm';
 import { logger } from '../utils/production-safe-logger';
 import { getLinkedUserIds } from '../lib/linked-accounts';
+import { FROM_EMAIL } from '../config/organization';
 
 export function createEmailRouter(deps: RouterDependencies) {
   const router = Router();
@@ -595,7 +596,7 @@ export function createEmailRouter(deps: RouterDependencies) {
     }
 
     // For actual emails, send directly via SendGrid without wrapper
-    const { sendEmail: sendGridEmail } = await import('../sendgrid');
+    const { sendEmailWithResult } = await import('../sendgrid');
     const { documents } = await import('@shared/schema');
     const { inArray } = await import('drizzle-orm');
     const path = await import('path');
@@ -794,9 +795,15 @@ export function createEmailRouter(deps: RouterDependencies) {
       `;
     }
 
-    const fromEmail =
-      process.env.SENDGRID_FROM_EMAIL || 'katielong2316@gmail.com';
-    const bccEmail = process.env.SENDGRID_TOOLKIT_BCC || 'katielong2316@gmail.com';
+    // Use the organization's VERIFIED SendGrid sender identity
+    // (katie@thesandwichproject.org). The previous fallback of
+    // katielong2316@gmail.com is NOT a verified sender, so SendGrid rejected
+    // every send with a `field: null` sender-identity error — surfacing to the
+    // user as an opaque 500 "can't send toolkit". Match every other email
+    // sender in the app (event-notification-dispatcher, email-notification-service,
+    // etc.) which all send from the org address.
+    const fromEmail = process.env.SENDGRID_FROM_EMAIL || FROM_EMAIL;
+    const bccEmail = process.env.SENDGRID_TOOLKIT_BCC || FROM_EMAIL;
 
     const emailPayload: {
       to: string;
@@ -839,11 +846,16 @@ export function createEmailRouter(deps: RouterDependencies) {
       hasApiKey: !!process.env.SENDGRID_API_KEY,
     });
 
-    const sendResult = await sendGridEmail(emailPayload);
+    const sendResult = await sendEmailWithResult(emailPayload);
 
-    if (!sendResult) {
-      logger.error('[Event Email API] SendGrid returned false - email may not have been sent');
-      throw new Error('SendGrid email sending failed - check API key configuration');
+    if (!sendResult.success) {
+      // Report the ACTUAL SendGrid rejection reason (e.g. sender-identity not
+      // verified) carried back with this specific send, instead of a misleading
+      // generic "check API key configuration".
+      logger.error(
+        `[Event Email API] SendGrid send failed - email not sent. Reason: ${sendResult.error || 'unknown'}`
+      );
+      throw new Error(sendResult.error || 'SendGrid rejected the email. Please try again or contact support.');
     }
 
     // Save a record in internal email system (without sending duplicate)

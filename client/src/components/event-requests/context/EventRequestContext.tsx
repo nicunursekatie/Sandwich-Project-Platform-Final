@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getEventRequestDefaults } from '@shared/role-view-defaults';
 import { logger } from '@/lib/logger';
 import { useLocation } from 'wouter';
-import { buildEventRequestsListQuery } from '../lib/eventRequestsListQuery';
+import { buildEventRequestsListQuery, type EventRequestsWeekScope } from '../lib/eventRequestsListQuery';
 import { EventDialogProvider, useEventDialogState } from './EventDialogContext';
 import { useIssueReport } from '@/contexts/issue-report-context';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
@@ -23,6 +23,8 @@ interface EventRequestContextType {
   isPlaceholderData?: boolean;
   quickFilter: 'week' | 'today' | 'needsDriver' | 'needsVan' | 'corporatePriority' | null;
   setQuickFilter: (filter: 'week' | 'today' | 'needsDriver' | 'needsVan' | 'corporatePriority' | null) => void;
+  weekScope: EventRequestsWeekScope;
+  setWeekScope: (scope: EventRequestsWeekScope) => void;
 
   // View state
   viewMode: 'list' | 'calendar' | 'map';
@@ -129,6 +131,7 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
 
   // Quick filter state for special date ranges (This Week, Today, etc.)
   const [quickFilter, setQuickFilter] = useState<'week' | 'today' | 'needsDriver' | 'needsVan' | 'corporatePriority' | null>(null);
+  const [weekScope, setWeekScope] = useState<EventRequestsWeekScope>(null);
 
   // View state - use role-based defaults if no initialTab provided
   const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'map'>('list');
@@ -152,16 +155,23 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
 
   // Build list query key + URL in one place (also used by Dashboard prefetch)
   const { queryKey: listQueryKey, listUrl: listQueryUrl, fullUrl: fullQueryUrl } = useMemo(
-    () => buildEventRequestsListQuery(activeTab, quickFilter),
-    [activeTab, quickFilter]
+    () => buildEventRequestsListQuery(activeTab, quickFilter, weekScope),
+    [activeTab, quickFilter, weekScope]
   );
 
   // Reset quickFilter when activeTab changes to something incompatible
   useEffect(() => {
-    if (quickFilter && !['scheduled', 'new', 'in_process'].includes(activeTab)) {
+    if (quickFilter && !['scheduled', 'new', 'in_process', 'all'].includes(activeTab)) {
       setQuickFilter(null);
     }
   }, [activeTab, quickFilter]);
+
+  // Week scope from dashboard pipeline cards only applies on the All tab.
+  useEffect(() => {
+    if (weekScope && activeTab !== 'all') {
+      setWeekScope(null);
+    }
+  }, [activeTab, weekScope]);
 
   // Fetch event requests with filtering and stale-while-revalidate
   // Uses lightweight /list endpoint for better performance
@@ -503,14 +513,20 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
         const parsed = JSON.parse(raw) as {
           tab?: string;
           filter?: string;
+          weekScope?: EventRequestsWeekScope;
           myAssignmentsStatuses?: string[];
         };
         sessionStorage.removeItem('eventRequests.pendingFilter');
         const validTabs = ['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments'];
         const validFilters = ['week', 'today', 'needsDriver', 'needsVan', 'corporatePriority'];
+        const validWeekScopes: EventRequestsWeekScope[] = ['current', 'next', '+2', '+3'];
         if (parsed.tab && validTabs.includes(parsed.tab)) setActiveTab(parsed.tab);
-        if (parsed.filter && validFilters.includes(parsed.filter)) {
+        if (parsed.weekScope && validWeekScopes.includes(parsed.weekScope)) {
+          setWeekScope(parsed.weekScope);
+          setQuickFilter(null);
+        } else if (parsed.filter && validFilters.includes(parsed.filter)) {
           setQuickFilter(parsed.filter as typeof quickFilter);
+          setWeekScope(null);
         }
         if (parsed.myAssignmentsStatuses?.length) {
           setMyAssignmentsStatusFilter(parsed.myAssignmentsStatuses);
@@ -627,6 +643,8 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     isPlaceholderData,
     quickFilter,
     setQuickFilter,
+    weekScope,
+    setWeekScope,
     requestsByStatus,
     statusCounts,
     statusCountsLoading,
@@ -662,7 +680,7 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     eventRequests, isLoading, isPlaceholderData, statusCountsLoading,
     requestsByStatus, statusCounts, unviewedNewCount,
     // View state this context owns
-    quickFilter, viewMode, scheduledViewMode, activeTab, searchQuery, debouncedSearchQuery,
+    quickFilter, weekScope, viewMode, scheduledViewMode, activeTab, searchQuery, debouncedSearchQuery,
     statusFilter, myAssignmentsStatusFilter, confirmationFilter, sortBy,
     // Pagination
     currentPage, itemsPerPage,

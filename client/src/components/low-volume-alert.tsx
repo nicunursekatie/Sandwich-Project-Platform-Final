@@ -2,7 +2,6 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, Calendar, TrendingDown, ChevronRight, TrendingUp, CheckCircle2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import type { EventRequest } from '@shared/schema';
@@ -10,7 +9,8 @@ import { logger } from '@/lib/logger';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 interface LowVolumeAlertProps {
-  onNavigateToEvents?: () => void;
+  /** Navigate to Event Requests filtered to a pipeline week (0 = this week). */
+  onNavigateToWeek?: (weekOffset: number) => void;
 }
 
 interface WeekForecast {
@@ -104,7 +104,7 @@ function formatWeekRange(start: Date, end: Date): string {
   return `${startStr} - ${endStr}`;
 }
 
-export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
+export function LowVolumeAlert({ onNavigateToWeek }: LowVolumeAlertProps) {
   // Fetch event requests
   const { data: eventRequests = [] } = useQuery<EventRequest[]>({
     queryKey: ['/api/event-requests'],
@@ -352,16 +352,31 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
         <div className="grid gap-2 sm:grid-cols-4">
           {weekForecasts.map((week, index) => {
             const isLow = !week.isCurrentWeek && lowVolumeWeeks.some(lw => lw.weekStart.getTime() === week.weekStart.getTime());
+            const isClickable = !!onNavigateToWeek;
             return (
               <div
                 key={index}
+                role={isClickable ? 'button' : undefined}
+                tabIndex={isClickable ? 0 : undefined}
+                onClick={isClickable ? () => onNavigateToWeek(index) : undefined}
+                onKeyDown={
+                  isClickable
+                    ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          onNavigateToWeek(index);
+                        }
+                      }
+                    : undefined
+                }
                 className={`p-3 rounded-lg border ${
                   week.isCurrentWeek
                     ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-700'
                     : isLow
                       ? 'bg-amber-100 border-amber-300 dark:bg-amber-900/30 dark:border-amber-700'
                       : 'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700'
-                }`}
+                } ${isClickable ? 'cursor-pointer transition-shadow hover:shadow-md hover:border-[#007E8C]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#007E8C]' : ''}`}
+                title={isClickable ? `View ${week.weekLabel} events in Event Requests` : undefined}
               >
                 <div className="flex items-center justify-between mb-1">
                   <span className={`font-medium text-sm ${week.isCurrentWeek ? 'text-blue-700 dark:text-blue-300' : ''}`}>
@@ -403,6 +418,9 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
                     <div className="text-xs text-gray-500 flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
                       {week.eventCount} event{week.eventCount !== 1 ? 's' : ''}
+                      {isClickable && (
+                        <ChevronRight className="w-3 h-3 ml-auto text-[#007E8C]" aria-hidden="true" />
+                      )}
                     </div>
                   </>
                 )}
@@ -454,19 +472,11 @@ export function LowVolumeAlert({ onNavigateToEvents }: LowVolumeAlertProps) {
           );
         })()}
 
-        {/* Action button — only takes the amber treatment under severe. */}
-        {onNavigateToEvents && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={onNavigateToEvents}
-            className={severity === 'severe'
-              ? "border-amber-400 text-amber-700 hover:bg-amber-100"
-              : ""}
-          >
-            View Upcoming Events
-            <ChevronRight className="w-4 h-4 ml-1" />
-          </Button>
+        {/* Hint — cards drill into Event Requests for that week. */}
+        {onNavigateToWeek && (
+          <p className="text-xs text-gray-500 text-center">
+            Click a week to view its events in Event Requests
+          </p>
         )}
       </CardContent>
     </Card>

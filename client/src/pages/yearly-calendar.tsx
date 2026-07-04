@@ -37,6 +37,7 @@ import {
 } from '@/components/yearly-calendar/month-sections';
 import { PermissionDenied } from '@/components/permission-denied';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
+import { ButtonTooltip } from '@/components/ui/button-tooltip';
 
 interface YearlyCalendarItem {
   id: number;
@@ -995,13 +996,18 @@ export default function YearlyCalendar() {
                 )}
                 Add {selectedYear} Holidays
               </Button>
-              <Button
-                variant="outline"
-                onClick={() => setIsImportDialogOpen(true)}
+              <ButtonTooltip
+                explanation="Bulk-import district school break dates as JSON. Each item needs id, type (school_break), label, startDate, and endDate. Optional fields: districts, academicYear. Matching IDs update existing breaks; new IDs create new entries. Use Add Item for single breaks instead."
+                size="md"
               >
-                <Upload className="h-4 w-4 mr-2" />
-                Import School Breaks
-              </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsImportDialogOpen(true)}
+                >
+                  <Upload className="h-4 w-4 mr-2" />
+                  Import School Breaks
+                </Button>
+              </ButtonTooltip>
               <Button
                 variant="outline"
                 onClick={() => setIsImportHolidaysDialogOpen(true)}
@@ -1574,7 +1580,13 @@ export default function YearlyCalendar() {
       <Dialog open={isImportDialogOpen} onOpenChange={setIsImportDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Import School Breaks</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              Import School Breaks
+              <ButtonTooltip
+                explanation="Paste a JSON array of break objects. Required fields per item: id, type (use school_break), label, startDate, endDate. Example IDs like winter-break-2025 help updates merge cleanly across imports."
+                size="md"
+              />
+            </DialogTitle>
             <DialogDescription>
               Paste JSON data to import school breaks. Each item should have: id, type, label, startDate, endDate.
             </DialogDescription>

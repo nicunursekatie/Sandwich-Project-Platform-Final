@@ -63,6 +63,7 @@ import { RecentlyAccessedResources } from '@/components/recently-accessed-resour
 import { VolunteerOpportunitiesSpotlight } from '@/components/volunteer-opportunities-spotlight';
 import OperationalOverview from '@/components/operational-overview';
 import { LowVolumeAlert } from '@/components/low-volume-alert';
+import { WEEK_OFFSET_TO_SCOPE } from '@/components/event-requests/lib/eventRequestsListQuery';
 import { adminDocuments } from '@/pages/important-documents';
 
 // Dark mode toggle removed per user request
@@ -1244,7 +1245,20 @@ export default function DashboardOverview({
 
         {/* Group Event Forecast - current week progress and upcoming weeks */}
         <div className="mx-4">
-          <LowVolumeAlert onNavigateToEvents={() => onSectionChange?.('event-requests')} />
+          <LowVolumeAlert
+            onNavigateToWeek={(weekOffset) => {
+              const weekScope = WEEK_OFFSET_TO_SCOPE[weekOffset] ?? 'current';
+              try {
+                sessionStorage.setItem(
+                  'eventRequests.pendingFilter',
+                  JSON.stringify({ tab: 'all', weekScope }),
+                );
+              } catch {
+                // ignore unavailable sessionStorage
+              }
+              onSectionChange?.('event-requests');
+            }}
+          />
         </div>
 
         {/* ── TOOLS ── */}

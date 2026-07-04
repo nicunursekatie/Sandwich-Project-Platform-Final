@@ -63,6 +63,41 @@ export const TOUR_CATEGORIES: Record<TourCategory, { label: string; icon: string
 
 export const TOURS: Tour[] = [
   {
+    id: 'platform-getting-started',
+    title: 'Platform Quick Start',
+    description: 'A short welcome tour covering navigation and where to find help',
+    category: 'my-work',
+    icon: 'Compass',
+    estimatedTime: '1 min',
+    steps: [
+      {
+        id: 'platform-intro',
+        title: 'Welcome!',
+        description:
+          'This quick tour shows where to find your tools and how to get help anytime. Use the arrow keys or Next to continue.',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right',
+      },
+      {
+        id: 'platform-nav',
+        title: 'Sidebar Navigation',
+        description:
+          'The sidebar groups everything by workflow — event planning, collections, analytics, and team tools. Your menu may differ based on your role.',
+        targetSelector: '[data-tour="navigation"]',
+        position: 'right',
+      },
+      {
+        id: 'platform-help',
+        title: 'Guided Tours & Help',
+        description:
+          'Tap the blue help button anytime to browse step-by-step tours for specific features — like Driver Planning, school breaks, and more.',
+        targetSelector: '[data-testid="tour-help-button"]',
+        position: 'top',
+        highlightPadding: 12,
+      },
+    ],
+  },
+  {
     id: 'find-logos',
     title: 'Finding TSP Logos',
     description: 'Learn where to find all TSP brand logos and assets',
