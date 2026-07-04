@@ -21,7 +21,7 @@ Plus many narrow mutation callsites (`useEventMutations`, inline card edits, qui
 **Problem:** the two editors don't share the field→server mapping. A mapping fix in one isn't a fix in the other; a new column must be wired into both. PR #462 made them *behave* the same (both diff-based) but left the duplication.
 
 ### 1b. Server does no schema validation on PATCH
-`server/routes/event-requests-legacy.ts` PATCH `/:id` (~L2491–3090) takes `req.body` and processes it **imperatively**: date parsing, status-transition checks, reason requirements, auto-confirm, toolkit side-effects, needs-count auto-adjust, corporate-priority gate, geocoding, and a `_droppedFields` accumulator for fields it silently skips. There is **no Zod parse of the body** — invalid shapes either throw a blanket 500 or get silently dropped.
+`server/routes/event-requests-legacy.ts` PATCH `/:id` (~L2491–3090) takes `req.body` and processes it **imperatively**: date parsing, status-transition checks, reason requirements, auto-confirm, toolkit side-effects, needs-count auto-adjust, corporate-priority gate, geocoding, and a `_droppedFields` accumulator for fields it silently skips. PR-A adds a **log-only shadow `safeParse`** against `eventRequestPatchSchema`, but that only *observes* — it never rejects, so today invalid shapes still either throw a blanket 500 or get silently dropped. **Enforced** Zod validation (field-level `400`s) arrives in PR-C.
 
 ### 1c. Validation lives in three styles
 - **Main form:** imperative `if (...) { toast(); return; }` blockers in `performSubmit`. No Zod.

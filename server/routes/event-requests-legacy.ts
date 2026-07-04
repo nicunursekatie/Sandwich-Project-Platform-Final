@@ -2498,7 +2498,14 @@ router.patch(
           }
         } catch (shadowError) {
           // Defensive: a bug in shadow validation must never break a real save.
-          logger.warn(`[PATCH /:id] SHADOW VALIDATION threw (ignored):`, shadowError);
+          // Serialize the error into the message string — passing an Error as a
+          // second arg to the production logger loses the stack and can render as
+          // "{}" (Error's own props are non-enumerable).
+          const detail =
+            shadowError instanceof Error
+              ? `${shadowError.message}${shadowError.stack ? `\n${shadowError.stack}` : ''}`
+              : String(shadowError);
+          logger.warn(`[PATCH /:id] SHADOW VALIDATION threw (ignored): ${detail}`);
         }
       }
 
