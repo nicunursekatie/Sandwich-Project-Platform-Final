@@ -15,7 +15,7 @@ import {
 import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { parseDateOnly, getTodayString, toDateOnlyString } from '@shared/date-utils';
-import { isValidTransition, getTransitionError, requiresReason, getReasonField, getReasonSatisfyingFields, getScheduledDateDefault, type EventStatus } from '@shared/event-status-workflow';
+import { isValidTransition, getTransitionError, requiresReason, getReasonField, getReasonSatisfyingFields, getScheduledDateDefault, applyEventRequestTransition, type EventStatus } from '@shared/event-status-workflow';
 import { parseSandwichCountInput } from '@shared/sandwich-count-utils';
 import { eventRequestPatchSchema } from '@shared/event-request-patch';
 import { requirePermission } from '../middleware/auth';
@@ -2650,142 +2650,39 @@ router.patch(
         }
       });
 
-      // Check if status is changing and set statusChangedAt accordingly
-      if (
-        processedUpdates.status &&
-        processedUpdates.status !== originalEvent.status
-      ) {
-        // Validate the status transition
-        const fromStatus = originalEvent.status as EventStatus;
-        const toStatus = processedUpdates.status as EventStatus;
-        if (!isValidTransition(fromStatus, toStatus)) {
-          const errorMsg = getTransitionError(fromStatus, toStatus);
-          logger.warn(`[PATCH /:id] Invalid status transition for event ${id}: ${fromStatus} → ${toStatus}`);
+      // Apply all status-derived side-effects in one shared, unit-tested place:
+      // transition validity + reason requirement, statusChangedAt, the scheduled-
+      // date default, auto-confirm, Volunteer-Hub exposure on scheduling, the
+      // declined/cancelled/non_event/rescheduled metadata, and the isConfirmed ↔
+      // scheduled-date coupling. Extracted from this handler in save-path PR-B;
+      // the impure now/user are injected so the logic is deterministic + testable.
+      const transition = applyEventRequestTransition(originalEvent, processedUpdates, {
+        now: new Date(),
+        userId: req.user?.id || null,
+      });
+      if (transition.error) {
+        const e = transition.error;
+        if (e.code === 'INVALID_STATUS_TRANSITION') {
+          logger.warn(`[PATCH /:id] Invalid status transition for event ${id}: ${e.currentStatus} → ${e.requestedStatus}`);
           return res.status(400).json({
-            message: errorMsg,
-            error: 'INVALID_STATUS_TRANSITION',
-            currentStatus: fromStatus,
-            requestedStatus: toStatus,
+            message: e.message,
+            error: e.code,
+            currentStatus: e.currentStatus,
+            requestedStatus: e.requestedStatus,
           });
         }
-
-        // Enforce that reason-required transitions actually record a reason.
-        // Single source of truth: the shared workflow lists every field that can
-        // satisfy the requirement — the structured reason column (filled by the
-        // card-action dialogs) OR the matching/general notes (the full-form
-        // scheduling path documents the reason there). The requirement is met if
-        // ANY of those is non-empty after this PATCH (incoming value if provided,
-        // otherwise what's already on the record).
-        if (requiresReason(toStatus)) {
-          const satisfied = getReasonSatisfyingFields(toStatus).some((field) => {
-            const incoming = (processedUpdates as any)[field];
-            const effective = incoming !== undefined ? incoming : (originalEvent as any)[field];
-            return typeof effective === 'string' && effective.trim() !== '';
-          });
-          if (!satisfied) {
-            logger.warn(`[PATCH /:id] Missing required reason for event ${id}: ${fromStatus} → ${toStatus}`);
-            return res.status(400).json({
-              message: `A reason or note is required to mark this event as "${toStatus}".`,
-              error: 'MISSING_REASON',
-              requestedStatus: toStatus,
-              reasonField: getReasonField(toStatus),
-            });
-          }
-        }
-
-        processedUpdates.statusChangedAt = new Date();
-
-        // Pure transition side-effect from the shared workflow: when scheduling
-        // an event with no date yet, fall back to its desired date. Applied here
-        // so every scheduling path is consistent (the client no longer does it).
-        //
-        // Resolve effective values with `!== undefined` (not `??`) so an explicit
-        // null in this PATCH (intentionally clearing a date) is respected, and a
-        // desired date updated in the same request is preferred over the stored one.
-        const effectiveScheduledDate =
-          processedUpdates.scheduledEventDate !== undefined
-            ? processedUpdates.scheduledEventDate
-            : originalEvent.scheduledEventDate;
-        const effectiveDesiredDate =
-          processedUpdates.desiredEventDate !== undefined
-            ? processedUpdates.desiredEventDate
-            : originalEvent.desiredEventDate;
-        const scheduledDateDefault = getScheduledDateDefault(
-          toStatus,
-          effectiveScheduledDate,
-          effectiveDesiredDate,
-        );
-        if (scheduledDateDefault !== undefined) {
-          processedUpdates.scheduledEventDate = scheduledDateDefault;
-        }
-
-        // If status is changing to 'completed', auto-confirm the event
-        if (processedUpdates.status === 'completed') {
-          processedUpdates.isConfirmed = true;
-        }
-
-        // When an event becomes scheduled (or rescheduled to a new confirmed date),
-        // auto-confirm the date ("Date Pending" → "Date Confirmed") and surface it on
-        // the Volunteer Hub so volunteers can sign up. Both remain manually toggleable
-        // afterward; we only set them on the transition, and we never force
-        // showOnVolunteerHub back off. Respect an explicit value sent in the same request.
-        if (toStatus === 'scheduled' || toStatus === 'rescheduled') {
-          if (processedUpdates.isConfirmed === undefined) {
-            processedUpdates.isConfirmed = true;
-          }
-          if (processedUpdates.showOnVolunteerHub === undefined && !originalEvent.showOnVolunteerHub) {
-            processedUpdates.showOnVolunteerHub = true;
-          }
-        }
-
-        // Track reason metadata for declined status
-        if (processedUpdates.status === 'declined') {
-          processedUpdates.declinedAt = new Date();
-          processedUpdates.declinedBy = req.user?.id || null;
-          // declinedReason and declinedNotes come from the request body if provided
-        }
-
-        // Track reason metadata for cancelled status
-        if (processedUpdates.status === 'cancelled') {
-          processedUpdates.cancelledAt = new Date();
-          processedUpdates.cancelledBy = req.user?.id || null;
-          // cancelledReason and cancelledNotes come from the request body if provided
-        }
-
-        // Track metadata for non_event status
-        if (processedUpdates.status === 'non_event') {
-          processedUpdates.nonEventAt = new Date();
-          processedUpdates.nonEventBy = req.user?.id || null;
-        }
-
-        // Track metadata for rescheduled status
-        if (processedUpdates.status === 'rescheduled') {
-          // Preserve the original scheduled date if not already set
-          if (originalEvent.scheduledEventDate && !processedUpdates.originalScheduledDate) {
-            processedUpdates.originalScheduledDate = originalEvent.scheduledEventDate;
-          }
-          processedUpdates.wasPostponed = true;
-        }
-
+        logger.warn(`[PATCH /:id] Missing required reason for event ${id}: ${originalEvent.status} → ${e.requestedStatus}`);
+        return res.status(400).json({
+          message: e.message,
+          error: e.code,
+          requestedStatus: e.requestedStatus,
+          reasonField: e.reasonField,
+        });
       }
-
-      // Automatically set isConfirmed = true when scheduledEventDate is first set,
-      // UNLESS the client explicitly provided isConfirmed in the same request — an
-      // explicit isConfirmed: false alongside a new date should be respected, not
-      // silently overridden back to true.
-      if (
-        processedUpdates.isConfirmed === undefined &&
-        processedUpdates.scheduledEventDate &&
-        !originalEvent.scheduledEventDate
-      ) {
-        processedUpdates.isConfirmed = true;
-      }
-
-      // Allow manual override: if isConfirmed is explicitly provided, respect it
-      // Exception: completed events are always confirmed
-      if (processedUpdates.status === 'completed' || originalEvent.status === 'completed') {
-        processedUpdates.isConfirmed = true;
-      }
+      // The function returns a superset of processedUpdates (a clone plus the
+      // derived side-effect fields) and never removes keys, so merge it back in
+      // place to preserve the existing downstream `processedUpdates` reference.
+      Object.assign(processedUpdates, transition.patch);
 
       // Automatically assign the current user as TSP contact if toolkit is being marked as sent
       // This auto-assignment happens silently (no email) since toolkit sending happens later in workflow
