@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { TrendingUp, TrendingDown, Target, Calendar, Pencil, Check, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, Calendar, Pencil, Check, X, Minus, ArrowRight } from 'lucide-react';
 import { useAnnualSandwichGoal, useUpdateAppSetting } from '@/hooks/useAppSettings';
 import { useAuth } from '@/hooks/useAuth';
 import { ANNUAL_SANDWICH_GOAL_KEY } from '@shared/schema';
@@ -97,6 +97,21 @@ function fmtPct(p: number | null, withSign = true): string {
   if (p === null || !isFinite(p)) return '—';
   const sign = withSign && p > 0 ? '+' : '';
   return `${sign}${p.toFixed(1)}%`;
+}
+function fmtDelta(curr: number, prev: number): string {
+  const diff = curr - prev;
+  if (diff === 0) return 'Same as last year';
+  const sign = diff > 0 ? '+' : '−';
+  return `${sign}${fmtNum(Math.abs(diff))} vs last year`;
+}
+
+/** Min |YoY change| (percentage points; pct() returns e.g. 5 for 5%) before showing up/down vs flat. */
+const FLAT_TREND_THRESHOLD_PCT = 3;
+
+function trendTone(pctValue: number | null): 'up' | 'down' | 'flat' | 'unknown' {
+  if (pctValue === null || !isFinite(pctValue)) return 'unknown';
+  if (Math.abs(pctValue) < FLAT_TREND_THRESHOLD_PCT) return 'flat';
+  return pctValue > 0 ? 'up' : 'down';
 }
 function toISODate(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -365,25 +380,43 @@ export default function PaceComparisonAnalytics() {
 
   const yoyPctTotal = pct(curr.total, ly.total);
   const ppPctTotal = pct(curr.total, pp.total);
+  const yoyTone = trendTone(yoyPctTotal);
+  const headline =
+    yoyPctTotal === null
+      ? `Tracking ${fmtNum(curr.total)} sandwiches for ${currentPeriod.label.toLowerCase()}.`
+      : yoyTone === 'flat'
+        ? `${fmtNum(curr.total)} sandwiches so far — about the same as this point last year.`
+        : yoyTone === 'up'
+          ? `${fmtNum(curr.total)} sandwiches so far — ${fmtPct(yoyPctTotal)} ahead of this point last year.`
+          : `${fmtNum(curr.total)} sandwiches so far — ${fmtPct(yoyPctTotal)} behind this point last year.`;
 
   const currentRangeLabel = fmtDateRange(currentPeriod.start, currentPeriod.end);
   const lyRangeLabel = fmtDateRange(priorYearPeriod.start, priorYearPeriod.end);
   const ppDayCount = daysBetween(priorPeriod.start, priorPeriod.end);
   const ppRangeLabel = fmtDateRange(priorPeriod.start, priorPeriod.end);
-  const sameDatesLastYearLabel = `vs same dates last year (${lyRangeLabel})`;
-  const precedingPeriodLabel = `vs preceding ${ppDayCount} day${ppDayCount === 1 ? '' : 's'} (${ppRangeLabel})`;
+
+  const monthlyYtdCurrent = monthly?.reduce((sum, m) => sum + m.current, 0) ?? 0;
+  const monthlyYtdPrior = monthly?.reduce((sum, m) => sum + m.prior, 0) ?? 0;
+  const monthlyYtdPct = pct(monthlyYtdCurrent, monthlyYtdPrior);
 
   return (
-    <div className="space-y-4">
-      {/* Period picker */}
+    <div className="space-y-5">
+      {/* Period picker — compact */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" /> Compare period
-          </CardTitle>
-          <CardDescription>
-            Showing <strong>{currentPeriod.label}</strong> ({fmtDate(currentPeriod.start)} – {fmtDate(currentPeriod.end)}). Each card compares against the <em>same dates last year</em> and the <em>equal-length window immediately before</em> this one.
-          </CardDescription>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Calendar className="h-5 w-5 text-[#236383]" /> Time period
+              </CardTitle>
+              <CardDescription className="mt-1.5">
+                Pick a window, then compare totals to the same dates last year and the immediately preceding period.
+              </CardDescription>
+            </div>
+            <Badge variant="outline" className="w-fit shrink-0 bg-slate-50 text-slate-700 font-normal">
+              {currentPeriod.label} · {currentRangeLabel}
+            </Badge>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap gap-2">
@@ -398,7 +431,9 @@ export default function PaceComparisonAnalytics() {
             ] as [PresetKey, string][]).map(([k, label]) => (
               <Button
                 key={k}
+                size="sm"
                 variant={preset === k ? 'default' : 'outline'}
+                className={preset === k ? 'bg-[#236383] hover:bg-[#007e8c]' : ''}
                 onClick={() => setPreset(k)}
               >
                 {label}
@@ -432,69 +467,129 @@ export default function PaceComparisonAnalytics() {
         </CardContent>
       </Card>
 
-      {/* Headline cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <ComparisonCard
-          title="Total sandwiches"
-          current={curr.total}
-          periodRange={currentRangeLabel}
-          comparisons={[
-            { label: sameDatesLastYearLabel, value: ly.total, pct: yoyPctTotal },
-            { label: precedingPeriodLabel, value: pp.total, pct: ppPctTotal },
-          ]}
-          entries={curr.entries}
-        />
-        <ComparisonCard
-          title="Individual sandwiches"
-          current={curr.individual}
-          periodRange={currentRangeLabel}
-          comparisons={[
-            {
-              label: sameDatesLastYearLabel,
-              value: ly.individual,
-              pct: pct(curr.individual, ly.individual),
-            },
-          ]}
-        />
-        <ComparisonCard
-          title="Group sandwiches"
-          current={curr.group}
-          periodRange={currentRangeLabel}
-          comparisons={[
-            {
-              label: sameDatesLastYearLabel,
-              value: ly.group,
-              pct: pct(curr.group, ly.group),
-            },
-          ]}
-        />
+      {/* At-a-glance headline */}
+      <Card className="border-2 border-[#236383]/20 bg-gradient-to-br from-[#236383]/5 via-white to-[#007e8c]/5">
+        <CardContent className="pt-6 pb-5">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="space-y-2 min-w-0">
+              <p className="text-sm font-medium uppercase tracking-wide text-[#236383]">
+                At a glance
+              </p>
+              <p className="text-xl sm:text-2xl font-semibold text-slate-900 leading-snug">
+                {headline}
+              </p>
+              {curr.entries > 0 && (
+                <p className="text-sm text-slate-600">
+                  Based on {curr.entries.toLocaleString()} collection{' '}
+                  {curr.entries === 1 ? 'entry' : 'entries'} through{' '}
+                  {fmtDate(currentPeriod.end)}.
+                </p>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-3 shrink-0">
+              <SnapshotStat
+                label="This period"
+                value={curr.total}
+                emphasize
+              />
+              <div className="hidden sm:flex items-center text-slate-300 px-1">
+                <ArrowRight className="h-5 w-5" />
+              </div>
+              <SnapshotStat label="Same dates last year" value={ly.total} />
+              <TrendPill pct={yoyPctTotal} diff={curr.total - ly.total} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Breakdown cards */}
+      <div>
+        <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+          <h3 className="text-base font-semibold text-slate-800">Breakdown by type</h3>
+          <p className="text-xs text-slate-500">
+            Last year window: {lyRangeLabel}
+            {ppPctTotal !== null && (
+              <> · Prior {ppDayCount}-day window: {ppRangeLabel}</>
+            )}
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <ComparisonCard
+            title="Total sandwiches"
+            current={curr.total}
+            comparisons={[
+              { shortLabel: 'Last year', detail: lyRangeLabel, value: ly.total, pct: yoyPctTotal },
+              { shortLabel: `Prior ${ppDayCount} days`, detail: ppRangeLabel, value: pp.total, pct: ppPctTotal },
+            ]}
+          />
+          <ComparisonCard
+            title="Individual"
+            current={curr.individual}
+            comparisons={[
+              {
+                shortLabel: 'Last year',
+                detail: lyRangeLabel,
+                value: ly.individual,
+                pct: pct(curr.individual, ly.individual),
+              },
+            ]}
+          />
+          <ComparisonCard
+            title="Group events"
+            current={curr.group}
+            comparisons={[
+              {
+                shortLabel: 'Last year',
+                detail: lyRangeLabel,
+                value: ly.group,
+                pct: pct(curr.group, ly.group),
+              },
+            ]}
+          />
+        </div>
       </div>
 
       {/* Year-end projection (YTD only) */}
       {projection && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2">
-              <Target className="h-5 w-5" /> Year-end projection
-            </CardTitle>
-            <CardDescription>
-              Based on day {projection.dayOfYear} of {projection.daysInYear} at current pace.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="text-3xl font-bold text-slate-900">
-                  {fmtNum(projection.projected)}
-                </div>
-                <div className="text-sm text-slate-600">Projected year-end</div>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Target className="h-5 w-5 text-[#236383]" /> Year-end pace
+                </CardTitle>
+                <CardDescription>
+                  Day {projection.dayOfYear} of {projection.daysInYear} — if collections continue at today&apos;s rate.
+                </CardDescription>
               </div>
-              <div>
-                <div className="text-2xl font-semibold text-slate-700">
-                  {((projection.projected / ANNUAL_GOAL) * 100).toFixed(0)}%
-                </div>
-                <div className="text-sm text-slate-600 flex items-center gap-1">
-                  of {fmtNum(ANNUAL_GOAL)} goal
+              <Badge
+                variant="outline"
+                className={
+                  projection.projected >= ANNUAL_GOAL
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
+                    : 'border-amber-200 bg-amber-50 text-amber-900'
+                }
+              >
+                {projection.projected >= ANNUAL_GOAL ? 'On pace for goal' : 'Below annual goal at current pace'}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Projected total
+                </p>
+                <p className="mt-1 text-3xl font-bold text-slate-900">
+                  {fmtNum(projection.projected)}
+                </p>
+              </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  Annual goal
+                </p>
+                <div className="mt-1 flex items-baseline gap-2">
+                  <p className="text-3xl font-bold text-slate-900">{fmtNum(ANNUAL_GOAL)}</p>
                   {canEditGoal && !editingGoal && (
                     <button
                       type="button"
@@ -505,7 +600,7 @@ export default function PaceComparisonAnalytics() {
                       className="text-slate-400 hover:text-slate-700"
                       title="Edit annual goal"
                     >
-                      <Pencil className="h-3 w-3" />
+                      <Pencil className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>
@@ -565,16 +660,33 @@ export default function PaceComparisonAnalytics() {
                   </div>
                 )}
               </div>
-              <div className="flex-1 min-w-[200px]">
-                <div className="h-3 w-full rounded-full bg-slate-100 overflow-hidden">
-                  <div
-                    className={`h-full ${projection.projected >= ANNUAL_GOAL ? 'bg-emerald-500' : 'bg-amber-500'}`}
-                    style={{
-                      width: `${Math.min(100, (projection.projected / ANNUAL_GOAL) * 100)}%`,
-                    }}
-                  />
-                </div>
+              <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-500">
+                  % of goal
+                </p>
+                <p className="mt-1 text-3xl font-bold text-slate-900">
+                  {((projection.projected / ANNUAL_GOAL) * 100).toFixed(0)}%
+                </p>
               </div>
+            </div>
+            <div>
+              <div className="mb-2 flex justify-between text-xs text-slate-600">
+                <span>0</span>
+                <span>Goal: {fmtNum(ANNUAL_GOAL)}</span>
+              </div>
+              <div className="h-4 w-full rounded-full bg-slate-100 overflow-hidden">
+                <div
+                  className={`h-full transition-all ${projection.projected >= ANNUAL_GOAL ? 'bg-emerald-500' : 'bg-amber-500'}`}
+                  style={{
+                    width: `${Math.min(100, (projection.projected / ANNUAL_GOAL) * 100)}%`,
+                  }}
+                />
+              </div>
+              <p className="mt-2 text-sm text-slate-600">
+                {projection.projected >= ANNUAL_GOAL
+                  ? `Projected to exceed the goal by ${fmtNum(projection.projected - ANNUAL_GOAL)} sandwiches.`
+                  : `Projected to fall short of the goal by ${fmtNum(ANNUAL_GOAL - projection.projected)} sandwiches.`}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -584,11 +696,17 @@ export default function PaceComparisonAnalytics() {
       {monthly && monthly.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">
-              Monthly comparison: {now.getFullYear()} vs {now.getFullYear() - 1}
+            <CardTitle className="text-lg">
+              Month by month: {now.getFullYear()} vs {now.getFullYear() - 1}
             </CardTitle>
             <CardDescription>
-              Each month counts only through the same day-of-month for fair comparison.
+              Each month only counts through the same day-of-month so the comparison stays fair.
+              {monthlyYtdPct !== null && (
+                <span className="block mt-1 font-medium text-slate-700">
+                  YTD total is {fmtPct(monthlyYtdPct)} vs the same point last year (
+                  {fmtNum(monthlyYtdCurrent)} vs {fmtNum(monthlyYtdPrior)}).
+                </span>
+              )}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -609,7 +727,7 @@ export default function PaceComparisonAnalytics() {
                   <Bar
                     dataKey="current"
                     name={`${now.getFullYear()}`}
-                    fill="#2563eb"
+                    fill="#236383"
                     radius={[4, 4, 0, 0]}
                   />
                 </BarChart>
@@ -619,18 +737,21 @@ export default function PaceComparisonAnalytics() {
         </Card>
       )}
 
-      {/* Narrative */}
+      {/* Narrative insights */}
       {narrative.length > 0 && (
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">What changed</CardTitle>
+            <CardTitle className="text-lg">What&apos;s driving the change</CardTitle>
+            <CardDescription>Quick read on individual vs group collections and year-end outlook.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-1.5">
+            <ul className="grid gap-3 sm:grid-cols-2">
               {narrative.map((line, i) => (
-                <li key={i} className="text-base text-slate-700 flex gap-2 leading-relaxed">
-                  <span className="text-blue-500 mt-0.5">•</span>
-                  <span>{line}</span>
+                <li
+                  key={i}
+                  className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700 leading-relaxed"
+                >
+                  {line}
                 </li>
               ))}
             </ul>
@@ -641,65 +762,108 @@ export default function PaceComparisonAnalytics() {
   );
 }
 
+function SnapshotStat({
+  label,
+  value,
+  emphasize = false,
+}: {
+  label: string;
+  value: number;
+  emphasize?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-lg border px-4 py-3 min-w-[140px] ${
+        emphasize ? 'border-[#236383]/30 bg-white shadow-sm' : 'border-slate-200 bg-white/80'
+      }`}
+    >
+      <p className="text-[11px] font-medium uppercase tracking-wide text-slate-500">{label}</p>
+      <p className={`mt-0.5 font-bold text-slate-900 ${emphasize ? 'text-2xl' : 'text-xl'}`}>
+        {fmtNum(value)}
+      </p>
+    </div>
+  );
+}
+
+function TrendPill({ pct, diff }: { pct: number | null; diff: number }) {
+  const tone = trendTone(pct);
+  const classes =
+    tone === 'up'
+      ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+      : tone === 'down'
+        ? 'border-rose-200 bg-rose-50 text-rose-900'
+        : tone === 'flat'
+          ? 'border-slate-200 bg-slate-50 text-slate-700'
+          : 'border-slate-200 bg-slate-50 text-slate-600';
+
+  return (
+    <div className={`rounded-lg border px-4 py-3 min-w-[140px] ${classes}`}>
+      <p className="text-[11px] font-medium uppercase tracking-wide opacity-80">Change</p>
+      <div className="mt-0.5 flex items-center gap-1.5">
+        {tone === 'up' && <TrendingUp className="h-5 w-5 shrink-0" />}
+        {tone === 'down' && <TrendingDown className="h-5 w-5 shrink-0" />}
+        {tone === 'flat' && <Minus className="h-5 w-5 shrink-0" />}
+        <span className="text-xl font-bold">{pct === null ? '—' : fmtPct(pct)}</span>
+      </div>
+      {pct !== null && diff !== 0 && (
+        <p className="mt-1 text-xs opacity-90">
+          {diff > 0 ? '+' : '−'}
+          {fmtNum(Math.abs(diff))} sandwiches
+        </p>
+      )}
+    </div>
+  );
+}
+
 function ComparisonCard({
   title,
   current,
   comparisons,
-  entries,
-  periodRange,
 }: {
   title: string;
   current: number;
-  comparisons: { label: string; value: number; pct: number | null }[];
-  entries?: number;
-  periodRange?: string;
+  comparisons: { shortLabel: string; detail?: string; value: number; pct: number | null }[];
 }) {
   return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold text-slate-700">{title}</CardTitle>
+    <Card className="overflow-hidden">
+      <CardHeader className="pb-2 bg-slate-50/80 border-b border-slate-100">
+        <CardTitle className="text-sm font-semibold text-slate-700">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="text-3xl font-bold text-slate-900">{fmtNum(current)}</div>
-        {(periodRange || entries !== undefined) && (
-          <div className="text-sm text-slate-600 mt-1 leading-snug">
-            {periodRange}
-            {periodRange && entries !== undefined && ' · '}
-            {entries !== undefined && (
-              <>
-                {entries.toLocaleString()} collection {entries === 1 ? 'entry' : 'entries'}
-              </>
-            )}
-          </div>
-        )}
-        <div className="mt-4 space-y-3">
+      <CardContent className="pt-4">
+        <div className="text-3xl font-bold text-slate-900 tabular-nums">{fmtNum(current)}</div>
+        <div className="mt-4 space-y-2">
           {comparisons.map((c, i) => {
-            const isUp = c.pct !== null && c.pct >= 0;
+            const tone = trendTone(c.pct);
             return (
-              <div key={i} className="space-y-1.5 border-t border-slate-100 pt-3 first:border-0 first:pt-0">
-                <div className="text-base text-slate-700 leading-snug">{c.label}</div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-sm font-medium text-slate-600">{fmtNum(c.value)}</span>
+              <div
+                key={i}
+                className="flex items-center justify-between gap-3 rounded-md border border-slate-100 bg-slate-50/50 px-3 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="text-sm font-medium text-slate-700">{c.shortLabel}</p>
+                  {c.detail && (
+                    <p className="text-[11px] text-slate-500 truncate" title={c.detail}>
+                      {c.detail}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-sm font-semibold text-slate-800 tabular-nums">
+                    {fmtNum(c.value)}
+                  </span>
                   <Badge
                     variant="outline"
                     className={
-                      c.pct === null
-                        ? 'text-slate-600 text-sm'
-                        : isUp
-                          ? 'text-emerald-800 border-emerald-200 bg-emerald-50 text-sm'
-                          : 'text-rose-800 border-rose-200 bg-rose-50 text-sm'
+                      tone === 'unknown'
+                        ? 'text-slate-600'
+                        : tone === 'up'
+                          ? 'text-emerald-800 border-emerald-200 bg-emerald-50'
+                          : tone === 'down'
+                            ? 'text-rose-800 border-rose-200 bg-rose-50'
+                            : 'text-slate-700 border-slate-200 bg-white'
                     }
                   >
-                    {c.pct === null ? '—' : (
-                      <>
-                        {isUp ? (
-                          <TrendingUp className="h-3.5 w-3.5 mr-1" />
-                        ) : (
-                          <TrendingDown className="h-3.5 w-3.5 mr-1" />
-                        )}
-                        {fmtPct(c.pct)}
-                      </>
-                    )}
+                    {c.pct === null ? '—' : fmtPct(c.pct)}
                   </Badge>
                 </div>
               </div>
