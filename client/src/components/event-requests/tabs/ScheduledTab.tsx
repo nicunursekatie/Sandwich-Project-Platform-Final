@@ -123,10 +123,18 @@ export const ScheduledTab: React.FC = () => {
     openDialog,
   } = useEventDialogState();
 
-  // Include both 'scheduled' and 'rescheduled' events on the Scheduled tab
-  const scheduledOnly = filterRequestsByStatus('scheduled');
-  const rescheduledOnly = filterRequestsByStatus('rescheduled');
-  const scheduledRequests = [...scheduledOnly, ...rescheduledOnly];
+  // filterRequestsByStatus('scheduled') already includes 'rescheduled'
+  // events internally (see useEventFilters.ts:541) AND applies the
+  // active sortBy across the combined list. Calling it a second time
+  // for 'rescheduled' and concatenating the two arrays broke the sort
+  // (all scheduled events would come first, then all rescheduled),
+  // duplicated the rescheduled events (they'd already been returned in
+  // the first call), and multiplied the pagination window.
+  //
+  // Historically this list sorts by event date ascending, then by
+  // event start time ascending within each date. That's baked into
+  // the 'event_date_asc' branch of the sort in useEventFilters.
+  const scheduledRequests = filterRequestsByStatus('scheduled');
 
   // Inline editing functions - SPECIFIC to scheduled tab
   const startEditing = (id: number, field: string, currentValue: string) => {
