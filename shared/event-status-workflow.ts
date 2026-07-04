@@ -255,3 +255,180 @@ export function getScheduledDateDefault<T extends string | Date>(
   if (currentScheduledDate) return undefined;
   return desiredDate ?? undefined;
 }
+
+/**
+ * Impure inputs an event-request transition needs, passed explicitly so the
+ * transition function itself stays deterministic and unit-testable.
+ */
+export interface EventTransitionContext {
+  /** The timestamp stamped on every status side-effect column (statusChangedAt,
+   *  declinedAt, cancelledAt, nonEventAt) so one save records one instant. */
+  now: Date;
+  /** The acting user's id (already coalesced to null when absent). Used for
+   *  declinedBy / cancelledBy / nonEventBy. */
+  userId: string | null;
+}
+
+/**
+ * A rejected transition. HTTP-agnostic: the caller maps `code` to a status.
+ */
+export interface EventTransitionError {
+  code: 'INVALID_STATUS_TRANSITION' | 'MISSING_REASON';
+  message: string;
+  /** Present only for INVALID_STATUS_TRANSITION. */
+  currentStatus?: EventStatus;
+  requestedStatus: EventStatus;
+  /** Present only for MISSING_REASON; may be undefined when the status has no
+   *  dedicated structured reason field. */
+  reasonField?: string;
+}
+
+export interface EventTransitionResult {
+  /** The patch with all status-derived side-effect fields applied. When `error`
+   *  is set this is the patch as processed up to the failure and must not be
+   *  persisted. */
+  patch: Record<string, any>;
+  error?: EventTransitionError;
+}
+
+/**
+ * Apply every status-derived side-effect of an event-request update in one pure,
+ * testable place: transition validity, the reason requirement, `statusChangedAt`,
+ * the scheduled-date default, auto-confirm, Volunteer-Hub exposure on scheduling,
+ * the declined / cancelled / non_event / rescheduled metadata, and the
+ * `isConfirmed` ↔ scheduled-date coupling.
+ *
+ * Returns a NEW patch with those fields merged in, or an `error` when the
+ * transition is invalid or a required reason is missing. Extracted verbatim from
+ * the `PATCH /:id` handler (save-path consolidation PR-B) — the impure current
+ * time and acting user are injected via `ctx` so the logic is deterministic.
+ *
+ * `patch` is treated as already date-normalized (the handler converts date
+ * strings to `Date`s before calling this).
+ */
+export function applyEventRequestTransition(
+  original: {
+    status?: string | null;
+    scheduledEventDate?: unknown;
+    desiredEventDate?: unknown;
+    showOnVolunteerHub?: boolean | null;
+  },
+  patch: Record<string, any>,
+  ctx: EventTransitionContext,
+): EventTransitionResult {
+  const out: Record<string, any> = { ...patch };
+
+  // Status-change side-effects only run when the status actually changes.
+  if (out.status && out.status !== original.status) {
+    const fromStatus = original.status as EventStatus;
+    const toStatus = out.status as EventStatus;
+
+    if (!isValidTransition(fromStatus, toStatus)) {
+      return {
+        patch: out,
+        error: {
+          code: 'INVALID_STATUS_TRANSITION',
+          message: getTransitionError(fromStatus, toStatus),
+          currentStatus: fromStatus,
+          requestedStatus: toStatus,
+        },
+      };
+    }
+
+    // Reason-required transitions must record a reason in ANY of the satisfying
+    // fields — incoming value if provided, otherwise what's already on the record.
+    if (requiresReason(toStatus)) {
+      const satisfied = getReasonSatisfyingFields(toStatus).some((field) => {
+        const incoming = out[field];
+        const effective = incoming !== undefined ? incoming : (original as any)[field];
+        return typeof effective === 'string' && effective.trim() !== '';
+      });
+      if (!satisfied) {
+        return {
+          patch: out,
+          error: {
+            code: 'MISSING_REASON',
+            message: `A reason or note is required to mark this event as "${toStatus}".`,
+            requestedStatus: toStatus,
+            reasonField: getReasonField(toStatus),
+          },
+        };
+      }
+    }
+
+    out.statusChangedAt = ctx.now;
+
+    // Scheduling with no date yet falls back to the desired date. Resolve
+    // effective values with `!== undefined` (not `??`) so an explicit null in the
+    // patch (intentionally clearing) is respected and a same-request desired date
+    // is preferred over the stored one.
+    const effectiveScheduledDate =
+      out.scheduledEventDate !== undefined ? out.scheduledEventDate : original.scheduledEventDate;
+    const effectiveDesiredDate =
+      out.desiredEventDate !== undefined ? out.desiredEventDate : original.desiredEventDate;
+    const scheduledDateDefault = getScheduledDateDefault(
+      toStatus,
+      effectiveScheduledDate as string | Date | null | undefined,
+      effectiveDesiredDate as string | Date | null | undefined,
+    );
+    if (scheduledDateDefault !== undefined) {
+      out.scheduledEventDate = scheduledDateDefault;
+    }
+
+    if (out.status === 'completed') {
+      out.isConfirmed = true;
+    }
+
+    // Becoming scheduled/rescheduled auto-confirms the date and surfaces it on the
+    // Volunteer Hub. Both stay manually toggleable; only set on the transition,
+    // never forced back off, and an explicit value in the same request wins.
+    if (toStatus === 'scheduled' || toStatus === 'rescheduled') {
+      if (out.isConfirmed === undefined) {
+        out.isConfirmed = true;
+      }
+      if (out.showOnVolunteerHub === undefined && !original.showOnVolunteerHub) {
+        out.showOnVolunteerHub = true;
+      }
+    }
+
+    if (out.status === 'declined') {
+      out.declinedAt = ctx.now;
+      out.declinedBy = ctx.userId;
+    }
+
+    if (out.status === 'cancelled') {
+      out.cancelledAt = ctx.now;
+      out.cancelledBy = ctx.userId;
+    }
+
+    if (out.status === 'non_event') {
+      out.nonEventAt = ctx.now;
+      out.nonEventBy = ctx.userId;
+    }
+
+    if (out.status === 'rescheduled') {
+      if (original.scheduledEventDate && !out.originalScheduledDate) {
+        out.originalScheduledDate = original.scheduledEventDate;
+      }
+      out.wasPostponed = true;
+    }
+  }
+
+  // The date/confirm coupling runs regardless of whether the status changed.
+  // Auto-confirm when a scheduled date is first set, unless the client explicitly
+  // sent isConfirmed (an explicit `false` alongside a new date is respected).
+  if (
+    out.isConfirmed === undefined &&
+    out.scheduledEventDate &&
+    !original.scheduledEventDate
+  ) {
+    out.isConfirmed = true;
+  }
+
+  // Completed events are always confirmed.
+  if (out.status === 'completed' || original.status === 'completed') {
+    out.isConfirmed = true;
+  }
+
+  return { patch: out };
+}
