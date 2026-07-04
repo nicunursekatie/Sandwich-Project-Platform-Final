@@ -17,6 +17,7 @@ import { hasPermission } from '@shared/unified-auth-utils';
 import { parseDateOnly, getTodayString, toDateOnlyString } from '@shared/date-utils';
 import { isValidTransition, getTransitionError, requiresReason, getReasonField, getReasonSatisfyingFields, getScheduledDateDefault, type EventStatus } from '@shared/event-status-workflow';
 import { parseSandwichCountInput } from '@shared/sandwich-count-utils';
+import { eventRequestPatchSchema } from '@shared/event-request-patch';
 import { requirePermission } from '../middleware/auth';
 import { isAuthenticated } from '../auth';
 import { getEventRequestsGoogleSheetsService } from '../google-sheets-event-requests-sync';
@@ -2475,7 +2476,32 @@ router.patch(
       // Track fields the server silently dropped during processing so the client can warn the user.
       // Each entry: { field: 'fieldName', reason: 'human-readable explanation' }
       const droppedFields: Array<{ field: string; reason: string }> = [];
-      
+
+      // SHADOW VALIDATION (save-path consolidation PR-A — log-only, never rejects).
+      // Parse the incoming body against the shared eventRequestPatchSchema and log
+      // any violations so we can see what real payloads would fail BEFORE enforcement
+      // is turned on (see docs/event-request-save-path-consolidation.md). safeParse
+      // never throws and the result is intentionally discarded — this cannot affect
+      // the save. Set EVENT_PATCH_SHADOW_VALIDATION=off to silence.
+      if (process.env.EVENT_PATCH_SHADOW_VALIDATION !== 'off') {
+        try {
+          const shadow = eventRequestPatchSchema.safeParse(updates);
+          if (!shadow.success) {
+            const issues = shadow.error.issues.map((issue) => ({
+              path: issue.path.join('.') || '(root)',
+              code: issue.code,
+              message: issue.message,
+            }));
+            logger.warn(
+              `[PATCH /:id] SHADOW VALIDATION: event ${id} body would fail eventRequestPatchSchema (${issues.length} issue(s)): ${JSON.stringify(issues)}`
+            );
+          }
+        } catch (shadowError) {
+          // Defensive: a bug in shadow validation must never break a real save.
+          logger.warn(`[PATCH /:id] SHADOW VALIDATION threw (ignored):`, shadowError);
+        }
+      }
+
       // DEBUG: Log department field specifically
       logger.info(`[PATCH /:id] DEPARTMENT DEBUG: department in updates = "${updates.department}", type = ${typeof updates.department}`);
       // DEBUG: Log van driver fields
