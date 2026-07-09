@@ -2184,10 +2184,9 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
 
     const client = getOpenAIClient();
     const completion = await client.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-5',
       messages,
-      temperature: 0.7,
-      max_tokens: 1500,
+      max_completion_tokens: 1500,
     });
 
     const aiResponse = completion.choices[0].message.content || 'I apologize, but I was unable to generate a response.';
