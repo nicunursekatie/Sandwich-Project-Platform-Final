@@ -64,6 +64,10 @@ function getRoleLabel(role: string) {
   switch (role) {
     case 'driver': return 'Driver';
     case 'general': return 'Volunteer';
+    // Speaker role is retired for new signups, but legacy signups may still
+    // carry role 'speaker' — keep a friendly label so historical records read
+    // cleanly instead of showing the raw string.
+    case 'speaker': return 'Speaker';
     default: return role;
   }
 }

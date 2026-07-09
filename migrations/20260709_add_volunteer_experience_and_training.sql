@@ -18,3 +18,18 @@ ALTER TABLE volunteers
 
 ALTER TABLE volunteers
   ADD COLUMN IF NOT EXISTS training_completed boolean NOT NULL DEFAULT false;
+
+-- Constrain experience_level to the known readiness values. The create-path Zod
+-- schema already enforces this, but PATCH /api/volunteers/:id forwards arbitrary
+-- bodies, so a DB-level CHECK is defense-in-depth. Idempotent: only add the
+-- constraint if it isn't already present (ADD CONSTRAINT has no IF NOT EXISTS).
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'volunteers_experience_level_check'
+  ) THEN
+    ALTER TABLE volunteers
+      ADD CONSTRAINT volunteers_experience_level_check
+      CHECK (experience_level IN ('new', 'experienced'));
+  END IF;
+END $$;

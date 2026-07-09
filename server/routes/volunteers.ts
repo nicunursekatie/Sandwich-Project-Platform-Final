@@ -1,6 +1,6 @@
 import express from 'express';
 import type { RouterDependencies } from '../types';
-import { insertVolunteerSchema } from '@shared/schema';
+import { insertVolunteerSchema, VOLUNTEER_EXPERIENCE_LEVELS } from '@shared/schema';
 import { logger } from '../utils/production-safe-logger';
 import { AuditLogger } from '../audit-logger';
 import { geocodeAddress } from '../utils/geocoding';
@@ -25,6 +25,19 @@ function canViewVolunteerNotes(req: any): boolean {
 function redactVolunteerNotes(req: any, volunteer: any) {
   if (!volunteer || canViewVolunteerNotes(req)) return volunteer;
   return { ...volunteer, notes: null };
+}
+
+/**
+ * True when the body carries an experienceLevel outside the allowed readiness
+ * values. The update handlers forward arbitrary bodies straight to the DB, and
+ * the column now has a CHECK constraint — reject bad values with a 400 here so
+ * a malformed request doesn't surface as an opaque 500 from the constraint.
+ */
+function hasInvalidExperienceLevel(body: any): boolean {
+  return (
+    body.experienceLevel !== undefined &&
+    !(VOLUNTEER_EXPERIENCE_LEVELS as readonly string[]).includes(body.experienceLevel)
+  );
 }
 
 async function geocodeVolunteerIfNeeded(volunteerData: any, existing?: any) {
@@ -133,7 +146,7 @@ export function createVolunteersRouter(deps: RouterDependencies) {
           volunteer.emailAgreementSent ? 'Yes' : 'No',
           volunteer.voicemailLeft ? 'Yes' : 'No',
           escapeCSV(volunteer.inactiveReason),
-          volunteer.experienceLevel || 'new',
+          escapeCSV(volunteer.experienceLevel || 'new'),
           volunteer.trainingCompleted ? 'Yes' : 'No',
           volunteer.createdAt
             ? new Date(volunteer.createdAt).toLocaleDateString()
@@ -206,6 +219,9 @@ export function createVolunteersRouter(deps: RouterDependencies) {
       }
 
       const body = { ...req.body };
+      if (hasInvalidExperienceLevel(body)) {
+        return res.status(400).json({ message: `experienceLevel must be one of: ${VOLUNTEER_EXPERIENCE_LEVELS.join(', ')}` });
+      }
       if (!canViewVolunteerNotes(req)) {
         delete body.notes;
       }
@@ -248,6 +264,9 @@ export function createVolunteersRouter(deps: RouterDependencies) {
       }
 
       const body = { ...req.body };
+      if (hasInvalidExperienceLevel(body)) {
+        return res.status(400).json({ message: `experienceLevel must be one of: ${VOLUNTEER_EXPERIENCE_LEVELS.join(', ')}` });
+      }
       if (!canViewVolunteerNotes(req)) {
         delete body.notes;
       }
