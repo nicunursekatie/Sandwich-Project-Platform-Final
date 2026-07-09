@@ -129,7 +129,7 @@ Return your analysis as a JSON object with this structure:
     // Call OpenAI Vision API
     const client = getOpenAIClient();
     const completion = await client.chat.completions.create({
-      model: 'gpt-4o', // Vision-capable model
+      model: 'gpt-5', // Vision-capable model
       messages: [
         {
           role: 'system',
@@ -153,8 +153,8 @@ Return your analysis as a JSON object with this structure:
         },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.1, // Very low temperature for consistent, factual extraction
-      max_tokens: 1500,
+      max_completion_tokens: 4000,
+      reasoning_effort: 'minimal',
     });
 
     const responseContent = completion.choices[0].message.content;

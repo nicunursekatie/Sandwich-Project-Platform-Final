@@ -475,7 +475,7 @@ async function generateReportWithAI(
 
   const client = getOpenAIClient();
   const completion = await client.chat.completions.create({
-    model: 'gpt-4o',
+    model: 'gpt-5',
     messages: [
       {
         role: 'system',
@@ -533,8 +533,8 @@ Return JSON with this structure:
       },
     ],
     response_format: { type: 'json_object' },
-    temperature: 0.7,
-    max_tokens: 3000,
+    max_completion_tokens: 8000,
+    reasoning_effort: 'minimal',
   });
 
   const responseContent = completion.choices[0].message.content;
@@ -624,7 +624,7 @@ export async function saveImpactReport(
         highlights: report.highlights as any,
         trends: report.trends as any,
         generatedBy,
-        aiModel: 'gpt-4o',
+        aiModel: 'gpt-5',
         regenerationCount: (existingReport.regenerationCount || 0) + 1,
         updatedAt: new Date(),
       })
@@ -646,7 +646,7 @@ export async function saveImpactReport(
     highlights: report.highlights as any,
     trends: report.trends as any,
     generatedBy,
-    aiModel: 'gpt-4o',
+    aiModel: 'gpt-5',
     status: 'draft',
   }).returning();
 
