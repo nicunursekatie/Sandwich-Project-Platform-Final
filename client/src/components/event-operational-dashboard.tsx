@@ -308,9 +308,6 @@ export default function EventOperationalDashboard() {
             missing.push('Driver');
           }
         }
-        if ((e.speakersNeeded && e.speakersNeeded > 0) && !e.eventStartTime) {
-          missing.push('Event start time');
-        }
 
         return missing.length > 0;
       })
@@ -326,9 +323,6 @@ export default function EventOperationalDashboard() {
           if (totalDriversAssigned < e.driversNeeded) {
             missing.push('Driver');
           }
-        }
-        if ((e.speakersNeeded && e.speakersNeeded > 0) && !e.eventStartTime) {
-          missing.push('Event start time');
         }
 
         return {

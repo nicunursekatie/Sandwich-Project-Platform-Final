@@ -180,9 +180,13 @@ export function getUnfilledCounts(event: EventWithAssignments & {
   const driversAssigned = getTotalDriverCount(event);
   const driversUnfilled = Math.max(0, driversNeeded - driversAssigned);
 
+  // Speaker role retired: still surface the historical needed/assigned counts
+  // (kept in the return shape so callers that destructure them don't break),
+  // but speakers no longer contribute to unfilled needs — force unfilled to 0
+  // so no "needs a speaker" state can leak through anywhere downstream.
   const speakersNeeded = event.speakersNeeded || 0;
   const speakersAssigned = getSpeakerCount(event);
-  const speakersUnfilled = Math.max(0, speakersNeeded - speakersAssigned);
+  const speakersUnfilled = 0;
 
   const volunteersNeeded = event.volunteersNeeded || 0;
   const volunteersAssigned = getVolunteerCount(event);
@@ -198,6 +202,6 @@ export function getUnfilledCounts(event: EventWithAssignments & {
     volunteersNeeded,
     volunteersAssigned,
     volunteersUnfilled,
-    hasUnfilledNeeds: driversUnfilled > 0 || speakersUnfilled > 0 || volunteersUnfilled > 0,
+    hasUnfilledNeeds: driversUnfilled > 0 || volunteersUnfilled > 0,
   };
 }

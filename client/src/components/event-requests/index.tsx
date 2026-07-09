@@ -1291,7 +1291,7 @@ const EventRequestsManagementContent: React.FC = () => {
           currentCustomTspContact={tspContactEventRequest?.customTspContact || undefined}
         />
 
-        {/* General Assignment Dialog for Drivers/Speakers/Volunteers */}
+        {/* General Assignment Dialog for Drivers/Volunteers */}
         <AssignmentDialog
           isOpen={(activeDialog === 'assignment')}
           onClose={() => {
@@ -1419,81 +1419,6 @@ const EventRequestsManagementContent: React.FC = () => {
                   }
                 });
                 updateData.driverDetails = driverDetails;
-              }
-
-            } else if (assignmentType === 'speaker') {
-              if (isTentative) {
-                // Tentative speaker assignment - add to tentativeSpeakerIds
-                const existingTentativeSpeakers = currentEvent.tentativeSpeakerIds || [];
-                const allTentativeSpeakerIds = [...new Set([...existingTentativeSpeakers, ...assignees])];
-                updateData.tentativeSpeakerIds = allTentativeSpeakerIds;
-              } else {
-              // Get existing speakers and merge with new ones
-              const existingSpeakers = currentEvent.assignedSpeakerIds || [];
-              const existingSpeakerDetails = currentEvent.speakerDetails || {};
-
-              // Merge new speakers with existing ones (avoiding duplicates)
-              const allSpeakerIds = [...new Set([...existingSpeakers, ...assignees])];
-              updateData.assignedSpeakerIds = allSpeakerIds;
-
-              // Build speaker details object, preserving existing details
-              const speakerDetails: any = { ...existingSpeakerDetails };
-              const speakerAssignments: string[] = [];
-
-              // Add details for all speakers (existing + new)
-              allSpeakerIds.forEach(speakerId => {
-                // Only add new details if they don't exist yet
-                if (!speakerDetails[speakerId]) {
-                  let name = speakerId; // Default fallback
-                  
-                  // Handle custom IDs (e.g., "custom-1762134226512-David")
-                  if (speakerId.startsWith('custom-')) {
-                    const parts = speakerId.split('-');
-                    if (parts.length >= 3) {
-                      const nameParts = parts.slice(2);
-                      name = nameParts.join('-').replace(/-/g, ' ').trim() || 'Custom Speaker';
-                    } else {
-                      name = 'Custom Speaker';
-                    }
-                  }
-                  // Handle host-contact IDs (e.g., "host-contact-4")
-                  else if (speakerId.startsWith('host-contact-')) {
-                    const contactId = parseInt(speakerId.replace('host-contact-', ''));
-                    // Try to find in hostsWithContacts
-                    let found = false;
-                    if (hostsWithContacts && hostsWithContacts.length > 0) {
-                      for (const host of hostsWithContacts) {
-                        const contact = host.contacts?.find((c: any) => c.id === contactId);
-                        if (contact) {
-                          name = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.name || contact.email || `Contact #${contactId}`;
-                          found = true;
-                          break;
-                        }
-                      }
-                    }
-                    if (!found) {
-                      name = `Contact #${contactId}`;
-                    }
-                  }
-                  // Handle regular user IDs
-                  else {
-                    const foundUser = (users ?? []).find((u: any) => u.id === speakerId);
-                    if (foundUser) {
-                      name = `${foundUser.firstName} ${foundUser.lastName}`.trim() || foundUser.displayName || speakerId;
-                    }
-                  }
-
-                  speakerDetails[speakerId] = {
-                    name: name,
-                    assignedAt: new Date().toISOString(),
-                    assignedBy: user?.id || 'system'
-                  };
-                }
-                speakerAssignments.push(speakerDetails[speakerId].name || speakerId);
-              });
-
-              updateData.speakerDetails = speakerDetails;
-              updateData.speakerAssignments = speakerAssignments;
               }
 
             } else if (assignmentType === 'volunteer') {
@@ -1693,7 +1618,7 @@ const EventRequestsManagementContent: React.FC = () => {
                 Weekly Staffing Planning
               </DialogTitle>
               <DialogDescription>
-                Coordinate drivers, speakers, and volunteers for scheduled
+                Coordinate drivers and volunteers for scheduled
                 events. Ensure all positions are filled before event dates.
               </DialogDescription>
             </DialogHeader>
@@ -1710,10 +1635,6 @@ const EventRequestsManagementContent: React.FC = () => {
                   <li>
                     • Check driver assignments early - transportation is
                     critical
-                  </li>
-                  <li>
-                    • Speaker assignments should be confirmed 1 week before
-                    events
                   </li>
                   <li>
                     • Van drivers are needed for large events or special

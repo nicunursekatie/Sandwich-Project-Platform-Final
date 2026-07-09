@@ -44,7 +44,7 @@ const BRAND = {
   surface: '#FAF8F4',       // paper tone
 };
 
-type RoleFilter = 'all' | 'speaker' | 'volunteer' | 'driver';
+type RoleFilter = 'all' | 'volunteer' | 'driver';
 type ViewMode = 'card' | 'calendar' | 'map';
 
 export const VolunteerOpportunitiesTab: React.FC = () => {
@@ -57,10 +57,6 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
 
   // Helper to calculate unfilled needs for an event
   const getUnfilledNeeds = (request: EventRequest) => {
-    const speakersNeededCount = request.speakersNeeded ?? 0;
-    const speakersAssignedCount = Object.keys(request.speakerDetails || {}).length;
-    const needsSpeaker = speakersNeededCount > speakersAssignedCount;
-
     const volunteersNeededCount = request.volunteersNeeded ?? 0;
     const volunteersAssignedCount = request.assignedVolunteerIds?.length || 0;
     const needsVolunteer = volunteersNeededCount > volunteersAssignedCount;
@@ -79,12 +75,9 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
     );
 
     return {
-      needsSpeaker,
       needsVolunteer,
       needsDriver,
       needsVanDriver,
-      speakersNeededCount,
-      speakersAssignedCount,
       volunteersNeededCount,
       volunteersAssignedCount,
       driversNeededCount,
@@ -92,19 +85,18 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
     };
   };
 
-  // Filter events that need volunteers, speakers, or drivers
+  // Filter events that need volunteers or drivers
   const opportunities = useMemo(() => {
     return eventRequests
       .filter((request: EventRequest) => isScheduledOrRescheduled(request.status))
       .filter((request: EventRequest) => {
-        const { needsSpeaker, needsVolunteer, needsDriver, needsVanDriver } =
+        const { needsVolunteer, needsDriver, needsVanDriver } =
           getUnfilledNeeds(request);
 
-        if (roleFilter === 'speaker' && !needsSpeaker) return false;
         if (roleFilter === 'volunteer' && !needsVolunteer) return false;
         if (roleFilter === 'driver' && !needsDriver && !needsVanDriver) return false;
 
-        return needsSpeaker || needsVolunteer || needsDriver || needsVanDriver;
+        return needsVolunteer || needsDriver || needsVanDriver;
       })
       .sort((a: EventRequest, b: EventRequest) => {
         const dateA = getEffectiveEventDate(a);
@@ -120,20 +112,18 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
     const scheduled = eventRequests.filter(
       (r: EventRequest) => isScheduledOrRescheduled(r.status),
     );
-    let speaker = 0;
     let volunteer = 0;
     let driver = 0;
     scheduled.forEach((r: EventRequest) => {
       const n = getUnfilledNeeds(r);
-      if (n.needsSpeaker) speaker++;
       if (n.needsVolunteer) volunteer++;
       if (n.needsDriver || n.needsVanDriver) driver++;
     });
     const all = scheduled.filter((r) => {
       const n = getUnfilledNeeds(r);
-      return n.needsSpeaker || n.needsVolunteer || n.needsDriver || n.needsVanDriver;
+      return n.needsVolunteer || n.needsDriver || n.needsVanDriver;
     }).length;
-    return { all, speaker, volunteer, driver };
+    return { all, volunteer, driver };
   }, [eventRequests]);
 
   const formatEventDate = (request: EventRequest) => {
@@ -283,21 +273,6 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
             </span>
           </FilterChip>
           <FilterChip
-            active={roleFilter === 'speaker'}
-            onClick={() => setRoleFilter('speaker')}
-          >
-            <Mic className="w-3.5 h-3.5" />
-            Speakers
-            <span
-              className={cn(
-                'ml-1 px-1.5 py-0.5 rounded-full text-[11px] font-bold',
-                roleFilter === 'speaker' ? 'bg-white/25' : 'bg-gray-100 text-gray-600',
-              )}
-            >
-              {counts.speaker}
-            </span>
-          </FilterChip>
-          <FilterChip
             active={roleFilter === 'volunteer'}
             onClick={() => setRoleFilter('volunteer')}
           >
@@ -394,12 +369,9 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
           {opportunities.map((request: EventRequest) => {
             const needs = getUnfilledNeeds(request);
-            const { needsSpeaker, needsVolunteer, needsDriver, needsVanDriver } = needs;
+            const { needsVolunteer, needsDriver, needsVanDriver } = needs;
 
             const speakerDetails = request.speakerDetails || {};
-            const isSpeakerSignedUp = user?.id
-              ? Object.keys(speakerDetails).includes(user.id)
-              : false;
             const isVolunteerSignedUp = user?.id
               ? (request.assignedVolunteerIds || []).includes(user.id)
               : false;
@@ -526,20 +498,6 @@ export const VolunteerOpportunitiesTab: React.FC = () => {
                       Roles still open
                     </div>
                     <div className="space-y-2">
-                      {needsSpeaker && (
-                        <RoleRow
-                          icon={Mic}
-                          color={BRAND.burgundy}
-                          label="Speaker"
-                          ctaLabel="Sign up as Speaker"
-                          signedUpLabel="Signed up as Speaker"
-                          assigned={needs.speakersAssignedCount}
-                          needed={needs.speakersNeededCount}
-                          signedUp={isSpeakerSignedUp}
-                          disabled={!canSelfSignup(request, 'speaker')}
-                          onSignup={() => handleSelfSignup(request.id, 'speaker')}
-                        />
-                      )}
                       {needsVolunteer && (
                         <RoleRow
                           icon={Users}

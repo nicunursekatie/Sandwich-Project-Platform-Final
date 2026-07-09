@@ -1250,16 +1250,9 @@ router.get(
             ? (Array.isArray(event.assignedDriverIds) ? event.assignedDriverIds.length : 1)
             : 0;
           const needsDriver = driversNeeded > assignedDrivers;
-          
-          // Events needing speakers
-          const speakersNeeded = event.speakersNeeded || 0;
-          const assignedSpeakers = event.speakerDetails 
-            ? (typeof event.speakerDetails === 'string' 
-                ? Object.keys(JSON.parse(event.speakerDetails || '{}')).length 
-                : Object.keys(event.speakerDetails || {}).length)
-            : 0;
-          const needsSpeaker = speakersNeeded > assignedSpeakers;
-          
+
+          // (Speaker role retired — speaker needs no longer counted.)
+
           // Events needing volunteers
           const volunteersNeeded = event.volunteersNeeded || 0;
           const assignedVolunteers = event.volunteerDetails
@@ -1268,14 +1261,14 @@ router.get(
                 : Object.keys(event.volunteerDetails || {}).length)
             : 0;
           const needsVolunteer = volunteersNeeded > assignedVolunteers;
-          
+
           // Events needing van driver
           const needsVanDriver = event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan;
-          
+
           // Events without confirmed dates (new/in_process)
           const needsDateConfirmation = (event.status === 'new' || event.status === 'in_process') && !event.isConfirmed;
-          
-          return needsDriver || needsSpeaker || needsVolunteer || needsVanDriver || needsDateConfirmation;
+
+          return needsDriver || needsVolunteer || needsVanDriver || needsDateConfirmation;
         });
       }
 
@@ -1392,13 +1385,7 @@ router.get(
             : 0;
           const needsDriver = driversNeeded > assignedDrivers;
 
-          const speakersNeeded = event.speakersNeeded || 0;
-          const assignedSpeakers = event.speakerDetails
-            ? (typeof event.speakerDetails === 'string'
-                ? Object.keys(JSON.parse(event.speakerDetails || '{}')).length
-                : Object.keys(event.speakerDetails || {}).length)
-            : 0;
-          const needsSpeaker = speakersNeeded > assignedSpeakers;
+          // (Speaker role retired — speaker needs no longer counted.)
 
           const volunteersNeeded = event.volunteersNeeded || 0;
           const assignedVolunteers = event.volunteerDetails
@@ -1411,7 +1398,7 @@ router.get(
           const needsVanDriver = event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan;
           const needsDateConfirmation = (event.status === 'new' || event.status === 'in_process') && !event.isConfirmed;
 
-          return needsDriver || needsSpeaker || needsVolunteer || needsVanDriver || needsDateConfirmation;
+          return needsDriver || needsVolunteer || needsVanDriver || needsDateConfirmation;
         });
       }
 
@@ -5048,8 +5035,6 @@ router.get(
       }).map(event => {
         const driversNeeded = event.driversNeeded || 0;
         const assignedDrivers = getAssignedCount(event.assignedDriverIds);
-        const speakersNeeded = event.speakersNeeded || 0;
-        const assignedSpeakers = getAssignedCount(event.assignedSpeakerIds);
         const volunteersNeeded = event.volunteersNeeded || 0;
         const assignedVolunteers = getAssignedCount(event.assignedVolunteerIds);
 
@@ -5059,7 +5044,7 @@ router.get(
           eventDate: getEffectiveEventDate(event),
           status: event.status,
           needsDriver: (driversNeeded - assignedDrivers) > 0 && !event.selfTransport,
-          needsSpeaker: (speakersNeeded - assignedSpeakers) > 0,
+          needsSpeaker: false, // Speaker role retired — never a speaker need.
           needsVolunteer: (volunteersNeeded - assignedVolunteers) > 0,
           isToday: toDateOnlyString(getEffectiveEventDate(event)) === todayString,
         };
@@ -5077,12 +5062,8 @@ router.get(
         return (driversNeeded - assignedDrivers) > 0 && !selfTransport;
       });
 
-      // Events needing speakers
-      const eventsNeedingSpeakers = activeEvents.filter(event => {
-        const speakersNeeded = event.speakersNeeded || 0;
-        const assignedSpeakers = getAssignedCount(event.assignedSpeakerIds);
-        return (speakersNeeded - assignedSpeakers) > 0;
-      });
+      // Events needing speakers — speaker role retired, always empty.
+      const eventsNeedingSpeakers: typeof activeEvents = [];
 
       // Events needing volunteers
       const eventsNeedingVolunteers = activeEvents.filter(event => {
@@ -5099,11 +5080,7 @@ router.get(
         return sum + Math.max(0, needed - assigned);
       }, 0);
 
-      const totalSpeakersNeeded = activeEvents.reduce((sum, event) => {
-        const needed = event.speakersNeeded || 0;
-        const assigned = getAssignedCount(event.assignedSpeakerIds);
-        return sum + Math.max(0, needed - assigned);
-      }, 0);
+      const totalSpeakersNeeded = 0; // Speaker role retired.
 
       const totalVolunteersNeeded = activeEvents.reduce((sum, event) => {
         const needed = event.volunteersNeeded || 0;

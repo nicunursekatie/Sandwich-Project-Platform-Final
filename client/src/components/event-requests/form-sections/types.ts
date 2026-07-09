@@ -30,7 +30,6 @@ export interface EventFormData {
   vanDriverNeeded: boolean;
   assignedVanDriverId: string;
   isDhlVan: boolean;
-  speakersNeeded: number;
   volunteersNeeded: number;
   tspContact: string;
   customTspContact: string;
@@ -85,9 +84,6 @@ export interface EventFormData {
   backupContactRole: string;
   // Previously hosted flag
   previouslyHosted: string;
-  // Speaker details
-  speakerAudienceType: string;
-  speakerDuration: string;
   // Delivery details for overnight holding
   deliveryTimeWindow: string;
   deliveryParkingAccess: string;
@@ -97,10 +93,9 @@ export interface EventFormData {
   dateFlexible: boolean | null;
   // Kids age range
   kidsAgeRange: string;
-  // Volunteer/Driver/Speaker instructions
+  // Volunteer/Driver instructions
   driverInstructions: string;
   volunteerInstructions: string;
-  speakerInstructions: string;
   // Standby follow-up
   standbyExpectedDate: string;
 }

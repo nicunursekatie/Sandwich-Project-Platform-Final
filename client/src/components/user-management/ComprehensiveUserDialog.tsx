@@ -25,7 +25,6 @@ import {
   BarChart3,
   MapPin,
   Truck,
-  Mic,
   Car,
 } from 'lucide-react';
 import type { User, UserFormData } from '@/types/user';
@@ -54,7 +53,6 @@ const defaultFormData: UserFormData = {
   preferredEmail: '',
   address: '',
   vanApproved: false,
-  speakerApproved: false,
   driverApproved: false,
   role: 'volunteer',
   isActive: true,
@@ -87,7 +85,6 @@ export function ComprehensiveUserDialog({
         preferredEmail: user.preferredEmail || '',
         address: user.address || '',
         vanApproved: user.vanApproved ?? false,
-        speakerApproved: user.speakerApproved ?? false,
         driverApproved: user.driverApproved ?? false,
         role: user.role || 'volunteer',
         isActive: user.isActive ?? true,
@@ -366,26 +363,9 @@ export function ComprehensiveUserDialog({
                   </Label>
                 </div>
 
-                {/* Event-role approvals. These gate the speaker/driver signup
+                {/* Event-role approvals. These gate the driver signup
                     options on the Volunteer Hub: a user must be approved here AND
                     willing (set in their own profile) for the role to appear. */}
-                <div className="flex items-center space-x-2 py-2">
-                  <Switch
-                    id="speakerApproved"
-                    checked={formData.speakerApproved || false}
-                    onCheckedChange={(checked) =>
-                      setFormData({ ...formData, speakerApproved: checked })
-                    }
-                  />
-                  <Label htmlFor="speakerApproved" className="text-sm flex items-center gap-1.5">
-                    <Mic className="h-3.5 w-3.5" />
-                    Approved Speaker
-                    <span className="block text-xs text-slate-500 ml-1">
-                      Vetted to represent the org and speak at events
-                    </span>
-                  </Label>
-                </div>
-
                 <div className="flex items-center space-x-2 py-2">
                   <Switch
                     id="driverApproved"

@@ -25,7 +25,7 @@ import { EmailNotificationService } from '../services/email-notification-service
 import { getAppBaseUrl } from '../config/constants';
 import sgMail from '@sendgrid/mail';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
-import { getUnfilledCounts, getSpeakerCount, getVolunteerCount, getTotalDriverCount } from '../utils/assignment-utils';
+import { getUnfilledCounts, getVolunteerCount, getTotalDriverCount } from '../utils/assignment-utils';
 import { getEffectiveEventDate } from '../../shared/event-validation-utils';
 import { isEligibleForRole, getIneligibilityReason, type EventRole } from '../../shared/event-role-eligibility';
 
@@ -99,7 +99,6 @@ function eventOffersVolunteerOpportunity(event: VolunteerHubEventRow): boolean {
   if (event.selfTransport) return false;
   return (
     (event.driversNeeded ?? 0) > 0 ||
-    (event.speakersNeeded ?? 0) > 0 ||
     (event.volunteersNeeded ?? 0) > 0 ||
     (!!event.vanDriverNeeded && !event.isDhlVan)
   );
@@ -1447,12 +1446,13 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
     const normalizedRoles = Array.from(new Set(requestedRoles.filter(Boolean)));
 
     if (normalizedRoles.length === 0) {
-      return res.status(400).json({ error: 'At least one role is required (driver, speaker, or general)' });
+      return res.status(400).json({ error: 'At least one role is required (driver or general)' });
     }
 
-    const invalidRoles = normalizedRoles.filter(r => !['driver', 'speaker', 'general'].includes(r));
+    // Speaker role retired — only driver and general self-signups are accepted.
+    const invalidRoles = normalizedRoles.filter(r => !['driver', 'general'].includes(r));
     if (invalidRoles.length > 0) {
-      return res.status(400).json({ error: 'Valid roles are driver, speaker, or general' });
+      return res.status(400).json({ error: 'Valid roles are driver or general' });
     }
 
     // Eligibility gate (self-signup only). A volunteer can only sign THEMSELVES
@@ -1481,7 +1481,7 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
             "You haven't opted into that role yet. Update the roles you're willing to do in your profile.";
         } else {
           error =
-            "You're not set up for that role yet. Update the roles you're willing to do in your profile — speaker and driver also need coordinator approval.";
+            "You're not set up for that role yet. Update the roles you're willing to do in your profile — driver also needs coordinator approval.";
         }
         return res.status(403).json({ error, ineligibleRoles: ineligible });
       }
@@ -1584,9 +1584,7 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
         if (normalizedRoles.includes('driver')) {
           updates.assignedDriverIds = addUnique(eventRow.assignedDriverIds);
         }
-        if (normalizedRoles.includes('speaker')) {
-          updates.assignedSpeakerIds = addUnique(eventRow.assignedSpeakerIds);
-        }
+        // (Speaker role retired — no speaker branch here.)
         if (normalizedRoles.includes('general')) {
           updates.assignedVolunteerIds = addUnique(eventRow.assignedVolunteerIds);
         }
@@ -1880,13 +1878,7 @@ router.get('/coverage-summary', isAuthenticated, async (req: AuthenticatedReques
         status: event.status,
         vanDriverNeeded,
         roles: [
-          {
-            role: 'speaker',
-            label: 'Speakers',
-            needed: counts.speakersNeeded,
-            assigned: counts.speakersAssigned,
-            unfilled: counts.speakersUnfilled,
-          },
+          // (Speaker role retired — no speaker entry in the needs breakdown.)
           {
             role: 'general',
             label: 'Volunteers',
@@ -2153,8 +2145,9 @@ router.patch('/signup/:signupId/role', isAuthenticated, async (req: Authenticate
     if (!signupId || isNaN(signupId)) {
       return res.status(400).json({ error: 'Valid signup ID required' });
     }
-    if (!newRole || !['driver', 'speaker', 'general'].includes(newRole)) {
-      return res.status(400).json({ error: 'Valid role required (driver, speaker, or general)' });
+    // Speaker role retired — a coordinator can no longer move a signup to speaker.
+    if (!newRole || !['driver', 'general'].includes(newRole)) {
+      return res.status(400).json({ error: 'Valid role required (driver or general)' });
     }
     if (!hasPermission(req.user, PERMISSIONS.VOLUNTEER_SIGNUP_APPROVE)) {
       return res.status(403).json({ error: 'VOLUNTEER_SIGNUP_APPROVE permission required' });

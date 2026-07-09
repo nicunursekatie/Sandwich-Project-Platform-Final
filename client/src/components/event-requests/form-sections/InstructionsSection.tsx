@@ -1,8 +1,8 @@
 /**
  * Instructions Section
  *
- * Handles driver, volunteer, and speaker instructions that get
- * included in reminder notifications.
+ * Handles driver and volunteer instructions that get
+ * included in reminder notifications. (Speaker role retired.)
  */
 import * as React from 'react';
 import { Label } from '@/components/ui/label';
@@ -28,7 +28,7 @@ export const InstructionsSection: React.FC<InstructionsSectionProps> = ({
         <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded">Sent in reminder texts/emails</span>
       </div>
       <p className="text-sm text-purple-700">
-        These instructions will be automatically included in reminder notifications sent to assigned drivers, volunteers, and speakers before the event.
+        These instructions will be automatically included in reminder notifications sent to assigned drivers and volunteers before the event.
       </p>
 
       {/* Driver Instructions */}
@@ -61,20 +61,6 @@ export const InstructionsSection: React.FC<InstructionsSectionProps> = ({
         />
       </div>
 
-      {/* Speaker Instructions */}
-      <div>
-        <div className="flex items-center gap-2 mb-2">
-          <Label htmlFor="speakerInstructions" className="text-purple-800 font-medium">Speaker Instructions</Label>
-        </div>
-        <Textarea
-          id="speakerInstructions"
-          value={formData.speakerInstructions || ''}
-          onChange={(e) => setFormData((prev: any) => ({ ...prev, speakerInstructions: e.target.value }))}
-          placeholder="Special instructions for speakers (e.g., audience details, presentation format, time allotted, topics to cover)"
-          className="min-h-[80px] border-purple-200 focus:border-purple-400"
-          data-testid="textarea-speaker-instructions"
-        />
-      </div>
     </div>
   );
 };

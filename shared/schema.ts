@@ -1112,7 +1112,13 @@ export const volunteers = pgTable('volunteers', {
   inactiveReason: text('inactive_reason'),
   volunteerType: text('volunteer_type').notNull().default('general'), // 'general', 'former_driver', 'driver_candidate', etc.
   isDriver: boolean('is_driver').notNull().default(false), // Whether this volunteer can drive
-  isSpeaker: boolean('is_speaker').notNull().default(false), // Whether this volunteer can speak at events
+  isSpeaker: boolean('is_speaker').notNull().default(false), // Whether this volunteer can speak at events (legacy: speaker role is being retired)
+  // Volunteer readiness. 'new' volunteers are not yet cleared to attend an event
+  // on their own and must be paired with an 'experienced' volunteer; 'experienced'
+  // volunteers can attend any event solo. Kept independent of trainingCompleted so
+  // finishing training can be recorded separately from being cleared to solo.
+  experienceLevel: text('experience_level').notNull().default('new'), // 'new' | 'experienced'
+  trainingCompleted: boolean('training_completed').notNull().default(false), // Whether the volunteer has completed the onboarding training
   latitude: decimal('latitude'),
   longitude: decimal('longitude'),
   geocodedAt: timestamp('geocoded_at'),
@@ -1671,11 +1677,17 @@ export const insertDriverVehicleSchema = createInsertSchema(driverVehicles).omit
   createdAt: true,
   updatedAt: true,
 });
+/** Volunteer readiness levels. Single source of truth for client + server. */
+export const VOLUNTEER_EXPERIENCE_LEVELS = ['new', 'experienced'] as const;
+export type VolunteerExperienceLevel = (typeof VOLUNTEER_EXPERIENCE_LEVELS)[number];
+
 export const insertVolunteerSchema = createInsertSchema(volunteers)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
     // Convert all timestamp fields from string to Date or null
     geocodedAt: nullableTimestampField,
+    // Constrain readiness to the known values on the create path.
+    experienceLevel: z.enum(VOLUNTEER_EXPERIENCE_LEVELS).optional(),
   });
 export const insertHostSchema = createInsertSchema(hosts)
   .omit({ id: true, createdAt: true, updatedAt: true })

@@ -94,7 +94,6 @@ export const DEFAULT_FORM_DATA = {
   vanDriverNeeded: false,
   assignedVanDriverId: '',
   isDhlVan: false,
-  speakersNeeded: 0,
   volunteersNeeded: 0,
 
   // Attendee counts
@@ -136,10 +135,6 @@ export const DEFAULT_FORM_DATA = {
   toolkitSent: false,
   toolkitSentDate: '',
   toolkitStatus: 'not_sent',
-
-  // Speaker details
-  speakerAudienceType: '',
-  speakerDuration: '',
 
   // Delivery details
   deliveryTimeWindow: '',

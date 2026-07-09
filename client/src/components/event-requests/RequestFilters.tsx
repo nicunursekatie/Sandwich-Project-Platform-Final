@@ -40,7 +40,7 @@ import { Info } from 'lucide-react';
 const STATUS_TAB_TIPS: Record<string, string> = {
   new: 'Review the details and make first contact. Move to In Process once you’ve sent the toolkit, or Non-Event if it isn’t a real event request.',
   in_process: 'Work with the contact to finalize event details. Move to Scheduled once a date is locked in, or Standby/Stalled if you’re waiting on them.',
-  scheduled: 'Assign drivers, speakers, and volunteers. Confirm logistics. Move to Completed after the event date, or Cancelled/Rescheduled if plans change.',
+  scheduled: 'Assign drivers and volunteers. Confirm logistics. Move to Completed after the event date, or Cancelled/Rescheduled if plans change.',
   rescheduled: 'Treat like a Scheduled event. Re-confirm assignments for the new date.',
   completed: 'Finish 1-day and 1-month follow-ups, and request a social media post if applicable.',
   declined: 'Record the reason. Can be reactivated if they come back later.',

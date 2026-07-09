@@ -114,7 +114,6 @@ CATEGORIZATION GUIDELINES:
 - refrigeration: Needs refrigeration, lacks storage, special storage requirements
 - delivery: Requires delivery service, specific delivery instructions
 - volunteers: Needs volunteer support, mentions volunteer coordination
-- speakers: Requests speaker or presentation
 - drivers: Needs transportation assistance
 - setup: Requires setup support, table arrangements, etc.
 - timing: Time-sensitive, specific timing requirements
@@ -244,9 +243,6 @@ function getFallbackCategorization(input: CategorizationInput): EventCategorizat
   }
   if (descLower.includes('volunteer')) {
     specialNeeds.push('volunteers');
-  }
-  if (descLower.includes('speaker') || descLower.includes('presentation')) {
-    specialNeeds.push('speakers');
   }
   if (descLower.includes('driver')) {
     specialNeeds.push('drivers');

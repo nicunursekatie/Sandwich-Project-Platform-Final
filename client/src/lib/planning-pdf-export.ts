@@ -35,16 +35,13 @@ interface StaffingWeekData {
   distributionDate: string;
   events: EventRequest[];
   totalDriversNeeded: number;
-  totalSpeakersNeeded: number;
   totalVolunteersNeeded: number;
   totalVanDriversNeeded: number;
   driversAssigned: number;
-  speakersAssigned: number;
   volunteersAssigned: number;
   vanDriversAssigned: number;
   unfulfilled: {
     drivers: number;
-    speakers: number;
     volunteers: number;
     vanDrivers: number;
   };
@@ -434,7 +431,6 @@ export function generateSandwichPlanningPDF(weekData: SandwichWeekData): string 
           : '';
 
         const driversUnfulfilled = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
-        const speakersUnfulfilled = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
 
         return `
           <div class="event-item">
@@ -451,10 +447,9 @@ export function generateSandwichPlanningPDF(weekData: SandwichWeekData): string 
                 <div class="sandwich-count">🥪 ${count.toLocaleString()}</div>
               </div>
             </div>
-            ${(driversUnfulfilled > 0 || speakersUnfulfilled > 0) ? `
+            ${driversUnfulfilled > 0 ? `
               <div class="badges">
-                ${driversUnfulfilled > 0 ? `<span class="badge badge-red">🚗 ${driversUnfulfilled} Driver${driversUnfulfilled > 1 ? 's' : ''} Needed</span>` : ''}
-                ${speakersUnfulfilled > 0 ? `<span class="badge badge-yellow">🎤 ${speakersUnfulfilled} Speaker${speakersUnfulfilled > 1 ? 's' : ''} Needed</span>` : ''}
+                <span class="badge badge-red">🚗 ${driversUnfulfilled} Driver${driversUnfulfilled > 1 ? 's' : ''} Needed</span>
               </div>
             ` : ''}
           </div>
@@ -515,15 +510,14 @@ export function generateStaffingPlanningPDF(weekData: StaffingWeekData): string 
     return new Date(dateA).getTime() - new Date(dateB).getTime();
   });
 
-  const totalUnfulfilled = weekData.unfulfilled.drivers + weekData.unfulfilled.speakers +
+  const totalUnfulfilled = weekData.unfulfilled.drivers +
                            weekData.unfulfilled.volunteers + weekData.unfulfilled.vanDrivers;
 
   const eventsWithUnmetNeeds = sortedEvents.filter(event => {
     const driversNeeded = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
-    const speakersNeeded = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
     const volunteersNeeded = Math.max(0, (event.volunteersNeeded || 0) - getAssignmentCount(event.assignedVolunteerIds));
     const vanDriverNeeded = Math.max(0, (event.vanDriverNeeded ? 1 : 0) - ((event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0)));
-    return driversNeeded + speakersNeeded + volunteersNeeded + vanDriverNeeded > 0;
+    return driversNeeded + volunteersNeeded + vanDriverNeeded > 0;
   });
 
   const eventsHTML = eventsWithUnmetNeeds.length === 0
@@ -533,7 +527,6 @@ export function generateStaffingPlanningPDF(weekData: StaffingWeekData): string 
         const sandwichCount = getSandwichCount(event);
 
         const driversNeeded = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
-        const speakersNeeded = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
         const volunteersNeeded = Math.max(0, (event.volunteersNeeded || 0) - getAssignmentCount(event.assignedVolunteerIds));
         const vanDriverNeeded = Math.max(0, (event.vanDriverNeeded ? 1 : 0) - ((event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0)));
 
@@ -552,7 +545,6 @@ export function generateStaffingPlanningPDF(weekData: StaffingWeekData): string 
             </div>
             <div class="badges">
               ${driversNeeded > 0 ? `<span class="badge badge-red">🚗 ${driversNeeded} Driver${driversNeeded > 1 ? 's' : ''} Needed</span>` : ''}
-              ${speakersNeeded > 0 ? `<span class="badge badge-yellow">🎤 ${speakersNeeded} Speaker${speakersNeeded > 1 ? 's' : ''} Needed</span>` : ''}
               ${volunteersNeeded > 0 ? `<span class="badge badge-blue">👤 ${volunteersNeeded} Volunteer${volunteersNeeded > 1 ? 's' : ''} Needed</span>` : ''}
               ${vanDriverNeeded > 0 ? `<span class="badge badge-purple">🚐 Van Driver Needed</span>` : ''}
             </div>
@@ -599,12 +591,6 @@ export function generateStaffingPlanningPDF(weekData: StaffingWeekData): string 
               <div class="role">Drivers</div>
               <div class="count">${weekData.driversAssigned}/${weekData.totalDriversNeeded}</div>
               <div class="status">${weekData.unfulfilled.drivers > 0 ? `${weekData.unfulfilled.drivers} needed` : 'Filled'}</div>
-            </div>
-            <div class="staffing-card ${getCardClass(weekData.totalSpeakersNeeded, weekData.speakersAssigned)}">
-              <div class="icon">🎤</div>
-              <div class="role">Speakers</div>
-              <div class="count">${weekData.speakersAssigned}/${weekData.totalSpeakersNeeded}</div>
-              <div class="status">${weekData.unfulfilled.speakers > 0 ? `${weekData.unfulfilled.speakers} needed` : 'Filled'}</div>
             </div>
             <div class="staffing-card ${getCardClass(weekData.totalVolunteersNeeded, weekData.volunteersAssigned)}">
               <div class="icon">👤</div>

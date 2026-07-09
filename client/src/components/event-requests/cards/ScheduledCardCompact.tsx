@@ -11,7 +11,6 @@ import {
   Calendar,
   Building,
   Car,
-  Megaphone,
   UserPlus,
   Edit2,
   Trash2,
@@ -77,15 +76,13 @@ export const ScheduledCardCompact: React.FC<ScheduledCardCompactProps> = ({
 
   // Calculate staffing
 const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
-  const speakerAssigned = Object.keys(request.speakerDetails || {}).length;
   const volunteerAssigned = parsePostgresArray(request.assignedVolunteerIds).length;
 
   const driverNeeded = request.driversNeeded || 0;
-  const speakerNeeded = request.speakersNeeded || 0;
   const volunteerNeeded = request.volunteersNeeded || 0;
 
-  const totalAssigned = driverAssigned + speakerAssigned + volunteerAssigned;
-  const totalNeeded = driverNeeded + speakerNeeded + volunteerNeeded;
+  const totalAssigned = driverAssigned + volunteerAssigned;
+  const totalNeeded = driverNeeded + volunteerNeeded;
   const staffingComplete = totalAssigned >= totalNeeded && totalNeeded > 0;
 
   // Check if event is within next 7 days (for urgent staffing color)
@@ -286,14 +283,6 @@ const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (r
                     </span>
                   </div>
                 )}
-                {speakerNeeded > 0 && (
-                  <div className="flex items-center gap-1">
-                    <Megaphone className="w-3 h-3 text-gray-500" />
-                    <span className={speakerAssigned >= speakerNeeded ? 'text-green-700 font-medium' : staffingNeededColor}>
-                      {speakerAssigned}/{speakerNeeded} speakers
-                    </span>
-                  </div>
-                )}
                 {volunteerNeeded > 0 && (
                   <div className="flex items-center gap-1">
                     <UserPlus className="w-3 h-3 text-gray-500" />
@@ -460,30 +449,6 @@ const driverAssigned = parsePostgresArray(request.assignedDriverIds).length + (r
                         </Badge>
                       )}
                       {driverAssigned === 0 && <span className="text-gray-400 italic">None assigned</span>}
-                    </div>
-                  )}
-                  {speakerNeeded > 0 && (
-                    <div>
-                      <span className="text-gray-600 font-medium">Speakers: </span>
-                      {Object.keys(request.speakerDetails || {}).map((id) => {
-                        const detailName = (request.speakerDetails as Record<string, { name?: string }>)?.[id]?.name;
-                        const isCustom = id.startsWith('custom-');
-                        const idLooksLikeName = id &&
-                          !id.startsWith('user_') && !id.startsWith('driver_') && !id.startsWith('custom-') &&
-                          !id.startsWith('host-contact-') && !/^\d+$/.test(id) && id.includes(' ');
-                        const resolvedName = resolveUserName(id);
-                        const displayName = (detailName && !/^\d+$/.test(detailName))
-                          ? detailName
-                          : isCustom
-                            ? (id.includes('-') ? id.split('-').slice(2).join('-').replace(/-/g, ' ') : id)
-                            : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
-                        return (
-                        <Badge key={id} variant="secondary" className="mr-1">
-                          {displayName}
-                        </Badge>
-                        );
-                      })}
-                      {speakerAssigned === 0 && <span className="text-gray-400 italic">None assigned</span>}
                     </div>
                   )}
                   {volunteerNeeded > 0 && (
