@@ -533,7 +533,8 @@ Return JSON with this structure:
       },
     ],
     response_format: { type: 'json_object' },
-    max_completion_tokens: 3000,
+    max_completion_tokens: 8000,
+    reasoning_effort: 'minimal',
   });
 
   const responseContent = completion.choices[0].message.content;

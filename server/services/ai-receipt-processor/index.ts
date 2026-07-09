@@ -153,7 +153,8 @@ Return your analysis as a JSON object with this structure:
         },
       ],
       response_format: { type: 'json_object' },
-      max_completion_tokens: 1500,
+      max_completion_tokens: 4000,
+      reasoning_effort: 'minimal',
     });
 
     const responseContent = completion.choices[0].message.content;
