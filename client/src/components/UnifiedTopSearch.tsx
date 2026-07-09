@@ -18,6 +18,7 @@
  * works on every page — Dashboard, Calendars, Collection Log, etc.
  */
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation } from 'wouter';
 import {
   Search,
@@ -125,6 +126,16 @@ export function UnifiedTopSearch() {
   const [isLoading, setIsLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  // Position tracking for the portaled dropdown. The dropdown lives in
+  // document.body (not next to the input) to escape clipping by ancestor
+  // containers with overflow:hidden or stacking contexts in the top nav.
+  // We track the input's bounding rect and use position:fixed on the
+  // dropdown so it lands right below the input regardless of DOM location.
+  const [dropdownPos, setDropdownPos] = useState<{
+    top: number;
+    left: number;
+    width: number;
+  } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
@@ -280,9 +291,16 @@ export function UnifiedTopSearch() {
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setSelectedIndex((p) => Math.max(p - 1, -1));
-    } else if (e.key === 'Enter' && selectedIndex >= 0) {
+    } else if (e.key === 'Enter') {
+      // Enter behavior:
+      //   - If the user arrowed to a specific row, take that.
+      //   - Otherwise, jump to the FIRST result. Previously Enter did
+      //     nothing when nothing was highlighted, which surprised users
+      //     who just wanted to hit Enter to open the top match.
       e.preventDefault();
-      navigateToResult(flatResults[selectedIndex]);
+      const target =
+        selectedIndex >= 0 ? flatResults[selectedIndex] : flatResults[0];
+      if (target) navigateToResult(target);
     }
   };
 
@@ -299,15 +317,51 @@ export function UnifiedTopSearch() {
   }, []);
 
   // ── Click outside closes ──────────────────────────────────────────────
+  // The dropdown is portaled to document.body, so a naive check on
+  // containerRef alone would treat clicks inside the dropdown as
+  // "outside" and close it before navigation can run. We also allow
+  // clicks whose target is inside the portaled dropdown element.
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      const insideContainer =
+        containerRef.current && containerRef.current.contains(e.target as Node);
+      const dropdownEl = document.getElementById('unified-top-search-results');
+      const insideDropdown = dropdownEl && dropdownEl.contains(e.target as Node);
+      if (!insideContainer && !insideDropdown) {
         setIsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // ── Recompute dropdown position ───────────────────────────────────────
+  // Whenever the dropdown is open, keep its position anchored to the
+  // input as the user scrolls or resizes the window. We use position:
+  // fixed on the portaled dropdown, so coordinates are in viewport
+  // space (input's getBoundingClientRect already gives viewport coords).
+  useEffect(() => {
+    if (!isOpen) {
+      setDropdownPos(null);
+      return;
+    }
+    const update = () => {
+      if (!inputRef.current) return;
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownPos({
+        top: rect.bottom + 4,
+        left: rect.left,
+        width: rect.width,
+      });
+    };
+    update();
+    window.addEventListener('scroll', update, true);
+    window.addEventListener('resize', update);
+    return () => {
+      window.removeEventListener('scroll', update, true);
+      window.removeEventListener('resize', update);
+    };
+  }, [isOpen]);
 
   useEffect(() => {
     return () => {
@@ -367,12 +421,20 @@ export function UnifiedTopSearch() {
         </div>
       </div>
 
-      {/* Results dropdown */}
-      {isOpen && (
+      {/* Results dropdown — portaled to document.body with position:fixed
+          so it can never be clipped by ancestor containers with
+          overflow:hidden or lower stacking contexts in the top nav. */}
+      {isOpen && dropdownPos && createPortal(
         <div
           id="unified-top-search-results"
           role="listbox"
-          className="absolute top-full left-0 right-0 mt-1 bg-white rounded-lg border border-slate-200 shadow-xl max-h-[420px] overflow-y-auto z-[10000]"
+          style={{
+            position: 'fixed',
+            top: dropdownPos.top,
+            left: dropdownPos.left,
+            width: dropdownPos.width,
+          }}
+          className="bg-white rounded-lg border border-slate-200 shadow-xl max-h-[420px] overflow-y-auto z-[10000]"
         >
           {query.trim().length < 2 ? (
             <div className="p-4 text-center text-gray-500 text-sm">
@@ -542,7 +604,8 @@ export function UnifiedTopSearch() {
               )}
             </div>
           )}
-        </div>
+        </div>,
+        document.body,
       )}
     </div>
   );

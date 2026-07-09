@@ -137,6 +137,84 @@ interface PersonSelectorProps {
   onSelectionChange: (selected: string[]) => void;
   assignmentType: 'driver' | 'speaker' | 'volunteer';
   vanDriverNeeded?: boolean;
+  /** Stored assignment metadata (volunteerDetails, driverDetails, etc.) for name fallback */
+  assignmentDetails?: Record<string, { name?: string }>;
+}
+
+function parseAssignmentDetails(
+  details?: Record<string, { name?: string }> | string | null
+): Record<string, { name?: string }> {
+  if (!details) return {};
+  if (typeof details === 'string') {
+    try {
+      const parsed = JSON.parse(details);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  return details;
+}
+  const map = new Map<string, string>();
+  volunteers.forEach((vol: any) => {
+    const name =
+      `${vol.firstName || ''} ${vol.lastName || ''}`.trim() ||
+      vol.name ||
+      `Volunteer #${vol.id}`;
+    const id = String(vol.id);
+    map.set(id, name);
+    map.set(`volunteer-${id}`, name);
+  });
+  return map;
+}
+
+function buildDriverNameLookup(drivers: any[]): Map<string, string> {
+  const map = new Map<string, string>();
+  drivers.forEach((driver: any) => {
+    const name = driver.name || `Driver #${driver.id}`;
+    const id = String(driver.id);
+    map.set(id, name);
+    map.set(`driver-${id}`, name);
+  });
+  return map;
+}
+
+function resolvePersonDisplayName(
+  personId: string,
+  opts: {
+    assignmentDetails?: Record<string, { name?: string }>;
+    availablePeople: Array<{ id: string; name: string }>;
+    volunteerNameLookup: Map<string, string>;
+    driverNameLookup: Map<string, string>;
+    assignmentType: 'driver' | 'speaker' | 'volunteer';
+  }
+): string {
+  const storedName = opts.assignmentDetails?.[personId]?.name?.trim();
+  if (storedName) return storedName;
+
+  if (personId.startsWith('custom-')) {
+    const parts = personId.split('-');
+    return parts.slice(2).join(' ').replace(/-/g, ' ') || personId;
+  }
+
+  const person = opts.availablePeople.find((p) => p.id === personId);
+  if (person?.name) return person.name;
+
+  if (opts.assignmentType === 'volunteer' || opts.assignmentType === 'speaker') {
+    const volName =
+      opts.volunteerNameLookup.get(personId) ??
+      opts.volunteerNameLookup.get(personId.replace(/^volunteer-/, ''));
+    if (volName) return volName;
+  }
+
+  if (opts.assignmentType === 'driver') {
+    const driverName =
+      opts.driverNameLookup.get(personId) ??
+      opts.driverNameLookup.get(personId.replace(/^driver-/, ''));
+    if (driverName) return driverName;
+  }
+
+  return personId;
 }
 
 function PersonSelector({
@@ -144,6 +222,7 @@ function PersonSelector({
   onSelectionChange,
   assignmentType,
   vanDriverNeeded = false,
+  assignmentDetails,
 }: PersonSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [customEntryText, setCustomEntryText] = useState('');
@@ -205,6 +284,24 @@ function PersonSelector({
     return people;
   }, [users, drivers, volunteers, assignmentType, vanDriverNeeded]);
 
+  const volunteerNameLookup = useMemo(
+    () => buildVolunteerNameLookup(volunteers),
+    [volunteers]
+  );
+  const driverNameLookup = useMemo(() => buildDriverNameLookup(drivers), [drivers]);
+
+  const resolveDisplayName = useCallback(
+    (personId: string) =>
+      resolvePersonDisplayName(personId, {
+        assignmentDetails,
+        availablePeople,
+        volunteerNameLookup,
+        driverNameLookup,
+        assignmentType,
+      }),
+    [assignmentDetails, availablePeople, volunteerNameLookup, driverNameLookup, assignmentType]
+  );
+
   // Filter by search term
   const filteredPeople = useMemo(() => {
     if (!searchTerm) return availablePeople;
@@ -230,14 +327,7 @@ function PersonSelector({
     setShowCustomEntry(false);
   };
 
-  const getDisplayName = (personId: string): string => {
-    if (personId.startsWith('custom-')) {
-      const parts = personId.split('-');
-      return parts.slice(2).join(' ').replace(/-/g, ' ') || personId;
-    }
-    const person = availablePeople.find(p => p.id === personId);
-    return person?.name || personId;
-  };
+  const getDisplayName = (personId: string): string => resolveDisplayName(personId);
 
   const removePerson = (personId: string) => {
     onSelectionChange(selectedPeople.filter(id => id !== personId));
@@ -1213,6 +1303,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                   onSelectionChange={setAssignedDriverIds}
                   assignmentType="driver"
                   vanDriverNeeded={vanDriverNeeded}
+                  assignmentDetails={parseAssignmentDetails(event?.driverDetails)}
                 />
               </div>
 
@@ -1238,6 +1329,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                       onSelectionChange={ids => setAssignedVanDriverId(ids[0] || null)}
                       assignmentType="driver"
                       vanDriverNeeded={true}
+                      assignmentDetails={parseAssignmentDetails(event?.driverDetails)}
                     />
                   </div>
                   <Separator />
@@ -1263,6 +1355,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                       selectedPeople={assignedSpeakerIds}
                       onSelectionChange={setAssignedSpeakerIds}
                       assignmentType="speaker"
+                      assignmentDetails={parseAssignmentDetails(event?.speakerDetails)}
                     />
                   </div>
                   <Separator />
@@ -1287,6 +1380,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                     selectedPeople={assignedVolunteerIds}
                     onSelectionChange={setAssignedVolunteerIds}
                     assignmentType="volunteer"
+                    assignmentDetails={parseAssignmentDetails(event?.volunteerDetails)}
                   />
                 </div>
               )}
