@@ -781,9 +781,10 @@ function formatDuration(duration: number, durationInTraffic: number | null): { t
   };
 }
 
-// Component to center map on selected event or focused item
+// Component to center map on selected event(s) or focused item
 function MapController({
-  selectedEvent,
+  selectedEvents,
+  primarySelectedEvent,
   events,
   focusedItem,
   nearbyHosts,
@@ -792,7 +793,8 @@ function MapController({
   drivingRoute,
   fullTripRoute,
 }: {
-  selectedEvent: EventMapData | null;
+  selectedEvents: EventMapData[];
+  primarySelectedEvent: EventMapData | null;
   events: EventMapData[];
   focusedItem: FocusedMapItem | null;
   nearbyHosts: { latitude: string; longitude: string }[];
@@ -844,12 +846,23 @@ function MapController({
     }
   }, [focusedItem, drivingRoute, fullTripRoute, map]);
 
-  // Center on selected event with bounds that include at least one host and one recipient
-  const selectedEventId = selectedEvent?.id;
+  // Center on selected events — fit all when comparing multiple; otherwise zoom to primary + nearby host/recipient
+  const primarySelectedEventId = primarySelectedEvent?.id;
+  const comparingMultipleEvents = selectedEvents.length > 1;
   useEffect(() => {
-    if (selectedEvent?.latitude && selectedEvent?.longitude) {
+    if (comparingMultipleEvents) {
+      const points: [number, number][] = selectedEvents
+        .filter((event) => event.latitude && event.longitude)
+        .map((event) => [parseFloat(event.latitude!), parseFloat(event.longitude!)]);
+      if (points.length > 1) {
+        map.fitBounds(L.latLngBounds(points), { padding: [80, 80], animate: true });
+      }
+      return;
+    }
+
+    if (primarySelectedEvent?.latitude && primarySelectedEvent?.longitude) {
       const points: [number, number][] = [
-        [parseFloat(selectedEvent.latitude), parseFloat(selectedEvent.longitude)]
+        [parseFloat(primarySelectedEvent.latitude), parseFloat(primarySelectedEvent.longitude)]
       ];
 
       // Add closest host if available
@@ -883,23 +896,25 @@ function MapController({
         const rawZoom = map.getBoundsZoom(bounds, false, L.point(60, 60));
         const zoomForBounds = Math.min(Math.max(rawZoom, 14), 15);
         map.setView(
-          [parseFloat(selectedEvent.latitude), parseFloat(selectedEvent.longitude)],
+          [parseFloat(primarySelectedEvent.latitude), parseFloat(primarySelectedEvent.longitude)],
           zoomForBounds,
           { animate: true }
         );
       } else {
         // Fallback to just centering on event if no hosts/recipients
         map.setView(
-          [parseFloat(selectedEvent.latitude), parseFloat(selectedEvent.longitude)],
+          [parseFloat(primarySelectedEvent.latitude), parseFloat(primarySelectedEvent.longitude)],
           15,
           { animate: true }
         );
       }
     }
   }, [
-    selectedEventId,
-    selectedEvent?.latitude,
-    selectedEvent?.longitude,
+    comparingMultipleEvents,
+    selectedEvents,
+    primarySelectedEventId,
+    primarySelectedEvent?.latitude,
+    primarySelectedEvent?.longitude,
     nearbyHosts,
     nearbyRecipients,
     designatedRecipients,
@@ -908,7 +923,7 @@ function MapController({
 
   // Fit bounds to all events on initial load (when no event selected)
   useEffect(() => {
-    if (!selectedEvent && events.length > 0) {
+    if (selectedEvents.length === 0 && events.length > 0) {
       const validEvents = events.filter(e => e.latitude && e.longitude);
       if (validEvents.length > 0) {
         const bounds = L.latLngBounds(
@@ -917,9 +932,115 @@ function MapController({
         map.fitBounds(bounds, { padding: [50, 50] });
       }
     }
-  }, [selectedEvent, events, map]);
+  }, [selectedEvents.length, events, map]);
 
   return null;
+}
+
+type EventPairDistance = {
+  eventA: EventMapData;
+  eventB: EventMapData;
+  distance: number;
+};
+
+function EventComparisonPolylines({ pairs }: { pairs: EventPairDistance[] }) {
+  if (pairs.length === 0) return null;
+
+  return (
+    <>
+      {pairs.map((pair) => {
+        if (!pair.eventA.latitude || !pair.eventA.longitude || !pair.eventB.latitude || !pair.eventB.longitude) {
+          return null;
+        }
+        return (
+          <Polyline
+            key={`${pair.eventA.id}-${pair.eventB.id}`}
+            positions={[
+              [parseFloat(pair.eventA.latitude), parseFloat(pair.eventA.longitude)],
+              [parseFloat(pair.eventB.latitude), parseFloat(pair.eventB.longitude)],
+            ]}
+            pathOptions={{
+              color: '#007E8C',
+              dashArray: '8 8',
+              weight: 2,
+              opacity: 0.75,
+            }}
+          />
+        );
+      })}
+    </>
+  );
+}
+
+function EventComparisonPanel({
+  selectedEvents,
+  eventPairDistances,
+  onClearComparison,
+  onFocusEvent,
+  compact = false,
+}: {
+  selectedEvents: EventMapData[];
+  eventPairDistances: EventPairDistance[];
+  onClearComparison: () => void;
+  onFocusEvent: (eventId: number) => void;
+  compact?: boolean;
+}) {
+  if (selectedEvents.length < 2) return null;
+
+  return (
+    <div className={`${compact ? 'p-2' : 'p-3'} border-b bg-[#007E8C]/5`}>
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div>
+          <h3 className={`font-semibold text-[#007E8C] ${compact ? 'text-[11px]' : 'text-xs'}`}>
+            Comparing {selectedEvents.length} events
+          </h3>
+          <p className={`text-gray-500 mt-0.5 ${compact ? 'text-[10px]' : 'text-[11px]'}`}>
+            Use compare mode, or hold ⌘/Ctrl while clicking, to add or remove events
+          </p>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`${compact ? 'h-6 px-2 text-[10px]' : 'h-7 px-2 text-xs'} text-gray-600`}
+          onClick={onClearComparison}
+        >
+          Clear
+        </Button>
+      </div>
+
+      <div className={`space-y-1.5 ${compact ? 'max-h-28 overflow-y-auto' : ''}`}>
+        {eventPairDistances.map((pair) => (
+          <div
+            key={`${pair.eventA.id}-${pair.eventB.id}`}
+            className={`bg-white rounded border border-[#007E8C]/20 ${compact ? 'px-2 py-1 text-[10px]' : 'px-2.5 py-1.5 text-xs'}`}
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <button
+                  type="button"
+                  className="font-medium text-gray-800 hover:text-[#007E8C] text-left truncate block max-w-full"
+                  onClick={() => onFocusEvent(pair.eventA.id)}
+                >
+                  {pair.eventA.organizationName || 'Event'}
+                </button>
+                <span className="text-gray-400">↔</span>
+                <button
+                  type="button"
+                  className="font-medium text-gray-800 hover:text-[#007E8C] text-left truncate block max-w-full"
+                  onClick={() => onFocusEvent(pair.eventB.id)}
+                >
+                  {pair.eventB.organizationName || 'Event'}
+                </button>
+              </div>
+              <span className="font-semibold text-[#007E8C] whitespace-nowrap">
+                {pair.distance.toFixed(1)} mi
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function MapResizeObserver() {
@@ -1002,7 +1123,7 @@ export default function DriverPlanningDashboard() {
     context: { userRole: user?.role },
   });
 
-  const [selectedEvent, setSelectedEvent] = useState<EventMapData | null>(null);
+  const [selectedEventIds, setSelectedEventIds] = useState<number[]>([]);
   const [weeksAhead, setWeeksAhead] = useState<string>('all');
   const [copiedDriverId, setCopiedDriverId] = useState<string | number | null>(null);
   const [focusedItem, setFocusedItem] = useState<FocusedMapItem | null>(null);
@@ -1031,7 +1152,7 @@ export default function DriverPlanningDashboard() {
   const [geocodingEventId, setGeocodingEventId] = useState<number | null>(null);
   const [showVolunteersSpeakers, setShowVolunteersSpeakers] = useState(false);
   const [showTeamMembers, setShowTeamMembers] = useState(false);
-  const [tripPlanningCollapsed, setTripPlanningCollapsed] = useState(false);
+  const [compareMode, setCompareMode] = useState(false);
 
   // Map-layer visibility toggles. Lets the user hide entire categories of pins
   // when the map gets crowded. Persisted in localStorage so the preference
@@ -1435,11 +1556,6 @@ export default function DriverPlanningDashboard() {
       });
       // Refresh events and update selected event locally
       queryClient.invalidateQueries();
-      setSelectedEvent((prev) => (prev ? {
-        ...prev,
-        assignedDriverIds: data.assignedDriverIds || [],
-        tentativeDriverIds: data.tentativeDriverIds || []
-      } : prev));
     },
     onError: () => {
       toast({
@@ -1859,24 +1975,51 @@ export default function DriverPlanningDashboard() {
       });
   }, [allEvents, weeksAhead, showPendingEvents]);
 
-  // Sync selectedEvent with latest data when events are refetched
-  // This ensures the UI shows updated data after edits
-  // We use selectedEvent?.id (not full object) intentionally to avoid re-running when we update it ourselves
-  const selectedEventId = selectedEvent?.id;
+  // Sync selected events with latest data when events are refetched
   useEffect(() => {
-    if (selectedEventId && allEvents.length > 0) {
-      const updatedEvent = allEvents.find(e => e.id === selectedEventId);
-      if (updatedEvent) {
-        setSelectedEvent(prev => {
-          // Only update if the data actually changed
-          if (!prev || JSON.stringify(updatedEvent) !== JSON.stringify(prev)) {
-            return updatedEvent;
-          }
-          return prev;
+    if (allEvents.length === 0) return;
+    const eventsById = new Set(allEvents.map((event) => event.id));
+    setSelectedEventIds((prev) => {
+      const refreshed = prev.filter((id) => eventsById.has(id));
+      return refreshed.length === prev.length ? prev : refreshed;
+    });
+  }, [allEvents]);
+
+  const selectedEvents = useMemo(() => {
+    if (selectedEventIds.length === 0) return [];
+    const eventsById = new Map(allEvents.map((event) => [event.id, event]));
+    return selectedEventIds
+      .map((id) => eventsById.get(id))
+      .filter((event): event is EventMapData => !!event);
+  }, [allEvents, selectedEventIds]);
+
+  const selectedEvent = selectedEvents.length > 0 ? selectedEvents[selectedEvents.length - 1] : null;
+  const selectedEventIdSet = useMemo(() => new Set(selectedEventIds), [selectedEventIds]);
+
+  const eventPairDistances = useMemo((): EventPairDistance[] => {
+    if (selectedEvents.length < 2) return [];
+
+    const pairs: EventPairDistance[] = [];
+    for (let i = 0; i < selectedEvents.length; i++) {
+      for (let j = i + 1; j < selectedEvents.length; j++) {
+        const eventA = selectedEvents[i];
+        const eventB = selectedEvents[j];
+        if (!eventA.latitude || !eventA.longitude || !eventB.latitude || !eventB.longitude) continue;
+        pairs.push({
+          eventA,
+          eventB,
+          distance: calculateDistanceInMiles(
+            parseFloat(eventA.latitude),
+            parseFloat(eventA.longitude),
+            parseFloat(eventB.latitude),
+            parseFloat(eventB.longitude)
+          ),
         });
       }
     }
-  }, [allEvents, selectedEventId]);
+
+    return pairs.sort((a, b) => a.distance - b.distance);
+  }, [selectedEvents]);
 
   // Map-safe subset: only events with coordinates
   const upcomingEventsWithCoords = useMemo(() => {
@@ -1890,26 +2033,24 @@ export default function DriverPlanningDashboard() {
     });
   }, [upcomingEvents]);
 
-  // When an event is selected, only show events on the same date on the map
+  // When events are selected, show those events plus others on the same date(s)
   const eventsToShowOnMap = useMemo(() => {
-    if (!selectedEvent) {
-      // No event selected - show all events
+    if (selectedEvents.length === 0) {
       return upcomingEventsWithCoords;
     }
 
-    // Get the selected event's date
-    const selectedDate = getEffectiveEventDate(selectedEvent);
-    if (!selectedDate) {
-      // If selected event has no date, just show that event
-      return upcomingEventsWithCoords.filter(e => e.id === selectedEvent.id);
-    }
+    const selectedIds = new Set(selectedEvents.map((event) => event.id));
+    const selectedDates = new Set(
+      selectedEvents.map((event) => getEffectiveEventDate(event)).filter(Boolean)
+    );
 
-    // Filter to only events on the same date as the selected event
-    return upcomingEventsWithCoords.filter(event => {
+    return upcomingEventsWithCoords.filter((event) => {
+      if (selectedIds.has(event.id)) return true;
+
       const eventDate = getEffectiveEventDate(event);
-      return eventDate === selectedDate;
+      return !!eventDate && selectedDates.has(eventDate);
     });
-  }, [upcomingEventsWithCoords, selectedEvent]);
+  }, [upcomingEventsWithCoords, selectedEvents]);
 
   // Filter events based on staffing needs toggle
   const events = useMemo(() => {
@@ -2035,8 +2176,8 @@ export default function DriverPlanningDashboard() {
         return;
       }
 
-      // Clear any selected event and set custom location
-      setSelectedEvent(null);
+      // Clear any selected events and set custom location
+      setSelectedEventIds([]);
       clearTripPlanningState();
       setCustomLocation({
         address: data.address || quickLookupAddress.trim(),
@@ -2068,17 +2209,52 @@ export default function DriverPlanningDashboard() {
     clearTripPlanningState();
   };
 
+  const clearEventSelection = () => {
+    setSelectedEventIds([]);
+    clearTripPlanningState();
+  };
+
+  const focusComparedEvent = (eventId: number) => {
+    setSelectedEventIds((prev) => {
+      if (!prev.includes(eventId)) return prev;
+      const remaining = prev.filter((id) => id !== eventId);
+      return [...remaining, eventId];
+    });
+  };
+
   // Handle selecting an event (clears custom location if set)
-  const handleSelectEvent = (event: EventMapData) => {
-    if (selectedEvent?.id !== event.id) {
-      clearTripPlanningState();
-    }
-    // Clear custom location when selecting a real event
+  const handleSelectEvent = (event: EventMapData, additive = false) => {
+    const isAdditive = additive || compareMode;
     if (customLocation) {
       setCustomLocation(null);
       setQuickLookupAddress('');
     }
-    setSelectedEvent(event);
+
+    if (isAdditive) {
+      setSelectedEventIds((prev) => {
+        if (prev.includes(event.id)) {
+          const next = prev.filter((id) => id !== event.id);
+          if (next.length === 0) clearTripPlanningState();
+          return next;
+        }
+        return [...prev, event.id];
+      });
+      return;
+    }
+
+    if (selectedEventIds.length === 1 && selectedEventIds[0] === event.id) {
+      clearEventSelection();
+      return;
+    }
+
+    if (selectedEventIds.includes(event.id) && selectedEventIds.length > 1) {
+      clearTripPlanningState();
+      setSelectedEventIds([event.id]);
+      return;
+    }
+
+    clearTripPlanningState();
+    setSelectedEventIds([event.id]);
   };
 
   // Get nearby host contacts near the selected/custom location (show individual contacts, not locations)
@@ -2748,6 +2924,23 @@ export default function DriverPlanningDashboard() {
                 </Badge>
               )}
             </label>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={compareMode}
+                onChange={(e) => setCompareMode(e.target.checked)}
+                className="rounded border-gray-300 text-[#007E8C] focus:ring-[#007E8C]"
+              />
+              <span className="text-gray-600">Compare multiple events</span>
+            </label>
+            <p className="text-[11px] text-gray-500 leading-snug">
+              Turn on compare mode, or hold ⌘/Ctrl while clicking, to select multiple events and see distances between them.
+            </p>
+            {selectedEvents.length > 1 && (
+              <Badge variant="outline" className="text-[10px] border-[#007E8C] text-[#007E8C] bg-[#007E8C]/5">
+                Comparing {selectedEvents.length} events
+              </Badge>
+            )}
 
             {/* Quick Location Lookup */}
             <div className="pt-2 border-t border-gray-200">
@@ -2823,7 +3016,8 @@ export default function DriverPlanningDashboard() {
           <ScrollArea className="flex-1">
             <div className="p-3 space-y-2">
               {events.map((event) => {
-                const isSelected = selectedEvent?.id === event.id;
+                const isSelected = selectedEventIdSet.has(event.id);
+                const isPrimarySelected = selectedEvent?.id === event.id;
                 const eventDate = getEffectiveEventDate(event);
                 const regularDriversAssigned = getDriverCount(event);
                 const driversTentative = event.tentativeDriverIds?.length || 0;
@@ -2846,15 +3040,13 @@ export default function DriverPlanningDashboard() {
                     key={event.id}
                     className={`p-3 cursor-pointer transition-all ${
                       isSelected
-                        ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/5'
+                        ? isPrimarySelected && selectedEvents.length > 1
+                          ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/10'
+                          : 'ring-2 ring-[#007E8C] bg-[#007E8C]/5'
                         : 'hover:shadow-md hover:bg-white'
                     }`}
-                    onClick={() => {
-                      if (isSelected) {
-                        setSelectedEvent(null);
-                      } else {
-                        handleSelectEvent(event);
-                      }
+                    onClick={(e) => {
+                      handleSelectEvent(event, e.metaKey || e.ctrlKey);
                       setShowAllHosts(false);
                       setShowAllRecipients(false);
                     }}
@@ -3128,7 +3320,8 @@ export default function DriverPlanningDashboard() {
               maxZoom={20}
             />
             <MapController
-              selectedEvent={effectiveSelectedEvent}
+              selectedEvents={customLocation ? [] : selectedEvents}
+              primarySelectedEvent={effectiveSelectedEvent}
               events={upcomingEventsWithCoords}
               focusedItem={focusedItem}
               nearbyHosts={nearbyHosts}
@@ -3139,19 +3332,21 @@ export default function DriverPlanningDashboard() {
             />
             <MapResizeObserver />
             <MapClickHandler onMapClick={() => {
-              setSelectedEvent(null);
-              clearTripPlanningState();
+              clearEventSelection();
               setCustomLocation(null);
             }} />
 
-            {/* Event markers - when an event is selected, only show events on the same date */}
+            <EventComparisonPolylines pairs={eventPairDistances} />
+
+            {/* Event markers - when events are selected, show those plus same-date events */}
             {/* Only show permanent labels for selected event; others show labels on hover */}
             {/* zIndexOffset keeps event pins on top of host/driver/recipient pins so they
                 stay visible when locations overlap; selected event gets an even higher offset */}
             {layerVisibility.events && eventsToShowOnMap.filter(e => e.latitude && e.longitude).map((event) => {
               const eventDate = getEffectiveEventDate(event);
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
-              const isSelected = selectedEvent?.id === event.id;
+              const isSelected = selectedEventIdSet.has(event.id);
+              const isPrimarySelected = selectedEvent?.id === event.id;
               return (
                 <Marker
                   key={event.id}
@@ -3159,7 +3354,10 @@ export default function DriverPlanningDashboard() {
                   icon={isSelected ? selectedEventIcon : eventIcon}
                   zIndexOffset={isSelected ? 2000 : 1000}
                   eventHandlers={{
-                    click: () => handleSelectEvent(event)
+                    click: (e) => {
+                      const original = e.originalEvent as MouseEvent;
+                      handleSelectEvent(event, compareMode || original.metaKey || original.ctrlKey);
+                    }
                   }}
                 >
                   <Tooltip
@@ -3173,7 +3371,9 @@ export default function DriverPlanningDashboard() {
                   >
                     {isSelected ? (
                       <span className="block max-w-[260px] leading-tight whitespace-normal">
-                        <span className="block text-[10px] uppercase tracking-wide text-[#007E8C] font-bold">Selected Event</span>
+                        <span className="block text-[10px] uppercase tracking-wide text-[#007E8C] font-bold">
+                          {selectedEvents.length > 1 && !isPrimarySelected ? 'Comparing' : 'Selected Event'}
+                        </span>
                         <span className="block break-words">{event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}</span>
                       </span>
                     ) : (
@@ -4394,6 +4594,13 @@ export default function DriverPlanningDashboard() {
             )}
           </div>
 
+          <EventComparisonPanel
+            selectedEvents={selectedEvents}
+            eventPairDistances={eventPairDistances}
+            onClearComparison={() => selectedEvent && setSelectedEventIds([selectedEvent.id])}
+            onFocusEvent={focusComparedEvent}
+          />
+
           <ScrollArea className="flex-1">
             {!effectiveSelectedEvent ? (
               <div className="p-6 text-center text-gray-500">
@@ -5165,11 +5372,30 @@ export default function DriverPlanningDashboard() {
               />
               <span className="text-gray-600">Needing drivers only</span>
             </label>
+            <label className="flex items-center gap-2 text-xs cursor-pointer">
+              <input
+                type="checkbox"
+                checked={compareMode}
+                onChange={(e) => setCompareMode(e.target.checked)}
+                className="rounded border-gray-300 text-[#007E8C] focus:ring-[#007E8C]"
+              />
+              <span className="text-gray-600">Compare multiple events</span>
+            </label>
           </div>
           <ScrollArea className="flex-1">
             <div className="p-2 space-y-2">
+              {selectedEvents.length > 1 && (
+                <EventComparisonPanel
+                  selectedEvents={selectedEvents}
+                  eventPairDistances={eventPairDistances}
+                  onClearComparison={() => selectedEvent && setSelectedEventIds([selectedEvent.id])}
+                  onFocusEvent={focusComparedEvent}
+                  compact
+                />
+              )}
               {events.map((event) => {
-                const isSelected = selectedEvent?.id === event.id;
+                const isSelected = selectedEventIdSet.has(event.id);
+                const isPrimarySelected = selectedEvent?.id === event.id;
                 const eventDate = getEffectiveEventDate(event);
                 const driversAssigned = getDriverCount(event);
                 const driversTentative = event.tentativeDriverIds?.length || 0;
@@ -5185,15 +5411,13 @@ export default function DriverPlanningDashboard() {
                     key={event.id}
                     className={`p-2 cursor-pointer transition-all ${
                       isSelected
-                        ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/5'
+                        ? isPrimarySelected && selectedEvents.length > 1
+                          ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/10'
+                          : 'ring-2 ring-[#007E8C] bg-[#007E8C]/5'
                         : 'hover:shadow-md hover:bg-white'
                     }`}
-                    onClick={() => {
-                      if (isSelected) {
-                        setSelectedEvent(null);
-                      } else {
-                        handleSelectEvent(event);
-                      }
+                    onClick={(e) => {
+                      handleSelectEvent(event, e.metaKey || e.ctrlKey);
                       setShowAllHosts(false);
                       setShowAllRecipients(false);
                     }}
@@ -5338,7 +5562,8 @@ export default function DriverPlanningDashboard() {
               maxZoom={20}
             />
             <MapController
-              selectedEvent={effectiveSelectedEvent}
+              selectedEvents={customLocation ? [] : selectedEvents}
+              primarySelectedEvent={effectiveSelectedEvent}
               events={upcomingEventsWithCoords}
               focusedItem={focusedItem}
               nearbyHosts={nearbyHosts}
@@ -5348,11 +5573,13 @@ export default function DriverPlanningDashboard() {
               fullTripRoute={fullTripRoute}
             />
             <MapResizeObserver />
+            <EventComparisonPolylines pairs={eventPairDistances} />
             {/* Only show permanent labels for selected event; others show labels on hover */}
             {layerVisibility.events && eventsToShowOnMap.filter(e => e.latitude && e.longitude).map((event) => {
               const eventDate = getEffectiveEventDate(event);
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
-              const isSelected = selectedEvent?.id === event.id;
+              const isSelected = selectedEventIdSet.has(event.id);
+              const isPrimarySelected = selectedEvent?.id === event.id;
               return (
                 <Marker
                   key={event.id}
@@ -5360,7 +5587,10 @@ export default function DriverPlanningDashboard() {
                   icon={isSelected ? selectedEventIcon : eventIcon}
                   zIndexOffset={isSelected ? 2000 : 1000}
                   eventHandlers={{
-                    click: () => handleSelectEvent(event)
+                    click: (e) => {
+                      const original = e.originalEvent as MouseEvent;
+                      handleSelectEvent(event, compareMode || original.metaKey || original.ctrlKey);
+                    }
                   }}
                 >
                   <Tooltip
@@ -5374,7 +5604,9 @@ export default function DriverPlanningDashboard() {
                   >
                     {isSelected ? (
                       <span className="block max-w-[220px] leading-tight whitespace-normal">
-                        <span className="block text-[10px] uppercase tracking-wide text-[#007E8C] font-bold">Selected Event</span>
+                        <span className="block text-[10px] uppercase tracking-wide text-[#007E8C] font-bold">
+                          {selectedEvents.length > 1 && !isPrimarySelected ? 'Comparing' : 'Selected Event'}
+                        </span>
                         <span className="block break-words">{event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}</span>
                       </span>
                     ) : (
@@ -5639,11 +5871,20 @@ export default function DriverPlanningDashboard() {
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6"
-                  onClick={() => setSelectedEvent(null)}
+                  onClick={clearEventSelection}
                 >
                   <X className="w-4 h-4" />
                 </Button>
               </div>
+              {selectedEvents.length > 1 && (
+                <EventComparisonPanel
+                  selectedEvents={selectedEvents}
+                  eventPairDistances={eventPairDistances}
+                  onClearComparison={() => selectedEvent && setSelectedEventIds([selectedEvent.id])}
+                  onFocusEvent={focusComparedEvent}
+                  compact
+                />
+              )}
               <div className="p-3 space-y-3">
                 {/* Nearby Hosts */}
                 <div>
@@ -5733,7 +5974,8 @@ export default function DriverPlanningDashboard() {
               maxZoom={20}
             />
             <MapController
-              selectedEvent={effectiveSelectedEvent}
+              selectedEvents={customLocation ? [] : selectedEvents}
+              primarySelectedEvent={effectiveSelectedEvent}
               events={upcomingEventsWithCoords}
               focusedItem={focusedItem}
               nearbyHosts={nearbyHosts}
@@ -5743,11 +5985,13 @@ export default function DriverPlanningDashboard() {
               fullTripRoute={fullTripRoute}
             />
             <MapResizeObserver />
+            <EventComparisonPolylines pairs={eventPairDistances} />
             {/* Only show permanent labels for selected event; others show labels on hover */}
             {layerVisibility.events && eventsToShowOnMap.filter(e => e.latitude && e.longitude).map((event) => {
               const eventDate = getEffectiveEventDate(event);
               const formattedDate = eventDate ? format(parseLocalDate(eventDate), 'M/d') : '';
-              const isSelected = selectedEvent?.id === event.id;
+              const isSelected = selectedEventIdSet.has(event.id);
+              const isPrimarySelected = selectedEvent?.id === event.id;
               return (
                 <Marker
                   key={event.id}
@@ -5755,9 +5999,9 @@ export default function DriverPlanningDashboard() {
                   icon={isSelected ? selectedEventIcon : eventIcon}
                   zIndexOffset={isSelected ? 2000 : 1000}
                   eventHandlers={{
-                    click: () => {
-                      handleSelectEvent(event);
-                      // Expand events list to show details (don't use Sheet overlay)
+                    click: (e) => {
+                      const original = e.originalEvent as MouseEvent;
+                      handleSelectEvent(event, compareMode || original.metaKey || original.ctrlKey);
                       setMobileEventsCollapsed(false);
                       setMobileFullscreenMap(false);
                     }
@@ -5774,7 +6018,9 @@ export default function DriverPlanningDashboard() {
                   >
                     {isSelected ? (
                       <span className="block max-w-[170px] leading-tight whitespace-normal">
-                        <span className="block text-[9px] uppercase tracking-wide text-[#007E8C] font-bold">Selected Event</span>
+                        <span className="block text-[9px] uppercase tracking-wide text-[#007E8C] font-bold">
+                          {selectedEvents.length > 1 && !isPrimarySelected ? 'Comparing' : 'Selected Event'}
+                        </span>
                         <span className="block break-words">{event.organizationName || 'Event'}{formattedDate ? ` · ${formattedDate}` : ''}</span>
                       </span>
                     ) : (
@@ -6241,14 +6487,23 @@ export default function DriverPlanningDashboard() {
                   />
                   <span className="text-gray-600">Include pending/new requests</span>
                 </label>
+                <label className="flex items-center gap-2 text-xs cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={compareMode}
+                    onChange={(e) => setCompareMode(e.target.checked)}
+                    className="rounded border-gray-300 text-[#007E8C] focus:ring-[#007E8C]"
+                  />
+                  <span className="text-gray-600">Compare multiple events</span>
+                </label>
               </div>
             )}
 
             {/* Mobile Content Area - Either Events List OR Event Details */}
             {!mobileEventsCollapsed && (
               <ScrollArea className="flex-1">
-                {/* Event Details View - When an event or custom location is selected */}
-                {effectiveSelectedEvent ? (
+                {/* Event Details View - When an event or custom location is selected (unless comparing) */}
+                {effectiveSelectedEvent && !compareMode ? (
                   <div className="p-3 space-y-4">
                     {/* Back Button & Header */}
                     <div className="flex items-center gap-3 pb-2 border-b">
@@ -6257,7 +6512,7 @@ export default function DriverPlanningDashboard() {
                         size="sm"
                         className="h-9 px-2"
                         onClick={() => {
-                          setSelectedEvent(null);
+                          clearEventSelection();
                           setCustomLocation(null);
                           setShowAllHosts(false);
                           setShowAllRecipients(false);
@@ -6283,6 +6538,14 @@ export default function DriverPlanningDashboard() {
                         </Button>
                       )}
                     </div>
+
+                    <EventComparisonPanel
+                      selectedEvents={selectedEvents}
+                      eventPairDistances={eventPairDistances}
+                      onClearComparison={() => selectedEvent && setSelectedEventIds([selectedEvent.id])}
+                      onFocusEvent={focusComparedEvent}
+                      compact
+                    />
 
                     {/* Event Info - Only show for real events, not custom locations */}
                     {selectedEvent && (
@@ -6553,9 +6816,20 @@ export default function DriverPlanningDashboard() {
                     </div>
                   </div>
                 ) : (
-                  /* Events List View - When no event is selected */
+                  /* Events List View - When no event is selected, or compare mode is on */
                   <div className="p-3 space-y-2">
+                    {selectedEvents.length > 1 && (
+                      <EventComparisonPanel
+                        selectedEvents={selectedEvents}
+                        eventPairDistances={eventPairDistances}
+                        onClearComparison={() => selectedEvent && setSelectedEventIds([selectedEvent.id])}
+                        onFocusEvent={focusComparedEvent}
+                        compact
+                      />
+                    )}
                     {events.map((event) => {
+                      const isSelected = selectedEventIdSet.has(event.id);
+                      const isPrimarySelected = selectedEvent?.id === event.id;
                       const eventDate = getEffectiveEventDate(event);
                       const driversAssigned = getDriverCount(event);
                       const driversTentative = event.tentativeDriverIds?.length || 0;
@@ -6570,7 +6844,13 @@ export default function DriverPlanningDashboard() {
                       return (
                         <Card
                           key={event.id}
-                          className="p-3 cursor-pointer transition-all active:scale-[0.98] hover:shadow-md active:bg-gray-50"
+                          className={`p-3 cursor-pointer transition-all active:scale-[0.98] hover:shadow-md active:bg-gray-50 ${
+                            isSelected
+                              ? isPrimarySelected && selectedEvents.length > 1
+                                ? 'ring-2 ring-[#007E8C] bg-[#007E8C]/10'
+                                : 'ring-2 ring-[#007E8C] bg-[#007E8C]/5'
+                              : ''
+                          }`}
                           onClick={() => {
                             handleSelectEvent(event);
                             setShowAllHosts(false);

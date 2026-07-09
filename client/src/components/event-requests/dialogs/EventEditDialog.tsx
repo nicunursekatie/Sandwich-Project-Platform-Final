@@ -51,7 +51,7 @@ import {
   formatDraftTimestamp,
 } from '@/hooks/useDraftPersistence';
 import { logger } from '@/lib/logger';
-import { getDriverIds, getVolunteerIds } from '@/lib/assignment-utils';
+import { getDriverIds, getVolunteerIds, extractNameFromAssignmentId, resolveAssignmentDisplayName } from '@/lib/assignment-utils';
 import { getRecipientDisplayRegion } from '@/lib/atlanta-regions';
 import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
@@ -188,13 +188,18 @@ function resolvePersonDisplayName(
     assignmentType: 'driver' | 'volunteer';
   }
 ): string {
-  const storedName = opts.assignmentDetails?.[personId]?.name?.trim();
-  if (storedName) return storedName;
-
-  if (personId.startsWith('custom-')) {
-    const parts = personId.split('-');
-    return parts.slice(2).join(' ').replace(/-/g, ' ') || personId;
+  const storedName = opts.assignmentDetails?.[personId]?.name;
+  if (storedName?.trim()) {
+    const normalized = resolveAssignmentDisplayName(personId, { storedName });
+    if (normalized !== 'Unknown') return normalized;
   }
+
+  if (personId.startsWith('custom-') || personId.startsWith('custom:')) {
+    return extractNameFromAssignmentId(personId) || personId;
+  }
+
+  const legacyName = extractNameFromAssignmentId(personId);
+  if (legacyName) return legacyName;
 
   const person = opts.availablePeople.find((p) => p.id === personId);
   if (person?.name) return person.name;
