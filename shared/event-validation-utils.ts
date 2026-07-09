@@ -166,6 +166,38 @@ export function getRefrigerationMessage(
 }
 
 /**
+ * True when we lack enough sandwich-plan data to conclude the event is
+ * PBJ-only (no perishables). Used for fail-closed food-safety gates —
+ * missing data must not skip refrigeration confirmation.
+ */
+export function cannotRuleOutPerishableSandwiches(
+  sandwichTypes: SandwichType[] | null | undefined
+): boolean {
+  if (sandwichTypes == null) return true;
+  if (!Array.isArray(sandwichTypes) || sandwichTypes.length === 0) return true;
+  return false;
+}
+
+/**
+ * Whether scheduling should be blocked/warned until refrigeration is
+ * confirmed. Warns when refrigeration is unanswered AND either (a) the
+ * plan includes perishables, or (b) the sandwich plan is missing/empty
+ * so we cannot rule perishables out.
+ */
+export function shouldConfirmRefrigerationBeforeSchedule(
+  hasRefrigeration: boolean | null | undefined,
+  sandwichTypes: SandwichType[] | null | undefined
+): boolean {
+  if (!needsRefrigerationConfirmation(hasRefrigeration)) {
+    return false;
+  }
+  return (
+    hasPerishableSandwiches(sandwichTypes) ||
+    cannotRuleOutPerishableSandwiches(sandwichTypes)
+  );
+}
+
+/**
  * Get list of perishable sandwich types from an array
  */
 export function getPerishableSandwichTypes(sandwichTypes: SandwichType[] | null | undefined): string[] {
