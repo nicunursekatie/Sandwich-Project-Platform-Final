@@ -76,6 +76,7 @@ import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { ReminderRulesManager } from '@/components/event-requests/ReminderRulesManager';
 import { MessageComposer } from '@/components/message-composer';
 import { MlkDayBadge } from '@/components/event-requests/MlkDayBadge';
+import { MissingDriverTimeBadge } from '@/components/event-requests/MissingDriverTimeBadge';
 import { RefrigerationWarningBadge } from '@/components/event-requests/RefrigerationWarningBadge';
 import { TrafficConflictBadge } from '@/components/event-requests/TrafficConflictBadge';
 import { VanNeededBadgeAndButton } from '@/components/event-requests/VanNeededBadgeAndButton';
@@ -1430,6 +1431,18 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             <RefrigerationWarningBadge
               sandwichTypes={request.sandwichTypes}
               hasRefrigeration={request.hasRefrigeration}
+              className="text-xs sm:text-sm"
+            />
+
+            <MissingDriverTimeBadge
+              driversNeeded={(request as any).driversNeeded}
+              selfTransport={(request as any).selfTransport}
+              eventStartTime={(request as any).eventStartTime}
+              eventEndTime={(request as any).eventEndTime}
+              pickupTime={(request as any).pickupTime}
+              pickupDateTime={(request as any).pickupDateTime}
+              pickupTimeWindow={(request as any).pickupTimeWindow}
+              driverPickupTime={(request as any).driverPickupTime}
               className="text-xs sm:text-sm"
             />
 

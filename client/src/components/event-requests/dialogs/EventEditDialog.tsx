@@ -152,6 +152,8 @@ function parseAssignmentDetails(
   }
   return details;
 }
+
+function buildVolunteerNameLookup(volunteers: any[]): Map<string, string> {
   const map = new Map<string, string>();
   volunteers.forEach((vol: any) => {
     const name =

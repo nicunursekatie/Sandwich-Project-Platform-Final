@@ -76,6 +76,11 @@ const CustomMessage = () => {
   const { channel } = useChannelStateContext();
   const { user } = useAuth();
 
+  // Hide deleted messages entirely — no "This message was deleted" placeholder.
+  if (message?.type === 'deleted' || message?.deleted_at) {
+    return null;
+  }
+
   // Check if this is the current user's message
   const isOwnMessage = message?.user?.id === `user_${user?.id}`;
   const currentUserId = user?.id ? `user_${user.id}` : null;
@@ -390,47 +395,15 @@ const customChatStyles = `
     font-size: 11px !important;
   }
 
-  /* ── #4: Flatten deleted messages ─────────────────────────────────
-     Stream renders deleted messages inside the same bubble shell as
-     real messages, giving them equal visual weight. Strip the bubble
-     entirely and present a small inline italic notice. */
-  .str-chat__list .str-chat__message--deleted .str-chat__message-bubble,
-  .str-chat__list .str-chat__message-simple--deleted .str-chat__message-bubble {
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    padding: 0 !important;
-  }
-
-  .str-chat__list .str-chat__message--deleted .str-chat__message-text,
-  .str-chat__list .str-chat__message-simple--deleted .str-chat__message-text,
-  .str-chat__list .str-chat__message--deleted .str-chat__message-text-inner,
-  .str-chat__list .str-chat__message-simple--deleted .str-chat__message-text-inner {
-    background: transparent !important;
-    color: #9ca3af !important;
-    font-style: italic !important;
-    font-size: 12px !important;
-    padding: 0 !important;
-    border: none !important;
-  }
-
-  /* Hide the avatar + metadata row for deleted messages — there's
-     no useful "who said this" context once the content is gone. */
-  .str-chat__list .str-chat__message--deleted .str-chat__avatar,
-  .str-chat__list .str-chat__message-simple--deleted .str-chat__avatar,
-  .str-chat__list .str-chat__message--deleted .str-chat__message-data,
-  .str-chat__list .str-chat__message-simple--deleted .str-chat__message-data {
-    display: none !important;
-  }
-
-  /* Tighten the vertical footprint so deleted entries don't take up
-     bubble-sized space in the scroll. */
+  /* ── #4: Hide deleted messages entirely ───────────────────────────
+     Stream's default UI shows a "This message was deleted" placeholder.
+     We suppress that in CustomMessage; this CSS is a safety net for any
+     deleted row that still mounts (e.g. thread previews). */
   .str-chat__list .str-chat__message--deleted,
-  .str-chat__list .str-chat__message-simple--deleted {
-    margin-top: 2px !important;
-    margin-bottom: 2px !important;
-    padding-top: 2px !important;
-    padding-bottom: 2px !important;
+  .str-chat__list .str-chat__message-simple--deleted,
+  .str-chat__thread .str-chat__message--deleted,
+  .str-chat__thread .str-chat__message-simple--deleted {
+    display: none !important;
   }
 `;
 
@@ -1467,7 +1440,7 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
                 <MessageList Message={CustomMessage} />
                 <MessageInput />
               </Window>
-              <Thread />
+              <Thread Message={CustomMessage} />
             </Channel>
           ) : (
             <div className="flex-1 flex items-center justify-center">

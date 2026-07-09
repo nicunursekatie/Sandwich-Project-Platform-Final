@@ -19,7 +19,10 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { RefrigerationWarningDialog } from './RefrigerationWarningDialog';
-import { needsRefrigerationConfirmation } from '@/lib/refrigeration-utils';
+import {
+  needsRefrigerationConfirmation,
+  hasPerishableSandwiches,
+} from '@/lib/refrigeration-utils';
 
 interface QuickScheduleButtonProps {
   eventId: number;
@@ -56,8 +59,19 @@ export const QuickScheduleButton: React.FC<QuickScheduleButtonProps> = ({
   }
 
   const handleScheduleClick = () => {
-    // Check refrigeration status before scheduling
-    if (needsRefrigerationConfirmation(hasRefrigeration)) {
+    // Only warn about refrigeration if the event actually needs it —
+    // perishable sandwiches on the plan (turkey/ham/deli/cheese). A
+    // PBJ-only event shouldn't be blocked at scheduling time to answer
+    // an irrelevant question.
+    //
+    // If sandwichTypes wasn't passed by the caller we can't rule out
+    // perishables, so still gate on unanswered refrigeration (fail closed
+    // for food safety rather than silently bypassing the check).
+    const needsRefrigConfirm = needsRefrigerationConfirmation(hasRefrigeration);
+    const hasPerishable = hasPerishableSandwiches(sandwichTypes as any);
+    const sandwichPlanUnknown = sandwichTypes === undefined;
+
+    if (needsRefrigConfirm && (hasPerishable || sandwichPlanUnknown)) {
       setShowRefrigerationWarning(true);
     } else {
       setShowConfirm(true);

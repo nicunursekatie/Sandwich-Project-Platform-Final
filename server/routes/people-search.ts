@@ -27,6 +27,45 @@ interface PersonSearchResult {
   organization?: string | null;
   role?: string | null;
   link: string;
+  /**
+   * Which field of the record matched the search term. Used by the
+   * client to render a "Matched: <field>" hint so the user can see why
+   * a record showed up — critical when the query term (e.g. "marcy")
+   * appears in a non-name field like an email or an organization.
+   */
+  matchedField?: string;
+  /**
+   * The actual value of the matched field. Rendered underneath the
+   * result as a small snippet so the user gets a preview without
+   * clicking through.
+   */
+  matchedText?: string;
+}
+
+/**
+ * Given a query string and a set of candidate fields, return the first
+ * field whose value contains the query (case-insensitive). Fields are
+ * checked in the order provided so callers can express priority (e.g.
+ * "Name" beats "Email" — if a record matches on both, we surface Name
+ * as the more useful reason).
+ *
+ * Returns { field: <human label>, text: <matched value> } or undefined
+ * when no field matched (which shouldn't happen for a returned row but
+ * we guard for safety).
+ */
+function detectMatch(
+  query: string,
+  candidates: Array<{ label: string; value: string | null | undefined }>,
+): { field: string; text: string } | undefined {
+  const q = query.trim().toLowerCase();
+  if (!q) return undefined;
+  for (const c of candidates) {
+    const v = c.value?.toString();
+    if (v && v.toLowerCase().includes(q)) {
+      return { field: c.label, text: v };
+    }
+  }
+  return undefined;
 }
 
 /**
@@ -41,7 +80,14 @@ router.get('/search', async (req, res) => {
       return res.json({ results: [] });
     }
 
-    const searchTerm = `%${query.trim()}%`;
+    // Trim once and reuse everywhere. The DB `searchTerm` uses the trimmed
+    // form; any post-fetch client-side filter/sort MUST also compare against
+    // this trimmed form so a query like " john " doesn't cause the DB to
+    // match "John Smith" and then be silently dropped by an untrimmed
+    // .includes() check on the returned rows.
+    const trimmedQuery = query.trim();
+    const searchLower = trimmedQuery.toLowerCase();
+    const searchTerm = `%${trimmedQuery}%`;
     const results: PersonSearchResult[] = [];
 
     // Search users
@@ -68,6 +114,14 @@ router.get('/search', async (req, res) => {
 
     for (const user of userResults) {
       const name = user.displayName || `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Unknown';
+      const match = detectMatch(query, [
+        { label: 'Name', value: name },
+        { label: 'First name', value: user.firstName },
+        { label: 'Last name', value: user.lastName },
+        { label: 'Display name', value: user.displayName },
+        { label: 'Email', value: user.email },
+        { label: 'Phone', value: user.phone },
+      ]);
       results.push({
         id: user.id,
         name,
@@ -76,6 +130,8 @@ router.get('/search', async (req, res) => {
         sourceType: 'user',
         sourceLabel: 'Team Member',
         link: `/dashboard?section=users&user=${user.id}`,
+        matchedField: match?.field,
+        matchedText: match?.text,
       });
     }
 
@@ -98,6 +154,11 @@ router.get('/search', async (req, res) => {
       .limit(10);
 
     for (const driver of driverResults) {
+      const match = detectMatch(query, [
+        { label: 'Name', value: driver.name },
+        { label: 'Email', value: driver.email },
+        { label: 'Phone', value: driver.phone },
+      ]);
       results.push({
         id: driver.id,
         name: driver.name || 'Unknown Driver',
@@ -106,6 +167,8 @@ router.get('/search', async (req, res) => {
         sourceType: 'driver',
         sourceLabel: 'Driver',
         link: `/dashboard?section=drivers`,
+        matchedField: match?.field,
+        matchedText: match?.text,
       });
     }
 
@@ -128,6 +191,11 @@ router.get('/search', async (req, res) => {
       .limit(10);
 
     for (const volunteer of volunteerResults) {
+      const match = detectMatch(query, [
+        { label: 'Name', value: volunteer.name },
+        { label: 'Email', value: volunteer.email },
+        { label: 'Phone', value: volunteer.phone },
+      ]);
       results.push({
         id: volunteer.id,
         name: volunteer.name || 'Unknown Volunteer',
@@ -136,6 +204,8 @@ router.get('/search', async (req, res) => {
         sourceType: 'volunteer',
         sourceLabel: 'Volunteer',
         link: `/dashboard?section=volunteers`,
+        matchedField: match?.field,
+        matchedText: match?.text,
       });
     }
 
@@ -158,6 +228,11 @@ router.get('/search', async (req, res) => {
       .limit(10);
 
     for (const host of hostResults) {
+      const match = detectMatch(query, [
+        { label: 'Name', value: host.name },
+        { label: 'Email', value: host.email },
+        { label: 'Phone', value: host.phone },
+      ]);
       results.push({
         id: host.id,
         name: host.name || 'Unknown Host',
@@ -166,6 +241,8 @@ router.get('/search', async (req, res) => {
         sourceType: 'host',
         sourceLabel: 'Host',
         link: `/dashboard?section=hosts`,
+        matchedField: match?.field,
+        matchedText: match?.text,
       });
     }
 
@@ -190,6 +267,11 @@ router.get('/search', async (req, res) => {
       .limit(10);
 
     for (const contact of hostContactResults) {
+      const match = detectMatch(query, [
+        { label: 'Name', value: contact.name },
+        { label: 'Email', value: contact.email },
+        { label: 'Phone', value: contact.phone },
+      ]);
       results.push({
         id: contact.id,
         name: contact.name || 'Unknown Contact',
@@ -199,6 +281,8 @@ router.get('/search', async (req, res) => {
         sourceLabel: 'Host Contact',
         role: contact.role,
         link: `/dashboard?section=hosts`,
+        matchedField: match?.field,
+        matchedText: match?.text,
       });
     }
 
@@ -226,21 +310,44 @@ router.get('/search', async (req, res) => {
       .limit(10);
 
     for (const recipient of recipientResults) {
-      // Add main recipient
-      results.push({
-        id: recipient.id,
-        name: recipient.name || 'Unknown Recipient',
-        email: recipient.email,
-        phone: recipient.phone,
-        sourceType: 'recipient',
-        sourceLabel: 'Recipient',
-        link: `/dashboard?section=recipients&highlight=${recipient.id}`,
-      });
+      // Uses the outer `searchLower` (trimmed + lowercased) so this
+      // filter matches what the DB actually queried on.
+      const mainMatched =
+        recipient.name?.toLowerCase().includes(searchLower) ||
+        recipient.email?.toLowerCase().includes(searchLower) ||
+        recipient.phone?.toLowerCase().includes(searchLower);
 
-      // Also check if we matched a contact person
-      const searchLower = query.toLowerCase();
+      // Only surface the main recipient row when the query hit one of
+      // ITS fields (name/email/phone). Previously we always emitted the
+      // main row even when only the contact-person fields matched,
+      // making it look like the recipient's own name/email contained
+      // the query when it didn't.
+      if (mainMatched) {
+        const match = detectMatch(query, [
+          { label: 'Name', value: recipient.name },
+          { label: 'Email', value: recipient.email },
+          { label: 'Phone', value: recipient.phone },
+        ]);
+        results.push({
+          id: recipient.id,
+          name: recipient.name || 'Unknown Recipient',
+          email: recipient.email,
+          phone: recipient.phone,
+          sourceType: 'recipient',
+          sourceLabel: 'Recipient',
+          link: `/dashboard?section=recipients&highlight=${recipient.id}`,
+          matchedField: match?.field,
+          matchedText: match?.text,
+        });
+      }
+
       if (recipient.contactPersonName?.toLowerCase().includes(searchLower) ||
           recipient.contactPersonEmail?.toLowerCase().includes(searchLower)) {
+        const match = detectMatch(query, [
+          { label: 'Contact name', value: recipient.contactPersonName },
+          { label: 'Contact email', value: recipient.contactPersonEmail },
+          { label: 'Contact phone', value: recipient.contactPersonPhone },
+        ]);
         results.push({
           id: `${recipient.id}-contact`,
           name: recipient.contactPersonName || 'Contact',
@@ -250,6 +357,8 @@ router.get('/search', async (req, res) => {
           sourceLabel: 'Recipient Contact',
           organization: recipient.name,
           link: `/dashboard?section=recipients&highlight=${recipient.id}`,
+          matchedField: match?.field,
+          matchedText: match?.text,
         });
       }
     }
@@ -274,6 +383,11 @@ router.get('/search', async (req, res) => {
       .limit(10);
 
     for (const contact of tspContactResults) {
+      const match = detectMatch(query, [
+        { label: 'Name', value: contact.contactName },
+        { label: 'Email', value: contact.contactEmail },
+        { label: 'Phone', value: contact.contactPhone },
+      ]);
       results.push({
         id: contact.id,
         name: contact.contactName || 'Unknown TSP Contact',
@@ -282,6 +396,8 @@ router.get('/search', async (req, res) => {
         sourceType: 'recipientTspContact',
         sourceLabel: 'TSP Contact',
         link: `/dashboard?section=recipients&highlight=${contact.recipientId}`,
+        matchedField: match?.field,
+        matchedText: match?.text,
       });
     }
 
@@ -306,6 +422,12 @@ router.get('/search', async (req, res) => {
       .limit(10);
 
     for (const contact of contactResults) {
+      const match = detectMatch(query, [
+        { label: 'Name', value: contact.name },
+        { label: 'Email', value: contact.email },
+        { label: 'Phone', value: contact.phone },
+        { label: 'Organization', value: contact.organization },
+      ]);
       results.push({
         id: contact.id,
         name: contact.name || 'Unknown Contact',
@@ -315,6 +437,8 @@ router.get('/search', async (req, res) => {
         sourceLabel: 'Contact',
         organization: contact.organization,
         link: `/dashboard?section=contacts`,
+        matchedField: match?.field,
+        matchedText: match?.text,
       });
     }
 
@@ -342,7 +466,8 @@ router.get('/search', async (req, res) => {
 
     for (const er of eventRequestResults) {
       const contactName = `${er.firstName || ''} ${er.lastName || ''}`.trim();
-      const searchLower = query.toLowerCase();
+      // Uses the outer `searchLower` (trimmed + lowercased) so this
+      // filter matches what the DB actually queried on.
       const orgMatched = er.organizationName?.toLowerCase().includes(searchLower);
 
       if (orgMatched) {
@@ -355,9 +480,18 @@ router.get('/search', async (req, res) => {
           sourceLabel: 'Event Request Org',
           organization: contactName || undefined,
           link: `/dashboard?section=event-requests&eventId=${er.id}`,
+          matchedField: 'Organization name',
+          matchedText: er.organizationName || undefined,
         });
       }
       if (contactName && (!orgMatched || contactName.toLowerCase().includes(searchLower))) {
+        const contactMatch = detectMatch(query, [
+          { label: 'Contact name', value: contactName },
+          { label: 'First name', value: er.firstName },
+          { label: 'Last name', value: er.lastName },
+          { label: 'Contact email', value: er.email },
+          { label: 'Contact phone', value: er.phone },
+        ]);
         results.push({
           id: `er-contact-${er.id}`,
           name: contactName,
@@ -367,6 +501,8 @@ router.get('/search', async (req, res) => {
           sourceLabel: 'Event Request Contact',
           organization: er.organizationName,
           link: `/dashboard?section=event-requests&eventId=${er.id}`,
+          matchedField: contactMatch?.field,
+          matchedText: contactMatch?.text,
         });
       }
     }
@@ -394,13 +530,19 @@ router.get('/search', async (req, res) => {
         sourceLabel: 'Organization',
         organization: org.category || undefined,
         link: `/dashboard?section=groups-catalog`,
+        matchedField: 'Organization name',
+        matchedText: org.name,
       });
     }
 
-    // Sort results: exact matches first, then partial matches
+    // Sort results: exact matches first, then partial matches.
+    // Compare against `searchLower` (trimmed) so " john " and "john"
+    // both correctly identify a record named exactly "John" as an
+    // exact match rather than treating "john " with a trailing space
+    // as unmatched.
     results.sort((a, b) => {
-      const aExact = a.name.toLowerCase() === query.toLowerCase();
-      const bExact = b.name.toLowerCase() === query.toLowerCase();
+      const aExact = a.name.toLowerCase() === searchLower;
+      const bExact = b.name.toLowerCase() === searchLower;
       if (aExact && !bExact) return -1;
       if (!aExact && bExact) return 1;
       return a.name.localeCompare(b.name);

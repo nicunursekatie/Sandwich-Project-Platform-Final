@@ -31,8 +31,16 @@ export function RefrigerationWarningBadge({
   showTooltip = true,
 }: RefrigerationWarningBadgeProps) {
   const hasCriticalIssue = hasCriticalRefrigerationIssue(sandwichTypes, hasRefrigeration);
-  const needsConfirmation = needsRefrigerationConfirmation(hasRefrigeration);
   const hasPerishable = hasPerishableSandwiches(sandwichTypes);
+  // The "Refrigeration needed?" ask is only meaningful when the event
+  // has perishable sandwiches on the plan (turkey, ham, deli, cheese).
+  // A PBJ-only event doesn't require refrigeration regardless of what
+  // `hasRefrigeration` says, so the confirmation question is irrelevant
+  // and the badge should not show. `needsRefrigerationConfirmation`
+  // alone only reflects whether the field is unanswered — pair it with
+  // `hasPerishable` so we don't nag on PBJ events.
+  const needsConfirmation =
+    hasPerishable && needsRefrigerationConfirmation(hasRefrigeration);
   const showConfirmed = hasRefrigeration === true && hasPerishable;
   const message = getRefrigerationMessage(sandwichTypes, hasRefrigeration);
 
@@ -60,7 +68,7 @@ export function RefrigerationWarningBadge({
           className={`gap-1 bg-amber-500 text-white border border-amber-600 hover:bg-amber-600 ${className}`}
         >
           <AlertTriangle className="h-3 w-3" />
-          <span>Refrigeration needed?</span>
+          <span>Confirm refrigeration</span>
         </Badge>
       )}
 

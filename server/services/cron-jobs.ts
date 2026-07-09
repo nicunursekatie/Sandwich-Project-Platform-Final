@@ -20,6 +20,7 @@ import { isNotificationSuppressed } from '../utils/notification-suppression';
 import { processAdminWeeklyDigest, processAdminWeeklySms } from './admin-weekly-digest-service';
 import { processPredictionAlerts } from './prediction-alert-service';
 import { processCheckInReminders } from './check-in-reminder-service';
+import { processStandbyFollowups } from './tsp-contact-followup-service';
 import { sendDailyErrorDigest } from './application-error-logger';
 import { ALERT_TYPES } from '@shared/alert-catalog';
 import { getEffectivePrefs } from './notifications/preferences';
@@ -1524,6 +1525,45 @@ export function initializeCronJobs() {
     timezone: 'America/New_York',
   });
 
+  // Standby follow-up reminders — daily at 9:30 AM ET.
+  // When a standby event's user-chosen check-back date arrives (set in the
+  // standby dialog when moving an event to standby), email the assigned TSP
+  // contact so they remember to reach back out to the organization. The date
+  // is OPTIONAL — events without one are simply never picked up. Unlike the
+  // old blanket tspFollowupJob (disabled, replaced by user-controlled
+  // check-in reminders), this only fires for a date the user explicitly set.
+  const standbyFollowupJob = cron.schedule('30 9 * * *', async () => {
+    if (!isProduction) {
+      cronLogger.info('Skipping standby follow-up reminders - not production environment');
+      return;
+    }
+    cronLogger.info('Running standby follow-up reminder processing...');
+    try {
+      const result = await processStandbyFollowups();
+      cronLogger.info('Standby follow-up processing completed', {
+        eventsProcessed: result.eventsProcessed,
+        notificationsSent: result.notificationsSent,
+        errors: result.errors,
+        timestamp: new Date(),
+      });
+    } catch (error) {
+      logError(
+        error as Error,
+        'Error running standby follow-up cron job',
+        undefined,
+        { jobType: 'standby-followup' }
+      );
+    }
+  }, {
+    scheduled: true,
+    timezone: 'America/New_York'
+  });
+
+  cronLogger.info('Standby follow-up reminder job scheduled successfully', {
+    schedule: 'Daily at 9:30 AM',
+    timezone: 'America/New_York',
+  });
+
   // Integration health check — daily at 6 AM ET, logs/email on failures
   const integrationHealthJob = cron.schedule('0 6 * * *', async () => {
     cronLogger.info('Running daily integration health check...');
@@ -1606,6 +1646,7 @@ export function initializeCronJobs() {
     adminSmsPulseJob,
     predictionAlertJob,
     checkInReminderJob,
+    standbyFollowupJob,
     integrationHealthJob,
     errorDigestJob,
   };
@@ -1632,6 +1673,7 @@ export function stopAllCronJobs(jobs: ReturnType<typeof initializeCronJobs>) {
   jobs.adminSmsPulseJob.stop();
   jobs.predictionAlertJob.stop();
   jobs.checkInReminderJob.stop();
+  jobs.standbyFollowupJob.stop();
   jobs.integrationHealthJob.stop();
   jobs.errorDigestJob.stop();
   cronLogger.info('All cron jobs stopped successfully');

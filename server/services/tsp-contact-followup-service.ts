@@ -94,6 +94,36 @@ async function wasNotificationSent(
 }
 
 /**
+ * Standby-specific dedup: only block a reminder if one was already sent for the
+ * CURRENT follow-up date — i.e. a 'standby_followup' record sent on/after that
+ * date (date-level comparison, so a same-day morning send blocks an afternoon
+ * repeat). This lets a fresh reminder go out when the follow-up date is later
+ * pushed forward, or when the event re-enters standby with a new date, while
+ * the plain event+contact+type check would have blocked reminders forever.
+ */
+async function wasStandbyNotificationSentForDate(
+  eventRequestId: number,
+  tspContactUserId: string,
+  standbyExpectedDate: Date | string
+): Promise<boolean> {
+  const expectedDateStr = new Date(standbyExpectedDate).toISOString().split('T')[0];
+  const existing = await db
+    .select({ id: tspContactFollowups.id })
+    .from(tspContactFollowups)
+    .where(
+      and(
+        eq(tspContactFollowups.eventRequestId, eventRequestId),
+        eq(tspContactFollowups.tspContactUserId, tspContactUserId),
+        eq(tspContactFollowups.reminderType, 'standby_followup'),
+        sql`${tspContactFollowups.sentAt}::date >= ${expectedDateStr}::date`
+      )
+    )
+    .limit(1);
+
+  return existing.length > 0;
+}
+
+/**
  * Record that a notification was sent
  */
 async function recordNotification(
@@ -305,9 +335,8 @@ export async function processTspContactFollowups(): Promise<FollowupResult> {
     // DISABLED: Toolkit follow-up reminders are not yet part of the operational process
     // When ready to enable, uncomment: const toolkitEvents = await getToolkitOnlyEvents();
     const toolkitEvents: typeof approachingEvents = [];
-    const standbyEvents = await getStandbyEventsNeedingFollowup();
     
-    serviceLogger.info(`Found ${approachingEvents.length} approaching in-progress events, ${standbyEvents.length} standby events needing follow-up (toolkit reminders disabled)`);
+    serviceLogger.info(`Found ${approachingEvents.length} approaching in-progress events (toolkit reminders disabled)`);
     
     for (const event of approachingEvents) {
       result.eventsProcessed++;
@@ -407,53 +436,7 @@ export async function processTspContactFollowups(): Promise<FollowupResult> {
     }
     
     // Process standby events that need follow-up
-    for (const event of standbyEvents) {
-      result.eventsProcessed++;
-      const tspContactId = event.tspContactAssigned || event.tspContact;
-
-      if (!tspContactId) continue;
-      if (isNotificationSuppressed(tspContactId)) continue;
-
-      try {
-        const alreadySent = await wasNotificationSent(event.id, tspContactId, 'standby_followup');
-        if (alreadySent) {
-          serviceLogger.info(`Skipping standby event ${event.id} - notification already sent`);
-          continue;
-        }
-        
-        const user = await getTspContactUser(tspContactId);
-        if (!user) {
-          serviceLogger.warn(`TSP contact user ${tspContactId} not found for standby event ${event.id}`);
-          continue;
-        }
-        
-        const notificationResult = await sendFollowupNotification(event, user, 'standby_followup');
-        
-        if (notificationResult.success) {
-          await recordNotification(
-            event.id,
-            tspContactId,
-            'standby_followup',
-            notificationResult.channel,
-            event.organizationName || 'Unknown',
-            event.standbyExpectedDate,
-            'Standby follow-up reminder'
-          );
-          result.notificationsSent++;
-        }
-        
-        result.details.push({
-          eventId: event.id,
-          organization: event.organizationName || 'Unknown',
-          reminderType: 'standby_followup',
-          channel: notificationResult.channel,
-          success: notificationResult.success,
-        });
-      } catch (error) {
-        result.errors++;
-        serviceLogger.error(`Error processing standby event ${event.id}:`, error);
-      }
-    }
+    await runStandbyFollowups(result);
     
     serviceLogger.info(`Follow-up check complete: ${result.notificationsSent} notifications sent, ${result.errors} errors`);
     
@@ -462,5 +445,98 @@ export async function processTspContactFollowups(): Promise<FollowupResult> {
     result.errors++;
   }
   
+  return result;
+}
+
+/**
+ * Standby follow-up processing shared by processTspContactFollowups and the
+ * standby-only cron entry point (processStandbyFollowups). For each standby
+ * event whose user-chosen follow-up date has arrived, emails the assigned TSP
+ * contact (IMPORTANT tier = email only). Dedup is per follow-up date via
+ * wasStandbyNotificationSentForDate, so changing the date or re-entering
+ * standby later produces a fresh reminder.
+ */
+async function runStandbyFollowups(result: FollowupResult): Promise<void> {
+  const standbyEvents = await getStandbyEventsNeedingFollowup();
+  serviceLogger.info(`Found ${standbyEvents.length} standby events at/past their follow-up date`);
+
+  for (const event of standbyEvents) {
+    result.eventsProcessed++;
+    const tspContactId = event.tspContactAssigned || event.tspContact;
+
+    if (!tspContactId) continue;
+    if (isNotificationSuppressed(tspContactId)) continue;
+
+    try {
+      const alreadySent = await wasStandbyNotificationSentForDate(
+        event.id,
+        tspContactId,
+        event.standbyExpectedDate
+      );
+      if (alreadySent) {
+        serviceLogger.info(`Skipping standby event ${event.id} - reminder already sent for current follow-up date`);
+        continue;
+      }
+
+      const user = await getTspContactUser(tspContactId);
+      if (!user) {
+        serviceLogger.warn(`TSP contact user ${tspContactId} not found for standby event ${event.id}`);
+        continue;
+      }
+
+      const notificationResult = await sendFollowupNotification(event, user, 'standby_followup');
+
+      if (notificationResult.success) {
+        await recordNotification(
+          event.id,
+          tspContactId,
+          'standby_followup',
+          notificationResult.channel,
+          event.organizationName || 'Unknown',
+          event.standbyExpectedDate,
+          'Standby follow-up reminder'
+        );
+        result.notificationsSent++;
+      }
+
+      result.details.push({
+        eventId: event.id,
+        organization: event.organizationName || 'Unknown',
+        reminderType: 'standby_followup',
+        channel: notificationResult.channel,
+        success: notificationResult.success,
+      });
+    } catch (error) {
+      result.errors++;
+      serviceLogger.error(`Error processing standby event ${event.id}:`, error);
+    }
+  }
+}
+
+/**
+ * Standby-only entry point for the daily cron job. The broader
+ * processTspContactFollowups (approaching-event / toolkit reminders) remains
+ * intentionally un-scheduled — those flows were replaced by user-controlled
+ * check-in reminders. Standby follow-ups are different: the user explicitly
+ * asks for this reminder by picking a check-back date in the standby dialog.
+ */
+export async function processStandbyFollowups(): Promise<FollowupResult> {
+  const result: FollowupResult = {
+    notificationsSent: 0,
+    eventsProcessed: 0,
+    errors: 0,
+    timestamp: new Date(),
+    details: [],
+  };
+
+  try {
+    serviceLogger.info('Starting standby follow-up check...');
+    await runStandbyFollowups(result);
+    serviceLogger.info(`Standby follow-up check complete: ${result.notificationsSent} notifications sent, ${result.errors} errors`);
+  } catch (error) {
+    serviceLogger.error('Fatal error in standby follow-up processing:', error);
+    result.errors++;
+  }
+
   return result;
 }

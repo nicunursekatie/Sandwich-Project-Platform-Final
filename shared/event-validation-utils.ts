@@ -395,10 +395,11 @@ export function getPrimaryContextualAction(request: EventRequest): ContextualAct
     };
   }
 
-  // Priority 6: Refrigeration confirmation (if perishable sandwiches)
+  // Priority 6: Refrigeration confirmation (only when perishable sandwiches
+  // are on the plan — PBJ-only events don't need refrigeration, so asking
+  // is noise).
   const needsRefrigeration = needsRefrigerationConfirmation(request.hasRefrigeration);
-  const hasSandwichTypes = request.sandwichTypes && Array.isArray(request.sandwichTypes) && request.sandwichTypes.length > 0;
-  if (needsRefrigeration && hasSandwichTypes) {
+  if (needsRefrigeration && hasPerishableSandwiches(request.sandwichTypes as SandwichType[] | null | undefined)) {
     return {
       label: 'Confirm Refrigeration',
       field: 'hasRefrigeration',
@@ -475,8 +476,7 @@ export function getAllContextualActions(request: EventRequest): ContextualAction
   }
 
   const needsRefrigeration = needsRefrigerationConfirmation(request.hasRefrigeration);
-  const hasSandwichTypes = request.sandwichTypes && Array.isArray(request.sandwichTypes) && request.sandwichTypes.length > 0;
-  if (needsRefrigeration && hasSandwichTypes) {
+  if (needsRefrigeration && hasPerishableSandwiches(request.sandwichTypes as SandwichType[] | null | undefined)) {
     actions.push({
       label: 'Confirm Refrigeration',
       field: 'hasRefrigeration',
