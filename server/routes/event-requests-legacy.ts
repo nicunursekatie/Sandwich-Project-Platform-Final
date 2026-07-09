@@ -2694,6 +2694,31 @@ router.patch(
           }
         }
 
+        // Guard: an event can't land on the calendar without a date. With
+        // transition restrictions disabled (July 2026), 'scheduled' and
+        // 'rescheduled' are reachable from ANY status via the form dropdown,
+        // so enforce the one invariant that still matters — a scheduled/
+        // rescheduled event must have an event date (scheduled or desired).
+        // Resolve with `!== undefined` so an explicit null clear in this same
+        // PATCH is respected instead of falling back to the stored value.
+        if (toStatus === 'scheduled' || toStatus === 'rescheduled') {
+          const dateForCalendar =
+            (processedUpdates.scheduledEventDate !== undefined
+              ? processedUpdates.scheduledEventDate
+              : originalEvent.scheduledEventDate) ??
+            (processedUpdates.desiredEventDate !== undefined
+              ? processedUpdates.desiredEventDate
+              : originalEvent.desiredEventDate);
+          if (!dateForCalendar) {
+            logger.warn(`[PATCH /:id] Missing event date for event ${id}: ${fromStatus} → ${toStatus}`);
+            return res.status(400).json({
+              message: `An event date is required to mark this event as "${toStatus}". Please add an event date first.`,
+              error: 'MISSING_EVENT_DATE',
+              requestedStatus: toStatus,
+            });
+          }
+        }
+
         processedUpdates.statusChangedAt = new Date();
 
         // Pure transition side-effect from the shared workflow: when scheduling
