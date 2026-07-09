@@ -37,6 +37,38 @@ import { filterEventsByWeekScope, parseWeekScopeOffset } from '../lib/event-week
 
 const router = Router();
 
+// Timestamp columns on event_requests that clients may send as date strings.
+// Every field here is converted string -> Date (via parseDateOnly) before hitting
+// Drizzle, which throws "value.toISOString is not a function" on raw strings.
+// Used by BOTH the PATCH and PUT handlers — always add new client-editable
+// timestamp fields HERE so the two handlers can never drift apart again.
+// NOTE: pickupDateTime is intentionally excluded — it must remain a local
+// datetime string (YYYY-MM-DDTHH:MM:SS) to avoid timezone conversion issues.
+const EVENT_REQUEST_TIMESTAMP_FIELDS = [
+  'toolkitSentDate',
+  'contactedAt',
+  'desiredEventDate',
+  'duplicateCheckDate',
+  'markedUnresponsiveAt',
+  'lastContactAttempt',
+  'nextFollowUpDate',
+  'contactCompletedAt',
+  'callScheduledAt',
+  'callCompletedAt',
+  'scheduledCallDate',
+  'tspContactAssignedDate',
+  'statusChangedAt',
+  'standbyExpectedDate',
+  'scheduledEventDate',
+  'socialMediaPostRequestedDate',
+  'socialMediaPostCompletedDate',
+  'addedToOfficialSheetAt',
+  'nextActionUpdatedAt',
+  'actualSandwichCountRecordedDate',
+  'followUpOneDayDate',
+  'followUpOneMonthDate',
+];
+
 // Helper functions for pickup time data migration
 const convertTimeToDateTime = (timeStr: string, baseDate?: Date | string): string | null => {
   if (!timeStr) return null;
@@ -2597,28 +2629,9 @@ router.patch(
       const processedUpdates = { ...pickupProcessedUpdates };
 
       // Convert timestamp fields that might come as strings to Date objects
-      // NOTE: pickupDateTime is intentionally excluded - it should remain as a local datetime string
-      // to avoid timezone conversion issues (keep as YYYY-MM-DDTHH:MM:SS format)
-      const timestampFields = [
-        'toolkitSentDate',
-        'contactedAt',
-        'desiredEventDate',
-        'duplicateCheckDate',
-        'markedUnresponsiveAt',
-        'lastContactAttempt',
-        'nextFollowUpDate',
-        'contactCompletedAt',
-        'callScheduledAt',
-        'callCompletedAt',
-        'scheduledCallDate',
-        'tspContactAssignedDate',
-        'statusChangedAt',
-        'scheduledEventDate',
-        'socialMediaPostRequestedDate',
-        'socialMediaPostCompletedDate',
-        'addedToOfficialSheetAt',
-      ];
-      
+      // (shared list — see EVENT_REQUEST_TIMESTAMP_FIELDS at the top of this file)
+      const timestampFields = EVENT_REQUEST_TIMESTAMP_FIELDS;
+
       timestampFields.forEach((field) => {
         if (
           processedUpdates[field] &&
@@ -3178,26 +3191,9 @@ router.put(
       const processedUpdates = { ...pickupProcessedUpdates };
 
       // Convert timestamp fields that might come as strings to Date objects
-      // NOTE: pickupDateTime is intentionally excluded - it should remain as a local datetime string
-      // to avoid timezone conversion issues (keep as YYYY-MM-DDTHH:MM:SS format)
-      const timestampFields = [
-        'toolkitSentDate',
-        'contactedAt',
-        'desiredEventDate',
-        'duplicateCheckDate',
-        'markedUnresponsiveAt',
-        'lastContactAttempt',
-        'nextFollowUpDate',
-        'contactCompletedAt',
-        'callScheduledAt',
-        'callCompletedAt',
-        'scheduledCallDate',
-        'tspContactAssignedDate',
-        'statusChangedAt',
-        'scheduledEventDate',
-        'nextActionUpdatedAt',
-      ];
-      
+      // (shared list — see EVENT_REQUEST_TIMESTAMP_FIELDS at the top of this file)
+      const timestampFields = EVENT_REQUEST_TIMESTAMP_FIELDS;
+
       timestampFields.forEach((field) => {
         if (
           processedUpdates[field] &&
