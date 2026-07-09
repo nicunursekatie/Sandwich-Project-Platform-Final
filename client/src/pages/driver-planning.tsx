@@ -619,7 +619,7 @@ const doesDriverMatchEventArea = (driver: Driver, eventAddress: string | null): 
 
 // Type for focused map item (host, recipient, or driver)
 interface FocusedMapItem {
-  type: 'host' | 'recipient' | 'driver' | 'speaker';
+  type: 'host' | 'recipient' | 'driver';
   id: number | string;
   latitude: string;
   longitude: string;
@@ -633,7 +633,7 @@ interface DrivingRoute {
   duration: number; // in seconds (without traffic)
   durationInTraffic: number | null; // in seconds (with traffic, if available)
   fromEvent: { lat: number; lng: number };
-  toItem: { lat: number; lng: number; type: 'host' | 'recipient' | 'driver' | 'speaker'; id: number | string };
+  toItem: { lat: number; lng: number; type: 'host' | 'recipient' | 'driver'; id: number | string };
 }
 
 // Type for selected driver/destination for trip planning
@@ -1018,7 +1018,6 @@ export default function DriverPlanningDashboard() {
   const [showAllHosts, setShowAllHosts] = useState(false);
   const [showAllRecipients, setShowAllRecipients] = useState(false);
   const [showAllNearbyDrivers, setShowAllNearbyDrivers] = useState(false);
-  const [showAllSpeakers, setShowAllSpeakers] = useState(false);
   const [driverSearch, setDriverSearch] = useState('');
   const [assigningDriverId, setAssigningDriverId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -2202,57 +2201,6 @@ export default function DriverPlanningDashboard() {
     return allRecipientsWithDistance.filter((r) => !designatedIds.has(r.id));
   }, [effectiveSelectedEvent, designatedRecipients, allRecipientsWithDistance]);
 
-  // All speakers near the selected event (volunteers with isSpeaker=true that have coordinates)
-  const nearbySpeakers = useMemo(() => {
-    if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) return [];
-
-    const eventLat = parseFloat(effectiveSelectedEvent.latitude);
-    const eventLng = parseFloat(effectiveSelectedEvent.longitude);
-
-    // Get IDs of speakers already assigned to this event
-    const assignedIds = new Set(
-      getSpeakerIds(effectiveSelectedEvent).map(id => {
-        const strId = String(id);
-        return strId.replace(/^(volunteer-|speaker-)/, '');
-      })
-    );
-
-    const speakersWithDistance = volunteers
-      .filter(v => v.isSpeaker && v.isActive && v.latitude && v.longitude)
-      .map(v => ({
-        id: v.id,
-        name: v.name,
-        phone: v.phone,
-        latitude: v.latitude!,
-        longitude: v.longitude!,
-        isAssigned: assignedIds.has(String(v.id)),
-        distance: calculateDistanceInMiles(
-          eventLat,
-          eventLng,
-          parseFloat(v.latitude!),
-          parseFloat(v.longitude!)
-        ),
-      }))
-      .sort((a, b) => {
-        // Assigned speakers first, then by distance
-        if (a.isAssigned && !b.isAssigned) return -1;
-        if (!a.isAssigned && b.isAssigned) return 1;
-        return a.distance - b.distance;
-      });
-
-    // Try progressively larger radii until we have at least 3 speakers (or run out of options)
-    const radii = [15, 30, 50, 75];
-    for (const radius of radii) {
-      const speakersInRadius = speakersWithDistance.filter(s => s.distance < radius || s.isAssigned);
-      if (speakersInRadius.length >= 3) {
-        return speakersInRadius.slice(0, 10);
-      }
-    }
-
-    // If still not enough, just return whatever we have (sorted by distance)
-    return speakersWithDistance.slice(0, 10);
-  }, [effectiveSelectedEvent, volunteers]);
-
   // Assigned driver(s) explicitly assigned on the event (if any)
   // Returns full DriverCandidate objects for drivers with valid coordinates
   const assignedDrivers = useMemo(() => {
@@ -2416,33 +2364,16 @@ export default function DriverPlanningDashboard() {
     });
   }, [driverSearchTerm, assignedDrivers, nearbyDriversAll, effectiveSelectedEvent?.vanDriverNeeded]);
 
-  // Compute volunteers/speakers assigned to visible events with geocoded locations
+  // Compute volunteers assigned to visible events with geocoded locations
   // Shows volunteers that are assigned to ANY visible event (not just selected)
   const volunteersWithLocations = useMemo(() => {
     if (!showVolunteersSpeakers || volunteers.length === 0) return [];
 
-    // Collect all assigned volunteer/speaker IDs from ALL visible events
+    // Collect all assigned volunteer IDs from ALL visible events
     const assignedVolunteerIds = new Set<string>();
-    const volunteerToEvents = new Map<string, { eventId: number; eventName: string; role: 'speaker' | 'volunteer' }[]>();
+    const volunteerToEvents = new Map<string, { eventId: number; eventName: string; role: 'volunteer' }[]>();
 
     for (const event of events) {
-      // Get speaker IDs from speakerDetails or assignedSpeakerIds
-      const speakerIds = getSpeakerIds(event);
-      for (const id of speakerIds) {
-        const strId = String(id);
-        // Extract numeric ID if it's a prefixed ID like "volunteer-123"
-        const numericId = strId.replace(/^(volunteer-|speaker-)/, '');
-        assignedVolunteerIds.add(numericId);
-        if (!volunteerToEvents.has(numericId)) {
-          volunteerToEvents.set(numericId, []);
-        }
-        volunteerToEvents.get(numericId)!.push({
-          eventId: event.id,
-          eventName: event.organizationName || 'Unknown',
-          role: 'speaker',
-        });
-      }
-
       // Get volunteer IDs from volunteerDetails or assignedVolunteerIds
       const volunteerIds = getVolunteerIds(event);
       for (const id of volunteerIds) {
@@ -2452,7 +2383,6 @@ export default function DriverPlanningDashboard() {
         if (!volunteerToEvents.has(numericId)) {
           volunteerToEvents.set(numericId, []);
         }
-        // Avoid duplicate entries if someone is both speaker and volunteer
         const existing = volunteerToEvents.get(numericId)!;
         if (!existing.some(e => e.eventId === event.id && e.role === 'volunteer')) {
           existing.push({
@@ -2802,7 +2732,7 @@ export default function DriverPlanningDashboard() {
                 onChange={(e) => setShowVolunteersSpeakers(e.target.checked)}
                 className="rounded border-gray-300 text-purple-600 focus:ring-purple-600"
               />
-              <span className="text-gray-600">Show speakers/volunteers on map</span>
+              <span className="text-gray-600">Show volunteers on map</span>
             </label>
             <label className="flex items-center gap-2 text-xs cursor-pointer">
               <input
@@ -3021,17 +2951,6 @@ export default function DriverPlanningDashboard() {
                             No driver requirement
                           </Badge>
                         )}
-                        {/* Speakers - only show if needed > 0 */}
-                        {speakersNeeded > 0 && (
-                          <Badge
-                            variant={speakersAssigned < speakersNeeded ? 'destructive' : 'default'}
-                            className="text-xs"
-                            title={getAssignedSpeakersLabel(event) ? `Speakers: ${getAssignedSpeakersLabel(event)}` : undefined}
-                          >
-                            <Megaphone className="w-3 h-3 mr-1" />
-                            {`${speakersAssigned}/${speakersNeeded} spk`}
-                          </Badge>
-                        )}
                         {/* Volunteers - only show if needed > 0 */}
                         {volunteersNeeded > 0 && (
                           <Badge
@@ -3071,7 +2990,6 @@ export default function DriverPlanningDashboard() {
                             Drivers {totalDriversAssigned}/{driversNeeded || 0}
                             {event.vanDriverNeeded && !event.isDhlVan && ` • Van ${event.assignedVanDriverId ? 'assigned' : 'needed'}`}
                             {event.isDhlVan && ' • DHL van'}
-                            {speakersNeeded > 0 && ` • Speakers ${speakersAssigned}/${speakersNeeded}`}
                             {volunteersNeeded > 0 && ` • Volunteers ${volunteersAssigned}/${volunteersNeeded}`}
                           </span>
                         </div>
@@ -3091,12 +3009,6 @@ export default function DriverPlanningDashboard() {
                           <div className="text-[11px] text-gray-700">
                             <span className="font-semibold">Van driver:</span>{' '}
                             <span className="text-gray-600">{getAssignedDriversLabel({ ...event, assignedDriverIds: [event.assignedVanDriverId] } as any)}</span>
-                          </div>
-                        )}
-                        {getAssignedSpeakersLabel(event) && (
-                          <div className="text-[11px] text-gray-700">
-                            <span className="font-semibold">Speakers:</span>{' '}
-                            <span className="text-gray-600">{getAssignedSpeakersLabel(event)}</span>
                           </div>
                         )}
                         {getAssignedVolunteersLabel(event) && (
@@ -3554,7 +3466,6 @@ export default function DriverPlanningDashboard() {
                     <h3 className="font-semibold text-purple-700 text-sm flex items-center gap-1">
                       <Megaphone className="w-3 h-3" />
                       {volunteer.name}
-                      {volunteer.isSpeaker && <span className="text-purple-400 text-[11px]">(Speaker)</span>}
                     </h3>
                     {volunteer.homeAddress && (
                       <p className="text-xs text-gray-600">{volunteer.homeAddress}</p>
@@ -3571,7 +3482,7 @@ export default function DriverPlanningDashboard() {
                         <ul className="text-xs text-gray-600 mt-1">
                           {volunteer.assignedEvents.map((evt, i) => (
                             <li key={i} className="flex items-center gap-1">
-                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: evt.role === 'speaker' ? colors.volunteer : '#a78bfa' }} />
+                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#a78bfa' }} />
                               {evt.eventName} ({evt.role})
                             </li>
                           ))}
@@ -3902,8 +3813,8 @@ export default function DriverPlanningDashboard() {
                 </div>
               )}
 
-              {/* Select button for previewed item (not for speakers - they're informational only) */}
-              {focusedItem && focusedItem.type !== 'speaker' && (
+              {/* Select button for previewed item */}
+              {focusedItem && (
                 <button
                   onClick={() => {
                     if (focusedItem.type === 'driver') {
@@ -4032,7 +3943,7 @@ export default function DriverPlanningDashboard() {
                       type="button"
                       onClick={() => setShowVolunteersSpeakers((v) => !v)}
                       className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${showVolunteersSpeakers ? '' : 'opacity-60'}`}
-                      title={showVolunteersSpeakers ? 'Click to hide Volunteer/Speaker pins' : 'Click to show Volunteer/Speaker pins'}
+                      title={showVolunteersSpeakers ? 'Click to hide Volunteer pins' : 'Click to show Volunteer pins'}
                       aria-pressed={showVolunteersSpeakers}
                       data-testid="toggle-layer-volunteers"
                     >
@@ -4040,7 +3951,7 @@ export default function DriverPlanningDashboard() {
                       <svg viewBox="0 0 24 24" className="w-4 h-4 drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" fill="#8b5cf6" stroke="white" strokeWidth="1.5"/>
                       </svg>
-                      <span>Speakers/Volunteers (star){showVolunteersSpeakers ? '' : ' (hidden)'}</span>
+                      <span>Volunteers (star){showVolunteersSpeakers ? '' : ' (hidden)'}</span>
                     </button>
                     <button
                       type="button"
@@ -4406,8 +4317,8 @@ export default function DriverPlanningDashboard() {
                     </div>
                   )}
 
-                  {/* Select button for previewed item (not for speakers) */}
-                  {focusedItem && focusedItem.type !== 'speaker' && (
+                  {/* Select button for previewed item */}
+                  {focusedItem && (
                     <button
                       onClick={() => {
                         if (focusedItem.type === 'driver') {
@@ -4885,78 +4796,6 @@ export default function DriverPlanningDashboard() {
                   ) : (
                     <div className="text-xs p-3 bg-gray-100 rounded text-gray-500 text-center">
                       No recipients within 15 miles of this event.
-                    </div>
-                  )}
-                </div>
-
-                {/* Nearby Speakers */}
-                <div data-testid="driver-planning-nearby-speakers">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
-                      <Megaphone className="w-4 h-4 text-indigo-600" />
-                      Nearby Speakers
-                    </h3>
-                    <span className="text-[9px] text-gray-400 italic" title="Click to preview driving route">click for driving distance</span>
-                  </div>
-                  {nearbySpeakers.length > 0 ? (
-                    <div className="space-y-2">
-                      {(showAllSpeakers ? nearbySpeakers : nearbySpeakers.slice(0, 3)).map((speaker) => (
-                        <div
-                          key={`speaker-${speaker.id}`}
-                          className={`flex items-stretch text-xs border rounded transition-colors ${
-                            focusedItem?.type === 'speaker' && focusedItem?.id === speaker.id
-                              ? 'bg-indigo-100 border-indigo-400'
-                              : speaker.isAssigned
-                                ? 'bg-indigo-100 border-indigo-300 hover:bg-indigo-200'
-                                : 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100'
-                          }`}
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleItemClick({
-                                type: 'speaker',
-                                id: speaker.id,
-                                latitude: speaker.latitude,
-                                longitude: speaker.longitude,
-                                name: speaker.name
-                              });
-                            }}
-                            className="flex-1 text-left p-2"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Megaphone className="w-3.5 h-3.5 text-indigo-600" />
-                                <span className="font-medium">{speaker.name}</span>
-                                {speaker.isAssigned && (
-                                  <span className="text-[9px] bg-indigo-200 text-indigo-700 px-1.5 py-0.5 rounded-full font-medium">
-                                    Assigned
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-indigo-700">{speaker.distance.toFixed(1)} mi</span>
-                            </div>
-                            {speaker.phone && (
-                              <div className="text-gray-500 pl-5 mt-0.5 text-[10px] flex items-center gap-1">
-                                <Phone className="w-3 h-3" />
-                                {speaker.phone}
-                              </div>
-                            )}
-                          </button>
-                        </div>
-                      ))}
-                      {nearbySpeakers.length > 3 && (
-                        <button
-                          onClick={() => setShowAllSpeakers(!showAllSpeakers)}
-                          className="w-full text-xs text-indigo-700 hover:text-indigo-900 font-medium py-1"
-                        >
-                          {showAllSpeakers ? 'Show less' : `View ${nearbySpeakers.length - 3} more speakers`}
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-xs p-3 bg-gray-100 rounded text-gray-500 text-center">
-                      No speakers with map coordinates nearby.
                     </div>
                   )}
                 </div>
@@ -5723,7 +5562,6 @@ export default function DriverPlanningDashboard() {
                     <h3 className="font-semibold text-purple-700 text-sm flex items-center gap-1">
                       <Megaphone className="w-3 h-3" />
                       {volunteer.name}
-                      {volunteer.isSpeaker && <span className="text-purple-400 text-[11px]">(Speaker)</span>}
                     </h3>
                     {volunteer.homeAddress && (
                       <p className="text-xs text-gray-600">{volunteer.homeAddress}</p>
@@ -5740,7 +5578,7 @@ export default function DriverPlanningDashboard() {
                         <ul className="text-xs text-gray-600 mt-1">
                           {volunteer.assignedEvents.map((evt, i) => (
                             <li key={i} className="flex items-center gap-1">
-                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: evt.role === 'speaker' ? colors.volunteer : '#a78bfa' }} />
+                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#a78bfa' }} />
                               {evt.eventName} ({evt.role})
                             </li>
                           ))}
@@ -6249,7 +6087,7 @@ export default function DriverPlanningDashboard() {
                       <svg viewBox="0 0 24 24" className="w-3 h-3 drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" fill="#8b5cf6" stroke="white" strokeWidth="1.5"/>
                       </svg>
-                      <span>Speaker/Volunteer{showVolunteersSpeakers ? '' : ' (hidden)'}</span>
+                      <span>Volunteer{showVolunteersSpeakers ? '' : ' (hidden)'}</span>
                     </button>
                     <button
                       type="button"
@@ -6497,7 +6335,6 @@ export default function DriverPlanningDashboard() {
                       <div className="text-xs text-gray-600">
                         <span className="font-medium">Staffing:</span>{' '}
                         Drivers {getTotalDriverCount(selectedEvent)}/{selectedEvent.driversNeeded || 0}
-                        {(selectedEvent.speakersNeeded || 0) > 0 && ` • Speakers ${getSpeakerCount(selectedEvent)}/${selectedEvent.speakersNeeded || 0}`}
                         {(selectedEvent.volunteersNeeded || 0) > 0 && ` • Volunteers ${getVolunteerCount(selectedEvent)}/${selectedEvent.volunteersNeeded || 0}`}
                       </div>
                       {getTspContactLabel(selectedEvent) && (
@@ -6522,12 +6359,6 @@ export default function DriverPlanningDashboard() {
                             };
                             return getAssignedDriversLabel(vanDriverEvent);
                           })()}
-                        </div>
-                      )}
-                      {getAssignedSpeakersLabel(selectedEvent) && (
-                        <div className="text-sm text-gray-700 break-words">
-                          <span className="font-medium">Speakers:</span>{' '}
-                          {getAssignedSpeakersLabel(selectedEvent)}
                         </div>
                       )}
                       {getAssignedVolunteersLabel(selectedEvent) && (
@@ -6811,17 +6642,6 @@ export default function DriverPlanningDashboard() {
                                   No driver requirement
                                 </Badge>
                               )}
-                              {/* Speakers - only show if needed > 0 */}
-                              {speakersNeeded > 0 && (
-                                <Badge
-                                  variant={speakersAssigned < speakersNeeded ? 'destructive' : 'default'}
-                                  className="text-xs px-2 py-0.5"
-                                  title={getAssignedSpeakersLabel(event) ? `Speakers: ${getAssignedSpeakersLabel(event)}` : undefined}
-                                >
-                                  <Megaphone className="w-3.5 h-3.5 mr-1" />
-                                  {`${speakersAssigned}/${speakersNeeded} spk`}
-                                </Badge>
-                              )}
                               {/* Volunteers - only show if needed > 0 */}
                               {volunteersNeeded > 0 && (
                                 <Badge
@@ -6948,7 +6768,6 @@ export default function DriverPlanningDashboard() {
                   <div className="text-xs text-gray-600">
                     <span className="font-medium">Staffing:</span>{' '}
                     Drivers {getTotalDriverCount(selectedEvent)}/{selectedEvent.driversNeeded || 0}
-                    {(selectedEvent.speakersNeeded || 0) > 0 && ` • Speakers ${getSpeakerCount(selectedEvent)}/${selectedEvent.speakersNeeded || 0}`}
                     {(selectedEvent.volunteersNeeded || 0) > 0 && ` • Volunteers ${getVolunteerCount(selectedEvent)}/${selectedEvent.volunteersNeeded || 0}`}
                   </div>
                   {getTspContactLabel(selectedEvent) && (
@@ -6973,12 +6792,6 @@ export default function DriverPlanningDashboard() {
                         };
                         return getAssignedDriversLabel(vanDriverEvent);
                       })()}
-                    </div>
-                  )}
-                  {getAssignedSpeakersLabel(selectedEvent) && (
-                    <div className="text-sm text-gray-700">
-                      <span className="font-medium">Speakers:</span>{' '}
-                      {getAssignedSpeakersLabel(selectedEvent)}
                     </div>
                   )}
                   {getAssignedVolunteersLabel(selectedEvent) && (

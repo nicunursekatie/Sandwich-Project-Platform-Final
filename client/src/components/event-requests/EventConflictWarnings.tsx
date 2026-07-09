@@ -9,13 +9,13 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { AlertTriangle, AlertCircle, Calendar, Truck, User, Building, Mic, Clock, Lightbulb, ExternalLink } from 'lucide-react';
+import { AlertTriangle, AlertCircle, Calendar, Truck, User, Building, Clock, Lightbulb, ExternalLink } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface ConflictWarning {
-  type: 'van_conflict' | 'high_volume_day' | 'driver_conflict' | 'recipient_conflict' | 'time_overlap' | 'speaker_conflict' | 'pickup_conflict' | 'high_volume_week';
+  type: 'van_conflict' | 'high_volume_day' | 'driver_conflict' | 'recipient_conflict' | 'time_overlap' | 'pickup_conflict' | 'high_volume_week';
   severity: 'warning' | 'critical' | 'suggestion';
   message: string;
   conflictingEventId?: number;
@@ -63,8 +63,6 @@ const getWarningIcon = (type: ConflictWarning['type']) => {
       return <Lightbulb className="h-4 w-4" />;
     case 'recipient_conflict':
       return <Building className="h-4 w-4" />;
-    case 'speaker_conflict':
-      return <Mic className="h-4 w-4" />;
     case 'pickup_conflict':
       return <Clock className="h-4 w-4" />;
     default:
@@ -84,8 +82,6 @@ const getWarningLabel = (type: ConflictWarning['type']) => {
       return 'Busy Week';
     case 'recipient_conflict':
       return 'Recipient Conflict';
-    case 'speaker_conflict':
-      return 'Speaker Conflict';
     case 'pickup_conflict':
       return 'Pickup Timing';
     default:

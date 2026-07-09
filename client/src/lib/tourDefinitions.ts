@@ -1440,7 +1440,7 @@ export const TOURS: Tour[] = [
       {
         id: 'reminders-how-rules-work',
         title: 'How Reminder Rules Work',
-        description: 'Each rule monitors a specific condition. For example, "Staffing Needs Unmet" checks if driver/speaker/volunteer roles are still unfilled within your threshold (e.g., 7 days before the event). The system checks conditions daily at 9 AM and sends you an alert if the condition is met.',
+        description: 'Each rule monitors a specific condition. For example, "Staffing Needs Unmet" checks if driver/volunteer roles are still unfilled within your threshold (e.g., 7 days before the event). The system checks conditions daily at 9 AM and sends you an alert if the condition is met.',
         targetSelector: '[data-tour="reminder-preferences"]',
         position: 'top',
       },

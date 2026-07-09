@@ -13,7 +13,6 @@ import {
   Clock,
   Truck,
   UserCheck,
-  Megaphone,
   ChevronLeft,
   ChevronRight,
   MapPin,
@@ -25,7 +24,7 @@ import {
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
 import { formatEventDate, formatTime12Hour, getSandwichTypesSummary } from '@/components/event-requests/utils';
-import { getDriverCount, getSpeakerCount, getVolunteerCount } from '@/lib/assignment-utils';
+import { getDriverCount, getVolunteerCount } from '@/lib/assignment-utils';
 import { exportStaffingPlanning } from '@/lib/planning-pdf-export';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
@@ -50,16 +49,13 @@ interface WeeklyStaffing {
   distributionDate: string;
   events: EventRequest[];
   totalDriversNeeded: number;
-  totalSpeakersNeeded: number;
   totalVolunteersNeeded: number;
   totalVanDriversNeeded: number;
   driversAssigned: number;
-  speakersAssigned: number;
   volunteersAssigned: number;
   vanDriversAssigned: number;
   unfulfilled: {
     drivers: number;
-    speakers: number;
     volunteers: number;
     vanDrivers: number;
   };
@@ -145,7 +141,6 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
       // Only include events that need staffing
       const needsStaffing =
         (request.driversNeeded && request.driversNeeded > 0) ||
-        (request.speakersNeeded && request.speakersNeeded > 0) ||
         (request.volunteersNeeded && request.volunteersNeeded > 0) ||
         request.vanDriverNeeded;
 
@@ -195,16 +190,13 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
             }),
             events: [],
             totalDriversNeeded: 0,
-            totalSpeakersNeeded: 0,
             totalVolunteersNeeded: 0,
             totalVanDriversNeeded: 0,
             driversAssigned: 0,
-            speakersAssigned: 0,
             volunteersAssigned: 0,
             vanDriversAssigned: 0,
             unfulfilled: {
               drivers: 0,
-              speakers: 0,
               volunteers: 0,
               vanDrivers: 0,
             }
@@ -216,28 +208,23 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
 
         // Calculate staffing needs
         const driversNeeded = request.driversNeeded || 0;
-        const speakersNeeded = request.speakersNeeded || 0;
         const volunteersNeeded = request.volunteersNeeded || 0;
         const vanDriversNeeded = request.vanDriverNeeded ? 1 : 0;
 
         const driversAssigned = getDriverCount(request);
-        const speakersAssigned = getSpeakerCount(request);
         const volunteersAssigned = getVolunteerCount(request);
         const vanDriversAssigned = (request.assignedVanDriverId ? 1 : 0) + (request.isDhlVan ? 1 : 0);
 
         week.totalDriversNeeded += driversNeeded;
-        week.totalSpeakersNeeded += speakersNeeded;
         week.totalVolunteersNeeded += volunteersNeeded;
         week.totalVanDriversNeeded += vanDriversNeeded;
 
         week.driversAssigned += driversAssigned;
-        week.speakersAssigned += speakersAssigned;
         week.volunteersAssigned += volunteersAssigned;
         week.vanDriversAssigned += vanDriversAssigned;
 
         // Calculate unfulfilled positions
         week.unfulfilled.drivers += Math.max(0, driversNeeded - driversAssigned);
-        week.unfulfilled.speakers += Math.max(0, speakersNeeded - speakersAssigned);
         week.unfulfilled.volunteers += Math.max(0, volunteersNeeded - volunteersAssigned);
         week.unfulfilled.vanDrivers += Math.max(0, vanDriversNeeded - vanDriversAssigned);
 
@@ -261,7 +248,7 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
   const currentWeek = weeklyStaffingForecast[currentWeekIndex] || null;
 
   const getTotalUnfulfilled = (week: WeeklyStaffing) => {
-    return week.unfulfilled.drivers + week.unfulfilled.speakers +
+    return week.unfulfilled.drivers +
            week.unfulfilled.volunteers + week.unfulfilled.vanDrivers;
   };
 
@@ -295,7 +282,7 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                   Weekly Staffing Planning
                 </CardTitle>
                 <p className="text-sm text-[#646464] mt-1">
-                  Track driver, speaker, and volunteer needs for upcoming events requiring staffing.
+                  Track driver and volunteer needs for upcoming events requiring staffing.
                 </p>
               </div>
               <div className="flex flex-col gap-2 items-end ml-4">
@@ -603,10 +590,9 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                   // Filter events to only show those with unmet staffing needs
                   const eventsWithUnmetNeeds = currentWeek.events.filter((event) => {
                     const driversNeeded = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
-                    const speakersNeeded = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
                     const volunteersNeeded = Math.max(0, (event.volunteersNeeded || 0) - getAssignmentCount(event.assignedVolunteerIds));
                     const vanDriverNeeded = Math.max(0, (event.vanDriverNeeded ? 1 : 0) - ((event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0)));
-                    const totalUnfulfilled = driversNeeded + speakersNeeded + volunteersNeeded + vanDriverNeeded;
+                    const totalUnfulfilled = driversNeeded + volunteersNeeded + vanDriverNeeded;
                     return totalUnfulfilled > 0;
                   });
 
@@ -631,10 +617,9 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                     })
                     .map((event) => {
                       const driversNeeded = Math.max(0, (event.driversNeeded || 0) - getAssignmentCount(event.assignedDriverIds));
-                      const speakersNeeded = Math.max(0, (event.speakersNeeded || 0) - getAssignmentCount(event.assignedSpeakerIds));
                       const volunteersNeeded = Math.max(0, (event.volunteersNeeded || 0) - getAssignmentCount(event.assignedVolunteerIds));
                       const vanDriverNeeded = Math.max(0, (event.vanDriverNeeded ? 1 : 0) - ((event.assignedVanDriverId ? 1 : 0) + (event.isDhlVan ? 1 : 0)));
-                      const totalUnfulfilled = driversNeeded + speakersNeeded + volunteersNeeded + vanDriverNeeded;
+                      const totalUnfulfilled = driversNeeded + volunteersNeeded + vanDriverNeeded;
 
                   // Get sandwich count
                   const sandwichInfo = getSandwichTypesSummary(event);
@@ -700,12 +685,6 @@ export default function StaffingForecastWidget({ hideHeader = false }: StaffingF
                             <Badge variant="outline" className="border-red-300 text-red-700 bg-red-50">
                               <Truck className="w-3 h-3 mr-1" />
                               {driversNeeded} Driver{driversNeeded > 1 ? 's' : ''} needed
-                            </Badge>
-                          )}
-                          {speakersNeeded > 0 && (
-                            <Badge variant="outline" className="border-yellow-300 text-yellow-700 bg-yellow-50">
-                              <Megaphone className="w-3 h-3 mr-1" />
-                              {speakersNeeded} Speaker{speakersNeeded > 1 ? 's' : ''} needed
                             </Badge>
                           )}
                           {volunteersNeeded > 0 && (

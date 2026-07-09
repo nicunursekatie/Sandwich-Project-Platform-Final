@@ -29,7 +29,6 @@ import {
 import {
   Clock,
   Users,
-  Megaphone,
   Car,
   Truck,
   Save,
@@ -52,7 +51,7 @@ import {
   formatDraftTimestamp,
 } from '@/hooks/useDraftPersistence';
 import { logger } from '@/lib/logger';
-import { getDriverIds, getSpeakerIds, getVolunteerIds, extractNameFromAssignmentId, resolveAssignmentDisplayName } from '@/lib/assignment-utils';
+import { getDriverIds, getVolunteerIds, extractNameFromAssignmentId, resolveAssignmentDisplayName } from '@/lib/assignment-utils';
 import { getRecipientDisplayRegion } from '@/lib/atlanta-regions';
 import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
@@ -66,7 +65,6 @@ interface EventEditDialogProps {
 
 interface EventEditDraftData {
   driversNeeded: string;
-  speakersNeeded: string;
   volunteersNeeded: string;
   pickupTime: string;
   eventStartTime: string;
@@ -77,7 +75,6 @@ interface EventEditDraftData {
   vanDriverNeeded: boolean;
   isCorporatePriority: boolean;
   assignedDriverIds: string[];
-  assignedSpeakerIds: string[];
   assignedVolunteerIds: string[];
   assignedVanDriverId: string | null;
   assignedRecipientIds: string[];
@@ -135,7 +132,7 @@ const parsePostgresArray = (value: any): string[] => {
 interface PersonSelectorProps {
   selectedPeople: string[];
   onSelectionChange: (selected: string[]) => void;
-  assignmentType: 'driver' | 'speaker' | 'volunteer';
+  assignmentType: 'driver' | 'volunteer';
   vanDriverNeeded?: boolean;
   /** Stored assignment metadata (volunteerDetails, driverDetails, etc.) for name fallback */
   assignmentDetails?: Record<string, { name?: string }>;
@@ -188,7 +185,7 @@ function resolvePersonDisplayName(
     availablePeople: Array<{ id: string; name: string }>;
     volunteerNameLookup: Map<string, string>;
     driverNameLookup: Map<string, string>;
-    assignmentType: 'driver' | 'speaker' | 'volunteer';
+    assignmentType: 'driver' | 'volunteer';
   }
 ): string {
   const storedName = opts.assignmentDetails?.[personId]?.name;
@@ -207,7 +204,7 @@ function resolvePersonDisplayName(
   const person = opts.availablePeople.find((p) => p.id === personId);
   if (person?.name) return person.name;
 
-  if (opts.assignmentType === 'volunteer' || opts.assignmentType === 'speaker') {
+  if (opts.assignmentType === 'volunteer') {
     const volName =
       opts.volunteerNameLookup.get(personId) ??
       opts.volunteerNameLookup.get(personId.replace(/^volunteer-/, ''));
@@ -277,8 +274,8 @@ function PersonSelector({
       });
     }
 
-    // Add volunteers (for volunteer/speaker assignments)
-    if (assignmentType === 'volunteer' || assignmentType === 'speaker') {
+    // Add volunteers (for volunteer assignments)
+    if (assignmentType === 'volunteer') {
       volunteers.forEach((vol: any) => {
         people.push({
           id: `volunteer-${vol.id}`,
@@ -483,7 +480,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
   // Form state for logistics
   const [driversNeeded, setDriversNeeded] = useState('');
-  const [speakersNeeded, setSpeakersNeeded] = useState('');
   const [volunteersNeeded, setVolunteersNeeded] = useState('');
   const [pickupTime, setPickupTime] = useState('');
   const [eventStartTime, setEventStartTime] = useState('');
@@ -496,7 +492,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
   // Staffing assignments
   const [assignedDriverIds, setAssignedDriverIds] = useState<string[]>([]);
-  const [assignedSpeakerIds, setAssignedSpeakerIds] = useState<string[]>([]);
   const [assignedVolunteerIds, setAssignedVolunteerIds] = useState<string[]>([]);
   const [assignedVanDriverId, setAssignedVanDriverId] = useState<string | null>(null);
   const [assignedRecipientIds, setAssignedRecipientIds] = useState<string[]>([]);
@@ -534,8 +529,8 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
   const computeEventValues = useCallback((evt: EventRequest): EventEditDraftData => ({
     driversNeeded: (evt.driversNeeded ?? 0).toString(),
-    speakersNeeded: (evt.speakersNeeded ?? 0).toString(),
     volunteersNeeded: (evt.volunteersNeeded ?? 0).toString(),
+    // (speakersNeeded retired)
     pickupTime: formatTimeForInput(evt.pickupTime),
     eventStartTime: formatTimeForInput(evt.eventStartTime),
     eventEndTime: formatTimeForInput(evt.eventEndTime),
@@ -545,7 +540,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     vanDriverNeeded: evt.vanDriverNeeded || false,
     isCorporatePriority: (evt as any).isCorporatePriority || false,
     assignedDriverIds: getDriverIds(evt),
-    assignedSpeakerIds: getSpeakerIds(evt),
     assignedVolunteerIds: getVolunteerIds(evt),
     assignedVanDriverId: evt.assignedVanDriverId || null,
     assignedRecipientIds: parsePostgresArray((evt as any).assignedRecipientIds),
@@ -553,7 +547,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
   const applyDraftValues = useCallback((d: EventEditDraftData) => {
     setDriversNeeded(d.driversNeeded);
-    setSpeakersNeeded(d.speakersNeeded);
     setVolunteersNeeded(d.volunteersNeeded);
     setPickupTime(d.pickupTime);
     setEventStartTime(d.eventStartTime);
@@ -564,7 +557,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     setVanDriverNeeded(d.vanDriverNeeded);
     setIsCorporatePriority(d.isCorporatePriority);
     setAssignedDriverIds(d.assignedDriverIds);
-    setAssignedSpeakerIds(d.assignedSpeakerIds);
     setAssignedVolunteerIds(d.assignedVolunteerIds);
     setAssignedVanDriverId(d.assignedVanDriverId);
     setAssignedRecipientIds(d.assignedRecipientIds);
@@ -605,7 +597,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
   const draftData: EventEditDraftData = {
     driversNeeded,
-    speakersNeeded,
     volunteersNeeded,
     pickupTime,
     eventStartTime,
@@ -616,7 +607,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     vanDriverNeeded,
     isCorporatePriority,
     assignedDriverIds,
-    assignedSpeakerIds,
     assignedVolunteerIds,
     assignedVanDriverId,
     assignedRecipientIds,
@@ -658,7 +648,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     // applying — keeps state shapes consistent.
     const safe: EventEditDraftData = {
       driversNeeded: d.driversNeeded ?? '',
-      speakersNeeded: d.speakersNeeded ?? '',
       volunteersNeeded: d.volunteersNeeded ?? '',
       pickupTime: d.pickupTime ?? '',
       eventStartTime: d.eventStartTime ?? '',
@@ -669,7 +658,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       vanDriverNeeded: Boolean(d.vanDriverNeeded),
       isCorporatePriority: Boolean(d.isCorporatePriority),
       assignedDriverIds: Array.isArray(d.assignedDriverIds) ? d.assignedDriverIds : [],
-      assignedSpeakerIds: Array.isArray(d.assignedSpeakerIds) ? d.assignedSpeakerIds : [],
       assignedVolunteerIds: Array.isArray(d.assignedVolunteerIds) ? d.assignedVolunteerIds : [],
       assignedVanDriverId: d.assignedVanDriverId ?? null,
       assignedRecipientIds: Array.isArray(d.assignedRecipientIds) ? d.assignedRecipientIds : [],
@@ -803,9 +791,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     if (driversNeeded !== (event?.driversNeeded ?? 0).toString()) {
       updates.driversNeeded = driversNeeded ? parseInt(driversNeeded) : 0;
     }
-    if (speakersNeeded !== (event?.speakersNeeded ?? 0).toString()) {
-      updates.speakersNeeded = speakersNeeded ? parseInt(speakersNeeded) : 0;
-    }
     if (volunteersNeeded !== (event?.volunteersNeeded ?? 0).toString()) {
       updates.volunteersNeeded = volunteersNeeded ? parseInt(volunteersNeeded) : 0;
     }
@@ -878,17 +863,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
         newDriverDetails[id] = driverDetailsObj[id] || {};
       });
       updates.driverDetails = newDriverDetails;
-    }
-
-    const speakerDetailsObj = (event?.speakerDetails || {}) as Record<string, { name?: string }>;
-    const originalSpeakerIds = event ? getSpeakerIds(event) : [];
-    if (JSON.stringify(assignedSpeakerIds.sort()) !== JSON.stringify(originalSpeakerIds.sort())) {
-      // Build speakerDetails object
-      const newSpeakerDetails: Record<string, { name?: string }> = {};
-      assignedSpeakerIds.forEach(id => {
-        newSpeakerDetails[id] = speakerDetailsObj[id] || {};
-      });
-      updates.speakerDetails = newSpeakerDetails;
     }
 
     const originalVolunteerIds = event ? getVolunteerIds(event) : [];
@@ -1024,19 +998,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                     min="0"
                     value={driversNeeded}
                     onChange={e => setDriversNeeded(e.target.value)}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="speakersNeeded" className="flex items-center gap-1">
-                    <Megaphone className="w-4 h-4" /> Speakers Needed
-                  </Label>
-                  <Input
-                    id="speakersNeeded"
-                    type="number"
-                    min="0"
-                    value={speakersNeeded}
-                    onChange={e => setSpeakersNeeded(e.target.value)}
                     placeholder="0"
                   />
                 </div>
@@ -1337,32 +1298,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                       assignmentType="driver"
                       vanDriverNeeded={true}
                       assignmentDetails={parseAssignmentDetails(event?.driverDetails)}
-                    />
-                  </div>
-                  <Separator />
-                </>
-              )}
-
-              {/* Speakers */}
-              {(parseInt(speakersNeeded) > 0 || assignedSpeakerIds.length > 0) && (
-                <>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium flex items-center gap-2">
-                        <Megaphone className="w-4 h-4" />
-                        Assigned Speakers
-                        {parseInt(speakersNeeded) > 0 && (
-                          <Badge variant={assignedSpeakerIds.length >= parseInt(speakersNeeded) ? 'secondary' : 'destructive'}>
-                            {assignedSpeakerIds.length}/{speakersNeeded}
-                          </Badge>
-                        )}
-                      </h4>
-                    </div>
-                    <PersonSelector
-                      selectedPeople={assignedSpeakerIds}
-                      onSelectionChange={setAssignedSpeakerIds}
-                      assignmentType="speaker"
-                      assignmentDetails={parseAssignmentDetails(event?.speakerDetails)}
                     />
                   </div>
                   <Separator />

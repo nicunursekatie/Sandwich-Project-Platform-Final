@@ -235,7 +235,6 @@ interface DriverMapData {
   isActive: boolean;
   vehicleType?: string | null;
   vanApproved?: boolean;
-  isSpeaker?: boolean;
 }
 
 // Shape returned by /api/volunteers — only the fields used on this map.
@@ -250,7 +249,6 @@ interface VolunteerMapData {
   longitude: string | null;
   isActive: boolean;
   isDriver?: boolean;
-  isSpeaker?: boolean;
 }
 
 interface SearchedLocation {
@@ -959,7 +957,6 @@ export default function LocationsMapView() {
                             <div className="font-medium text-gray-900 text-sm truncate leading-tight">{volunteer.name}</div>
                             <div className="text-xs text-gray-500 flex items-center gap-1 flex-wrap">
                               {volunteer.isDriver && <Badge variant="outline" className="text-[10px] py-0 px-1 border-yellow-400 text-yellow-700">Driver</Badge>}
-                              {volunteer.isSpeaker && <Badge variant="outline" className="text-[10px] py-0 px-1 border-purple-400 text-purple-700">Speaker</Badge>}
                             </div>
                           </div>
                           {volunteer.distance !== undefined && (
@@ -1186,9 +1183,6 @@ export default function LocationsMapView() {
                     <div className="flex items-center gap-1 flex-wrap mb-2">
                       {volunteer.isDriver && (
                         <Badge variant="outline" className="text-[10px] border-yellow-400 text-yellow-700">Driver</Badge>
-                      )}
-                      {volunteer.isSpeaker && (
-                        <Badge variant="outline" className="text-[10px] border-purple-400 text-purple-700">Speaker</Badge>
                       )}
                     </div>
                     {(volunteer.address || volunteer.homeAddress) && (

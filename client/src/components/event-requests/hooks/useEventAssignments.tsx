@@ -240,7 +240,7 @@ export const useEventAssignments = () => {
   // Open assignment dialog
   const openAssignmentDialog = (
     eventId: number,
-    type: 'driver' | 'speaker' | 'volunteer' | 'recipient',
+    type: 'driver' | 'volunteer' | 'recipient',
     isVanDriver: boolean = false
   ) => {
     setAssignmentEventId(eventId);
@@ -255,7 +255,7 @@ export const useEventAssignments = () => {
   // Open assignment dialog in edit mode
   const openEditAssignmentDialog = (
     eventId: number,
-    type: 'driver' | 'speaker' | 'volunteer' | 'recipient',
+    type: 'driver' | 'volunteer' | 'recipient',
     personId: string
   ) => {
     setAssignmentEventId(eventId);
@@ -269,7 +269,7 @@ export const useEventAssignments = () => {
   // Handle removing assignment with undo capability
   const handleRemoveAssignment = async (
     personId: string,
-    type: 'driver' | 'speaker' | 'volunteer',
+    type: 'driver' | 'volunteer',
     eventId: number
   ) => {
     try {
@@ -303,26 +303,6 @@ export const useEventAssignments = () => {
             const newDriverDetails = { ...currentDriverDetails };
             delete newDriverDetails[personId];
             updateData.driverDetails = newDriverDetails;
-          }
-        }
-      } else if (type === 'speaker') {
-        // Check if it's a tentative speaker
-        const currentTentativeSpeakers = eventRequest.tentativeSpeakerIds || [];
-        if (currentTentativeSpeakers.includes(personId)) {
-          originalData.tentativeSpeakerIds = [...currentTentativeSpeakers];
-          updateData.tentativeSpeakerIds = currentTentativeSpeakers.filter(id => id !== personId);
-        } else {
-          const currentSpeakerDetails = eventRequest.speakerDetails || {};
-          originalData.speakerDetails = { ...currentSpeakerDetails };
-          const newSpeakerDetails = { ...currentSpeakerDetails };
-          delete newSpeakerDetails[personId];
-          updateData.speakerDetails = newSpeakerDetails;
-
-          const currentSpeakerAssignments = eventRequest.speakerAssignments || [];
-          originalData.speakerAssignments = [...currentSpeakerAssignments];
-          const speakerName = currentSpeakerDetails[personId]?.name;
-          if (speakerName) {
-            updateData.speakerAssignments = currentSpeakerAssignments.filter(name => name !== speakerName);
           }
         }
       } else if (type === 'volunteer') {
@@ -399,7 +379,7 @@ export const useEventAssignments = () => {
   };
 
   // Handle self-signup
-  const handleSelfSignup = async (eventId: number, type: 'driver' | 'speaker' | 'volunteer') => {
+  const handleSelfSignup = async (eventId: number, type: 'driver' | 'volunteer') => {
     if (!user) {
       toast({
         title: 'Authentication required',
@@ -448,42 +428,6 @@ export const useEventAssignments = () => {
             selfAssigned: true,
           },
         };
-      } else if (type === 'speaker') {
-        const currentSpeakerDetails = eventRequest.speakerDetails || {};
-        if (currentSpeakerDetails[user.id]) {
-          toast({
-            title: 'Already signed up',
-            description: 'You are already assigned as a speaker for this event',
-          });
-          return;
-        }
-
-        const speakersNeeded = eventRequest.speakersNeeded;
-        const currentSpeakersCount = Object.keys(currentSpeakerDetails).length;
-        if (typeof speakersNeeded === 'number' && currentSpeakersCount >= speakersNeeded) {
-          toast({
-            title: 'No spots available',
-            description: 'All speaker spots are filled for this event',
-            variant: 'destructive',
-          });
-          return;
-        }
-
-        updateData.speakerDetails = {
-          ...currentSpeakerDetails,
-          [user.id]: {
-            name: `${user.firstName} ${user.lastName}`.trim(),
-            assignedAt: new Date().toISOString(),
-            assignedBy: user.id,
-            selfAssigned: true,
-          },
-        };
-
-        const currentSpeakerAssignments = eventRequest.speakerAssignments || [];
-        const userName = `${user.firstName} ${user.lastName}`.trim();
-        if (!currentSpeakerAssignments.includes(userName)) {
-          updateData.speakerAssignments = [...currentSpeakerAssignments, userName];
-        }
       } else if (type === 'volunteer') {
         if (!eventRequest.volunteersNeeded || eventRequest.volunteersNeeded <= 0) {
           if (!isScheduledOrRescheduled(eventRequest.status)) {
@@ -557,9 +501,9 @@ export const useEventAssignments = () => {
   };
 
   // Check if user can sign up
-  const canSelfSignup = (eventRequest: EventRequest, type: 'driver' | 'speaker' | 'volunteer'): boolean => {
+  const canSelfSignup = (eventRequest: EventRequest, type: 'driver' | 'volunteer'): boolean => {
     if (!user) return false;
-    
+
     // Check if user has the self-signup permission
     if (!hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP)) {
       return false;
@@ -570,12 +514,6 @@ export const useEventAssignments = () => {
       const driversNeeded = eventRequest.driversNeeded;
       return !currentDrivers.includes(user.id) &&
         (typeof driversNeeded !== 'number' || currentDrivers.length < driversNeeded);
-    } else if (type === 'speaker') {
-      const currentSpeakerDetails = eventRequest.speakerDetails || {};
-      const speakersNeeded = eventRequest.speakersNeeded;
-      const currentSpeakersCount = Object.keys(currentSpeakerDetails).length;
-      return !currentSpeakerDetails[user.id] &&
-        (typeof speakersNeeded !== 'number' || currentSpeakersCount < speakersNeeded);
     } else if (type === 'volunteer') {
       if (isScheduledOrRescheduled(eventRequest.status)) {
         const currentVolunteers = parsePostgresArray(eventRequest.assignedVolunteerIds);
@@ -595,15 +533,12 @@ export const useEventAssignments = () => {
   };
 
   // Check if user is signed up
-  const isUserSignedUp = (eventRequest: EventRequest, type: 'driver' | 'speaker' | 'volunteer'): boolean => {
+  const isUserSignedUp = (eventRequest: EventRequest, type: 'driver' | 'volunteer'): boolean => {
     if (!user) return false;
 
     if (type === 'driver') {
       const currentDrivers = parsePostgresArray(eventRequest.assignedDriverIds);
       return currentDrivers.includes(user.id);
-    } else if (type === 'speaker') {
-      const currentSpeakerDetails = eventRequest.speakerDetails || {};
-      return !!currentSpeakerDetails[user.id];
     } else if (type === 'volunteer') {
       const currentVolunteers = parsePostgresArray(eventRequest.assignedVolunteerIds);
       return currentVolunteers.includes(user.id);

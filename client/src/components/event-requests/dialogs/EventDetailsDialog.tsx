@@ -20,7 +20,6 @@ import {
   Mail,
   Users,
   Car,
-  Mic,
   UserCheck,
   Sandwich,
   Edit2,
@@ -230,7 +229,7 @@ export function EventDetailsDialog({
           )}
 
           {/* Staffing Section */}
-          {(event.driversNeeded || event.speakersNeeded || event.volunteersNeeded || event.selfTransport) && (
+          {(event.driversNeeded || event.volunteersNeeded || event.selfTransport) && (
             <div className="space-y-2">
               <h3 className="font-semibold text-sm text-gray-700">Staffing Needs</h3>
               <div className="pl-6 space-y-1">
@@ -260,12 +259,6 @@ export function EventDetailsDialog({
                       </p>
                     )}
                   </>
-                )}
-                {event.speakersNeeded && event.speakersNeeded > 0 && (
-                  <p className="text-base flex items-center gap-2">
-                    <Mic className="h-4 w-4 text-purple-600" />
-                    {event.speakersNeeded} speaker{event.speakersNeeded > 1 ? 's' : ''} needed
-                  </p>
                 )}
                 {event.volunteersNeeded && event.volunteersNeeded > 0 && (
                   <p className="text-base flex items-center gap-2">

@@ -35,7 +35,7 @@ router.post('/check-conflicts', isAuthenticated, async (req, res) => {
       isDhlVan: req.body.isDhlVan,
       selfTransport: req.body.selfTransport,
       assignedVanDriverId: req.body.assignedVanDriverId,
-      assignedSpeakerIds: req.body.assignedSpeakerIds,
+      // assignedSpeakerIds intentionally not forwarded — speaker role retired.
       assignedRecipientIds: req.body.assignedRecipientIds,
       organizationName: req.body.organizationName,
       // Legacy fields

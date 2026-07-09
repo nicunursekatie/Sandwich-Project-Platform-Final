@@ -7,7 +7,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Calendar,
   Car,
-  Mic2,
   Users,
   CheckCircle2,
   ArrowRight,
@@ -33,7 +32,6 @@ interface UpcomingDeadline {
   eventDate: string;
   status: string;
   needsDriver: boolean;
-  needsSpeaker: boolean;
   needsVolunteer: boolean;
   isToday: boolean;
 }
@@ -87,10 +85,8 @@ interface MyAssignments {
 interface OperationalStats {
   thisWeekEventsCount: number;
   eventsNeedingDrivers: number;
-  eventsNeedingSpeakers: number;
   eventsNeedingVolunteers: number;
   totalDriversNeeded: number;
-  totalSpeakersNeeded: number;
   totalVolunteersNeeded: number;
   lastWeekCompletionRate: number | null;
   lastWeekCompleted: number;
@@ -796,8 +792,7 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
   // + quick filter in sessionStorage (read on mount by EventRequestContext)
   // then navigate. The tiles drill in via the "all" tab so the opened list
   // spans every active stage and its total exactly matches the tile count
-  // (which /operational-stats computes across all active statuses). (There is
-  // no needsSpeaker quick filter, so the speakers card just opens the list.)
+  // (which /operational-stats computes across all active statuses).
   const drillToEvents = (tab: string, filter?: string) => {
     try {
       sessionStorage.setItem('eventRequests.pendingFilter', JSON.stringify({ tab, filter }));
@@ -842,7 +837,7 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
 
   // Check if there are urgent items: events today that still need staffing
   const hasUrgentItems = stats.upcomingDeadlines.some(
-    d => d.isToday && (d.needsDriver || d.needsSpeaker || d.needsVolunteer)
+    d => d.isToday && (d.needsDriver || d.needsVolunteer)
   );
 
   return (
@@ -867,7 +862,7 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
         </div>
 
         {/* Key Metrics Row */}
-        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 mb-6">
           {/* This Week's Events */}
           <div
             className="bg-white rounded-lg p-4 border border-gray-200 hover:border-brand-primary cursor-pointer transition-all"
@@ -900,25 +895,6 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
             <div className="text-xs text-gray-500">events</div>
           </div>
 
-          {/* Events Needing Speakers */}
-          <div
-            className={`bg-white rounded-lg p-4 border cursor-pointer transition-all ${
-              stats.eventsNeedingSpeakers > 0
-                ? 'border-amber-300 hover:border-amber-500 bg-amber-50'
-                : 'border-gray-200 hover:border-brand-primary'
-            }`}
-            onClick={() => drillToEvents('all')}
-          >
-            <div className="flex items-center gap-2 mb-2">
-              <Mic2 className={`w-5 h-5 ${stats.eventsNeedingSpeakers > 0 ? 'text-amber-500' : 'text-brand-light-blue'}`} />
-              <span className="text-sm font-medium text-gray-600">Need Speakers</span>
-            </div>
-            <div className={`text-2xl font-bold ${stats.eventsNeedingSpeakers > 0 ? 'text-amber-600' : 'text-brand-light-blue'}`}>
-              {stats.eventsNeedingSpeakers}
-            </div>
-            <div className="text-xs text-gray-500">events</div>
-          </div>
-
           {/* Completion Rate */}
           <div className="bg-white rounded-lg p-4 border border-gray-200">
             <div className="flex items-center gap-2 mb-2">
@@ -944,14 +920,6 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
             Staffing Needs Across All Active Events
           </h4>
           <div className="flex flex-wrap gap-4">
-            <div className="flex items-center gap-2">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                stats.totalSpeakersNeeded > 0 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
-              }`}>
-                <Mic2 className="w-4 h-4 mr-1" />
-                {stats.totalSpeakersNeeded} {stats.totalSpeakersNeeded === 1 ? 'speaker' : 'speakers'} needed
-              </span>
-            </div>
             <div className="flex items-center gap-2">
               <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
                 stats.totalDriversNeeded > 0 ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800'
@@ -1004,12 +972,6 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
                       <Badge variant="outline" className="border-red-300 text-red-700 bg-red-50 text-xs">
                         <Car className="w-3 h-3 mr-1" />
                         Driver
-                      </Badge>
-                    )}
-                    {deadline.needsSpeaker && (
-                      <Badge variant="outline" className="border-amber-300 text-amber-700 bg-amber-50 text-xs">
-                        <Mic2 className="w-3 h-3 mr-1" />
-                        Speaker
                       </Badge>
                     )}
                     {deadline.needsVolunteer && (

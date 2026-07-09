@@ -336,7 +336,7 @@ export const ScheduledTab: React.FC = () => {
         });
       } else {
         // Regular field update
-        const numericFields = ['driversNeeded', 'speakersNeeded', 'volunteersNeeded'];
+        const numericFields = ['driversNeeded', 'volunteersNeeded'];
         const valueToSend = numericFields.includes(editingField)
           ? (editingValue === '' ? null : Number(editingValue))
           : editingValue;

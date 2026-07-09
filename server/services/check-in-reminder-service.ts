@@ -133,18 +133,15 @@ function evaluateRuleCondition(
       const daysUntilDate = (scheduledDate.getTime() - now.getTime()) / msPerDay;
       if (daysUntilDate > thresholdDays || daysUntilDate < 0) return false;
 
-      // Check if staffing needs are unmet
+      // Check if staffing needs are unmet (speaker role retired — no longer counted)
       const driversNeeded = event.driversNeeded || 0;
       const assignedDrivers = event.assignedDriverIds?.length || 0;
-      const speakersNeeded = event.speakersNeeded || 0;
-      const assignedSpeakers = event.assignedSpeakerIds?.length || 0;
       const volunteersNeeded = event.volunteersNeeded || 0;
       const assignedVolunteers = event.assignedVolunteerIds?.length || 0;
       const vanNeeded = event.vanDriverNeeded && !event.assignedVanDriverId && !event.customVanDriverName;
 
       const hasUnmetNeeds =
         assignedDrivers < driversNeeded ||
-        assignedSpeakers < speakersNeeded ||
         assignedVolunteers < volunteersNeeded ||
         vanNeeded;
 

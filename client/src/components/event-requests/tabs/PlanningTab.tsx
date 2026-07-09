@@ -499,10 +499,6 @@ export function PlanningTab({
                   critical
                 </li>
                 <li>
-                  • Speaker assignments should be confirmed 1 week before
-                  events
-                </li>
-                <li>
                   • Van drivers are needed for large events or special
                   delivery requirements
                 </li>

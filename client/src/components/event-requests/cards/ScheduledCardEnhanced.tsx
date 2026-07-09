@@ -35,7 +35,6 @@ import {
   Users,
   Car,
   Truck,
-  Megaphone,
   UserPlus,
   Phone,
   Mail,
@@ -152,8 +151,8 @@ interface ScheduledCardEnhancedProps {
   removeInlineSandwichType: (index: number) => void;
   resolveUserName: (id: string) => string;
   resolveRecipientName?: (id: string) => string;
-  openAssignmentDialog: (type: 'driver' | 'speaker' | 'volunteer', isVanDriver?: boolean) => void;
-  handleRemoveAssignment: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
+  openAssignmentDialog: (type: 'driver' | 'volunteer', isVanDriver?: boolean) => void;
+  handleRemoveAssignment: (type: 'driver' | 'volunteer', personId: string) => void;
   quickUpdateField?: (field: string, value: any) => void;
   canEdit?: boolean;
   // Next Action handlers
@@ -473,10 +472,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   // Calculate staffing
   // driversNeeded tracks regular drivers only — van driver is separate
   const driverAssigned = parsePostgresArray(request.assignedDriverIds).length;
-  const speakerAssigned = Object.keys(request.speakerDetails || {}).length;
   const volunteerAssigned = parsePostgresArray(request.assignedVolunteerIds).length;
   const driverNeeded = request.driversNeeded || 0;
-  const speakerNeeded = request.speakersNeeded || 0;
   const volunteerNeeded = request.volunteersNeeded || 0;
   const showMarkVanNeeded =
     canEdit &&
@@ -484,19 +481,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     !request.assignedVanDriverId &&
     !request.isDhlVan &&
     !request.vanDriverNeeded;
-  const showSpeakerSection =
-    !request.selfTransport &&
-    (speakerNeeded > 0 || (isEditingThisCard && editingField === 'speakersNeeded'));
   const showVolunteerSection =
     !request.selfTransport &&
     (volunteerNeeded > 0 || (isEditingThisCard && editingField === 'volunteersNeeded'));
   const showCondensedStaffingAdds =
-    !request.selfTransport && !showSpeakerSection && !showVolunteerSection && canEdit;
+    !request.selfTransport && !showVolunteerSection && canEdit;
   // Include van driver in staffing totals as a separate slot
   const vanDriverNeededCount = (request.vanDriverNeeded && !request.assignedVanDriverId && !request.isDhlVan) ? 1 : 0;
   const vanDriverAssignedCount = (request.assignedVanDriverId || request.isDhlVan) ? 1 : 0;
-  const totalAssigned = driverAssigned + vanDriverAssignedCount + speakerAssigned + volunteerAssigned;
-  const totalNeeded = driverNeeded + (request.vanDriverNeeded ? 1 : 0) + speakerNeeded + volunteerNeeded;
+  const totalAssigned = driverAssigned + vanDriverAssignedCount + volunteerAssigned;
+  const totalNeeded = driverNeeded + (request.vanDriverNeeded ? 1 : 0) + volunteerNeeded;
   const staffingComplete = totalAssigned >= totalNeeded && totalNeeded > 0;
 
   // Check if event is within next 7 days (for urgent staffing badge color)
@@ -1547,12 +1541,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         simpleToggle
                         mode="badge"
                       />
-                    )}
-                    {speakerNeeded > speakerAssigned && (
-                      <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
-                      </Badge>
                     )}
                     {volunteerNeeded > volunteerAssigned && (
                       <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
@@ -3276,24 +3264,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </div>
                 ) : null}
 
-                {/* Condensed add speaker/volunteer when neither role is needed */}
+                {/* Condensed add volunteer when the role is not needed */}
                 {showCondensedStaffingAdds && (
                   <div className="flex items-center justify-end gap-1 py-0.5 pb-3 border-b border-gray-200">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('speakersNeeded', '1')}
-                          className="h-5 w-5 p-0 text-[#007E8C]"
-                        >
-                          <Megaphone className="w-3 h-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Add speaker need</p>
-                      </TooltipContent>
-                    </Tooltip>
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
@@ -3309,454 +3282,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         <p>Add volunteer need</p>
                       </TooltipContent>
                     </Tooltip>
-                  </div>
-                )}
-
-                {/* Speakers */}
-                {showSpeakerSection && (
-                  <div className="pb-3 border-b border-gray-200">
-                    <div className="flex items-center justify-between mb-2">
-                      {isEditingThisCard && editingField === 'speakersNeeded' ? (
-                        <div className="flex items-center gap-2 flex-1">
-                          <Megaphone className="w-4 h-4 text-[#236383]" />
-                          <Input
-                            type="number"
-                            value={editingValue}
-                            onChange={(e) => setEditingValue(e.target.value)}
-                            className="h-7 w-16 text-sm"
-                            min="0"
-                            placeholder="0"
-                          />
-                          <span className="text-sm text-[#236383]">needed</span>
-                          <Button size="sm" onClick={saveEdit} className="h-6 px-2" aria-label="Save">
-                            <Save className="w-3 h-3" aria-hidden="true" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2" aria-label="Cancel">
-                            <X className="w-3 h-3" aria-hidden="true" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <>
-                          <span className="text-base font-bold text-gray-900 flex items-center gap-1">
-                            <Megaphone className="w-5 h-5" />
-                            Speakers ({speakerAssigned}/{speakerNeeded})
-                          </span>
-                          <div className="flex items-center gap-1">
-                            {canEdit && (
-                              <div className="flex items-center border border-gray-200 rounded-md overflow-hidden">
-                                <button
-                                  onClick={() => {
-                                    const newVal = Math.max(0, speakerNeeded - 1);
-                                    if (quickUpdateField) {
-                                      quickUpdateField('speakersNeeded', newVal);
-                                    } else {
-                                      updateFieldsMutation.mutate({ speakersNeeded: newVal });
-                                    }
-                                  }}
-                                  className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
-                                  aria-label="Decrease speakers needed"
-                                  title="Decrease speakers needed"
-                                >
-                                  <Minus className="w-3 h-3" />
-                                </button>
-                                <span className="h-7 w-7 flex items-center justify-center text-xs font-semibold text-gray-700 border-x border-gray-200 bg-gray-50">{speakerNeeded}</span>
-                                <button
-                                  onClick={() => {
-                                    if (quickUpdateField) {
-                                      quickUpdateField('speakersNeeded', speakerNeeded + 1);
-                                    } else {
-                                      updateFieldsMutation.mutate({ speakersNeeded: speakerNeeded + 1 });
-                                    }
-                                  }}
-                                  className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
-                                  aria-label="Increase speakers needed"
-                                  title="Increase speakers needed"
-                                >
-                                  <Plus className="w-3 h-3" />
-                                </button>
-                              </div>
-                            )}
-                            {canEdit && (
-                              <Button size="sm" onClick={() => openAssignmentDialog('speaker')} className="h-7" aria-label="Add speaker">
-                                <UserPlus className="w-3 h-3" aria-hidden="true" />
-                              </Button>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      {Object.keys(request.speakerDetails || {}).map((id) => {
-                        const detailName = (request.speakerDetails as any)?.[id]?.name;
-                        const customName = extractCustomName(id);
-                        const userName = resolveUserName(id);
-                        // Try getRecipientName for host-contact IDs
-                        const recipientName = id.startsWith('host-contact-') && getRecipientName
-                          ? getRecipientName(id)
-                          : null;
-                        // Check if detailName is actually just the ID (common with host-contact and custom IDs)
-                        const isDetailNameJustId = detailName === id ||
-                          detailName?.startsWith('host-contact-') ||
-                          detailName?.startsWith('custom-');
-
-                        // Check if the ID itself looks like a human name (not a system ID)
-                        // System IDs: user_xxx, driver_xxx, custom-xxx, host-contact-xxx, numeric, etc.
-                        const idLooksLikeName = id &&
-                          !id.startsWith('user_') &&
-                          !id.startsWith('driver_') &&
-                          !id.startsWith('admin_') &&
-                          !id.startsWith('committee_') &&
-                          !id.startsWith('volunteer_') &&
-                          !id.startsWith('custom-') &&
-                          !id.startsWith('host-contact-') &&
-                          !/^\d+$/.test(id) &&
-                          id.includes(' '); // Names typically have spaces
-
-                        // Prioritize: detail name > custom extracted name > recipient name > resolved user name > ID as name (if looks like name) > fallback
-                        const displayName = (detailName && !isDetailNameJustId && !/^\d+$/.test(detailName))
-                          ? detailName
-                          : customName || recipientName || (userName !== id ? userName : (idLooksLikeName ? id : detailName || 'Unknown Speaker'));
-                        const isUnknown = displayName === 'Unknown Speaker';
-                        const isCustom = id.startsWith('custom-');
-                        const editingFieldKey = `speaker-name-${id}`;
-                        const isEditing = isEditingThisCard && editingField === editingFieldKey;
-                        const speakerPersonNotes = (request.speakerDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
-                        const speakerNotesFieldKey = `speaker-notes-${id}`;
-                        const isEditingSpeakerNotes = isEditingThisCard && editingField === speakerNotesFieldKey;
-
-                        const saveSpeakerName = () => {
-                          const trimmed = editingValue.trim();
-                          if (isCustom) {
-                            if (!trimmed || trimmed === displayName) {
-                              cancelEdit();
-                              return;
-                            }
-                            const newId = `custom-${Date.now()}-${trimmed.replace(/\s+/g, '-')}`;
-                            const details = (request.speakerDetails as Record<string, any>) || {};
-                            const newDetails = { ...details };
-                            if (newDetails[id] !== undefined) {
-                              newDetails[newId] = newDetails[id];
-                              delete newDetails[id];
-                            }
-                            updateFieldsMutation.mutate({ speakerDetails: newDetails });
-                            cancelEdit();
-                          } else {
-                            const updatedSpeakerDetails = {
-                              ...(request.speakerDetails || {}),
-                              [id]: {
-                                ...((request.speakerDetails as any)?.[id] || {}),
-                                name: trimmed || null,
-                              },
-                            };
-                            updateFieldsMutation.mutate({ speakerDetails: updatedSpeakerDetails });
-                            cancelEdit();
-                          }
-                        };
-
-                        return (
-                          <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0 group">
-                            <div className="flex items-start gap-2">
-                            {isEditing ? (
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <Input
-                                  value={editingValue}
-                                  onChange={(e) => setEditingValue(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      saveSpeakerName();
-                                    } else if (e.key === 'Escape') {
-                                      cancelEdit();
-                                    }
-                                  }}
-                                  autoFocus
-                                  className="h-8 text-base font-bold text-[#236383] flex-1 min-w-0"
-                                  placeholder="Speaker name"
-                                />
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={saveSpeakerName}
-                                  className="h-6 px-2 text-green-600 shrink-0"
-                                >
-                                  <Check className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={cancelEdit}
-                                  className="h-6 px-2 text-gray-600 shrink-0"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <>
-                                <span
-                                  className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight cursor-pointer hover:underline"
-                                  onClick={() => canEdit && startEditing(editingFieldKey, displayName)}
-                                  title={canEdit ? "Click to edit speaker name" : undefined}
-                                >
-                                  {displayName}
-                                  {isUnknown && (
-                                    <span className="text-xs font-normal text-gray-500 ml-1" title={`Speaker ID: ${id}`}>
-                                      (ID: {id})
-                                    </span>
-                                  )}
-                                </span>
-                                {canEdit && (
-                                  <div className="flex items-center gap-0.5 shrink-0">
-                                    {isCustom && (
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => startEditing(editingFieldKey, displayName)}
-                                        className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383] opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Edit name"
-                                      >
-                                        <Edit2 className="w-3 h-3" />
-                                      </Button>
-                                    )}
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => startEditing(speakerNotesFieldKey, speakerPersonNotes)}
-                                      className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383] opacity-0 group-hover:opacity-100 transition-opacity"
-                                      title="Add/edit note"
-                                    >
-                                      <MessageSquare className="w-3 h-3" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => handleRemoveAssignment('speaker', id)}
-                                      className="h-5 w-5 p-0 text-red-600 shrink-0"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </>
-                            )}
-                            </div>
-                            {isEditingSpeakerNotes ? (
-                              <div className="mt-1.5 space-y-1">
-                                <Textarea
-                                  value={editingValue}
-                                  onChange={(e) => setEditingValue(e.target.value)}
-                                  placeholder="Add a note for this speaker..."
-                                  className="text-sm min-h-[60px] resize-none"
-                                  autoFocus
-                                />
-                                <div className="flex items-center gap-1 justify-end">
-                                  {speakerPersonNotes && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        const updatedDetails = {
-                                          ...((request.speakerDetails as Record<string, any>) || {}),
-                                          [id]: { ...((request.speakerDetails as Record<string, any>)?.[id] || {}), notes: null },
-                                        };
-                                        updateFieldsMutation.mutate({ speakerDetails: updatedDetails });
-                                        cancelEdit();
-                                      }}
-                                      className="h-6 px-2 text-red-600 text-xs"
-                                    >
-                                      Delete
-                                    </Button>
-                                  )}
-                                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 text-xs">
-                                    Cancel
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => {
-                                      const updatedDetails = {
-                                        ...((request.speakerDetails as Record<string, any>) || {}),
-                                        [id]: { ...((request.speakerDetails as Record<string, any>)?.[id] || {}), notes: editingValue.trim() || null },
-                                      };
-                                      updateFieldsMutation.mutate({ speakerDetails: updatedDetails });
-                                      cancelEdit();
-                                    }}
-                                    className="h-6 px-2 text-xs"
-                                  >
-                                    Save
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : speakerPersonNotes ? (
-                              <p
-                                className="mt-1 text-xs text-gray-600 italic cursor-pointer hover:text-gray-800 whitespace-pre-wrap"
-                                onClick={() => canEdit && startEditing(speakerNotesFieldKey, speakerPersonNotes)}
-                                title={canEdit ? "Click to edit note" : undefined}
-                              >
-                                {speakerPersonNotes}
-                              </p>
-                            ) : null}
-                          </div>
-                        );
-                      })}
-                      {speakerAssigned === 0 && parsePostgresArray(request.tentativeSpeakerIds).length === 0 && <Badge variant="outline" className="bg-[#FBAD3F]/15 text-[#B8871F] border-[#FBAD3F]/40 font-medium"><Megaphone className="w-3 h-3 mr-1" />None assigned</Badge>}
-                      {/* Tentative Speakers */}
-                      {parsePostgresArray(request.tentativeSpeakerIds).map((id) => {
-                        const isCustom = id.startsWith('custom-');
-                        const idLooksLikeName = id &&
-                          !id.startsWith('user_') &&
-                          !id.startsWith('driver_') &&
-                          !id.startsWith('custom-') &&
-                          !id.startsWith('host-contact-') &&
-                          !/^\d+$/.test(id) &&
-                          id.includes(' ');
-                        const resolvedName = resolveUserName(id);
-                        const displayName = isCustom
-                          ? extractCustomName(id)
-                          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
-                        const tSpeakerPersonNotes = (request.speakerDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
-                        const tSpeakerNotesFieldKey = `tspeaker-notes-${id}`;
-                        const isEditingTSpeakerNotes = isEditingThisCard && editingField === tSpeakerNotesFieldKey;
-                        const tSpeakerNameFieldKey = `tspeaker-name-${id}`;
-                        const isEditingTSpeakerName = isEditingThisCard && editingField === tSpeakerNameFieldKey;
-                        return (
-                        <div key={`tentative-${id}`} className="bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0 group">
-                          <div className="flex items-start gap-2">
-                            <span className="text-base font-bold text-amber-700 flex-1 min-w-0 break-words leading-tight flex items-center gap-1">
-                              <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" />
-                              {displayName}
-                              <span className="text-xs text-amber-500">(tentative)</span>
-                            </span>
-                            {canEdit && (
-                              <div className="flex items-center gap-0.5 shrink-0">
-                                {isCustom && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => startEditing(tSpeakerNameFieldKey, displayName)}
-                                    className="h-5 w-5 p-0 text-gray-500 hover:text-amber-700"
-                                    title="Edit name"
-                                  >
-                                    <Edit2 className="w-3 h-3" />
-                                  </Button>
-                                )}
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => startEditing(tSpeakerNotesFieldKey, tSpeakerPersonNotes)}
-                                  className="h-5 w-5 p-0 text-gray-500 hover:text-amber-700"
-                                  title="Add/edit note"
-                                >
-                                  <MessageSquare className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleRemoveAssignment('speaker', id)}
-                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                          {isEditingTSpeakerName && (
-                            <div className="mt-1.5 flex items-center gap-1">
-                              <Input
-                                value={editingValue}
-                                onChange={(e) => setEditingValue(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Escape') cancelEdit();
-                                }}
-                                autoFocus
-                                placeholder="Name"
-                                className="h-7 text-sm flex-1"
-                              />
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  const trimmed = editingValue.trim();
-                                  if (!trimmed || trimmed === displayName) {
-                                    cancelEdit();
-                                    return;
-                                  }
-                                  const newId = `custom-${Date.now()}-${trimmed.replace(/\s+/g, '-')}`;
-                                  const arr = parsePostgresArray(request.tentativeSpeakerIds);
-                                  const newArr = arr.map((x) => (x === id ? newId : x));
-                                  const details = (request.speakerDetails as Record<string, any>) || {};
-                                  const newDetails = { ...details };
-                                  if (newDetails[id] !== undefined) {
-                                    newDetails[newId] = newDetails[id];
-                                    delete newDetails[id];
-                                  }
-                                  updateFieldsMutation.mutate({ tentativeSpeakerIds: newArr, speakerDetails: newDetails });
-                                  cancelEdit();
-                                }}
-                                className="h-7 px-2 text-xs"
-                              >
-                                Save
-                              </Button>
-                              <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 px-2 text-xs text-gray-600">
-                                Cancel
-                              </Button>
-                            </div>
-                          )}
-                          {isEditingTSpeakerNotes ? (
-                            <div className="mt-1.5 space-y-1">
-                              <Textarea
-                                value={editingValue}
-                                onChange={(e) => setEditingValue(e.target.value)}
-                                placeholder="Add a note for this speaker..."
-                                className="text-sm min-h-[60px] resize-none"
-                                autoFocus
-                              />
-                              <div className="flex items-center gap-1 justify-end">
-                                {tSpeakerPersonNotes && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => {
-                                      const updatedDetails = {
-                                        ...((request.speakerDetails as Record<string, any>) || {}),
-                                        [id]: { ...((request.speakerDetails as Record<string, any>)?.[id] || {}), notes: null },
-                                      };
-                                      updateFieldsMutation.mutate({ speakerDetails: updatedDetails });
-                                      cancelEdit();
-                                    }}
-                                    className="h-6 px-2 text-red-600 text-xs"
-                                  >
-                                    Delete
-                                  </Button>
-                                )}
-                                <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 text-xs">
-                                  Cancel
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => {
-                                    const updatedDetails = {
-                                      ...((request.speakerDetails as Record<string, any>) || {}),
-                                      [id]: { ...((request.speakerDetails as Record<string, any>)?.[id] || {}), notes: editingValue.trim() || null },
-                                    };
-                                    updateFieldsMutation.mutate({ speakerDetails: updatedDetails });
-                                    cancelEdit();
-                                  }}
-                                  className="h-6 px-2 text-xs"
-                                >
-                                  Save
-                                </Button>
-                              </div>
-                            </div>
-                          ) : tSpeakerPersonNotes ? (
-                            <p
-                              className="mt-1 text-xs text-amber-800 italic cursor-pointer hover:text-amber-900 whitespace-pre-wrap"
-                              onClick={() => canEdit && startEditing(tSpeakerNotesFieldKey, tSpeakerPersonNotes)}
-                              title={canEdit ? "Click to edit note" : undefined}
-                            >
-                              {tSpeakerPersonNotes}
-                            </p>
-                          ) : null}
-                        </div>
-                        );
-                      })}
-                    </div>
                   </div>
                 )}
 

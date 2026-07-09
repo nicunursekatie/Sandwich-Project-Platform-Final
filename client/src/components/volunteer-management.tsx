@@ -69,7 +69,8 @@ export default function VolunteerManagement() {
     availability: 'available',
     isActive: true,
     isDriver: false,
-    isSpeaker: false,
+    experienceLevel: 'new',
+    trainingCompleted: false,
   });
 
   useEffect(() => {
@@ -84,7 +85,8 @@ export default function VolunteerManagement() {
         availability: 'available',
         isActive: true,
         isDriver: false,
-        isSpeaker: false,
+        experienceLevel: 'new',
+        trainingCompleted: false,
       });
       setShowAddDialog(true);
     };
@@ -240,7 +242,8 @@ export default function VolunteerManagement() {
       availability: 'available',
       isActive: true,
       isDriver: false,
-      isSpeaker: false,
+      experienceLevel: 'new',
+      trainingCompleted: false,
     });
     setEditingVolunteer(null);
     setShowHostDesignation(false);
@@ -268,7 +271,8 @@ export default function VolunteerManagement() {
       availability: volunteer.availability || 'available',
       isActive: volunteer.isActive !== undefined ? volunteer.isActive : true,
       isDriver: volunteer.isDriver || false,
-      isSpeaker: volunteer.isSpeaker || false,
+      experienceLevel: volunteer.experienceLevel || 'new',
+      trainingCompleted: volunteer.trainingCompleted || false,
     });
     setEditingVolunteer(volunteer);
     setShowAddDialog(true);
@@ -314,7 +318,8 @@ export default function VolunteerManagement() {
       availability: formData.availability,
       isActive: formData.isActive,
       isDriver: formData.isDriver,
-      isSpeaker: formData.isSpeaker,
+      experienceLevel: formData.experienceLevel,
+      trainingCompleted: formData.trainingCompleted,
     };
     if (canViewVolunteerNotes) {
       volunteerData.notes = formData.notes;
@@ -508,14 +513,23 @@ export default function VolunteerManagement() {
                       >
                         {volunteer.isActive ? 'Active' : 'Inactive'}
                       </Badge>
+                      {volunteer.experienceLevel === 'experienced' ? (
+                        <Badge variant="outline" className="border-green-600 text-green-700">
+                          Experienced
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="border-amber-500 text-amber-600">
+                          New — needs a buddy
+                        </Badge>
+                      )}
+                      {volunteer.trainingCompleted && (
+                        <Badge variant="outline" className="border-emerald-500 text-emerald-600">
+                          Trained
+                        </Badge>
+                      )}
                       {volunteer.isDriver && (
                         <Badge variant="outline" className="border-blue-500 text-blue-600">
                           Driver
-                        </Badge>
-                      )}
-                      {volunteer.isSpeaker && (
-                        <Badge variant="outline" className="border-purple-500 text-purple-600">
-                          Speaker
                         </Badge>
                       )}
                     </div>
@@ -714,18 +728,52 @@ export default function VolunteerManagement() {
                     Can serve as driver at events
                   </Label>
                 </div>
+              </div>
+
+              <div className="space-y-3">
+                <Label className="text-sm font-medium">Volunteer Readiness</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="experienceLevel" className="text-sm font-normal">
+                    Experience level
+                  </Label>
+                  <Select
+                    value={formData.experienceLevel}
+                    onValueChange={(value) =>
+                      setFormData({ ...formData, experienceLevel: value })
+                    }
+                  >
+                    <SelectTrigger id="experienceLevel">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="new">
+                        New — needs an experienced volunteer at events
+                      </SelectItem>
+                      <SelectItem value="experienced">
+                        Experienced — can attend events solo
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">
+                    New volunteers must be paired with an experienced volunteer when
+                    assigned to an event.
+                  </p>
+                </div>
                 <div className="flex items-center space-x-2">
                   <input
-                    id="isSpeaker"
+                    id="trainingCompleted"
                     type="checkbox"
                     className="h-4 w-4 rounded border-gray-300"
-                    checked={formData.isSpeaker}
+                    checked={formData.trainingCompleted}
                     onChange={(e) =>
-                      setFormData({ ...formData, isSpeaker: e.target.checked })
+                      setFormData({
+                        ...formData,
+                        trainingCompleted: e.target.checked,
+                      })
                     }
                   />
-                  <Label htmlFor="isSpeaker" className="text-sm font-normal">
-                    Can serve as speaker at events
+                  <Label htmlFor="trainingCompleted" className="text-sm font-normal">
+                    Completed volunteer training
                   </Label>
                 </div>
               </div>

@@ -50,7 +50,6 @@ import {
   Package,
   Clock,
   Car,
-  Megaphone,
   UserPlus,
   FileText,
   GripVertical,
@@ -65,7 +64,6 @@ import type { EventRequest } from '@shared/schema';
 import { parseSandwichTypes } from '@/lib/sandwich-utils';
 import {
   getDriverIds, getDriverCount, getTotalDriverCount,
-  getSpeakerIds, getSpeakerCount,
   getVolunteerIds, getVolunteerCount
 } from '@/lib/assignment-utils';
 import { SANDWICH_TYPES } from '../constants';
@@ -88,17 +86,17 @@ type SortDirection = 'asc' | 'desc';
 
 interface ScheduledSpreadsheetViewProps {
   onEventDateClick?: (event: EventRequest) => void;
-  openAssignmentDialog?: (eventId: number, type: 'driver' | 'speaker' | 'volunteer') => void;
+  openAssignmentDialog?: (eventId: number, type: 'driver' | 'volunteer') => void;
 }
 
 // Standalone component for staff need badge with popover (extracted to prevent re-mount on parent re-render)
 interface StaffNeedBadgeProps {
-  field: 'driversNeeded' | 'speakersNeeded' | 'volunteersNeeded';
+  field: 'driversNeeded' | 'volunteersNeeded';
   needed: number;
   unfilled: number;
   Icon: React.ElementType;
   label: string;
-  onUpdate: (field: 'driversNeeded' | 'speakersNeeded' | 'volunteersNeeded', delta: number) => void;
+  onUpdate: (field: 'driversNeeded' | 'volunteersNeeded', delta: number) => void;
 }
 
 const StaffNeedBadge: React.FC<StaffNeedBadgeProps> = ({ field, needed, unfilled, Icon, label, onUpdate }) => {
@@ -154,9 +152,8 @@ const StaffNeedBadge: React.FC<StaffNeedBadgeProps> = ({ field, needed, unfilled
 interface AddStaffNeedDropdownProps {
   compact?: boolean;
   onlyShowMissing?: boolean;
-  onUpdate: (field: 'driversNeeded' | 'speakersNeeded' | 'volunteersNeeded', delta: number) => void;
+  onUpdate: (field: 'driversNeeded' | 'volunteersNeeded', delta: number) => void;
   driversNeeded: number;
-  speakersNeeded: number;
   volunteersNeeded: number;
 }
 
@@ -165,13 +162,11 @@ const AddStaffNeedDropdown: React.FC<AddStaffNeedDropdownProps> = ({
   onlyShowMissing = false,
   onUpdate,
   driversNeeded,
-  speakersNeeded,
   volunteersNeeded
 }) => {
   const showDriver = !onlyShowMissing || driversNeeded === 0;
-  const showSpeaker = !onlyShowMissing || speakersNeeded === 0;
   const showVolunteer = !onlyShowMissing || volunteersNeeded === 0;
-  const hasAnyOptions = showDriver || showSpeaker || showVolunteer;
+  const hasAnyOptions = showDriver || showVolunteer;
 
   return (
     <Popover>
@@ -203,15 +198,6 @@ const AddStaffNeedDropdown: React.FC<AddStaffNeedDropdownProps> = ({
             >
               <Car className="h-4 w-4 text-[#236383]" />
               <span>Driver</span>
-            </button>
-          )}
-          {showSpeaker && (
-            <button
-              onClick={() => onUpdate('speakersNeeded', 1)}
-              className="w-full flex items-center gap-2 px-2 py-1.5 rounded text-sm text-gray-700 hover:bg-gray-100 transition-colors"
-            >
-              <Megaphone className="h-4 w-4 text-[#236383]" />
-              <span>Speaker</span>
             </button>
           )}
           {showVolunteer && (
@@ -1473,17 +1459,6 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
           }
         }
 
-        // Speakers
-        const speakerIds = getSpeakerIds(event);
-        if (speakerIds.length > 0) {
-          const speakerNames = speakerIds
-            .map(id => resolveUserName(id))
-            .filter(name => name && name !== 'Not assigned');
-          if (speakerNames.length > 0) {
-            assigned.push(`🎤 ${speakerNames.join(', ')}`);
-          }
-        }
-
         // Volunteers
         const volunteerIds = getVolunteerIds(event);
         if (volunteerIds.length > 0) {
@@ -2375,26 +2350,22 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
     if (column.id === 'assignedStaff') {
       // Calculate current assignments
       const driversAssigned = getTotalDriverCount(event);
-      const speakersAssigned = getSpeakerCount(event);
       const volunteersAssigned = getVolunteerCount(event);
 
       // Calculate needs
       const driversNeeded = event.driversNeeded || 0;
-      const speakersNeeded = event.speakersNeeded || 0;
       const volunteersNeeded = event.volunteersNeeded || 0;
 
       // Calculate unfilled needs
       const driversUnfilled = Math.max(0, driversNeeded - driversAssigned);
-      const speakersUnfilled = Math.max(0, speakersNeeded - speakersAssigned);
       const volunteersUnfilled = Math.max(0, volunteersNeeded - volunteersAssigned);
 
       // Check if any roles are needed OR any are assigned (show buttons in either case)
       const hasDriversContent = driversNeeded > 0 || driversAssigned > 0;
-      const hasSpeakersContent = speakersNeeded > 0 || speakersAssigned > 0;
       const hasVolunteersContent = volunteersNeeded > 0 || volunteersAssigned > 0;
-      const hasAnyContent = hasDriversContent || hasSpeakersContent || hasVolunteersContent;
+      const hasAnyContent = hasDriversContent || hasVolunteersContent;
 
-      const updateStaffCount = (field: 'driversNeeded' | 'speakersNeeded' | 'volunteersNeeded', delta: number) => {
+      const updateStaffCount = (field: 'driversNeeded' | 'volunteersNeeded', delta: number) => {
         const currentValue = event[field] || 0;
         const newValue = Math.max(0, currentValue + delta);
         updateScheduledFieldMutation.mutate({
@@ -2464,61 +2435,6 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                 </Popover>
               )}
 
-              {/* Speakers - with count adjustment and assignment */}
-              {(hasSpeakersContent || speakersNeeded > 0) && (
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openAssignmentDialog?.(event.id, 'speaker');
-                      }}
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition-colors ${
-                        speakersNeeded === 0
-                          ? 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                          : speakersAssigned >= speakersNeeded
-                            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                            : 'bg-amber-100 text-amber-700 hover:bg-amber-200'
-                      }`}
-                    >
-                      <Megaphone className="h-3 w-3" />
-                      {speakersNeeded > 0 ? `${speakersAssigned}/${speakersNeeded}` : speakersAssigned}
-                      {speakersUnfilled > 0 && <span className="text-amber-600">({speakersUnfilled})</span>}
-                    </button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-48 p-2" align="start" onClick={(e) => e.stopPropagation()}>
-                    <div className="space-y-2">
-                      <div className="text-xs font-medium text-gray-600">Speakers Needed</div>
-                      <div className="flex items-center justify-center gap-2">
-                        <button
-                          onClick={() => updateStaffCount('speakersNeeded', -1)}
-                          disabled={speakersNeeded === 0}
-                          className="w-8 h-8 flex items-center justify-center rounded bg-gray-100 hover:bg-gray-200 disabled:opacity-30 disabled:cursor-not-allowed text-gray-700 font-bold"
-                        >
-                          -
-                        </button>
-                        <span className="min-w-[32px] text-center text-lg font-semibold text-[#236383]">{speakersNeeded}</span>
-                        <button
-                          onClick={() => updateStaffCount('speakersNeeded', 1)}
-                          className="w-8 h-8 flex items-center justify-center rounded bg-[#47B3CB]/30 hover:bg-[#47B3CB]/50 text-[#236383] font-bold"
-                        >
-                          +
-                        </button>
-                      </div>
-                      <div className="text-xs text-gray-500 text-center">
-                        {speakersUnfilled > 0 ? `${speakersUnfilled} still needed` : 'All filled ✓'}
-                      </div>
-                      <button
-                        onClick={() => openAssignmentDialog?.(event.id, 'speaker')}
-                        className="w-full mt-2 px-3 py-1.5 text-xs bg-[#007E8C] text-white rounded hover:bg-[#236383] transition-colors"
-                      >
-                        Manage Assignments
-                      </button>
-                    </div>
-                  </PopoverContent>
-                </Popover>
-              )}
-
               {/* Volunteers - with count adjustment and assignment */}
               {(hasVolunteersContent || volunteersNeeded > 0) && (
                 <Popover>
@@ -2579,7 +2495,6 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                 <AddStaffNeedDropdown
                   onUpdate={updateStaffCount}
                   driversNeeded={driversNeeded}
-                  speakersNeeded={speakersNeeded}
                   volunteersNeeded={volunteersNeeded}
                 />
               )}
@@ -2629,31 +2544,6 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                   </TooltipTrigger>
                   <TooltipContent>
                     <p>Click to edit driver assignments</p>
-                  </TooltipContent>
-                </Tooltip>
-              )}
-              {/* Speakers */}
-              {getSpeakerCount(event) > 0 && (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openAssignmentDialog?.(event.id, 'speaker');
-                      }}
-                      className="flex items-center gap-1 text-xs text-[#236383]/80 hover:text-[#236383] hover:bg-[#47B3CB]/10 rounded px-1 py-0.5 transition-colors w-full text-left"
-                    >
-                      <span>🎤</span>
-                      <span className="truncate">
-                        {getSpeakerIds(event)
-                          .map(id => resolveUserName(id))
-                          .filter(name => name && name !== 'Not assigned')
-                          .join(', ')}
-                      </span>
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Click to edit speaker assignments</p>
                   </TooltipContent>
                 </Tooltip>
               )}
@@ -2931,7 +2821,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                     )}
                   </div>
                   
-                  {(event.driversNeeded || event.speakersNeeded || event.volunteersNeeded) && (
+                  {(event.driversNeeded || event.volunteersNeeded) && (
                     <div className="flex flex-wrap items-center gap-2 mt-2 pt-2 border-t border-[#47B3CB]/20">
                       {event.driversNeeded > 0 && (() => {
                         const totalDriversAssigned = getTotalDriverCount(event);
@@ -2949,19 +2839,6 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
                           </Badge>
                         );
                       })()}
-                      {event.speakersNeeded > 0 && (
-                        <Badge
-                          variant="outline"
-                          className={`text-xs ${
-                            getSpeakerCount(event) >= event.speakersNeeded
-                              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                              : 'bg-amber-50 text-amber-700 border-amber-300'
-                          }`}
-                        >
-                          <Megaphone className="h-3 w-3 mr-1" />
-                          {getSpeakerCount(event)}/{event.speakersNeeded}
-                        </Badge>
-                      )}
                       {event.volunteersNeeded > 0 && (
                         <Badge
                           variant="outline"
