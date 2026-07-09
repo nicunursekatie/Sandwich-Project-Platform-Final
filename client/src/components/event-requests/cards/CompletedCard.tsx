@@ -132,12 +132,12 @@ interface CompletedCardProps {
   onCompleteNextAction?: () => void;
   resolveUserName: (id: string) => string;
   canDelete?: boolean;
-  openAssignmentDialog?: (type: 'driver' | 'speaker' | 'volunteer') => void;
-  openEditAssignmentDialog?: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
-  handleRemoveAssignment?: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
-  handleSelfSignup?: (type: 'driver' | 'speaker' | 'volunteer') => void;
-  canSelfSignup?: (request: EventRequest, type: 'driver' | 'speaker' | 'volunteer') => boolean;
-  isUserSignedUp?: (request: EventRequest, type: 'driver' | 'speaker' | 'volunteer') => boolean;
+  openAssignmentDialog?: (type: 'driver' | 'volunteer') => void;
+  openEditAssignmentDialog?: (type: 'driver' | 'volunteer', personId: string) => void;
+  handleRemoveAssignment?: (type: 'driver' | 'volunteer', personId: string) => void;
+  handleSelfSignup?: (type: 'driver' | 'volunteer') => void;
+  canSelfSignup?: (request: EventRequest, type: 'driver' | 'volunteer') => boolean;
+  isUserSignedUp?: (request: EventRequest, type: 'driver' | 'volunteer') => boolean;
 }
 
 // CardHeader component - copied from shared
@@ -777,12 +777,12 @@ interface CardAssignmentsProps {
   request: EventRequest;
   resolveUserName: (id: string) => string;
   canEdit?: boolean;
-  canSelfSignup?: (request: EventRequest, type: 'driver' | 'speaker' | 'volunteer') => boolean;
-  isUserSignedUp?: (request: EventRequest, type: 'driver' | 'speaker' | 'volunteer') => boolean;
-  onAssign?: (type: 'driver' | 'speaker' | 'volunteer') => void;
-  onEditAssignment?: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
-  onRemoveAssignment?: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
-  onSelfSignup?: (type: 'driver' | 'speaker' | 'volunteer') => void;
+  canSelfSignup?: (request: EventRequest, type: 'driver' | 'volunteer') => boolean;
+  isUserSignedUp?: (request: EventRequest, type: 'driver' | 'volunteer') => boolean;
+  onAssign?: (type: 'driver' | 'volunteer') => void;
+  onEditAssignment?: (type: 'driver' | 'volunteer', personId: string) => void;
+  onRemoveAssignment?: (type: 'driver' | 'volunteer', personId: string) => void;
+  onSelfSignup?: (type: 'driver' | 'volunteer') => void;
 }
 
 const CardAssignments: React.FC<CardAssignmentsProps> = ({
@@ -1040,16 +1040,6 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
                           iconOnly
                           className="h-3 w-3 p-0"
                         />
-                        {canEdit && onRemoveAssignment && (
-                          <button
-                            onClick={() => onRemoveAssignment('speaker', speaker.id)}
-                            className="inline-flex items-center justify-center w-3 h-3 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-100 focus:text-red-600 focus:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-all"
-                            title="Remove speaker"
-                            data-testid={`button-remove-speaker-${speaker.id}`}
-                          >
-                            <X className="w-2.5 h-2.5" />
-                          </button>
-                        )}
                       </span>
                     </Badge>
                     {index < speakers.length - 1 && <span className="text-gray-400">•</span>}
@@ -1059,9 +1049,8 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
             ) : (
               <Badge
                 variant="outline"
-                className={`text-gray-400 border-gray-300 text-xs px-2 py-0.5 ${canEdit && onAssign ? 'cursor-pointer hover:bg-gray-100 hover:text-gray-600 hover:border-gray-400 transition-colors' : ''}`}
-                title={canEdit && onAssign ? "Click to assign a speaker" : "No speaker was assigned"}
-                onClick={() => { if (canEdit && onAssign) onAssign('speaker'); }}
+                className="text-gray-400 border-gray-300 text-xs px-2 py-0.5"
+                title="No speaker was assigned"
               >
                 <UserX className="w-3 h-3 mr-1" />
                 None
@@ -2844,47 +2833,28 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
                 <span className="text-gray-300">|</span>
 
-                {/* Speakers */}
-                <div className="flex items-center gap-1">
-                  <Megaphone className="w-4 h-4 text-[#236383]" />
-                  <span className="font-medium text-[#236383]">Speakers:</span>
-                  {canEditAssignments && openAssignmentDialog && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => openAssignmentDialog('speaker')}
-                      className="h-5 w-5 p-0 hover:bg-[#236383]/10"
-                      title="Add speaker"
-                    >
-                      <UserPlus className="w-3 h-3 text-[#236383]" />
-                    </Button>
-                  )}
-                  {speakers.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {speakers.map((speaker) => (
-                        <Badge
-                          key={speaker.id}
-                          variant="secondary"
-                          className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5"
-                        >
-                          {speaker.name}
-                          {canEditAssignments && handleRemoveAssignment && (
-                            <button
-                              onClick={() => handleRemoveAssignment('speaker', speaker.id)}
-                              className="ml-1 text-gray-400 hover:text-red-600"
-                            >
-                              <X className="w-2.5 h-2.5" />
-                            </button>
-                          )}
-                        </Badge>
-                      ))}
+                {/* Speakers (retired role — read-only historical display) */}
+                {speakers.length > 0 && (
+                  <>
+                    <div className="flex items-center gap-1">
+                      <Megaphone className="w-4 h-4 text-[#236383]" />
+                      <span className="font-medium text-[#236383]">Speakers:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {speakers.map((speaker) => (
+                          <Badge
+                            key={speaker.id}
+                            variant="secondary"
+                            className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5"
+                          >
+                            {speaker.name}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                  ) : (
-                    <span className="text-gray-500 italic text-xs">(none)</span>
-                  )}
-                </div>
 
-                <span className="text-gray-300">|</span>
+                    <span className="text-gray-300">|</span>
+                  </>
+                )}
 
                 {/* Volunteers */}
                 <div className="flex items-center gap-1">

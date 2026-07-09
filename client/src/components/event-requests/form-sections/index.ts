@@ -24,7 +24,6 @@ export { TspContactSection } from './TspContactSection';
 // Dialogs
 export {
   DateChangeDialog,
-  SpeakerWarningDialog,
   VanConflictDialog,
   StandbyFollowUpDialog,
   DeleteConfirmDialog,

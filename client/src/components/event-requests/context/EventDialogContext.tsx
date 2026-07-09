@@ -125,8 +125,8 @@ export interface EventDialogContextType {
   setNextActionMode: (mode: 'add' | 'edit' | 'complete') => void;
 
   // Assignment dialog working state
-  assignmentType: 'driver' | 'speaker' | 'volunteer' | null;
-  setAssignmentType: (type: 'driver' | 'speaker' | 'volunteer' | null) => void;
+  assignmentType: 'driver' | 'volunteer' | null;
+  setAssignmentType: (type: 'driver' | 'volunteer' | null) => void;
   assignmentEventId: number | null;
   setAssignmentEventId: (id: number | null) => void;
   selectedAssignees: string[];
@@ -246,7 +246,7 @@ export const EventDialogProvider: React.FC<{ children: ReactNode }> = ({
   const [nextActionMode, setNextActionMode] = useState<'add' | 'edit' | 'complete'>('add');
 
   // Assignment dialog state
-  const [assignmentType, setAssignmentType] = useState<'driver' | 'speaker' | 'volunteer' | null>(null);
+  const [assignmentType, setAssignmentType] = useState<'driver' | 'volunteer' | null>(null);
   const [assignmentEventId, setAssignmentEventId] = useState<number | null>(null);
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [isEditingAssignment, setIsEditingAssignment] = useState(false);
