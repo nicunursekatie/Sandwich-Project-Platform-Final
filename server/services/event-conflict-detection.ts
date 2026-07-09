@@ -19,7 +19,7 @@ import { logger } from '../utils/production-safe-logger';
 import { isScheduledOrRescheduled } from '../../shared/event-status-workflow';
 
 export interface ConflictWarning {
-  type: 'van_conflict' | 'high_volume_day' | 'driver_conflict' | 'recipient_conflict' | 'time_overlap' | 'speaker_conflict' | 'pickup_conflict' | 'high_volume_week';
+  type: 'van_conflict' | 'high_volume_day' | 'driver_conflict' | 'recipient_conflict' | 'time_overlap' | 'pickup_conflict' | 'high_volume_week';
   severity: 'warning' | 'critical' | 'suggestion';
   message: string;
   conflictingEventId?: number;
@@ -227,8 +227,7 @@ export async function checkEventConflicts(
       return [String(field)];
     };
 
-    // Get speaker IDs (array) - normalize to strings for consistent comparison
-    const currentSpeakerIds = normalizeArrayField(eventData.assignedSpeakerIds);
+    // (Speaker role retired: speaker double-booking is no longer checked.)
 
     // Get recipient IDs (array) - support both new array format and legacy single recipientId
     // Normalize to strings for consistent comparison with database values
@@ -264,7 +263,6 @@ export async function checkEventConflicts(
     // Track already reported conflicts to avoid duplicates
     const reportedVanConflicts = new Set<number>();
     const reportedDriverConflicts = new Set<string>();
-    const reportedSpeakerConflicts = new Set<string>();
     const reportedRecipientConflicts = new Set<string>();
 
     // Check each event for specific conflicts
@@ -313,25 +311,7 @@ export async function checkEventConflicts(
         }
       }
 
-      // Check 4: Speaker conflict (same speaker assigned to overlapping events)
-      const existingSpeakerIds = normalizeArrayField(existingEvent.assignedSpeakerIds);
-      if (currentSpeakerIds.length > 0 && existingSpeakerIds.length > 0 && hasTimeOverlap) {
-        for (const speakerId of currentSpeakerIds) {
-          const conflictKey = `${speakerId}-${existingEvent.id}`;
-          if (existingSpeakerIds.includes(speakerId) && !reportedSpeakerConflicts.has(conflictKey)) {
-            reportedSpeakerConflicts.add(conflictKey);
-            warnings.push({
-              type: 'speaker_conflict',
-              severity: 'critical',
-              message: `Speaker #${speakerId} is already assigned to speak at "${existingEvent.organizationName}" at ${existingEvent.eventStartTime || 'TBD'}`,
-              conflictingEventId: existingEvent.id,
-              conflictingEventName: existingEvent.organizationName || 'Unknown',
-              conflictingEventTime: existingEvent.eventStartTime || undefined,
-              details: { speakerId },
-            });
-          }
-        }
-      }
+      // Check 4 (Speaker conflict) removed — the speaker role has been retired.
 
       // Check 5: Recipient conflict (same recipient has multiple events on same day)
       const existingRecipientIds = normalizeArrayField(existingEvent.assignedRecipientIds);
