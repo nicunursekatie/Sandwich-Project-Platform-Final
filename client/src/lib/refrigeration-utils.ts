@@ -7,6 +7,8 @@ export {
   isPerishableSandwichType,
   hasPerishableSandwiches,
   needsRefrigerationConfirmation,
+  cannotRuleOutPerishableSandwiches,
+  shouldConfirmRefrigerationBeforeSchedule,
   hasCriticalRefrigerationIssue,
   getRefrigerationMessage,
   getPerishableSandwichTypes,
