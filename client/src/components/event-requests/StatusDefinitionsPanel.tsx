@@ -105,19 +105,24 @@ export const StatusDefinitionsPanel: React.FC<{ defaultOpen?: boolean }> = ({ de
           </div>
 
           <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
-            <strong className="text-base">Key rules:</strong>
+            <strong className="text-base">Good to know:</strong>
             <ul className="mt-2 space-y-2 list-disc list-inside">
               <li>
-                <strong>Cancelled</strong> is only for events that were already{' '}
-                <strong>Scheduled</strong>. If an In Process event doesn't happen,
-                use <strong>Declined</strong>.
+                Any status can be changed to any other status — the definitions
+                above are guidance, not restrictions.
+              </li>
+              <li>
+                <strong>Cancelled</strong> is meant for events that were already{' '}
+                <strong>Scheduled</strong>. If an In Process event doesn't happen,{' '}
+                <strong>Declined</strong> usually fits better.
               </li>
               <li>
                 If a <strong>Scheduled</strong> event needs to be rescheduled but the group cannot provide a new date right away, move it to <strong>Standby</strong> until the new date is confirmed.
               </li>
               <li>
-                All status changes to Declined or Cancelled require a
-                reason to be recorded.
+                Status changes to Declined, Cancelled, or Non-Event still require a
+                reason to be recorded, and Scheduled/Rescheduled still require an
+                event date.
               </li>
             </ul>
           </div>

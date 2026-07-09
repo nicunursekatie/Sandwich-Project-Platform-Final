@@ -95,16 +95,16 @@ export const STATUS_DEFINITIONS: Record<EventStatus, {
   cancelled: {
     label: 'Cancelled',
     definition: 'A previously scheduled event that has been cancelled without the intention of rescheduling.',
-    guidance: 'Must have been Scheduled at some point. Record the reason for cancellation.',
+    guidance: 'Typically used for events that were already Scheduled. Record the reason for cancellation.',
   },
   non_event: {
     label: 'Non-Event',
     definition: 'A request that was never a real event request (e.g., someone dropping off sandwiches they already made, general inquiries that are not event requests).',
-    guidance: 'Applies to New Requests or In Process events that turn out not to be real event requests.',
+    guidance: 'Typically applies to New Requests or In Process events that turn out not to be real event requests.',
   },
   standby: {
     label: 'Standby',
-    definition: 'Only events that have been first moved to In Process status should be given a status of Standby. These are events where the Group Contact is waiting on something specific (e.g., information or permission from someone in their organization) in order for us to move forward with the planning process. In the rare circumstance that a Scheduled event needs to be rescheduled and the group cannot provide a new date right away, that event should also be moved to Standby until we receive the new date.',
+    definition: 'Events where the Group Contact is waiting on something specific (e.g., information or permission from someone in their organization) in order for us to move forward with the planning process. If a Scheduled event needs to be rescheduled and the group cannot provide a new date right away, that event can also be moved to Standby until we receive the new date.',
     guidance: 'Follow closely. Move to In Process, Scheduled, Declined, or Stalled as appropriate.',
   },
   stalled: {
@@ -118,27 +118,38 @@ export const STATUS_DEFINITIONS: Record<EventStatus, {
  * Valid status transitions.
  * Maps each status to the list of statuses it can transition to.
  *
- * Key business rules:
- * - Cancelled requires the event to have been Scheduled first
- * - In Process events that don't happen become Declined (not Cancelled)
- * - Non-Event is terminal — reachable from New Request or In Process
- * - Rescheduled has the same outbound transitions as Scheduled
- * - Completed is typically a terminal state but can be reopened to Scheduled if needed
- * - Standby covers events waiting on the group contact, including scheduled events
- *   that need to be rescheduled but don't have a new date yet
+ * TRANSITION RESTRICTIONS DISABLED (July 2026, by user request — the rules were
+ * blocking real-world workflows). Every status may now move to every other
+ * status; this map is generated as allow-all so the status dropdown, the
+ * client-side check, and the server-side enforcement all stay consistent.
+ *
+ * The previous restricted flow is preserved below for reference / easy
+ * restoration (it encoded: Cancelled only from Scheduled; Non-Event only from
+ * New/In Process; Completed only from Scheduled/Rescheduled; terminal states
+ * reactivate through specific paths):
+ *
+ *   new:         ['in_process', 'non_event', 'declined', 'standby', 'stalled']
+ *   in_process:  ['scheduled', 'declined', 'standby', 'stalled', 'non_event']
+ *   scheduled:   ['completed', 'cancelled', 'rescheduled', 'standby', 'in_process']
+ *   rescheduled: ['completed', 'cancelled', 'standby', 'in_process']
+ *   completed:   ['scheduled']
+ *   declined:    ['new', 'in_process']
+ *   cancelled:   ['scheduled']
+ *   non_event:   ['new', 'in_process']
+ *   standby:     ['in_process', 'scheduled', 'declined', 'stalled']
+ *   stalled:     ['in_process', 'declined', 'new']
+ *
+ * NOTE: reason requirements (declined/cancelled/non_event need a recorded
+ * reason) and the scheduled-date requirement are SEPARATE rules and remain in
+ * force — see STATUS_REASON_FIELD below.
  */
-export const VALID_STATUS_TRANSITIONS: Record<EventStatus, EventStatus[]> = {
-  new: ['in_process', 'non_event', 'declined', 'standby', 'stalled'],
-  in_process: ['scheduled', 'declined', 'standby', 'stalled', 'non_event'],
-  scheduled: ['completed', 'cancelled', 'rescheduled', 'standby', 'in_process'],  // in_process allows undoing accidental scheduling
-  rescheduled: ['completed', 'cancelled', 'standby', 'in_process'],
-  completed: ['scheduled'],  // Reopen if needed (e.g., data entry error)
-  declined: ['new', 'in_process'],  // Can reactivate if they come back
-  cancelled: ['scheduled'],  // Can reinstate if the group comes back
-  non_event: ['new', 'in_process'],  // Can reactivate if incorrectly marked
-  standby: ['in_process', 'scheduled', 'declined', 'stalled'],  // scheduled allows setting a date from standby
-  stalled: ['in_process', 'declined', 'new'],
-};
+export const VALID_STATUS_TRANSITIONS: Record<EventStatus, EventStatus[]> =
+  Object.fromEntries(
+    EVENT_STATUSES.map((from) => [
+      from,
+      EVENT_STATUSES.filter((to) => to !== from),
+    ])
+  ) as Record<EventStatus, EventStatus[]>;
 
 /**
  * Check if a status transition is valid.

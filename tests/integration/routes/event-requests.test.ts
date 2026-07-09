@@ -243,22 +243,20 @@ describe('Event Requests Routes', () => {
   });
 
   describe('Status Transition Validation', () => {
-    it('should reject invalid status transitions', async () => {
+    it('should allow previously-restricted status transitions (restrictions disabled July 2026)', async () => {
       const agent = request.agent(app);
 
-      // Try to transition from 'new' to 'completed' (invalid)
+      // 'new' -> 'completed' used to be blocked. Transition restrictions are
+      // now disabled (VALID_STATUS_TRANSITIONS in shared/event-status-workflow.ts
+      // is allow-all), so this must never be rejected as an invalid transition.
       const response = await agent
         .patch('/api/event-requests/1')
         .send({ status: 'completed' })
         .set('Cookie', ['connect.sid=mock-session-id']);
 
-      // Should either be 400 (validation error) or 404 (event not found)
-      // If 404, the validation would have triggered if event existed
-      expect([400, 404]).toContain(response.status);
-      
+      expect(response.status).toBeLessThan(500);
       if (response.status === 400) {
-        expect(response.body).toHaveProperty('error');
-        expect(response.body.error).toBe('INVALID_STATUS_TRANSITION');
+        expect(response.body.error).not.toBe('INVALID_STATUS_TRANSITION');
       }
     });
 
