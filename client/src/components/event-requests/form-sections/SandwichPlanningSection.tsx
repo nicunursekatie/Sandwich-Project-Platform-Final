@@ -88,6 +88,13 @@ export const SandwichPlanningSection: React.FC<SandwichPlanningSectionProps> = (
                 sumSandwichTypeQuantities(prev.sandwichTypes) ||
                 0,
               sandwichTypes: [],
+              // Clear the range fields too — otherwise a leftover range from a
+              // previous "Range" entry stays in form state and its midpoint is
+              // preferred over the exact count on display (the "500 shows as
+              // 498" bug).
+              estimatedSandwichCountMin: 0,
+              estimatedSandwichCountMax: 0,
+              rangeSandwichType: '',
             }));
           }}
           className="text-xs"

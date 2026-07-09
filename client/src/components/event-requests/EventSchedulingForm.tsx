@@ -1041,12 +1041,29 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // WITHOUT fieldOverrides so a value just entered this session (e.g. the
       // standby follow-up date) correctly registers as a change.
       if (originalFormDataRef.current) {
+        // The baseline MUST be serialized in the mode the data was ORIGINALLY
+        // in, not the mode the form is in now. Serializing the baseline with the
+        // current mode would force its companion fields (range min/max,
+        // sandwichTypes) to null too — so when the user switches e.g. Range →
+        // Exact Count, the diff sees null === null and silently drops the very
+        // fields that clear the stale range. The stale range then survives in the
+        // DB and getReportableSandwichCount keeps showing its midpoint instead of
+        // the exact count the user entered (the "500 saves as 498" bug).
+        const baselineSandwichMode = determineSandwichMode(
+          originalFormDataRef.current.sandwichTypes,
+          originalFormDataRef.current.estimatedSandwichCountMin,
+          originalFormDataRef.current.estimatedSandwichCountMax,
+          originalFormDataRef.current.totalSandwichCount,
+        );
+        const baselineActualSandwichMode = determineActualSandwichMode(
+          originalFormDataRef.current.actualSandwichTypes,
+        );
         const baselineData = buildEventDataForServer(originalFormDataRef.current as any, {
           mode,
           hasEventRequest: !!eventRequest,
           eventRequestStatus: eventRequest?.status,
-          sandwichMode,
-          actualSandwichMode,
+          sandwichMode: baselineSandwichMode,
+          actualSandwichMode: baselineActualSandwichMode,
         });
         const omittedFields: string[] = [];
         for (const key of Object.keys(eventData)) {
