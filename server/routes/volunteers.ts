@@ -100,6 +100,8 @@ export function createVolunteersRouter(deps: RouterDependencies) {
         'Email Agreement Sent',
         'Voicemail Left',
         'Inactive Reason',
+        'Experience Level',
+        'Training Completed',
         'Created Date',
       ];
       const csvContent = [headers.join(',')];
@@ -131,6 +133,8 @@ export function createVolunteersRouter(deps: RouterDependencies) {
           volunteer.emailAgreementSent ? 'Yes' : 'No',
           volunteer.voicemailLeft ? 'Yes' : 'No',
           escapeCSV(volunteer.inactiveReason),
+          volunteer.experienceLevel || 'new',
+          volunteer.trainingCompleted ? 'Yes' : 'No',
           volunteer.createdAt
             ? new Date(volunteer.createdAt).toLocaleDateString()
             : '',
