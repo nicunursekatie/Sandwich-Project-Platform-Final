@@ -68,6 +68,10 @@ import {
   parseSandwichTypes,
   formatSandwichTypesDisplay,
 } from '@/lib/sandwich-utils';
+import {
+  extractNameFromAssignmentId,
+  resolveAssignmentDisplayName,
+} from '@/lib/assignment-utils';
 import type { EventRequest } from '@shared/schema';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
@@ -170,16 +174,7 @@ const parsePostgresArray = (arr: unknown): string[] => {
 };
 
 const extractCustomName = (id: string): string => {
-  if (!id || typeof id !== 'string') return '';
-  if (id.startsWith('custom-')) {
-    const parts = id.split('-');
-    if (parts.length >= 3) {
-      const nameParts = parts.slice(2);
-      return nameParts.join('-').replace(/-/g, ' ').trim() || 'Custom Volunteer';
-    }
-    return 'Custom Volunteer';
-  }
-  return ''; // Return empty string so resolveUserName gets called
+  return extractNameFromAssignmentId(id) || '';
 };
 
 export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
@@ -650,15 +645,13 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
       const assignedVolunteerIds = parsePostgresArray(request.assignedVolunteerIds);
       const volunteersNeededCount = request.volunteersNeeded || 0;
       assignedVolunteerIds.forEach(id => {
-        const isCustom = id.startsWith('custom-');
-        const idLooksLikeName = id &&
-          !id.startsWith('user_') && !id.startsWith('driver_') && !id.startsWith('volunteer_') &&
-          !id.startsWith('volunteer-') && !id.startsWith('custom-') && !id.startsWith('host-contact-') &&
-          !/^\d+$/.test(id) && id.includes(' ');
+        const detailName = (request.volunteerDetails as Record<string, { name?: string }>)?.[id]?.name;
         const resolvedName = resolveUserName(id);
-        const name = isCustom
-          ? extractCustomName(id)
-          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+        const name = resolveAssignmentDisplayName(id, {
+          storedName: detailName,
+          resolvedName,
+          fallback: resolvedName || 'Unknown Volunteer',
+        });
         staffingParts.push(name ? `V: ${name}` : 'V');
       });
       // Add unfilled volunteer slots
@@ -3383,21 +3376,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     </div>
                     <div className="space-y-1">
                       {parsePostgresArray(request.assignedVolunteerIds).map((id) => {
-                        const isCustom = id.startsWith('custom-');
-                        // Check if the ID itself looks like a human name (not a system ID)
-                        const idLooksLikeName = id &&
-                          !id.startsWith('user_') &&
-                          !id.startsWith('driver_') &&
-                          !id.startsWith('volunteer_') &&
-                          !id.startsWith('volunteer-') &&
-                          !id.startsWith('custom-') &&
-                          !id.startsWith('host-contact-') &&
-                          !/^\d+$/.test(id) &&
-                          id.includes(' ');
+                        const detailName = (request.volunteerDetails as Record<string, { name?: string }>)?.[id]?.name;
                         const resolvedName = resolveUserName(id);
-                        const displayName = isCustom
-                          ? extractCustomName(id)
-                          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                        const displayName = resolveAssignmentDisplayName(id, {
+                          storedName: detailName,
+                          resolvedName,
+                          fallback: resolvedName || 'Unknown Volunteer',
+                        });
+                        const isCustom = id.startsWith('custom-') || /^\d{10,}[\s-]/.test(id);
                         const volunteerPersonNotes = (request.volunteerDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
                         const volunteerNotesFieldKey = `volunteer-notes-${id}`;
                         const isEditingVolunteerNotes = isEditingThisCard && editingField === volunteerNotesFieldKey;
@@ -3549,20 +3535,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       {volunteerAssigned === 0 && parsePostgresArray(request.tentativeVolunteerIds).length === 0 && <Badge variant="outline" className="bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40 font-medium"><Users className="w-3 h-3 mr-1" />None assigned</Badge>}
                       {/* Tentative Volunteers */}
                       {parsePostgresArray(request.tentativeVolunteerIds).map((id) => {
-                        const isCustom = id.startsWith('custom-');
-                        const idLooksLikeName = id &&
-                          !id.startsWith('user_') &&
-                          !id.startsWith('driver_') &&
-                          !id.startsWith('volunteer_') &&
-                          !id.startsWith('volunteer-') &&
-                          !id.startsWith('custom-') &&
-                          !id.startsWith('host-contact-') &&
-                          !/^\d+$/.test(id) &&
-                          id.includes(' ');
+                        const detailName = (request.volunteerDetails as Record<string, { name?: string }>)?.[id]?.name;
                         const resolvedName = resolveUserName(id);
-                        const displayName = isCustom
-                          ? extractCustomName(id)
-                          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                        const displayName = resolveAssignmentDisplayName(id, {
+                          storedName: detailName,
+                          resolvedName,
+                          fallback: resolvedName || 'Unknown Volunteer',
+                        });
+                        const isCustom = id.startsWith('custom-') || /^\d{10,}[\s-]/.test(id);
                         const tVolunteerPersonNotes = (request.volunteerDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
                         const tVolunteerNotesFieldKey = `tvolunteer-notes-${id}`;
                         const isEditingTVolunteerNotes = isEditingThisCard && editingField === tVolunteerNotesFieldKey;
