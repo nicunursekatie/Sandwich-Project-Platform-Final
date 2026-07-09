@@ -1764,6 +1764,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                       eventName={request.organizationName || 'Event'}
                       currentStatus={request.status}
                       scheduledDate={request.desiredEventDate}
+                      hasRefrigeration={request.hasRefrigeration}
+                      sandwichTypes={request.sandwichTypes as Array<{ type: string; quantity: number }> | null}
                       size="sm"
                       variant="outline"
                     />
