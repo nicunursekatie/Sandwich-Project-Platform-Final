@@ -156,7 +156,14 @@ export function buildEventDataForServer(
 
     // Standby
     standbyExpectedDate: (() => {
-      const date = fieldOverrides?.standbyExpectedDate || formData.standbyExpectedDate;
+      // Respect an EXPLICIT null/empty override (the "No reminder" choice in
+      // the standby dialog must clear the date, not fall back to the stale
+      // formData value from the closure) — only fall back when the override
+      // key wasn't provided at all.
+      const date =
+        fieldOverrides && 'standbyExpectedDate' in fieldOverrides
+          ? fieldOverrides.standbyExpectedDate
+          : formData.standbyExpectedDate;
       return formData.status === 'standby' && date
         ? serializeDateToISO(typeof date === 'string' ? date : new Date(date).toISOString().split('T')[0])
         : null;

@@ -341,7 +341,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showStandbyFollowUpDialog, setShowStandbyFollowUpDialog] = useState(false);
   const [standbyFollowUpDate, setStandbyFollowUpDate] = useState('');
-  const [standbyFollowUpMode, setStandbyFollowUpMode] = useState<'specific' | 'one_week'>('one_week');
+  const [standbyFollowUpMode, setStandbyFollowUpMode] = useState<'specific' | 'one_week' | 'none'>('one_week');
   const standbySaveClickedRef = useRef(false);
   const [hasRecoveredData, setHasRecoveredData] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -1057,6 +1057,15 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         });
         const omittedFields: string[] = [];
         for (const key of Object.keys(eventData)) {
+          // Never drop a key the caller explicitly overrode this save — an
+          // override is a deliberate write even when it equals the baseline.
+          // (e.g. "No reminder" sends standbyExpectedDate: null; the baseline
+          // also computes null because its status isn't 'standby' yet, so a
+          // plain diff would silently drop the clear and a stale follow-up
+          // date from a previous standby episode would survive.)
+          if (fieldOverrides && Object.prototype.hasOwnProperty.call(fieldOverrides, key)) {
+            continue;
+          }
           if (
             Object.prototype.hasOwnProperty.call(baselineData, key) &&
             JSON.stringify(eventData[key]) === JSON.stringify(baselineData[key])
@@ -1636,9 +1645,11 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           // the dialog open lets the user correct and retry instead of
           // seeing the form silently refresh with no feedback.
           standbySaveClickedRef.current = true;
-          setFormData(prev => ({ ...prev, standbyExpectedDate: standbyFollowUpDate }));
+          // "No reminder" clears the follow-up date — the reminder is optional.
+          const dateToSave = standbyFollowUpMode === 'none' ? '' : standbyFollowUpDate;
+          setFormData(prev => ({ ...prev, standbyExpectedDate: dateToSave }));
           try {
-            await performSubmit(false, { standbyExpectedDate: standbyFollowUpDate });
+            await performSubmit(false, { standbyExpectedDate: dateToSave || null });
             setShowStandbyFollowUpDialog(false);
           } catch (err) {
             // performSubmit's mutation onError already toasts. We leave

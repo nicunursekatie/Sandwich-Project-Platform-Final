@@ -59,6 +59,7 @@ const EVENT_REQUEST_TIMESTAMP_FIELDS = [
   'tspContactAssignedDate',
   'statusChangedAt',
   'standbyExpectedDate',
+  'standbyMarkedAt',
   'scheduledEventDate',
   'socialMediaPostRequestedDate',
   'socialMediaPostCompletedDate',
@@ -2771,6 +2772,14 @@ router.patch(
           processedUpdates.nonEventBy = req.user?.id || null;
         }
 
+        // Track when the event entered standby. Drives the "since ..." badge on
+        // the standby card and lets the standby follow-up reminder treat each
+        // standby episode independently. Only set on the transition INTO
+        // standby, so re-saving an already-standby event keeps the original date.
+        if (processedUpdates.status === 'standby') {
+          processedUpdates.standbyMarkedAt = new Date();
+        }
+
         // Track metadata for rescheduled status
         if (processedUpdates.status === 'rescheduled') {
           // Preserve the original scheduled date if not already set
@@ -3424,6 +3433,12 @@ router.put(
           if (processedUpdates.showOnVolunteerHub === undefined && !originalEvent.showOnVolunteerHub) {
             processedUpdates.showOnVolunteerHub = true;
           }
+        }
+
+        // Keep PUT behavior aligned with PATCH: stamp when the event entered
+        // standby (drives the "since ..." badge and per-episode reminder dedup).
+        if (toStatus === 'standby') {
+          processedUpdates.standbyMarkedAt = new Date();
         }
       }
 
