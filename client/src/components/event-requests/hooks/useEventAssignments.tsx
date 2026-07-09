@@ -11,6 +11,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { isValidTransition, getTransitionError, requiresReason, STATUS_DEFINITIONS } from '../constants';
 import { isScheduledOrRescheduled, type EventStatus } from '@shared/event-status-workflow';
+import { extractNameFromAssignmentId } from '@/lib/assignment-utils';
 
 export const useEventAssignments = () => {
   const { toast } = useToast();
@@ -69,15 +70,9 @@ export const useEventAssignments = () => {
     try {
       // Handle custom- prefixed IDs FIRST (format: custom-timestamp-Name)
       // Example: custom-1763183106406-Chef-Hank => Chef Hank
-      if (userIdOrName.startsWith('custom-')) {
-        // Extract the name part after the second dash
-        const parts = userIdOrName.split('-');
-        if (parts.length >= 3) {
-          // Join all parts after the timestamp, replacing dashes with spaces
-          const name = parts.slice(2).join(' ');
-          return name;
-        }
-        // Fallback if format is unexpected
+      if (userIdOrName.startsWith('custom-') || userIdOrName.startsWith('custom:')) {
+        const extracted = extractNameFromAssignmentId(userIdOrName);
+        if (extracted) return extracted;
         return userIdOrName.replace('custom-', '').replace(/-/g, ' ');
       }
 
@@ -182,6 +177,9 @@ export const useEventAssignments = () => {
         }
         return `Person #${userIdOrName}`;
       }
+
+      const legacyName = extractNameFromAssignmentId(userIdOrName);
+      if (legacyName) return legacyName;
 
       return userIdOrName;
     } catch (error) {

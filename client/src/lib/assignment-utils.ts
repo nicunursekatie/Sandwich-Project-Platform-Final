@@ -39,6 +39,85 @@ function parseDetails(details?: Record<string, any> | string | null): Record<str
 }
 
 /**
+ * Extract a human-readable name embedded in custom/legacy assignment IDs.
+ *
+ * Supported formats:
+ *   custom-1763183106406-Chef-Hank  → Chef Hank
+ *   custom:Name                       → Name
+ *   1783119755788 Morgan Stanley 1  → Morgan Stanley 1 (legacy timestamp + space)
+ *   1783119755788-Morgan-Stanley-1   → Morgan Stanley 1 (legacy timestamp + dashes)
+ */
+export function extractNameFromAssignmentId(personId: string): string | null {
+  if (!personId || typeof personId !== 'string') return null;
+
+  if (personId.startsWith('custom:')) {
+    const name = personId.replace('custom:', '').trim();
+    return name || null;
+  }
+
+  if (personId.startsWith('custom-')) {
+    const parts = personId.split('-');
+    if (parts.length >= 3) {
+      const name = parts.slice(2).join('-').replace(/-/g, ' ').trim();
+      return name || null;
+    }
+    return null;
+  }
+
+  const timestampSpaceMatch = personId.match(/^(\d{10,})\s+(.+)$/);
+  if (timestampSpaceMatch) {
+    return timestampSpaceMatch[2].trim() || null;
+  }
+
+  const timestampDashMatch = personId.match(/^(\d{10,})-(.+)$/);
+  if (timestampDashMatch) {
+    return timestampDashMatch[2].replace(/-/g, ' ').trim() || null;
+  }
+
+  return null;
+}
+
+function isUsableStoredAssignmentName(
+  name: string | undefined | null,
+  personId: string
+): name is string {
+  if (!name?.trim()) return false;
+  if (name === personId) return false;
+  if (/^\d+$/.test(name)) return false;
+  if (name.startsWith('host-contact-') || name.startsWith('custom-')) return false;
+  return true;
+}
+
+/**
+ * Resolve the label to show for an assigned person (driver/speaker/volunteer).
+ */
+export function resolveAssignmentDisplayName(
+  personId: string,
+  options?: {
+    storedName?: string | null;
+    resolvedName?: string;
+    fallback?: string;
+  }
+): string {
+  const fallback = options?.fallback ?? 'Unknown';
+  const storedName = options?.storedName;
+  const resolvedName = options?.resolvedName;
+
+  if (isUsableStoredAssignmentName(storedName, personId)) {
+    return extractNameFromAssignmentId(storedName) || storedName.trim();
+  }
+
+  const fromId = extractNameFromAssignmentId(personId);
+  if (fromId) return fromId;
+
+  if (resolvedName && resolvedName !== personId && !/^\d+$/.test(resolvedName)) {
+    return resolvedName;
+  }
+
+  return fallback;
+}
+
+/**
  * Get all driver IDs from the event (excluding van driver)
  */
 export function getDriverIds(event: EventWithAssignments): string[] {
