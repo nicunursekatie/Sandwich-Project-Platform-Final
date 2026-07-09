@@ -33,6 +33,11 @@
 -- RUN THIS ON BOTH the dev and production Neon branches (verify you are on the
 -- intended branch first — see CLAUDE.md "Database branch confusion"). Run the
 -- PREVIEW query first and eyeball the rows before running the UPDATE.
+--
+-- Neon SQL Console note: the console auto-wraps whatever you select-and-run in a
+-- single transaction, so there is no explicit BEGIN/COMMIT below (the console
+-- rejects manual transaction control). Run the PREVIEW on its own first; when
+-- the rows look right, select and run the UPDATE.
 
 -- ── PREVIEW (safe, read-only) ────────────────────────────────────────────────
 -- Shows exactly which rows the UPDATE below will touch and how the displayed
@@ -71,8 +76,6 @@
 -- ORDER BY id;
 
 -- ── HEAL ─────────────────────────────────────────────────────────────────────
-BEGIN;
-
 UPDATE event_requests
 SET
   estimated_sandwich_count_min = NULL,
@@ -91,6 +94,3 @@ WHERE estimated_sandwich_count IS NOT NULL
     NULLIF(GREATEST(estimated_sandwich_count_min, 0), 0),
     NULLIF(GREATEST(estimated_sandwich_count_max, 0), 0)
   )::int;
-
--- Inspect the row count reported above. If it looks right, COMMIT. Otherwise ROLLBACK.
-COMMIT;
