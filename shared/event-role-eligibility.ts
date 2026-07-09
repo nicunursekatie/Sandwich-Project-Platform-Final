@@ -18,11 +18,14 @@
  * and both sides update together.
  */
 
-export type EventRole = 'speaker' | 'driver' | 'general' | 'van';
+// NOTE: The 'speaker' role has been retired — the org treats everyone as a
+// volunteer now. The user-capability fields (willingToSpeak/speakerApproved)
+// below are intentionally KEPT so historical user rows still read cleanly, but
+// 'speaker' is no longer an assignable/self-signup event role.
+export type EventRole = 'driver' | 'general' | 'van';
 
 /** The roles a volunteer can self-sign-up for via the hub signup dialog. */
 export const SELF_SIGNUP_ROLES: Array<Exclude<EventRole, 'van'>> = [
-  'speaker',
   'driver',
   'general',
 ];
@@ -52,7 +55,6 @@ interface RoleRule {
 
 const ROLE_RULES: Record<EventRole, RoleRule> = {
   general: { willing: 'willingToVolunteer', willingDefaultsTrue: true, approval: null },
-  speaker: { willing: 'willingToSpeak', willingDefaultsTrue: false, approval: 'speakerApproved' },
   driver: { willing: 'willingToDrive', willingDefaultsTrue: false, approval: 'driverApproved' },
   van: { willing: 'willingToDrive', willingDefaultsTrue: false, approval: 'vanApproved' },
 };

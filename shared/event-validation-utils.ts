@@ -223,12 +223,8 @@ export function getMissingIntakeInfo(request: EventRequest): string[] {
     }
   }
 
-  // Conditional field validation: If speakers needed, check for event start time
-  if (request.speakersNeeded && request.speakersNeeded > 0) {
-    if (!request.eventStartTime) {
-      missing.push('Event Start Time');
-    }
-  }
+  // (Speaker role retired: the former "speakers needed ⇒ event start time
+  // required" rule was removed. Start time is no longer gated on speakers.)
 
   return missing;
 }
@@ -379,7 +375,7 @@ export function getPrimaryContextualAction(request: EventRequest): ContextualAct
     };
   }
 
-  // Priority 4: Event Start Time (if speakers needed)
+  // Priority 4: Event Start Time
   if (missingInfo.includes('Event Start Time')) {
     return {
       label: 'Edit Event',
@@ -513,7 +509,7 @@ export function getContextualTooltip(request: EventRequest): string {
     contact: 'Add email or phone number to contact the organization',
     address: 'Add event address or delivery location',
     sandwiches: 'Specify how many sandwiches are needed',
-    eventStartTime: 'Set the event start time for speaker scheduling',
+    eventStartTime: 'Set the event start time',
     desiredEventDate: 'Set the desired event date',
     hasRefrigeration: 'Confirm if refrigeration is available for perishable sandwiches',
     status: 'All required info is complete - ready to schedule this event',

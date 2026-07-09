@@ -650,10 +650,8 @@ function getEventMissingInfo(event: any): string[] {
     }
   }
 
-  // If speakers needed, check for event start time
-  if (event.speakersNeeded && event.speakersNeeded > 0 && !event.eventStartTime) {
-    missing.push('Event Start Time');
-  }
+  // (Speaker role retired: the former "speakers needed ⇒ event start time"
+  // requirement was removed.)
 
   return missing;
 }
