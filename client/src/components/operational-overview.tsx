@@ -532,6 +532,40 @@ function MyAssignmentsView({
     rescheduled: my.allMyEvents.filter((e) => e.status === 'rescheduled'),
   };
 
+  // De-duplicate where each event's CARD appears. The server sends the same
+  // event in several overlapping buckets (a new request that's also missing
+  // urgent details lands in both `newRequests` and `urgentDetailEvents`, and
+  // every event is also in `allMyEvents`). Rendering each bucket verbatim made
+  // the dashboard show a single event as a card three or four times over.
+  //
+  // Rule: each event's card surfaces in exactly one "needs attention" box,
+  // chosen by urgency — urgent details (red) > new request (orange) > stale
+  // follow-up (amber) — and the catch-all list below shows only what's left.
+  // The header count, "Your next steps" summary, and status-count tiles stay
+  // as-is: those are aggregate/summary views, not repeated event cards.
+  const { newRequestsToShow, inProcessStaleToShow, otherEvents, actionableCount } = useMemo(() => {
+    const urgentIds = new Set((my.urgentDetailEvents ?? []).map((e) => e.id));
+    // `new` and `in_process` are status-disjoint, so these only ever overlap
+    // with the urgent bucket, never with each other.
+    const newList = my.newRequests.filter((e) => !urgentIds.has(e.id));
+    const staleList = my.inProcessStale.filter((e) => !urgentIds.has(e.id));
+
+    const surfaced = new Set<number>([
+      ...urgentIds,
+      ...newList.map((e) => e.id),
+      ...staleList.map((e) => e.id),
+    ]);
+    const others = my.allMyEvents.filter((e) => !surfaced.has(e.id));
+
+    return {
+      newRequestsToShow: newList,
+      inProcessStaleToShow: staleList,
+      otherEvents: others,
+      // Distinct events that need action across all "needs attention" boxes.
+      actionableCount: surfaced.size,
+    };
+  }, [my]);
+
   return (
     <div className="mx-4 mb-8">
       <div
@@ -551,14 +585,22 @@ function MyAssignmentsView({
           </div>
         </div>
 
-        <AssignmentActionBar
-          my={my}
-          onOpenEvent={openAssignmentEvent}
-          onScrollToSection={scrollToActionSection}
-        />
+        {/* "Your next steps" is a prioritized index into the boxes below. It
+            earns its place when there are several things to triage; with a
+            single actionable event it just echoes the one card right below it,
+            so we hide it in that case to avoid showing the same event twice. */}
+        {actionableCount > 1 && (
+          <AssignmentActionBar
+            my={my}
+            onOpenEvent={openAssignmentEvent}
+            onScrollToSection={scrollToActionSection}
+          />
+        )}
 
-        {/* PRIORITY 1: New requests assigned to me — first contact owed */}
-        {my.newRequests.length > 0 && (
+        {/* PRIORITY 1: New requests assigned to me — first contact owed.
+            Excludes any that are also surfaced in the urgent-details box below
+            so a single event isn't shown as a card twice. */}
+        {newRequestsToShow.length > 0 && (
           <div
             ref={newRequestsRef}
             id="my-assignments-new-requests"
@@ -568,13 +610,13 @@ function MyAssignmentsView({
               <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-[#FBAD3F] shadow-sm">
                 <Sparkles className="w-4 h-4 text-[#3d2800]" />
               </span>
-              {my.newRequests.length === 1 ? 'New request' : `${my.newRequests.length} new requests`} assigned to you
+              {newRequestsToShow.length === 1 ? 'New request' : `${newRequestsToShow.length} new requests`} assigned to you
               <span className="text-xs font-semibold text-[#A31C41]">
                 — make first contact
               </span>
             </h4>
             <div className="space-y-2">
-              {my.newRequests.slice(0, 5).map((e) => (
+              {newRequestsToShow.slice(0, 5).map((e) => (
                 <AssignmentEventRow
                   key={e.id}
                   event={e}
@@ -582,17 +624,18 @@ function MyAssignmentsView({
                   emphasizeSubmittedAge
                 />
               ))}
-              {my.newRequests.length > 5 && (
+              {newRequestsToShow.length > 5 && (
                 <div className="text-xs font-semibold text-[#3d2800] pl-3">
-                  + {my.newRequests.length - 5} more
+                  + {newRequestsToShow.length - 5} more
                 </div>
               )}
             </div>
           </div>
         )}
 
-        {/* PRIORITY 2: In-process events with no contact in the last 7 days */}
-        {my.inProcessStale.length > 0 && (
+        {/* PRIORITY 2: In-process events with no contact in the last 7 days.
+            Excludes any also surfaced in the urgent-details box below. */}
+        {inProcessStaleToShow.length > 0 && (
           <div
             ref={staleFollowupRef}
             id="my-assignments-stale-followup"
@@ -602,20 +645,20 @@ function MyAssignmentsView({
               <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-amber-500 shadow-sm">
                 <AlertTriangle className="w-4 h-4 text-white" />
               </span>
-              {my.inProcessStale.length === 1
+              {inProcessStaleToShow.length === 1
                 ? 'In-process event needs follow-up'
-                : `${my.inProcessStale.length} in-process events need follow-up`}
+                : `${inProcessStaleToShow.length} in-process events need follow-up`}
               <span className="text-xs font-semibold text-amber-900">
                 — no contact in 7+ days
               </span>
             </h4>
             <div className="space-y-2">
-              {my.inProcessStale.slice(0, 5).map((e) => (
+              {inProcessStaleToShow.slice(0, 5).map((e) => (
                 <AssignmentEventRow key={e.id} event={e} onOpen={openAssignmentEvent} />
               ))}
-              {my.inProcessStale.length > 5 && (
+              {inProcessStaleToShow.length > 5 && (
                 <div className="text-xs font-semibold text-amber-950 pl-3">
-                  + {my.inProcessStale.length - 5} more
+                  + {inProcessStaleToShow.length - 5} more
                 </div>
               )}
             </div>
@@ -718,17 +761,19 @@ function MyAssignmentsView({
           )}
         </div>
 
-        {/* PRIORITY 4: Full list of every assigned event (collapsed by default
-            for tidiness — when total ≤ 8 just show them all; otherwise show
-            the top 8 with a link to the full list). */}
-        {my.allMyEvents.length > 0 && (
+        {/* PRIORITY 4: The rest of the user's events — everything NOT already
+            pulled out into a "needs attention" box above. This used to list
+            every event (including the urgent/new/stale ones shown above),
+            which is what made the dashboard feel like it repeated the same
+            event over and over. Hidden entirely when nothing is left over. */}
+        {otherEvents.length > 0 && (
           <div className="mb-6 rounded-xl border border-[#47B3CB]/40 bg-white p-4 shadow-sm">
             <h4 className="text-sm font-bold text-[#236383] mb-3 flex items-center gap-2">
               <Clock className="w-4 h-4 text-[#007E8C]" />
-              All your events
+              {otherEvents.length === my.total ? 'Your events' : 'Your other events'}
             </h4>
             <div className="space-y-2">
-              {my.allMyEvents.slice(0, 8).map((e) => (
+              {otherEvents.slice(0, 8).map((e) => (
                 <AssignmentEventRow
                   key={e.id}
                   event={e}
@@ -736,13 +781,13 @@ function MyAssignmentsView({
                   showStatus
                 />
               ))}
-              {my.allMyEvents.length > 8 && (
+              {otherEvents.length > 8 && (
                 <button
                   type="button"
                   onClick={() => onNavigate('event-requests')}
                   className="w-full text-center text-sm font-bold text-[#007E8C] hover:text-[#236383] hover:underline py-2"
                 >
-                  View all {my.allMyEvents.length} of your events →
+                  View all your events →
                 </button>
               )}
             </div>
