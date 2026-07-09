@@ -388,7 +388,7 @@ export default function NotificationPreferences() {
             <Alert>
               <CheckCircle2 className="h-4 w-4" />
               <AlertDescription>
-                These preferences apply to all events where you're assigned as a volunteer, driver, speaker, or TSP contact.
+                These preferences apply to all events where you're assigned as a volunteer, driver, or TSP contact.
                 Reminders are sent automatically based on the scheduled event date.
               </AlertDescription>
             </Alert>

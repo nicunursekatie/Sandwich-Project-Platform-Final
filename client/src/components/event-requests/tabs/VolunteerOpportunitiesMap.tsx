@@ -14,9 +14,7 @@ import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
 // Marker color constants
 const COLORS = {
-  speaker: '#47B3CB',    // Speaker needed - light teal/cyan
   volunteer: '#10B981',  // Volunteer needed - green
-  both: '#007E8C',       // Speaker + Volunteer needed - teal
   driver: '#8B5CF6',     // Regular driver needed - purple
   vanDriver: '#F59E0B',  // Van driver needed - amber/orange
 } as const;
@@ -74,10 +72,6 @@ const createClusterCustomIcon = (cluster: any) => {
 
 // Helper to compute unfilled needs for an event
 function getEventNeeds(event: EventRequest) {
-  const speakersNeeded = (event.speakersNeeded ?? 0) > 0;
-  const speakerNotAssigned = !event.speakerId || event.speakerId === null || event.speakerId === '';
-  const needsSpeaker = speakersNeeded && speakerNotAssigned;
-
   const volunteersNeeded = (event.volunteersNeeded ?? 0) > 0;
   const volunteerNotAssigned = !event.volunteerId || event.volunteerId === null || event.volunteerId === '';
   const needsVolunteer = volunteersNeeded && volunteerNotAssigned;
@@ -88,12 +82,12 @@ function getEventNeeds(event: EventRequest) {
 
   const needsVanDriver = !!(event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan);
 
-  return { needsSpeaker, needsVolunteer, needsDriver, needsVanDriver };
+  return { needsVolunteer, needsDriver, needsVanDriver };
 }
 
 // Popup content for volunteer opportunities
 const VolunteerOpportunityPopup = ({ event, onEventClick }: { event: EventRequest; onEventClick?: (event: EventRequest) => void }) => {
-  const { needsSpeaker, needsVolunteer, needsDriver, needsVanDriver } = getEventNeeds(event);
+  const { needsVolunteer, needsDriver, needsVanDriver } = getEventNeeds(event);
 
   const getEventDate = (evt: EventRequest) => {
     const date = getEffectiveEventDate(evt);
@@ -111,9 +105,6 @@ const VolunteerOpportunityPopup = ({ event, onEventClick }: { event: EventReques
 
       {/* Role badges */}
       <div className="flex flex-wrap gap-2 mb-3">
-        {needsSpeaker && (
-          <Badge style={{ backgroundColor: COLORS.speaker }} className="text-white text-xs">Speaker Needed</Badge>
-        )}
         {needsVolunteer && (
           <Badge className="bg-green-600 text-white text-xs">Volunteer Needed</Badge>
         )}
@@ -193,9 +184,9 @@ function EventMarker({
   event: EventRequest;
   onEventClick?: (event: EventRequest) => void;
 }) {
-  const { needsSpeaker, needsVolunteer, needsDriver, needsVanDriver } = getEventNeeds(event);
+  const { needsVolunteer, needsDriver, needsVanDriver } = getEventNeeds(event);
 
-  // Priority-based marker color: van driver (amber) > driver (purple) > both S+V (teal) > speaker (cyan) > volunteer (green)
+  // Priority-based marker color: van driver (amber) > driver (purple) > volunteer (green)
   let markerColor: string;
   let markerLabel: string;
 
@@ -205,12 +196,6 @@ function EventMarker({
   } else if (needsDriver) {
     markerColor = COLORS.driver;
     markerLabel = 'D';
-  } else if (needsSpeaker && needsVolunteer) {
-    markerColor = COLORS.both;
-    markerLabel = 'S+V';
-  } else if (needsSpeaker) {
-    markerColor = COLORS.speaker;
-    markerLabel = 'S';
   } else {
     markerColor = COLORS.volunteer;
     markerLabel = 'V';
@@ -333,16 +318,8 @@ export function VolunteerOpportunitiesMap({ events, onEventClick }: VolunteerOpp
         <div className="font-semibold text-gray-700 mb-1.5">Map Legend</div>
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.speaker }} />
-            <span>Speaker Needed</span>
-          </div>
-          <div className="flex items-center gap-2">
             <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.volunteer }} />
             <span>Volunteer Needed</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.both }} />
-            <span>Speaker + Volunteer</span>
           </div>
           <div className="flex items-center gap-2">
             <span className="inline-block w-3 h-3 rounded-full" style={{ backgroundColor: COLORS.driver }} />

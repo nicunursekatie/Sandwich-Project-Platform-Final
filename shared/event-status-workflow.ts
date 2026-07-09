@@ -75,7 +75,7 @@ export const STATUS_DEFINITIONS: Record<EventStatus, {
   scheduled: {
     label: 'Scheduled',
     definition: 'Event is on our calendar and the majority of details are nailed down. All details should be finalized at least a few days before the event whenever possible.',
-    guidance: 'Assign drivers, speakers, and volunteers. Can move to Completed, Cancelled, or Rescheduled. If the event needs to be rescheduled but no new date is available yet, move to Standby.',
+    guidance: 'Assign drivers and volunteers. Can move to Completed, Cancelled, or Rescheduled. If the event needs to be rescheduled but no new date is available yet, move to Standby.',
   },
   rescheduled: {
     label: 'Rescheduled',

@@ -69,7 +69,6 @@ export default function VolunteerManagement() {
     availability: 'available',
     isActive: true,
     isDriver: false,
-    isSpeaker: false,
     experienceLevel: 'new',
     trainingCompleted: false,
   });
@@ -86,7 +85,6 @@ export default function VolunteerManagement() {
         availability: 'available',
         isActive: true,
         isDriver: false,
-        isSpeaker: false,
         experienceLevel: 'new',
         trainingCompleted: false,
       });
@@ -244,7 +242,6 @@ export default function VolunteerManagement() {
       availability: 'available',
       isActive: true,
       isDriver: false,
-      isSpeaker: false,
       experienceLevel: 'new',
       trainingCompleted: false,
     });
@@ -274,7 +271,6 @@ export default function VolunteerManagement() {
       availability: volunteer.availability || 'available',
       isActive: volunteer.isActive !== undefined ? volunteer.isActive : true,
       isDriver: volunteer.isDriver || false,
-      isSpeaker: volunteer.isSpeaker || false,
       experienceLevel: volunteer.experienceLevel || 'new',
       trainingCompleted: volunteer.trainingCompleted || false,
     });
@@ -322,7 +318,6 @@ export default function VolunteerManagement() {
       availability: formData.availability,
       isActive: formData.isActive,
       isDriver: formData.isDriver,
-      isSpeaker: formData.isSpeaker,
       experienceLevel: formData.experienceLevel,
       trainingCompleted: formData.trainingCompleted,
     };
@@ -537,11 +532,6 @@ export default function VolunteerManagement() {
                           Driver
                         </Badge>
                       )}
-                      {volunteer.isSpeaker && (
-                        <Badge variant="outline" className="border-purple-500 text-purple-600">
-                          Speaker
-                        </Badge>
-                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
@@ -736,20 +726,6 @@ export default function VolunteerManagement() {
                   />
                   <Label htmlFor="isDriver" className="text-sm font-normal">
                     Can serve as driver at events
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <input
-                    id="isSpeaker"
-                    type="checkbox"
-                    className="h-4 w-4 rounded border-gray-300"
-                    checked={formData.isSpeaker}
-                    onChange={(e) =>
-                      setFormData({ ...formData, isSpeaker: e.target.checked })
-                    }
-                  />
-                  <Label htmlFor="isSpeaker" className="text-sm font-normal">
-                    Can serve as speaker at events
                   </Label>
                 </div>
               </div>

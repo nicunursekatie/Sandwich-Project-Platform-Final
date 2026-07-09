@@ -3,7 +3,7 @@ import { Users, Calendar, MapPin, ArrowRight, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { formatDateShort } from '@/lib/date-utils';
-import { getVolunteerCount, getTotalDriverCount, getSpeakerCount } from '@/lib/assignment-utils';
+import { getVolunteerCount, getTotalDriverCount } from '@/lib/assignment-utils';
 import type { EventRequest } from '@shared/schema';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
@@ -31,20 +31,13 @@ interface VolunteerOpportunitiesSpotlightProps {
 }
 
 interface UnfilledNeeds {
-  needsSpeaker: boolean;
   needsVolunteer: boolean;
   needsDriver: boolean;
-  speakersNeeded: number;
   volunteersNeeded: number;
   driversNeeded: number;
 }
 
 const getUnfilledNeeds = (request: EventRequest): UnfilledNeeds => {
-  const speakersNeededCount = request.speakersNeeded ?? 0;
-  const speakersAssignedCount = getSpeakerCount(request);
-  const needsSpeaker = speakersNeededCount > speakersAssignedCount;
-  const speakersNeeded = Math.max(0, speakersNeededCount - speakersAssignedCount);
-
   const volunteersNeededCount = request.volunteersNeeded ?? 0;
   const volunteersAssignedCount = getVolunteerCount(request);
   const needsVolunteer = volunteersNeededCount > volunteersAssignedCount;
@@ -55,7 +48,7 @@ const getUnfilledNeeds = (request: EventRequest): UnfilledNeeds => {
   const needsDriver = driversNeededCount > driversAssignedCount;
   const driversNeeded = Math.max(0, driversNeededCount - driversAssignedCount);
 
-  return { needsSpeaker, needsVolunteer, needsDriver, speakersNeeded, volunteersNeeded, driversNeeded };
+  return { needsVolunteer, needsDriver, volunteersNeeded, driversNeeded };
 };
 
 // Color-code each opportunity by how soon it is, so understaffed events that
@@ -83,8 +76,8 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
   const opportunities = eventRequests
     .filter((request) => isScheduledOrRescheduled(request.status))
     .filter((request) => {
-      const { needsSpeaker, needsVolunteer, needsDriver } = getUnfilledNeeds(request);
-      return needsSpeaker || needsVolunteer || needsDriver;
+      const { needsVolunteer, needsDriver } = getUnfilledNeeds(request);
+      return needsVolunteer || needsDriver;
     })
     .sort((a, b) => {
       const dateA = getEffectiveEventDate(a);
@@ -195,11 +188,6 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    {needs.needsSpeaker && (
-                      <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-                        {needs.speakersNeeded} {needs.speakersNeeded === 1 ? 'Speaker' : 'Speakers'} Needed
-                      </Badge>
-                    )}
                     {needs.needsVolunteer && (
                       <Badge className="bg-green-100 text-green-800 hover:bg-green-200">
                         {needs.volunteersNeeded} {needs.volunteersNeeded === 1 ? 'Volunteer' : 'Volunteers'} Needed
@@ -220,8 +208,8 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
 
       <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
         <p className="text-sm text-gray-500">
-          {opportunities.length < eventRequests.filter(r => isScheduledOrRescheduled(r.status) && (getUnfilledNeeds(r).needsSpeaker || getUnfilledNeeds(r).needsVolunteer || getUnfilledNeeds(r).needsDriver)).length
-            ? `Showing ${opportunities.length} of ${eventRequests.filter(r => isScheduledOrRescheduled(r.status) && (getUnfilledNeeds(r).needsSpeaker || getUnfilledNeeds(r).needsVolunteer || getUnfilledNeeds(r).needsDriver)).length} opportunities`
+          {opportunities.length < eventRequests.filter(r => isScheduledOrRescheduled(r.status) && (getUnfilledNeeds(r).needsVolunteer || getUnfilledNeeds(r).needsDriver)).length
+            ? `Showing ${opportunities.length} of ${eventRequests.filter(r => isScheduledOrRescheduled(r.status) && (getUnfilledNeeds(r).needsVolunteer || getUnfilledNeeds(r).needsDriver)).length} opportunities`
             : `${opportunities.length} upcoming opportunity${opportunities.length !== 1 ? 'ies' : 'y'}`}
         </p>
         <button

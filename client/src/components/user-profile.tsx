@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useLocation } from 'wouter';
-import { User, Lock, Save, Bell, Smartphone, Monitor, Mail, Mic, Car, HandHeart, CheckCircle2 } from 'lucide-react';
+import { User, Lock, Save, Bell, Smartphone, Monitor, Mail, Car, HandHeart, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -628,15 +628,15 @@ export default function UserProfile() {
 
                 <Separator />
 
-                {/* Volunteer roles: what this person is willing to do. Speaker and
-                    driver also require coordinator approval (shown read-only). */}
+                {/* Volunteer roles: what this person is willing to do. Driver
+                    also requires coordinator approval (shown read-only). */}
                 <div className="space-y-4">
                   <div>
                     <h4 className="text-sm font-medium text-muted-foreground uppercase tracking-wide">Volunteer Roles</h4>
                     <p className="text-sm text-muted-foreground mt-1">
                       Tell us what you're up for. You'll see signup opportunities on the
-                      Volunteer Hub for the roles you choose. Speaker and driver roles also
-                      need coordinator approval before they appear.
+                      Volunteer Hub for the roles you choose. The driver role also
+                      needs coordinator approval before it appears.
                     </p>
                   </div>
 
@@ -654,30 +654,6 @@ export default function UserProfile() {
                             <p className="text-sm text-muted-foreground">
                               Help out at events — setup, assembly, distribution, and more.
                             </p>
-                          </div>
-                        </div>
-                        <FormControl>
-                          <Switch checked={field.value} onCheckedChange={field.onChange} />
-                        </FormControl>
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={profileForm.control}
-                    name="willingToSpeak"
-                    render={({ field }) => (
-                      <FormItem className="flex items-center justify-between p-4 rounded-lg border bg-card">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 rounded-lg bg-[#a31c41]/10">
-                            <Mic className="w-5 h-5 text-[#a31c41]" />
-                          </div>
-                          <div>
-                            <FormLabel className="text-base font-medium">Speaker</FormLabel>
-                            <p className="text-sm text-muted-foreground">
-                              Represent The Sandwich Project and speak to groups at events.
-                            </p>
-                            <ApprovalBadge approved={(userProfile as any)?.speakerApproved} />
                           </div>
                         </div>
                         <FormControl>

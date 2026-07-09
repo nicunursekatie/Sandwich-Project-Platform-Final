@@ -1,13 +1,13 @@
 /**
  * Volunteer Event Hub
  *
- * A user-friendly interface for volunteers and speakers to browse and sign up
+ * A user-friendly interface for volunteers to browse and sign up
  * for events based on their calendar availability and location convenience.
  *
  * Features:
  * - Calendar view for date-based browsing
  * - Map view for location-based browsing
- * - Filter by role needed (speaker, volunteer, driver)
+ * - Filter by role needed (volunteer, driver)
  * - Request to join events
  * - View own signups and status
  */
@@ -346,9 +346,9 @@ interface CoverageSummaryEvent {
 }
 
 // Custom marker icons using brand colors
-const createEventIcon = (needsSpeaker: boolean, needsVolunteer: boolean, needsDriver: boolean, isCompleted = false, needsVanDriver = false) => {
+const createEventIcon = (needsVolunteer: boolean, needsDriver: boolean, isCompleted = false, needsVanDriver = false) => {
   // Two-state: needs help (teal) vs filled/completed (gray). Specific role detail lives in the popup.
-  const needsHelp = !isCompleted && (needsSpeaker || needsVolunteer || needsDriver || needsVanDriver);
+  const needsHelp = !isCompleted && (needsVolunteer || needsDriver || needsVanDriver);
   const color = needsHelp ? '#007e8c' : '#9ca3af';
 
   const html = `
@@ -454,7 +454,7 @@ function EventCard({
   existingUnavailable,
 }: {
   event: AvailableEvent;
-  onSignup: (eventId: number, preselectedRole?: 'speaker' | 'general' | 'driver') => void;
+  onSignup: (eventId: number, preselectedRole?: 'general' | 'driver') => void;
   onAssign?: (eventId: number) => void;
   onUnavailable: (eventId: number) => void;
   onClearUnavailable: (eventId: number) => void;
@@ -470,7 +470,6 @@ function EventCard({
 
   // Build a simple list of roles needed
   const rolesNeeded: string[] = [];
-  if (event.speakersUnfilled > 0) rolesNeeded.push(`Speaker${event.speakersUnfilled > 1 ? 's' : ''}`);
   if (event.volunteersUnfilled > 0) rolesNeeded.push(`Volunteer${event.volunteersUnfilled > 1 ? 's' : ''}`);
   if (event.driversUnfilled > 0) rolesNeeded.push(`Driver${event.driversUnfilled > 1 ? 's' : ''}`);
   if (event.vanDriverNeeded) rolesNeeded.push('Van Driver');
@@ -514,12 +513,6 @@ function EventCard({
         {rolesNeeded.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium text-gray-700">Needed:</span>
-            {event.speakersUnfilled > 0 && (
-              <Badge variant="outline" className="bg-[#a31c41]/10 text-[#a31c41] border-[#a31c41]/30 gap-1">
-                <Mic className="w-3 h-3" />
-                Speaker{event.speakersUnfilled > 1 ? ` (${event.speakersUnfilled})` : ''}
-              </Badge>
-            )}
             {event.volunteersUnfilled > 0 && (
               <Badge variant="outline" className="bg-[#007e8c]/10 text-[#007e8c] border-[#007e8c]/30 gap-1">
                 <UserCheck className="w-3 h-3" />
@@ -558,7 +551,7 @@ function EventCard({
                   <Check className="w-3 h-3 text-white" />
                 </div>
                 <span className="text-sm font-medium text-[#236383]">
-                  Signed up as {existingSignup.role === 'general' ? 'Volunteer' : existingSignup.role === 'speaker' ? 'Speaker' : existingSignup.role === 'driver' ? 'Driver' : existingSignup.role}
+                  Signed up as {existingSignup.role === 'general' ? 'Volunteer' : existingSignup.role === 'driver' ? 'Driver' : existingSignup.role}
                 </span>
               </div>
               <StatusBadge status={existingSignup.status} />
@@ -613,20 +606,12 @@ function EventCard({
                   // generic Volunteer button if no specific roles are unfilled (extra help
                   // is still welcome). Each button pre-selects its role in the dialog.
                   const signupButtons: Array<{
-                    role: 'speaker' | 'general' | 'driver';
+                    role: 'general' | 'driver';
                     label: string;
                     icon: typeof Mic;
                     className: string;
                   }> = [];
 
-                  if (event.speakersUnfilled > 0) {
-                    signupButtons.push({
-                      role: 'speaker',
-                      label: `Sign Up to Speak${event.speakersUnfilled > 1 ? ` (${event.speakersUnfilled} needed)` : ''}`,
-                      icon: Mic,
-                      className: 'bg-[#a31c41] hover:bg-[#811535] text-white',
-                    });
-                  }
                   if (event.volunteersUnfilled > 0) {
                     signupButtons.push({
                       role: 'general',
@@ -716,7 +701,7 @@ function MapEventPopupContent({
   existingUnavailable,
 }: {
   event: AvailableEvent;
-  onSignupClick: (eventId: number, preselectedRole?: 'speaker' | 'general' | 'driver') => void;
+  onSignupClick: (eventId: number, preselectedRole?: 'general' | 'driver') => void;
   onUnavailableClick: (eventId: number) => void;
   onClearUnavailable: (eventId: number) => void;
   canSelfSignup: boolean;
@@ -773,7 +758,7 @@ function SignupDialog({
   onOpenChange: (open: boolean) => void;
   onSubmit: (roles: string[], notes: string) => void;
   isSubmitting: boolean;
-  preselectedRole?: 'speaker' | 'general' | 'driver';
+  preselectedRole?: 'general' | 'driver';
   userCapabilities?: UserRoleCapabilities | null;
 }) {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
@@ -783,7 +768,7 @@ function SignupDialog({
     if (!event) return [];
 
     const roles: Array<{
-      value: 'speaker' | 'general' | 'driver';
+      value: 'general' | 'driver';
       label: string;
       icon: typeof Mic;
       colorClass: string;
@@ -793,21 +778,6 @@ function SignupDialog({
     }> = [];
 
     const spotsLabel = (count: number) => (count === 1 ? '1 spot open' : `${count} spots open`);
-
-    // Always show speaker role if event has any speaker need or assigned speakers
-    if (event.speakersNeeded > 0 || event.speakersAssigned > 0) {
-      roles.push({
-        value: 'speaker',
-        label: event.speakersUnfilled > 0
-          ? `Speaker — ${spotsLabel(event.speakersUnfilled)}`
-          : 'Speaker — filled, extra help welcome',
-        icon: Mic,
-        colorClass: 'text-[#a31c41]',
-        borderClass: 'border-[#a31c41]/30',
-        bgClass: 'bg-[#a31c41]/5',
-        instructions: event.speakerInstructions,
-      });
-    }
 
     // Always show volunteer role
     roles.push({
@@ -840,7 +810,7 @@ function SignupDialog({
       });
     }
 
-    // Tailor to what THIS volunteer is willing/approved to do. Speaker and driver
+    // Tailor to what THIS volunteer is willing/approved to do. Driver roles
     // require coordinator approval; general is the baseline. Roles the event
     // offers but the user isn't eligible for are dropped here (single source of
     // truth in shared/event-role-eligibility.ts). The server enforces the same
@@ -886,7 +856,7 @@ function SignupDialog({
             {availableRoles.length === 0 ? (
               <div className="text-sm text-muted-foreground">
                 None of this event's roles match what you're set up for. Update the
-                roles you're willing to do in your profile — speaker and driver roles
+                roles you're willing to do in your profile — driver roles
                 also need coordinator approval before they show up here.
               </div>
             ) : (
@@ -993,7 +963,6 @@ function SignupDialog({
 
 // Friendly labels for the roles a volunteer signed up for.
 const SIGNUP_ROLE_LABELS: Record<string, string> = {
-  speaker: 'Speaker',
   general: 'General Volunteer',
   driver: 'Driver',
 };
@@ -1283,20 +1252,8 @@ function AssignOthersDialog({
   }, [assignableUsers, userSearch]);
 
   const availableRoles = useMemo(() => {
-    if (!event) return [] as Array<{ value: 'speaker' | 'general' | 'driver'; label: string; icon: typeof Mic; colorClass: string; borderClass: string; bgClass: string }>;
-    const roles: Array<{ value: 'speaker' | 'general' | 'driver'; label: string; icon: typeof Mic; colorClass: string; borderClass: string; bgClass: string }> = [];
-    if (event.speakersNeeded > 0 || event.speakersAssigned > 0) {
-      roles.push({
-        value: 'speaker',
-        label: event.speakersUnfilled > 0
-          ? `Speaker (${event.speakersUnfilled} needed)`
-          : `Speaker (${event.speakersAssigned}/${event.speakersNeeded} filled)`,
-        icon: Mic,
-        colorClass: 'text-[#a31c41]',
-        borderClass: 'border-[#a31c41]/30',
-        bgClass: 'bg-[#a31c41]/5',
-      });
-    }
+    if (!event) return [] as Array<{ value: 'general' | 'driver'; label: string; icon: typeof Mic; colorClass: string; borderClass: string; bgClass: string }>;
+    const roles: Array<{ value: 'general' | 'driver'; label: string; icon: typeof Mic; colorClass: string; borderClass: string; bgClass: string }> = [];
     roles.push({
       value: 'general',
       label: event.volunteersUnfilled > 0
@@ -1504,7 +1461,7 @@ function ManageSignupDialog({
   useEffect(() => {
     if (open && signup) {
       // Default new role to anything other than current role
-      const fallback = signup.role === 'general' ? 'speaker' : 'general';
+      const fallback = signup.role === 'general' ? 'driver' : 'general';
       setNewRole(fallback);
       setReason('');
     }
@@ -1540,9 +1497,6 @@ function ManageSignupDialog({
                 <SelectContent>
                   {signup.role !== 'general' && (
                     <SelectItem value="general">General Volunteer</SelectItem>
-                  )}
-                  {signup.role !== 'speaker' && (
-                    <SelectItem value="speaker">Speaker</SelectItem>
                   )}
                   {signup.role !== 'driver' && !vanNeeded && (
                     <SelectItem value="driver">Driver</SelectItem>
@@ -2030,7 +1984,6 @@ export default function VolunteerEventHub() {
           if (!searchableText.includes(normalizedSearch)) return false;
         }
 
-        if (roleFilter === 'speaker' && event.speakersUnfilled === 0) return false;
         if (roleFilter === 'volunteer' && event.volunteersUnfilled === 0) return false;
         if (roleFilter === 'driver') {
           if (event.driversUnfilled === 0) return false;
@@ -2043,7 +1996,6 @@ export default function VolunteerEventHub() {
         if (showOnlyMyRoles) {
           const matchesMyRole =
             (myEligibleRoles.includes('general') && event.volunteersUnfilled > 0) ||
-            (myEligibleRoles.includes('speaker') && event.speakersUnfilled > 0) ||
             (myEligibleRoles.includes('driver') &&
               event.driversUnfilled > 0 &&
               !event.selfTransport &&
@@ -2074,15 +2026,13 @@ export default function VolunteerEventHub() {
     const upcomingEvents = events.filter(isUpcomingHubEvent);
     const totalEvents = upcomingEvents.length;
     const eventsNeedingHelp = upcomingEvents.filter((e) => e.hasUnfilledNeeds).length;
-    const totalSpeakerOpenings = upcomingEvents.reduce((sum, e) => sum + e.speakersUnfilled, 0);
     const totalVolunteerOpenings = upcomingEvents.reduce((sum, e) => sum + e.volunteersUnfilled, 0);
     const totalDriverOpenings = upcomingEvents.reduce((sum, e) => sum + e.driversUnfilled, 0);
-    const totalOpenings = totalSpeakerOpenings + totalVolunteerOpenings + totalDriverOpenings;
+    const totalOpenings = totalVolunteerOpenings + totalDriverOpenings;
 
     return {
       totalEvents,
       eventsNeedingHelp,
-      totalSpeakerOpenings,
       totalVolunteerOpenings,
       totalDriverOpenings,
       totalOpenings,
@@ -2105,9 +2055,6 @@ export default function VolunteerEventHub() {
   const getRoleOpenings = (event: AvailableEvent) => {
     const roles: Array<{ singular: string; plural: string; count: number; color: string; bg: string; Icon: typeof Mic }> = [];
 
-    if (event.speakersUnfilled > 0) {
-      roles.push({ singular: 'speaker', plural: 'speakers', count: event.speakersUnfilled, color: '#A31C41', bg: '#A31C4114', Icon: Mic });
-    }
     if (event.volunteersUnfilled > 0) {
       roles.push({ singular: 'volunteer', plural: 'volunteers', count: event.volunteersUnfilled, color: '#007E8C', bg: '#007E8C14', Icon: UserCheck });
     }
@@ -2129,7 +2076,6 @@ export default function VolunteerEventHub() {
   const getTotalOpeningsForEvents = (dayEvents: AvailableEvent[]) => (
     dayEvents.reduce((sum, event) => (
       sum +
-      Math.max(0, event.speakersUnfilled) +
       Math.max(0, event.volunteersUnfilled) +
       Math.max(0, event.driversUnfilled) +
       (event.vanDriverNeeded ? 1 : 0)
@@ -2226,9 +2172,9 @@ export default function VolunteerEventHub() {
     );
   };
 
-  const [preselectedSignupRole, setPreselectedSignupRole] = useState<'speaker' | 'general' | 'driver' | undefined>(undefined);
+  const [preselectedSignupRole, setPreselectedSignupRole] = useState<'general' | 'driver' | undefined>(undefined);
 
-  const handleSignupClick = (eventId: number, preselectedRole?: 'speaker' | 'general' | 'driver') => {
+  const handleSignupClick = (eventId: number, preselectedRole?: 'general' | 'driver') => {
     const event = events.find(e => e.id === eventId);
     if (event) {
       setSelectedEvent(event);
@@ -2450,21 +2396,15 @@ export default function VolunteerEventHub() {
                   </p>
                 </div>
 
-                {/* Role-type breakdown — three supporting tiles so volunteers
+                {/* Role-type breakdown — two supporting tiles so volunteers
                     can immediately see which slot type matches them. The
                     "General Volunteer" bucket is now surfaced (it was
                     previously hidden inside Total Openings). */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
                   <div className="bg-white/20 rounded-lg p-3 border border-white/20 flex items-baseline gap-2">
                     <span className="text-2xl font-bold">{summaryMetrics.totalDriverOpenings}</span>
                     <span className="text-sm sm:text-base font-semibold text-white">
                       Driver opening{summaryMetrics.totalDriverOpenings === 1 ? '' : 's'}
-                    </span>
-                  </div>
-                  <div className="bg-white/20 rounded-lg p-3 border border-white/20 flex items-baseline gap-2">
-                    <span className="text-2xl font-bold">{summaryMetrics.totalSpeakerOpenings}</span>
-                    <span className="text-sm sm:text-base font-semibold text-white">
-                      Speaker opening{summaryMetrics.totalSpeakerOpenings === 1 ? '' : 's'}
                     </span>
                   </div>
                   <div className="bg-white/20 rounded-lg p-3 border border-white/20 flex items-baseline gap-2">
@@ -2501,7 +2441,6 @@ export default function VolunteerEventHub() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Roles</SelectItem>
-                    <SelectItem value="speaker">Speakers Needed</SelectItem>
                     <SelectItem value="volunteer">Volunteers Needed</SelectItem>
                     <SelectItem value="driver">Drivers Needed</SelectItem>
                   </SelectContent>
@@ -2958,7 +2897,7 @@ export default function VolunteerEventHub() {
                               {[
                                 { n: 1, title: 'Select a day', body: 'Click any day with a number on it to see what\'s happening.' },
                                 { n: 2, title: 'Review event details', body: 'Check the location, time, and which roles are still open.' },
-                                { n: 3, title: 'Choose a role', body: 'Driver, speaker, or general volunteer — pick what fits you.' },
+                                { n: 3, title: 'Choose a role', body: 'Driver or general volunteer — pick what fits you.' },
                                 { n: 4, title: 'Submit your signup', body: 'Confirm and you\'re done. We\'ll send a reminder before the event.' },
                               ].map((step) => (
                                 <li key={step.n} className="flex items-start gap-3">
@@ -3225,7 +3164,7 @@ export default function VolunteerEventHub() {
                 {/* Date range info */}
                 <div className="px-4 py-2 border-b bg-gray-50 text-sm text-gray-600">
                   <Calendar className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5 text-[#007e8c]" />
-                  Showing <span className="font-semibold text-[#007e8c]">{filteredEvents.length}</span> scheduled events from today onward that need volunteers, speakers, or drivers
+                  Showing <span className="font-semibold text-[#007e8c]">{filteredEvents.length}</span> scheduled events from today onward that need volunteers or drivers
                 </div>
 
                 <div className="h-[520px] overflow-hidden rounded-lg sm:h-[600px]">
@@ -3260,7 +3199,6 @@ export default function VolunteerEventHub() {
                           key={event.id}
                           position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
                           icon={createEventIcon(
-                            event.speakersUnfilled > 0,
                             event.volunteersUnfilled > 0,
                             event.driversUnfilled > 0,
                             event.status === 'completed',
@@ -3395,7 +3333,6 @@ export default function VolunteerEventHub() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Roles</SelectItem>
-                      <SelectItem value="speaker">Speaker</SelectItem>
                       <SelectItem value="general">General Volunteer</SelectItem>
                       <SelectItem value="driver">Driver</SelectItem>
                     </SelectContent>
