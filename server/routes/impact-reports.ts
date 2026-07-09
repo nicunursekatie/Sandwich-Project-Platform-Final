@@ -419,7 +419,7 @@ impactReportsRouter.post('/analyze-sheet', async (req: AuthenticatedRequest, res
     });
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-5',
       messages: [
         {
           role: 'system',
@@ -462,7 +462,7 @@ Please analyze and suggest column mappings.`,
         },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.3,
+      reasoning_effort: 'minimal',
     });
 
     const responseContent = completion.choices[0].message.content;
@@ -1523,10 +1523,10 @@ ${dataSummary}`;
 
     const client = getOpenAIClient();
     const completion = await client.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-5',
       messages,
-      temperature: 0.7,
-      max_tokens: 1500,
+      max_completion_tokens: 4000,
+      reasoning_effort: 'minimal',
     });
 
     const aiResponse = completion.choices[0].message.content || 'I apologize, but I was unable to generate a response.';
