@@ -113,11 +113,18 @@ interface OperationalOverviewProps {
 
 /**
  * Personalized snapshot rendered in place of the generic overview when the
- * current user has TSP-contact assignments. Layout priority (top → bottom):
- *   1. New requests assigned to me (highest urgency — needs first contact)
+ * current user has TSP-contact assignments. Layout (top → bottom):
+ *   1. New requests assigned to me (first contact owed)
  *   2. In-process events with no contact in the last 7 days (stale)
- *   3. Full assignment breakdown by status (expandable detail lists)
- *   4. List of every assigned event with status + last-contact freshness
+ *   3. Events within 7 days missing time, location, or sandwich info (urgent)
+ *   4. Assignment breakdown by status (counts; expandable detail lists)
+ *   5. The rest of the user's events — only those not already surfaced in a
+ *      box above (hidden when nothing is left over)
+ *
+ * Each event's CARD appears in exactly one place: the first (topmost) of
+ * boxes 1–3 it qualifies for, otherwise the leftover list (5). Boxes are
+ * de-duplicated against each other so a single event is never shown as a card
+ * more than once; see the dedup memo in MyAssignmentsView for the rule.
  */
 type AssignmentStatusKey = 'new' | 'in_process' | 'scheduled' | 'rescheduled';
 
