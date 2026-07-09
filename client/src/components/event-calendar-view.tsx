@@ -383,12 +383,14 @@ export function EventCalendarView({
       filtered = filtered.filter((event) => event.status !== 'cancelled');
     }
 
-    // If filterByNeeds is true, only show events that need volunteers
+    // If filterByNeeds is true, only show events that still need drivers or
+    // volunteers (speaker role retired). Reuses getUnfilledNeeds so the filter
+    // matches the staffing badges shown on the calendar and stays self-transport
+    // aware.
     if (filterByNeeds) {
       filtered = filtered.filter((event) => {
-        const needsVolunteer = !event.volunteerId || event.volunteerId === null || event.volunteerId === '' ||
-          (event.volunteersNeeded && event.volunteersNeeded > 0);
-        return needsVolunteer;
+        const needs = getUnfilledNeeds(event);
+        return needs.needsVolunteer || needs.needsDriver;
       });
     }
 

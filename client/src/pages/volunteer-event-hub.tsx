@@ -551,7 +551,7 @@ function EventCard({
                   <Check className="w-3 h-3 text-white" />
                 </div>
                 <span className="text-sm font-medium text-[#236383]">
-                  Signed up as {existingSignup.role === 'general' ? 'Volunteer' : existingSignup.role === 'driver' ? 'Driver' : existingSignup.role}
+                  Signed up as {existingSignup.role === 'general' ? 'Volunteer' : signupRoleLabel(existingSignup.role)}
                 </span>
               </div>
               <StatusBadge status={existingSignup.status} />
@@ -962,9 +962,12 @@ function SignupDialog({
 }
 
 // Friendly labels for the roles a volunteer signed up for.
+// 'speaker' is retired for new signups but kept here so legacy/historical
+// speaker signups still render a friendly label instead of the raw string.
 const SIGNUP_ROLE_LABELS: Record<string, string> = {
   general: 'General Volunteer',
   driver: 'Driver',
+  speaker: 'Speaker',
 };
 
 function signupRoleLabel(role: string): string {
@@ -1460,9 +1463,17 @@ function ManageSignupDialog({
 
   useEffect(() => {
     if (open && signup) {
-      // Default new role to anything other than current role
-      const fallback = signup.role === 'general' ? 'driver' : 'general';
-      setNewRole(fallback);
+      // Default to the first role that's actually selectable — i.e. not the
+      // current role, and not the Driver option when it's hidden because the
+      // event needs a van driver (those go through the van-driver flow). This
+      // prevents the Select from showing an unavailable value that Save would
+      // still submit. Empty string when there's no valid alternative, which
+      // keeps the Save button disabled.
+      const vanDriverNeeded = !!signup.event?.vanDriverNeeded;
+      const available: string[] = [];
+      if (signup.role !== 'general') available.push('general');
+      if (signup.role !== 'driver' && !vanDriverNeeded) available.push('driver');
+      setNewRole(available[0] ?? '');
       setReason('');
     }
   }, [open, signup?.id, signup?.role, signup]);
