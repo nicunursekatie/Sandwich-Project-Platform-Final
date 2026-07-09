@@ -94,7 +94,6 @@ export function buildEventDataForServer(
     driversNeeded: formData.selfTransport ? 0 : (parseInt(formData.driversNeeded?.toString() || '0') || 0),
     selfTransport: formData.selfTransport || false,
     vanDriverNeeded: formData.selfTransport ? false : ((formData.vanDriverNeeded || false) || formData.isDhlVan),
-    speakersNeeded: parseInt(formData.speakersNeeded?.toString() || '0') || 0,
     volunteersNeeded: parseInt(formData.volunteersNeeded?.toString() || '0') || 0,
     estimatedAttendance: parseInt(formData.estimatedAttendance?.toString() || '0') || null,
 
@@ -109,7 +108,6 @@ export function buildEventDataForServer(
     nextAction: formData.nextAction || null,
     driverInstructions: formData.driverInstructions || null,
     volunteerInstructions: formData.volunteerInstructions || null,
-    speakerInstructions: formData.speakerInstructions || null,
 
     // Manual entry
     manualEntrySource: formData.manualEntrySource || null,
@@ -133,8 +131,6 @@ export function buildEventDataForServer(
 
     // Misc
     previouslyHosted: formData.previouslyHosted || null,
-    speakerAudienceType: formData.speakerAudienceType || null,
-    speakerDuration: formData.speakerDuration || null,
     deliveryTimeWindow: formData.deliveryTimeWindow || null,
     deliveryParkingAccess: formData.deliveryParkingAccess || null,
 
@@ -286,30 +282,4 @@ export function determineActualSandwichMode(actualSandwichTypes: any): 'total' |
   const parsed = actualSandwichTypes ?
     (typeof actualSandwichTypes === 'string' ? JSON.parse(actualSandwichTypes) : actualSandwichTypes) : [];
   return Array.isArray(parsed) && parsed.length > 0 ? 'types' : 'total';
-}
-
-/**
- * Calculate total relevant sandwiches for speaker warning check.
- * Returns the count of sandwiches that should trigger a speaker recommendation.
- */
-export function calculateRelevantSandwichCount(
-  formData: EventFormData,
-  sandwichMode: 'total' | 'range' | 'types'
-): number {
-  if (sandwichMode === 'types' && formData.sandwichTypes?.length > 0) {
-    return formData.sandwichTypes
-      .filter(item => {
-        const typeLower = item.type.toLowerCase();
-        return typeLower === 'deli' || typeLower.includes('deli') ||
-               typeLower === 'turkey' || typeLower === 'deli_turkey' ||
-               typeLower === 'unknown';
-      })
-      .reduce((sum, item) => sum + item.quantity, 0);
-  } else if (sandwichMode === 'total' && formData.totalSandwichCount > 500) {
-    return formData.totalSandwichCount;
-  } else if (sandwichMode === 'range') {
-    const maxCount = formData.estimatedSandwichCountMax || formData.estimatedSandwichCountMin || 0;
-    return maxCount > 500 ? maxCount : 0;
-  }
-  return 0;
 }

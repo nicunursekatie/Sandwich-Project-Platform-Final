@@ -1,11 +1,11 @@
 /**
- * ResourceRequirementsSection - Driver, Speaker, and Volunteer Requirements
+ * ResourceRequirementsSection - Driver and Volunteer Requirements
  *
  * Section for specifying resource needs including:
  * - Self-transport option
  * - Drivers needed (with van driver selection)
- * - Speakers needed (with audience/duration details)
  * - Volunteers needed
+ * (The speaker role has been retired.)
  *
  * Extracted from EventSchedulingForm.tsx for better organization.
  */
@@ -160,48 +160,10 @@ export const ResourceRequirementsSection: React.FC<ResourceRequirementsSectionPr
           </div>
         </div>
 
-        {/* Speakers and Volunteers */}
+        {/* Volunteers (speaker role retired) */}
         <div className="space-y-3">
           <Label>Additional Resources</Label>
           <div className="space-y-2">
-            <div>
-              <Label htmlFor="speakersNeeded">How many speakers needed?</Label>
-              <Input
-                id="speakersNeeded"
-                type="number"
-                value={formData.speakersNeeded}
-                onChange={(e) => setFormData(prev => ({ ...prev, speakersNeeded: parseInt(e.target.value) || 0 }))}
-                min="0"
-              />
-            </div>
-
-            {/* Speaker Details - Only show when speakers are needed */}
-            {formData.speakersNeeded > 0 && (
-              <div className="mt-3 p-3 bg-purple-50 border border-purple-200 rounded-lg space-y-2">
-                <h4 className="font-medium text-purple-900">Speaker Details</h4>
-                <div>
-                  <Label htmlFor="speakerAudienceType">Audience Type</Label>
-                  <Input
-                    id="speakerAudienceType"
-                    type="text"
-                    value={formData.speakerAudienceType || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, speakerAudienceType: e.target.value }))}
-                    placeholder="e.g., Elementary School, Adults, Mixed"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="speakerDuration">Duration</Label>
-                  <Input
-                    id="speakerDuration"
-                    type="text"
-                    value={formData.speakerDuration || ''}
-                    onChange={(e) => setFormData(prev => ({ ...prev, speakerDuration: e.target.value }))}
-                    placeholder="e.g., 30 minutes, 1 hour"
-                  />
-                </div>
-              </div>
-            )}
-
             <div>
               <Label htmlFor="volunteersNeeded">How many volunteers needed?</Label>
               <Input

@@ -47,7 +47,6 @@ import {
   StatusToolkitSection,
   TspContactSection,
   DateChangeDialog,
-  SpeakerWarningDialog,
   VanConflictDialog,
   StandbyFollowUpDialog,
   DeleteConfirmDialog,
@@ -59,7 +58,6 @@ import {
   getDroppedServerFields,
   determineSandwichMode,
   determineActualSandwichMode,
-  calculateRelevantSandwichCount,
 } from './form-utils';
 
 // ────────────────────────────────────────────────────────────────────────
@@ -172,7 +170,6 @@ function buildFormDataFromEventRequest(
     selfTransport: eventRequest?.selfTransport || false,
     vanDriverNeeded: eventRequest?.vanDriverNeeded || false,
     vanNeededLikely: (eventRequest as any)?.vanNeededLikely || false,
-    speakersNeeded: eventRequest?.speakersNeeded || 0,
     volunteersNeeded: eventRequest?.volunteersNeeded || 0,
     tspContact: eventRequest?.tspContact || '',
     customTspContact: (eventRequest as any)?.customTspContact || '',
@@ -182,7 +179,6 @@ function buildFormDataFromEventRequest(
     nextAction: (eventRequest as any)?.nextAction || '',
     driverInstructions: (eventRequest as any)?.driverInstructions || '',
     volunteerInstructions: (eventRequest as any)?.volunteerInstructions || '',
-    speakerInstructions: (eventRequest as any)?.speakerInstructions || '',
     totalSandwichCount: totalCount,
     estimatedSandwichCountMin: (eventRequest as any)?.estimatedSandwichCountMin || 0,
     estimatedSandwichCountMax: (eventRequest as any)?.estimatedSandwichCountMax || 0,
@@ -206,8 +202,6 @@ function buildFormDataFromEventRequest(
     backupContactPhone: (eventRequest as any)?.backupContactPhone || '',
     backupContactRole: (eventRequest as any)?.backupContactRole || '',
     previouslyHosted: (eventRequest as any)?.previouslyHosted || 'i_dont_know',
-    speakerAudienceType: (eventRequest as any)?.speakerAudienceType || '',
-    speakerDuration: (eventRequest as any)?.speakerDuration || '',
     deliveryTimeWindow: (eventRequest as any)?.deliveryTimeWindow || '',
     deliveryParkingAccess: (eventRequest as any)?.deliveryParkingAccess || '',
     assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
@@ -288,10 +282,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     overnightHoldingLocation: '', overnightPickupTime: '',
     sandwichTypes: [] as Array<{type: string, quantity: number}>,
     hasRefrigeration: '', driversNeeded: 0, selfTransport: false, vanDriverNeeded: false, vanNeededLikely: false,
-    assignedVanDriverId: '', isDhlVan: false, speakersNeeded: 0, volunteersNeeded: 0,
+    assignedVanDriverId: '', isDhlVan: false, volunteersNeeded: 0,
     tspContact: '', customTspContact: '', message: '', schedulingNotes: '',
     planningNotes: '', nextAction: '', driverInstructions: '', volunteerInstructions: '',
-    speakerInstructions: '', totalSandwichCount: 0, estimatedSandwichCountMin: 0,
+    totalSandwichCount: 0, estimatedSandwichCountMin: 0,
     estimatedSandwichCountMax: 0, rangeSandwichType: '', volunteerCount: 0,
     estimatedAttendance: 0, adultCount: 0, childrenCount: 0, kidsAgeRange: '',
     status: 'new', toolkitSent: false, toolkitSentDate: '', toolkitStatus: 'not_sent',
@@ -307,7 +301,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     department: '', organizationCategory: '', schoolClassification: '',
     backupContactFirstName: '', backupContactLastName: '', backupContactEmail: '',
     backupContactPhone: '', backupContactRole: '', previouslyHosted: 'i_dont_know',
-    speakerAudienceType: '', speakerDuration: '', deliveryTimeWindow: '',
+    deliveryTimeWindow: '',
     deliveryParkingAccess: '', isCorporatePriority: false, standbyExpectedDate: '',
     dateFlexible: null as boolean | null,
   });
@@ -336,7 +330,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     conflictingEvents: Array<{ id: number; name: string; time?: string }>;
     acknowledged: boolean;
   } | null>(null);
-  const [showSpeakerWarningDialog, setShowSpeakerWarningDialog] = useState(false);
   const [vanConflictChecked, setVanConflictChecked] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showStandbyFollowUpDialog, setShowStandbyFollowUpDialog] = useState(false);
@@ -1193,7 +1186,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     schedule: !!formData.eventDate,
     delivery: !!(formData.eventAddress || (formData.assignedRecipientIds?.length > 0)),
     sandwiches: !!(formData.totalSandwichCount > 0 || formData.sandwichTypes?.length > 0 || formData.estimatedSandwichCountMin > 0),
-    resources: !!(formData.driversNeeded > 0 || formData.speakersNeeded > 0 || formData.volunteersNeeded > 0 || formData.selfTransport),
+    resources: !!(formData.driversNeeded > 0 || formData.volunteersNeeded > 0 || formData.selfTransport),
     notes: !!(formData.schedulingNotes || formData.planningNotes || formData.nextAction),
   };
   const completedSections = Object.values(sectionStatus).filter(Boolean).length;
@@ -1210,7 +1203,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // them rely on the parent closing.
   const anyNestedDialogOpen =
     showDateConfirmation ||
-    showSpeakerWarningDialog ||
     showVanConflictDialog ||
     showStandbyFollowUpDialog ||
     showDeleteConfirmation;
@@ -1599,13 +1591,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         onOpenChange={setShowDateConfirmation}
         onConfirm={handleDateChangeConfirmation}
         onCancel={() => setShowDateConfirmation(false)}
-      />
-
-      <SpeakerWarningDialog
-        open={showSpeakerWarningDialog}
-        onOpenChange={(open) => { if (!open) { setShowSpeakerWarningDialog(false); setIsSubmitting(false); } }}
-        onCancel={() => { setShowSpeakerWarningDialog(false); setIsSubmitting(false); }}
-        onContinue={async () => { setShowSpeakerWarningDialog(false); await performSubmit(true); }}
       />
 
       <VanConflictDialog

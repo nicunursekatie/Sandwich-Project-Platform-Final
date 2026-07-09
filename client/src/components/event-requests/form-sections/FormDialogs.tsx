@@ -45,35 +45,6 @@ export const DateChangeDialog: React.FC<{
   </AlertDialog>
 );
 
-/** Speaker Warning Dialog */
-export const SpeakerWarningDialog: React.FC<{
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onCancel: () => void;
-  onContinue: () => void;
-}> = ({ open, onOpenChange, onCancel, onContinue }) => (
-  <AlertDialog open={open} onOpenChange={onOpenChange}>
-    <AlertDialogContent className="max-w-md">
-      <AlertDialogHeader>
-        <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
-          Speaker Recommendation
-        </AlertDialogTitle>
-        <AlertDialogDescription className="space-y-3">
-          <p>
-            We usually send a speaker to events making more than 500 sandwiches. Are you sure this event doesn't need one?
-          </p>
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
-        <AlertDialogAction onClick={onContinue} className="bg-amber-600 hover:bg-amber-700">
-          Continue Without Speaker
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
-);
-
 /** Van Conflict Warning Dialog */
 export const VanConflictDialog: React.FC<{
   open: boolean;
