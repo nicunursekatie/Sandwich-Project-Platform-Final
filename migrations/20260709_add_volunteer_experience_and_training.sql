@@ -25,8 +25,14 @@ ALTER TABLE volunteers
 -- constraint if it isn't already present (ADD CONSTRAINT has no IF NOT EXISTS).
 DO $$
 BEGIN
+  -- Scope the existence check to a CHECK constraint on the volunteers table
+  -- specifically, so a same-named constraint on a different table can't cause
+  -- this to skip and leave experience_level unconstrained.
   IF NOT EXISTS (
-    SELECT 1 FROM pg_constraint WHERE conname = 'volunteers_experience_level_check'
+    SELECT 1 FROM pg_constraint
+    WHERE conname = 'volunteers_experience_level_check'
+      AND conrelid = 'volunteers'::regclass
+      AND contype = 'c'
   ) THEN
     ALTER TABLE volunteers
       ADD CONSTRAINT volunteers_experience_level_check
