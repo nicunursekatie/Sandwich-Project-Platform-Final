@@ -344,11 +344,18 @@ function AssignmentEventRow({
 type AssignmentActionSectionId = 'new-requests' | 'stale-followup' | 'urgent-details';
 
 function AssignmentActionBar({
-  my,
+  newRequests,
+  inProcessStale,
+  urgentDetailEvents,
   onOpenEvent,
   onScrollToSection,
 }: {
-  my: MyAssignments;
+  // These are the de-duplicated lists actually rendered in the boxes below, so
+  // the action bar indexes into exactly what the user sees (no phantom "make
+  // first contact" action for an event that's shown only in the urgent box).
+  newRequests: MyAssignmentItem[];
+  inProcessStale: MyAssignmentItem[];
+  urgentDetailEvents: MyAssignmentItem[];
   onOpenEvent: (event: MyAssignmentItem) => void;
   onScrollToSection: (sectionId: AssignmentActionSectionId) => void;
 }) {
@@ -361,17 +368,17 @@ function AssignmentActionBar({
       onClick: () => void;
     }> = [];
 
-    if (my.newRequestsCount > 0) {
-      const top = my.newRequests[0];
+    if (newRequests.length > 0) {
+      const top = newRequests[0];
       const days = top?.daysSinceSubmitted;
       const ageHint =
         days != null && days > 0 ? ` (oldest: ${days} day${days === 1 ? '' : 's'})` : '';
       items.push({
         id: 'new-requests',
         label:
-          my.newRequestsCount === 1
+          newRequests.length === 1
             ? `Make first contact — ${top?.organizationName || 'new request'}${ageHint}`
-            : `Make first contact on ${my.newRequestsCount} new requests${ageHint}`,
+            : `Make first contact on ${newRequests.length} new requests${ageHint}`,
         className: 'bg-[#FBAD3F] text-[#3d2800] hover:bg-[#E8960C] border-[#E8960C]',
         icon: <Sparkles className="w-3.5 h-3.5 shrink-0" />,
         onClick: () => {
@@ -384,14 +391,14 @@ function AssignmentActionBar({
       });
     }
 
-    if (my.inProcessStaleCount > 0) {
-      const top = my.inProcessStale[0];
+    if (inProcessStale.length > 0) {
+      const top = inProcessStale[0];
       items.push({
         id: 'stale-followup',
         label:
-          my.inProcessStaleCount === 1
+          inProcessStale.length === 1
             ? `Follow up — no contact in 7+ days (${top?.organizationName || 'in process'})`
-            : `Follow up on ${my.inProcessStaleCount} events with no contact in 7+ days`,
+            : `Follow up on ${inProcessStale.length} events with no contact in 7+ days`,
         className: 'bg-amber-500 text-white hover:bg-amber-600 border-amber-600',
         icon: <AlertTriangle className="w-3.5 h-3.5 shrink-0" />,
         onClick: () => {
@@ -404,9 +411,9 @@ function AssignmentActionBar({
       });
     }
 
-    const urgentCount = my.urgentDetailGapsCount ?? 0;
+    const urgentCount = urgentDetailEvents.length;
     if (urgentCount > 0) {
-      const top = my.urgentDetailEvents[0];
+      const top = urgentDetailEvents[0];
       const when =
         top?.daysUntilEvent === 0
           ? 'today'
@@ -437,7 +444,7 @@ function AssignmentActionBar({
     }
 
     return items;
-  }, [my, onOpenEvent, onScrollToSection]);
+  }, [newRequests, inProcessStale, urgentDetailEvents, onOpenEvent, onScrollToSection]);
 
   if (actions.length === 0) return null;
 
@@ -521,6 +528,26 @@ function MyAssignmentsView({
     onNavigate('event-requests');
   };
 
+  // Open the My Assignments tab in Event Requests, optionally pre-filtered to
+  // a set of statuses. Used by the "+ N more" overflow hints so events beyond
+  // the first few rendered in a priority box are still reachable rather than
+  // silently dropped (they're excluded from the catch-all list below).
+  const openMyAssignments = (statuses?: AssignmentStatusKey[]) => {
+    try {
+      sessionStorage.setItem(
+        'eventRequests.pendingFilter',
+        JSON.stringify({
+          tab: 'my_assignments',
+          myAssignmentsStatuses: statuses,
+        }),
+      );
+    } catch {
+      // ignore unavailable sessionStorage
+    }
+    window.history.pushState({}, '', '/dashboard?section=event-requests&tab=my_assignments');
+    onNavigate('event-requests');
+  };
+
   const toggleStatusExpand = (key: AssignmentStatusKey) => {
     setExpandedStatus((prev) => (prev === key ? null : key));
   };
@@ -538,28 +565,39 @@ function MyAssignmentsView({
   // every event is also in `allMyEvents`). Rendering each bucket verbatim made
   // the dashboard show a single event as a card three or four times over.
   //
-  // Rule: each event's card surfaces in exactly one "needs attention" box,
-  // chosen by urgency — urgent details (red) > new request (orange) > stale
-  // follow-up (amber) — and the catch-all list below shows only what's left.
-  // The header count, "Your next steps" summary, and status-count tiles stay
-  // as-is: those are aggregate/summary views, not repeated event cards.
-  const { newRequestsToShow, inProcessStaleToShow, otherEvents, actionableCount } = useMemo(() => {
-    const urgentIds = new Set((my.urgentDetailEvents ?? []).map((e) => e.id));
-    // `new` and `in_process` are status-disjoint, so these only ever overlap
-    // with the urgent bucket, never with each other.
-    const newList = my.newRequests.filter((e) => !urgentIds.has(e.id));
-    const staleList = my.inProcessStale.filter((e) => !urgentIds.has(e.id));
-
-    const surfaced = new Set<number>([
-      ...urgentIds,
+  // Rule: each event's card appears in the first (topmost) "needs attention"
+  // box it qualifies for, reading down the page — new requests, then stale
+  // follow-ups, then urgent details — and the catch-all list at the bottom
+  // shows only what's left. New and in-process are status-disjoint, so only
+  // the urgent-details box overlaps the others; an urgent event already shown
+  // above keeps its urgent-gap badges on the card, so no signal is lost.
+  //
+  // The header count, "Your next steps" summary, and status-count tiles are
+  // aggregate/summary views (not repeated event cards) and follow this same
+  // de-duplicated set so they stay consistent with the boxes they index into.
+  const {
+    newRequestsToShow,
+    inProcessStaleToShow,
+    urgentDetailsToShow,
+    otherEvents,
+    actionableCount,
+  } = useMemo(() => {
+    const newList = my.newRequests;
+    const staleList = my.inProcessStale;
+    const claimed = new Set<number>([
       ...newList.map((e) => e.id),
       ...staleList.map((e) => e.id),
     ]);
+    // Urgent details only surfaces events not already shown as new/stale above.
+    const urgentList = (my.urgentDetailEvents ?? []).filter((e) => !claimed.has(e.id));
+
+    const surfaced = new Set<number>([...claimed, ...urgentList.map((e) => e.id)]);
     const others = my.allMyEvents.filter((e) => !surfaced.has(e.id));
 
     return {
       newRequestsToShow: newList,
       inProcessStaleToShow: staleList,
+      urgentDetailsToShow: urgentList,
       otherEvents: others,
       // Distinct events that need action across all "needs attention" boxes.
       actionableCount: surfaced.size,
@@ -591,15 +629,17 @@ function MyAssignmentsView({
             so we hide it in that case to avoid showing the same event twice. */}
         {actionableCount > 1 && (
           <AssignmentActionBar
-            my={my}
+            newRequests={newRequestsToShow}
+            inProcessStale={inProcessStaleToShow}
+            urgentDetailEvents={urgentDetailsToShow}
             onOpenEvent={openAssignmentEvent}
             onScrollToSection={scrollToActionSection}
           />
         )}
 
-        {/* PRIORITY 1: New requests assigned to me — first contact owed.
-            Excludes any that are also surfaced in the urgent-details box below
-            so a single event isn't shown as a card twice. */}
+        {/* PRIORITY 1: New requests assigned to me — first contact owed. Topmost
+            box, so it shows every new request; the urgent-details box below
+            skips any it already covers. */}
         {newRequestsToShow.length > 0 && (
           <div
             ref={newRequestsRef}
@@ -625,16 +665,20 @@ function MyAssignmentsView({
                 />
               ))}
               {newRequestsToShow.length > 5 && (
-                <div className="text-xs font-semibold text-[#3d2800] pl-3">
-                  + {newRequestsToShow.length - 5} more
-                </div>
+                <button
+                  type="button"
+                  onClick={() => openMyAssignments(['new'])}
+                  className="text-xs font-semibold text-[#3d2800] pl-3 hover:underline"
+                >
+                  + {newRequestsToShow.length - 5} more →
+                </button>
               )}
             </div>
           </div>
         )}
 
         {/* PRIORITY 2: In-process events with no contact in the last 7 days.
-            Excludes any also surfaced in the urgent-details box below. */}
+            The urgent-details box below skips any it already covers. */}
         {inProcessStaleToShow.length > 0 && (
           <div
             ref={staleFollowupRef}
@@ -657,16 +701,22 @@ function MyAssignmentsView({
                 <AssignmentEventRow key={e.id} event={e} onOpen={openAssignmentEvent} />
               ))}
               {inProcessStaleToShow.length > 5 && (
-                <div className="text-xs font-semibold text-amber-950 pl-3">
-                  + {inProcessStaleToShow.length - 5} more
-                </div>
+                <button
+                  type="button"
+                  onClick={() => openMyAssignments(['in_process'])}
+                  className="text-xs font-semibold text-amber-950 pl-3 hover:underline"
+                >
+                  + {inProcessStaleToShow.length - 5} more →
+                </button>
               )}
             </div>
           </div>
         )}
 
-        {/* PRIORITY 2b: Events within 7 days missing time, location, or sandwich info */}
-        {(my.urgentDetailEvents?.length ?? 0) > 0 && (
+        {/* PRIORITY 2b: Events within 7 days missing time, location, or sandwich
+            info. Shows only urgent events not already surfaced as new/stale
+            above — they still carry their urgent-gap badges up there. */}
+        {urgentDetailsToShow.length > 0 && (
           <div
             ref={urgentDetailsRef}
             id="my-assignments-urgent-details"
@@ -676,21 +726,25 @@ function MyAssignmentsView({
               <span className="flex items-center justify-center w-7 h-7 rounded-lg bg-red-600 shadow-sm animate-pulse">
                 <AlertCircle className="w-4 h-4 text-white" />
               </span>
-              {my.urgentDetailGapsCount === 1
+              {urgentDetailsToShow.length === 1
                 ? 'Event needs details before it happens'
-                : `${my.urgentDetailGapsCount} events need details before they happen`}
+                : `${urgentDetailsToShow.length} events need details before they happen`}
               <span className="text-xs font-semibold text-red-900">
                 — within 7 days, missing time, location, or sandwich info
               </span>
             </h4>
             <div className="space-y-2">
-              {my.urgentDetailEvents.slice(0, 5).map((e) => (
+              {urgentDetailsToShow.slice(0, 5).map((e) => (
                 <AssignmentEventRow key={e.id} event={e} onOpen={openAssignmentEvent} showStatus />
               ))}
-              {my.urgentDetailEvents.length > 5 && (
-                <div className="text-xs font-semibold text-red-950 pl-3">
-                  + {my.urgentDetailEvents.length - 5} more
-                </div>
+              {urgentDetailsToShow.length > 5 && (
+                <button
+                  type="button"
+                  onClick={() => openMyAssignments()}
+                  className="text-xs font-semibold text-red-950 pl-3 hover:underline"
+                >
+                  + {urgentDetailsToShow.length - 5} more →
+                </button>
               )}
             </div>
           </div>
