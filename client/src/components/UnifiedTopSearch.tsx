@@ -17,7 +17,7 @@
  * Lives in the persistent dark top header so a single, predictable spot
  * works on every page — Dashboard, Calendars, Collection Log, etc.
  */
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'wouter';
 import {
@@ -59,6 +59,10 @@ interface PersonResult {
   sourceLabel: string;
   organization?: string | null;
   link: string;
+  /** Which field of the record matched the search term (e.g. "Email"). */
+  matchedField?: string;
+  /** The actual value from that field, for the snippet under the result. */
+  matchedText?: string;
 }
 
 interface CollectionResult {
@@ -103,6 +107,33 @@ const PERSON_BADGE_COLORS: Record<string, string> = {
  * also carried an action like "open the add dialog." Preserved verbatim so
  * existing listeners (event-requests/index.tsx, etc.) keep working.
  */
+/**
+ * Render a matched-field snippet with the query term visually highlighted.
+ * Case-insensitive substring highlight, first occurrence only — snippets
+ * shown here are short (single field values), so anchoring one match is
+ * enough. Falls back to plain text if the query isn't present in the
+ * snippet (which shouldn't happen when the server correctly reports the
+ * matched field, but guards against future edge cases).
+ */
+function renderHighlightedMatch(text: string, query: string): ReactNode {
+  const trimmed = query.trim();
+  if (!trimmed) return text;
+  const idx = text.toLowerCase().indexOf(trimmed.toLowerCase());
+  if (idx < 0) return text;
+  const before = text.slice(0, idx);
+  const match = text.slice(idx, idx + trimmed.length);
+  const after = text.slice(idx + trimmed.length);
+  return (
+    <>
+      {before}
+      <mark className="bg-amber-100 text-amber-900 px-0.5 rounded-sm">
+        {match}
+      </mark>
+      {after}
+    </>
+  );
+}
+
 function triggerFeatureAction(action: string | undefined, route: string) {
   if (!action || action !== 'openAddDialog') return;
   if (route.startsWith('/collections')) {
@@ -212,6 +243,8 @@ export function UnifiedTopSearch() {
               sourceLabel: r.sourceLabel,
               organization: r.organization,
               link: r.link,
+              matchedField: r.matchedField,
+              matchedText: r.matchedText,
             }),
           );
         } catch {
@@ -554,6 +587,21 @@ export function UnifiedTopSearch() {
                               </span>
                             )}
                           </div>
+                          {/* "Matched: <field>" hint — tells the user
+                              WHY this record showed up. Critical when the
+                              query term appears in a field that isn't the
+                              displayed name (e.g. an email or an
+                              organization name). Query term inside the
+                              snippet is highlighted so the eye lands on
+                              exactly what matched. */}
+                          {r.matchedField && r.matchedText && (
+                            <div className="mt-1 text-[11px] text-slate-500 truncate">
+                              <span className="font-semibold text-slate-600">
+                                {r.matchedField}:
+                              </span>{' '}
+                              {renderHighlightedMatch(r.matchedText, query)}
+                            </div>
+                          )}
                         </div>
                       </button>
                     );
