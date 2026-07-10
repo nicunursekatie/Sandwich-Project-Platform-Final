@@ -1147,6 +1147,7 @@ export default function DriverPlanningDashboard() {
   const [desktopLegendCollapsed, setDesktopLegendCollapsed] = useState(false);
   const [mobileLegendCollapsed, setMobileLegendCollapsed] = useState(false);
   const [mobileEventsCollapsed, setMobileEventsCollapsed] = useState(false);
+  const [tripPlanningCollapsed, setTripPlanningCollapsed] = useState(false);
   const [showOnlyUnmetStaffing, setShowOnlyUnmetStaffing] = useState(false);
   const [showPendingEvents, setShowPendingEvents] = useState(false);
   const [geocodingEventId, setGeocodingEventId] = useState<number | null>(null);
