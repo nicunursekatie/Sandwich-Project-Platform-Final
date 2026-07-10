@@ -6,6 +6,7 @@ import {
   getDroppedServerFields,
   buildEventDataForServer,
   determineSandwichMode,
+  determineActualSandwichMode,
   sumSandwichTypeQuantities,
 } from '../form-utils';
 
@@ -224,5 +225,125 @@ describe('determineSandwichMode (sandwich count drift)', () => {
     );
     expect(payload.estimatedSandwichCount).toBe(198);
     expect(sumSandwichTypeQuantities(payload.sandwichTypes)).toBe(198);
+  });
+
+  it('total-mode save nulls the range companions too (no stale range survives)', () => {
+    const payload = buildEventDataForServer(
+      {
+        ...baseFormData,
+        totalSandwichCount: 500,
+        estimatedSandwichCountMin: 490,
+        estimatedSandwichCountMax: 506,
+        rangeSandwichType: 'deli',
+      },
+      {
+        mode: 'edit',
+        hasEventRequest: true,
+        eventRequestStatus: 'scheduled',
+        sandwichMode: 'total',
+        actualSandwichMode: 'total',
+      },
+    );
+    expect(payload.estimatedSandwichCount).toBe(500);
+    expect(payload.estimatedSandwichCountMin).toBeNull();
+    expect(payload.estimatedSandwichCountMax).toBeNull();
+    expect(payload.estimatedSandwichRangeType).toBeNull();
+  });
+});
+
+/**
+ * Regression coverage for the "500 saves as 498" bug.
+ *
+ * getReportableSandwichCount resolves a range midpoint BEFORE
+ * estimatedSandwichCount, so a stale estimatedSandwichCountMin/Max left in the DB
+ * makes the display revert to the range midpoint no matter what exact count the
+ * user typed. The diff-based save must therefore actually SEND the null-out of
+ * those range fields when the user switches Range -> Exact Count.
+ *
+ * The bug was that the diff baseline was serialized in the CURRENT (total) mode,
+ * which also nulled min/max — so the diff saw null === null and dropped the
+ * clears. The fix serializes the baseline in the ORIGINAL mode. This mirrors the
+ * production diff in EventSchedulingForm.performSubmit.
+ */
+describe('diff-based save clears stale range on Range -> Exact Count (500 -> 498 bug)', () => {
+  // Mirror of the production diff: keep only keys whose value differs from the
+  // baseline serialized in its ORIGINAL sandwich mode.
+  function diffSave(originalFormData: any, currentFormData: any, currentSandwichMode: 'total' | 'range' | 'types') {
+    const opts = {
+      mode: 'edit' as const,
+      hasEventRequest: true,
+      eventRequestStatus: 'scheduled',
+      actualSandwichMode: 'total' as const,
+    };
+    const eventData = buildEventDataForServer(currentFormData, { ...opts, sandwichMode: currentSandwichMode });
+
+    const baselineSandwichMode = determineSandwichMode(
+      originalFormData.sandwichTypes,
+      originalFormData.estimatedSandwichCountMin,
+      originalFormData.estimatedSandwichCountMax,
+      originalFormData.totalSandwichCount,
+    );
+    const baselineActualSandwichMode = determineActualSandwichMode(originalFormData.actualSandwichTypes);
+    const baselineData = buildEventDataForServer(originalFormData, {
+      ...opts,
+      sandwichMode: baselineSandwichMode,
+      actualSandwichMode: baselineActualSandwichMode,
+    });
+
+    for (const key of Object.keys(eventData)) {
+      if (
+        Object.prototype.hasOwnProperty.call(baselineData, key) &&
+        JSON.stringify(eventData[key]) === JSON.stringify(baselineData[key])
+      ) {
+        delete eventData[key];
+      }
+    }
+    return eventData;
+  }
+
+  it('sends the exact count AND clears the leftover range (midpoint was 498)', () => {
+    // Event was originally saved as a 490-506 range (midpoint 498).
+    const original = {
+      ...baseFormData,
+      totalSandwichCount: 0,
+      estimatedSandwichCountMin: 490,
+      estimatedSandwichCountMax: 506,
+      rangeSandwichType: 'deli',
+    };
+    // User switched to Exact Count and typed 500.
+    const current = {
+      ...baseFormData,
+      totalSandwichCount: 500,
+      estimatedSandwichCountMin: 0,
+      estimatedSandwichCountMax: 0,
+      rangeSandwichType: '',
+    };
+
+    const payload = diffSave(original, current, 'total');
+
+    // The exact count is sent...
+    expect(payload.estimatedSandwichCount).toBe(500);
+    // ...and — the crux of the bug — the stale range is explicitly cleared,
+    // instead of being diffed away and left to win on display as 498.
+    expect(payload).toHaveProperty('estimatedSandwichCountMin');
+    expect(payload.estimatedSandwichCountMin).toBeNull();
+    expect(payload).toHaveProperty('estimatedSandwichCountMax');
+    expect(payload.estimatedSandwichCountMax).toBeNull();
+  });
+
+  it('does not send sandwich fields when nothing changed (no needless clobber)', () => {
+    const original = {
+      ...baseFormData,
+      totalSandwichCount: 500,
+      estimatedSandwichCountMin: 0,
+      estimatedSandwichCountMax: 0,
+    };
+    const current = { ...original };
+
+    const payload = diffSave(original, current, 'total');
+
+    expect(payload).not.toHaveProperty('estimatedSandwichCount');
+    expect(payload).not.toHaveProperty('estimatedSandwichCountMin');
+    expect(payload).not.toHaveProperty('estimatedSandwichCountMax');
   });
 });

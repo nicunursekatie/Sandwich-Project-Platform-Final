@@ -166,12 +166,18 @@ export function buildEventDataForServer(
     })(),
   };
 
-  // Sandwich data based on mode
+  // Sandwich data based on mode.
+  // Each mode owns exactly one representation of the count; the OTHER two
+  // representations must be explicitly nulled so a stale range/breakdown can't
+  // survive in the DB and get preferred over the exact count by
+  // getReportableSandwichCount (which resolves range midpoint BEFORE
+  // estimatedSandwichCount). See the diff-based save note in EventSchedulingForm.
   if (sandwichMode === 'total') {
     eventData.estimatedSandwichCount = formData.totalSandwichCount;
     eventData.sandwichTypes = null;
     eventData.estimatedSandwichCountMin = null;
     eventData.estimatedSandwichCountMax = null;
+    eventData.estimatedSandwichRangeType = null;
   } else if (sandwichMode === 'range') {
     eventData.estimatedSandwichCountMin = formData.estimatedSandwichCountMin || null;
     eventData.estimatedSandwichCountMax = formData.estimatedSandwichCountMax || null;
@@ -183,6 +189,7 @@ export function buildEventDataForServer(
     eventData.estimatedSandwichCount = sumSandwichTypeQuantities(formData.sandwichTypes);
     eventData.estimatedSandwichCountMin = null;
     eventData.estimatedSandwichCountMax = null;
+    eventData.estimatedSandwichRangeType = null;
   }
 
   // Attendee counts
