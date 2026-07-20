@@ -196,7 +196,7 @@ export default function DashboardOverview({
   const openPreviewModal = (path: string, name: string, type: string) => {
     setPreviewModal({
       isOpen: true,
-      documentPath: encodeAssetPath(path),
+      documentPath: path,
       documentName: name,
       documentType: type,
     });
