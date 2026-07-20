@@ -34,6 +34,7 @@ import {
   MoreHorizontal,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { encodeAssetPath } from '@/lib/asset-path';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -161,14 +162,6 @@ const STATIC_RESOURCE_URLS: Record<string, string> = {
   'Sandwich Sign-In Form':
     '/attached_assets/Sandwich Project - Sign In Sheet correct qrs.pdf',
 };
-
-function encodeAssetPath(path: string): string {
-  if (!path.startsWith('/')) return path;
-  return path
-    .split('/')
-    .map((segment, index) => (index === 0 || !segment ? segment : encodeURIComponent(segment)))
-    .join('/');
-}
 
 function getResourceOpenUrl(item: Resource): string | null {
   const { type, documentId, url, title } = item.resource;

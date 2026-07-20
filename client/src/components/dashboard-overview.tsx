@@ -48,6 +48,7 @@ import {
   parseCollectionDate,
   calculateTotalSandwiches,
 } from '@/lib/analytics-utils';
+import { encodeAssetPath } from '@/lib/asset-path';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
 import { HelpBubble } from '@/components/help-system';
 import { DocumentPreviewModal } from '@/components/document-preview-modal';
@@ -195,7 +196,7 @@ export default function DashboardOverview({
   const openPreviewModal = (path: string, name: string, type: string) => {
     setPreviewModal({
       isOpen: true,
-      documentPath: path,
+      documentPath: encodeAssetPath(path),
       documentName: name,
       documentType: type,
     });
@@ -1393,7 +1394,7 @@ export default function DashboardOverview({
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => window.open(doc.path, '_blank')}
+                      onClick={() => window.open(encodeAssetPath(doc.path), '_blank')}
                       className="flex-1 h-8 text-xs bg-brand-primary hover:bg-brand-primary-dark text-white"
                     >
                       <Download className="h-3 w-3 mr-1" />

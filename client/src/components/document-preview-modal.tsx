@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { encodeAssetPath } from '@/lib/asset-path';
 
 interface DocumentPreviewModalProps {
   isOpen: boolean;
@@ -33,17 +34,22 @@ export function DocumentPreviewModal({
     }
   }, [isOpen, documentPath]);
 
-  const downloadPath = documentPath.replace('/preview', '/download');
+  const resolvedPath = encodeAssetPath(documentPath);
+  const downloadPath = resolvedPath.replace('/preview', '/download');
 
   const handleDownload = async () => {
     try {
       const response = await fetch(downloadPath);
       if (!response.ok) throw new Error('Download failed');
       const blob = await response.blob();
+      // SPA fallback returns HTML with 200 when the PDF is missing — reject that.
+      if (blob.type.includes('text/html')) {
+        throw new Error('File not found');
+      }
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = documentName;
+      link.download = documentName.endsWith('.pdf') ? documentName : `${documentName}.pdf`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -55,7 +61,7 @@ export function DocumentPreviewModal({
   };
 
   const handleOpenInNewTab = () => {
-    window.open(documentPath, '_blank');
+    window.open(resolvedPath, '_blank');
   };
 
   const truncatedName = documentName.length > 40
@@ -125,7 +131,7 @@ export function DocumentPreviewModal({
       return (
         <div className="flex items-center justify-center p-4">
           <img
-            src={documentPath}
+            src={resolvedPath}
             alt={documentName}
             className="max-w-full max-h-[60vh] object-contain rounded"
             onLoad={() => setIsLoading(false)}
@@ -137,7 +143,7 @@ export function DocumentPreviewModal({
 
     return (
       <iframe
-        src={documentPath}
+        src={resolvedPath}
         className="w-full border-0 rounded-lg"
         onLoad={() => setIsLoading(false)}
         onError={() => { setIsLoading(false); setHasError(true); }}

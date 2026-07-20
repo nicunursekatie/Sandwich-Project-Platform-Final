@@ -97,9 +97,13 @@ export function serveStatic(app: Express) {
     })
   );
 
-  // SPA fallback: serve index.html for any non-file route, also with
-  // no-cache headers so the browser always checks for a fresh manifest.
-  app.use('*', (_req, res) => {
+  // SPA fallback: serve index.html for client routes.
+  // Never fall back for static asset extensions — missing PDFs/images should
+  // 404 instead of returning the app shell (which looks like a broken download).
+  app.use('*', (req, res) => {
+    if (/\.(pdf|png|jpe?g|gif|webp|svg|ico|docx?|xlsx?|csv|zip)$/i.test(req.path)) {
+      return res.status(404).type('text/plain').send('File not found');
+    }
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
