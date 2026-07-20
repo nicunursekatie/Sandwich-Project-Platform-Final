@@ -241,10 +241,20 @@ export default function DashboardOverview({
 
   // Map dashboard document IDs to full document details from adminDocuments
   const importantDocuments = React.useMemo(() => {
+    const toCard = (doc: (typeof adminDocuments)[number]) => ({
+      title: doc.name,
+      description: doc.description,
+      category: doc.category,
+      path: doc.path,
+      type: doc.type,
+      id: doc.id,
+    });
+
+    const handbook = adminDocuments.find((d) => d.id === 'volunteer-handbook');
+
     if (!dashboardDocumentsData || !Array.isArray(dashboardDocumentsData)) {
       logger.log('📄 Dashboard documents: No data or not array', dashboardDocumentsData);
-      // Return empty array if no documents configured
-      return [];
+      return handbook ? [toCard(handbook)] : [];
     }
 
     logger.log('📄 Dashboard documents data received:', dashboardDocumentsData);
@@ -258,16 +268,14 @@ export default function DashboardOverview({
         }
 
         logger.log(`✅ Found document: ${doc.name} (${dashDoc.documentId})`);
-
-        return {
-          title: doc.name,
-          description: doc.description,
-          category: doc.category,
-          path: doc.path,
-          type: doc.type,
-        };
+        return toCard(doc);
       })
       .filter((doc: any) => doc !== null);
+
+    // Always surface the Volunteer Handbook PDF in this section.
+    if (handbook && !mapped.some((d: any) => d.id === 'volunteer-handbook')) {
+      mapped.unshift(toCard(handbook));
+    }
 
     logger.log('📄 Final important documents:', mapped);
     return mapped;
@@ -1358,13 +1366,20 @@ export default function DashboardOverview({
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-full">
-                {importantDocuments.map((doc, index) => (
+                {importantDocuments.map((doc, index) => {
+                const isLink = doc.type === 'link' || doc.path.startsWith('http');
+                const openUrl = isLink ? doc.path : encodeAssetPath(doc.path);
+                return (
                 <div
-                  key={index}
+                  key={doc.id || index}
                   className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-all duration-200 border hover:border-brand-primary/30"
                 >
                   <div className="flex items-center mb-3">
-                    <FileText className="h-5 w-5 text-brand-primary mr-2 flex-shrink-0" />
+                    {isLink ? (
+                      <BookOpen className="h-5 w-5 text-brand-primary mr-2 flex-shrink-0" />
+                    ) : (
+                      <FileText className="h-5 w-5 text-brand-primary mr-2 flex-shrink-0" />
+                    )}
                     <div className="min-w-0 flex-1">
                       <h4 className="text-sm font-semibold text-brand-primary truncate">
                         {doc.title}
@@ -1373,7 +1388,9 @@ export default function DashboardOverview({
                         <span className="text-xs bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded">
                           {doc.category}
                         </span>
-                        <span className="text-xs text-gray-500">PDF</span>
+                        <span className="text-xs text-gray-500">
+                          {isLink ? 'Link' : 'PDF'}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1381,28 +1398,42 @@ export default function DashboardOverview({
                     {doc.description}
                   </p>
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        openPreviewModal(doc.path, doc.title, 'pdf')
-                      }
-                      className="flex-1 h-8 text-xs border-brand-primary/30 hover:border-brand-primary text-brand-primary"
-                    >
-                      <Eye className="h-3 w-3 mr-1" />
-                      Preview
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => window.open(encodeAssetPath(doc.path), '_blank')}
-                      className="flex-1 h-8 text-xs bg-brand-primary hover:bg-brand-primary-dark text-white"
-                    >
-                      <Download className="h-3 w-3 mr-1" />
-                      Download
-                    </Button>
+                    {isLink ? (
+                      <Button
+                        size="sm"
+                        onClick={() => window.open(openUrl, '_blank', 'noopener,noreferrer')}
+                        className="flex-1 h-8 text-xs bg-brand-primary hover:bg-brand-primary-dark text-white"
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Open
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            openPreviewModal(doc.path, doc.title, 'pdf')
+                          }
+                          className="flex-1 h-8 text-xs border-brand-primary/30 hover:border-brand-primary text-brand-primary"
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          Preview
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => window.open(openUrl, '_blank')}
+                          className="flex-1 h-8 text-xs bg-brand-primary hover:bg-brand-primary-dark text-white"
+                        >
+                          <Download className="h-3 w-3 mr-1" />
+                          Download
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
-              ))}
+                );
+                })}
               </div>
             )}
           </div>
