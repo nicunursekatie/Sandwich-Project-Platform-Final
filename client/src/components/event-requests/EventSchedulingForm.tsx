@@ -31,6 +31,7 @@ import { getPickupDateTimeForInput, parsePostgresArray } from './utils';
 import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
+import { getEventRequestSourceIndicator } from '@/lib/event-request-source';
 import { PresenceAvatars } from '@/components/collaboration';
 import { RefrigerationWarningAlert } from './RefrigerationWarningBadge';
 import {
@@ -348,6 +349,26 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // ── Derived Values ─────────────────────────────────────────────────
 
   const isCreateMode = mode === 'create' || !eventRequest;
+
+  // Manual creates/edits should treat the initial message like any other notes
+  // field (always editable). Website/Google Form submissions keep click-to-edit
+  // so the original form text isn't overwritten by accident.
+  const alwaysEditableMessage = useMemo(() => {
+    if (isCreateMode) return true;
+    const source = getEventRequestSourceIndicator({
+      externalId: (eventRequest as any)?.externalId,
+      manualEntrySource:
+        formData.manualEntrySource || (eventRequest as any)?.manualEntrySource,
+      googleSheetRowId: (eventRequest as any)?.googleSheetRowId,
+      createdBy: (eventRequest as any)?.createdBy,
+      lastSyncedAt: (eventRequest as any)?.lastSyncedAt,
+    });
+    return source?.kind === 'manual';
+  }, [
+    isCreateMode,
+    eventRequest,
+    formData.manualEntrySource,
+  ]);
 
   // Explicit loading state for the UI. When editing an existing event the form
   // populates from `eventRequest` in an init effect; until that has run the form
@@ -1545,6 +1566,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 isComplete={sectionStatus.notes}
                 isMessageEditable={isMessageEditable}
                 setIsMessageEditable={setIsMessageEditable}
+                alwaysEditableMessage={alwaysEditableMessage}
                 isCollaborationEnabled={isCollaborationEnabled}
                 isFieldLockedByOther={isFieldLockedByOther}
                 getFieldLock={getFieldLock}
