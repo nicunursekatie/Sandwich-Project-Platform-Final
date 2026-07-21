@@ -7,6 +7,7 @@
  * 3. Simplify the performSubmit function
  */
 
+import { hasActiveSandwichRange } from '@shared/sandwich-count-utils';
 import type { EventFormData } from './form-sections/types';
 export { findMismatchedSavedFields, getDroppedServerFields } from '@/lib/event-save-verification';
 
@@ -169,9 +170,8 @@ export function buildEventDataForServer(
   // Sandwich data based on mode.
   // Each mode owns exactly one representation of the count; the OTHER two
   // representations must be explicitly nulled so a stale range/breakdown can't
-  // survive in the DB and get preferred over the exact count by
-  // getReportableSandwichCount (which resolves range midpoint BEFORE
-  // estimatedSandwichCount). See the diff-based save note in EventSchedulingForm.
+  // survive in the DB alongside an exact count (the "500 shows as 498" bug).
+  // See the diff-based save note in EventSchedulingForm.
   if (sandwichMode === 'total') {
     eventData.estimatedSandwichCount = formData.totalSandwichCount;
     eventData.sandwichTypes = null;
@@ -253,6 +253,9 @@ export function sumSandwichTypeQuantities(sandwichTypes: unknown): number {
  * When estimatedSandwichCount disagrees with a stale sandwichTypes breakdown,
  * prefer Exact Count so a full-form save does not silently revert the total
  * (e.g. user enters 200 but old types still sum to 198).
+ *
+ * Same rule for a leftover range whose midpoint disagrees with the exact count
+ * (e.g. exact 500 + stale 490-506 → midpoint 498): open Exact Count, not Range.
  */
 export function determineSandwichMode(
   sandwichTypes: any,
@@ -260,8 +263,15 @@ export function determineSandwichMode(
   estimatedSandwichCountMax: any,
   estimatedSandwichCount?: number | null,
 ): 'total' | 'range' | 'types' {
-  const hasRangeData = estimatedSandwichCountMin && estimatedSandwichCountMax;
-  if (hasRangeData) return 'range';
+  if (
+    hasActiveSandwichRange(
+      estimatedSandwichCountMin,
+      estimatedSandwichCountMax,
+      estimatedSandwichCount,
+    )
+  ) {
+    return 'range';
+  }
 
   let parsed: unknown[] = [];
   try {
@@ -287,6 +297,31 @@ export function determineSandwichMode(
   }
 
   return 'types';
+}
+
+/**
+ * Mode for diff-baseline serialization of what is PHYSICALLY stored.
+ *
+ * Unlike determineSandwichMode (UI), any persisted min/max counts as 'range'
+ * even when a disagreeing exact count means the range is stale. That way a
+ * subsequent Exact Count save still detects min/max → null as a real change
+ * and clears the leftover range instead of dropping the clears (null === null).
+ */
+export function determineBaselineSandwichMode(
+  sandwichTypes: any,
+  estimatedSandwichCountMin: any,
+  estimatedSandwichCountMax: any,
+  estimatedSandwichCount?: number | null,
+): 'total' | 'range' | 'types' {
+  if (estimatedSandwichCountMin && estimatedSandwichCountMax) {
+    return 'range';
+  }
+  return determineSandwichMode(
+    sandwichTypes,
+    estimatedSandwichCountMin,
+    estimatedSandwichCountMax,
+    estimatedSandwichCount,
+  );
 }
 
 /**

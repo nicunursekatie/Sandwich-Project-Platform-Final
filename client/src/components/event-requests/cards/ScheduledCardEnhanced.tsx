@@ -68,6 +68,7 @@ import {
   parseSandwichTypes,
   formatSandwichTypesDisplay,
 } from '@/lib/sandwich-utils';
+import { hasActiveSandwichRange } from '@shared/sandwich-count-utils';
 import {
   extractNameFromAssignmentId,
   resolveAssignmentDisplayName,
@@ -516,8 +517,13 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     ? 'bg-[#A31C41] text-white border border-[#A31C41]'
     : 'bg-amber-50 text-amber-800 border border-amber-400';
 
-  // Sandwich info
-  const hasRange = request.estimatedSandwichCountMin && request.estimatedSandwichCountMax;
+  // Sandwich info — ignore a leftover range whose midpoint disagrees with the
+  // exact count (stale range after Exact Count save → "500 shows as 498").
+  const hasRange = hasActiveSandwichRange(
+    request.estimatedSandwichCountMin,
+    request.estimatedSandwichCountMax,
+    request.estimatedSandwichCount,
+  );
   let sandwichInfo;
   if (hasRange) {
     const rangeType = request.estimatedSandwichRangeType;

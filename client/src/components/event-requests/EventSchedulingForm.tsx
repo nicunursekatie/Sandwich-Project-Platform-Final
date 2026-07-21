@@ -58,6 +58,7 @@ import {
   findMismatchedSavedFields,
   getDroppedServerFields,
   determineSandwichMode,
+  determineBaselineSandwichMode,
   determineActualSandwichMode,
 } from './form-utils';
 
@@ -1062,15 +1063,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // WITHOUT fieldOverrides so a value just entered this session (e.g. the
       // standby follow-up date) correctly registers as a change.
       if (originalFormDataRef.current) {
-        // The baseline MUST be serialized in the mode the data was ORIGINALLY
-        // in, not the mode the form is in now. Serializing the baseline with the
-        // current mode would force its companion fields (range min/max,
-        // sandwichTypes) to null too — so when the user switches e.g. Range →
-        // Exact Count, the diff sees null === null and silently drops the very
-        // fields that clear the stale range. The stale range then survives in the
-        // DB and getReportableSandwichCount keeps showing its midpoint instead of
-        // the exact count the user entered (the "500 saves as 498" bug).
-        const baselineSandwichMode = determineSandwichMode(
+        // The baseline MUST be serialized from what is PHYSICALLY stored, not
+        // the preferred UI mode. determineBaselineSandwichMode treats any
+        // persisted min/max as 'range' even when a disagreeing exact count means
+        // the UI opens in Exact Count — otherwise the diff sees null === null
+        // for the companion clears and silently drops them. The stale range then
+        // survives in the DB alongside the exact count (the "500 saves as 498"
+        // bug — midpoint of a leftover 490-506 range).
+        const baselineSandwichMode = determineBaselineSandwichMode(
           originalFormDataRef.current.sandwichTypes,
           originalFormDataRef.current.estimatedSandwichCountMin,
           originalFormDataRef.current.estimatedSandwichCountMax,

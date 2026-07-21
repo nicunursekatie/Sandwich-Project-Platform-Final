@@ -6,6 +6,7 @@ import {
   getDroppedServerFields,
   buildEventDataForServer,
   determineSandwichMode,
+  determineBaselineSandwichMode,
   determineActualSandwichMode,
   sumSandwichTypeQuantities,
 } from '../form-utils';
@@ -189,6 +190,24 @@ describe('determineSandwichMode (sandwich count drift)', () => {
     ).toBe('types');
   });
 
+  it('prefers Exact Count when exact disagrees with stale range midpoint (500 vs 498)', () => {
+    expect(
+      determineSandwichMode([], 490, 506, 500),
+    ).toBe('total');
+  });
+
+  it('keeps Range when exact equals the range midpoint (legitimate import)', () => {
+    expect(
+      determineSandwichMode([], 490, 506, 498),
+    ).toBe('range');
+  });
+
+  it('keeps Range when there is no exact count', () => {
+    expect(
+      determineSandwichMode([], 490, 506, null),
+    ).toBe('range');
+  });
+
   it('clears types semantics in total-mode full-form save payload', () => {
     const payload = buildEventDataForServer(
       {
@@ -254,11 +273,10 @@ describe('determineSandwichMode (sandwich count drift)', () => {
 /**
  * Regression coverage for the "500 saves as 498" bug.
  *
- * getReportableSandwichCount resolves a range midpoint BEFORE
- * estimatedSandwichCount, so a stale estimatedSandwichCountMin/Max left in the DB
- * makes the display revert to the range midpoint no matter what exact count the
- * user typed. The diff-based save must therefore actually SEND the null-out of
- * those range fields when the user switches Range -> Exact Count.
+ * A stale estimatedSandwichCountMin/Max left in the DB alongside an exact
+ * count used to win on display (range midpoint 498 over exact 500). The
+ * diff-based save must therefore SEND the null-out of those range fields when
+ * the user switches Range -> Exact Count.
  *
  * The bug was that the diff baseline was serialized in the CURRENT (total) mode,
  * which also nulled min/max — so the diff saw null === null and dropped the
@@ -277,7 +295,7 @@ describe('diff-based save clears stale range on Range -> Exact Count (500 -> 498
     };
     const eventData = buildEventDataForServer(currentFormData, { ...opts, sandwichMode: currentSandwichMode });
 
-    const baselineSandwichMode = determineSandwichMode(
+    const baselineSandwichMode = determineBaselineSandwichMode(
       originalFormData.sandwichTypes,
       originalFormData.estimatedSandwichCountMin,
       originalFormData.estimatedSandwichCountMax,
@@ -345,5 +363,43 @@ describe('diff-based save clears stale range on Range -> Exact Count (500 -> 498
     expect(payload).not.toHaveProperty('estimatedSandwichCount');
     expect(payload).not.toHaveProperty('estimatedSandwichCountMin');
     expect(payload).not.toHaveProperty('estimatedSandwichCountMax');
+  });
+
+  it('heals already-corrupted rows (exact 500 + stale 490-506) on the next Exact Count save', () => {
+    // Server still has BOTH from before the client fix. UI opens Exact Count
+    // (determineSandwichMode), but the baseline must still serialize as range
+    // so the companion clears are not diffed away.
+    const original = {
+      ...baseFormData,
+      totalSandwichCount: 500,
+      estimatedSandwichCountMin: 490,
+      estimatedSandwichCountMax: 506,
+      rangeSandwichType: 'deli',
+    };
+    const current = {
+      ...baseFormData,
+      totalSandwichCount: 500,
+      estimatedSandwichCountMin: 0,
+      estimatedSandwichCountMax: 0,
+      rangeSandwichType: '',
+    };
+
+    expect(determineSandwichMode(
+      original.sandwichTypes,
+      original.estimatedSandwichCountMin,
+      original.estimatedSandwichCountMax,
+      original.totalSandwichCount,
+    )).toBe('total');
+    expect(determineBaselineSandwichMode(
+      original.sandwichTypes,
+      original.estimatedSandwichCountMin,
+      original.estimatedSandwichCountMax,
+      original.totalSandwichCount,
+    )).toBe('range');
+
+    const payload = diffSave(original, current, 'total');
+    expect(payload.estimatedSandwichCount).toBe(500);
+    expect(payload.estimatedSandwichCountMin).toBeNull();
+    expect(payload.estimatedSandwichCountMax).toBeNull();
   });
 });
