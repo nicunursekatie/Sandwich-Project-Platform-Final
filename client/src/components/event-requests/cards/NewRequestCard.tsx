@@ -1465,6 +1465,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                     variant="outline"
                     onClick={onDuplicate}
                     data-testid="button-duplicate"
+                    aria-label="Duplicate event"
                   >
                     <Copy className="w-4 h-4 mr-1.5" />
                     <span className="hidden sm:inline">Duplicate</span>

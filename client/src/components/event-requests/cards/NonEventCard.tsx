@@ -78,6 +78,7 @@ export const NonEventCard: React.FC<NonEventCardProps> = ({
                 onClick={onDuplicate}
                 className="h-8 w-8 p-0"
                 title="Duplicate event"
+                aria-label="Duplicate event"
               >
                 <Copy className="h-4 w-4" />
               </Button>
