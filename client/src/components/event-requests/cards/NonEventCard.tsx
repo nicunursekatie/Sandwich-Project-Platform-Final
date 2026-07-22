@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Ban, Eye, Edit2, Trash2, Calendar, Building } from 'lucide-react';
+import { Ban, Eye, Edit2, Trash2, Calendar, Building, Copy } from 'lucide-react';
 import { statusColors, statusBorderColors, statusBgColors } from '@/components/event-requests/constants';
 import type { EventRequest } from '@shared/schema';
 
@@ -12,6 +12,7 @@ interface NonEventCardProps {
   onView: () => void;
   onEdit: () => void;
   onDelete: () => void;
+  onDuplicate?: () => void;
 }
 
 export const NonEventCard: React.FC<NonEventCardProps> = ({
@@ -20,6 +21,7 @@ export const NonEventCard: React.FC<NonEventCardProps> = ({
   onView,
   onEdit,
   onDelete,
+  onDuplicate,
 }) => {
   const borderColor = statusBorderColors['non_event'] || '#78716C';
   const bgColor = statusBgColors['non_event'] || 'bg-[#F5F5F4]';
@@ -69,6 +71,17 @@ export const NonEventCard: React.FC<NonEventCardProps> = ({
             >
               <Edit2 className="h-4 w-4" />
             </Button>
+            {onDuplicate && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onDuplicate}
+                className="h-8 w-8 p-0"
+                title="Duplicate event"
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"

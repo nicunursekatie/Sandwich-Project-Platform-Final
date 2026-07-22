@@ -44,6 +44,7 @@ import {
   Ban,
   Globe,
   FileText,
+  Copy,
 } from 'lucide-react';
 import { statusIcons, statusOptions, statusBorderColors, indicatorTooltips } from '@/components/event-requests/constants';
 import { formatEventDate } from '@/components/event-requests/utils';
@@ -95,6 +96,7 @@ interface NewRequestCardProps {
   onApprove: () => void;
   onDecline: () => void;
   onNonEvent?: () => void;
+  onDuplicate?: () => void;
   onLogContact: () => void;
   onAiSuggest?: () => void;
   onAiIntakeAssist?: () => void;
@@ -884,6 +886,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   onApprove,
   onDecline,
   onNonEvent,
+  onDuplicate,
   onLogContact,
   onAiSuggest,
   onAiIntakeAssist,
@@ -1454,6 +1457,24 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 <p>{getContextualTooltip(request)}</p>
               </TooltipContent>
             </Tooltip>
+            {onDuplicate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onDuplicate}
+                    data-testid="button-duplicate"
+                  >
+                    <Copy className="w-4 h-4 mr-1.5" />
+                    <span className="hidden sm:inline">Duplicate</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create another event from this one</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             {canDelete && (
               <ConfirmationDialog
                 trigger={
