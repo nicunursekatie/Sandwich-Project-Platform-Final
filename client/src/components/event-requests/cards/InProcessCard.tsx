@@ -38,6 +38,7 @@ import {
   MessageCircle,
   Lock,
   Unlock,
+  Copy,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -95,6 +96,7 @@ interface InProcessCardProps {
   onSchedule: () => void;
   onCall: () => void;
   onIntakeCall?: () => void;
+  onDuplicate?: () => void;
   onContact: () => void;
   onScheduleCall: () => void;
   onResendToolkit?: () => void;
@@ -942,6 +944,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   onSchedule,
   onCall,
   onIntakeCall,
+  onDuplicate,
   onContact,
   onScheduleCall,
   onResendToolkit,
@@ -1954,6 +1957,25 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 </Tooltip>
               );
             })()}
+            {onDuplicate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onDuplicate}
+                    data-testid="button-duplicate"
+                    aria-label="Duplicate event"
+                  >
+                    <Copy className="w-4 h-4 mr-1.5" />
+                    <span className="hidden sm:inline">Duplicate</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create another event from this one</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             {canDelete && (
               <Tooltip>
                 <TooltipTrigger asChild>

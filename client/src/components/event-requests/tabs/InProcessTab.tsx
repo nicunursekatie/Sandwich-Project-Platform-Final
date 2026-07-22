@@ -8,20 +8,25 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useConfirmation } from '@/components/ui/confirmation-dialog';
 import { InProcessCard } from '../cards/InProcessCard';
+import { DuplicateEventDialog } from '../dialogs/DuplicateEventDialog';
 import { Button } from '@/components/ui/button';
 import { EyeOff, Eye, CalendarX } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { EventListSkeleton } from '../EventCardSkeleton';
 import { EventListBatchProviders } from '../EventListBatchProviders';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import type { EventRequest } from '@shared/schema';
 
 export const InProcessTab: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { confirm, ConfirmationDialogComponent } = useConfirmation();
   const { filterRequestsByStatus } = useEventFilters();
-  const { deleteEventRequestMutation, updateEventRequestMutation } = useEventMutations();
+  const { deleteEventRequestMutation, updateEventRequestMutation, createEventRequestMutation } = useEventMutations();
   const { handleStatusChange, resolveUserName } = useEventAssignments();
+
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateSourceRequest, setDuplicateSourceRequest] = useState<EventRequest | null>(null);
 
   // Inline editing state
   const [editingInProcessId, setEditingInProcessId] = useState<number | null>(null);
@@ -390,6 +395,10 @@ export const InProcessTab: React.FC = () => {
                 setLogContactEventRequest(request);
                 openDialog('logContact');
               }}
+              onDuplicate={() => {
+                setDuplicateSourceRequest(request);
+                setShowDuplicateDialog(true);
+              }}
               onEditContactAttempt={(attemptNumber) => {
                 // Find the contact attempt to edit
                 const attempt = request.contactAttemptsLog?.find(
@@ -470,6 +479,19 @@ export const InProcessTab: React.FC = () => {
         </EventListBatchProviders>
       )}
       {ConfirmationDialogComponent}
+      <DuplicateEventDialog
+        isOpen={showDuplicateDialog}
+        onClose={() => {
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+        request={duplicateSourceRequest}
+        onConfirm={async (newEventData) => {
+          await createEventRequestMutation.mutateAsync(newEventData);
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+      />
     </>
   );
 };

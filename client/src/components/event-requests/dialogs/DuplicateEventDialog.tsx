@@ -76,6 +76,14 @@ export const DuplicateEventDialog: React.FC<DuplicateEventDialogProps> = ({
     try {
       const formattedDate = format(data.scheduledEventDate, 'yyyy-MM-dd');
 
+      // A "non-event" was explicitly determined NOT to be a real event request.
+      // Duplicating one must not mint a confirmed, scheduled calendar event —
+      // that would bypass intake review. Send it to In Process (unconfirmed, no
+      // confirmed scheduled date) so the team vets it before it's put on the
+      // calendar. Every other source status is a real, already-vetted event, so
+      // it duplicates straight to a confirmed Scheduled event as before.
+      const isNonEvent = request.status === 'non_event';
+
       // Build new event payload — carry over core info, reset event-specific fields
       const newEventData: Partial<EventRequest> = {
         // Group / organization info
@@ -92,18 +100,21 @@ export const DuplicateEventDialog: React.FC<DuplicateEventDialogProps> = ({
         // Location
         eventAddress: request.eventAddress,
 
-        // New date / time
-        scheduledEventDate: formattedDate as any,
+        // New date / time. For a non-event duplicate, the date is the requested
+        // date only — no confirmed scheduled date until it's vetted.
+        scheduledEventDate: isNonEvent ? null : (formattedDate as any),
         desiredEventDate: formattedDate as any,
         eventStartTime: data.eventStartTime?.trim() || null,
         eventEndTime: data.eventEndTime?.trim() || null,
 
-        // Status: go straight to scheduled since this is a returning, already-vetted org
-        status: 'scheduled',
-        isConfirmed: true,
+        // Status: real events go straight to a confirmed Scheduled event since
+        // this is a returning, already-vetted org; non-events go to In Process
+        // unconfirmed so intake reviews them first.
+        status: isNonEvent ? 'in_process' : 'scheduled',
+        isConfirmed: isNonEvent ? false : true,
 
-        // Mark as previously hosted since we know they have
-        previouslyHosted: 'yes',
+        // Only mark previously-hosted for real prior events (not non-events).
+        previouslyHosted: isNonEvent ? undefined : 'yes',
       };
 
       await onConfirm(newEventData);
