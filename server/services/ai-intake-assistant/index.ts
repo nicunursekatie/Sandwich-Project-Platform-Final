@@ -683,8 +683,7 @@ Provide 2-3 specific, actionable recommendations based on the current state of t
         content: prompt
       }
     ],
-    temperature: 0.7,
-    max_tokens: 300,
+    max_completion_tokens: 300,
   });
 
   return completion.choices[0].message.content || '';

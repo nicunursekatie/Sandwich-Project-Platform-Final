@@ -135,8 +135,7 @@ Return JSON in this exact format:
         },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.1,
-      max_tokens: 200,
+      max_completion_tokens: 200,
     });
 
     const response = completion.choices[0]?.message?.content?.trim();
