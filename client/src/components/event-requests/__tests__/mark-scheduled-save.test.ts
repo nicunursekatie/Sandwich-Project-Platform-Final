@@ -268,6 +268,27 @@ describe('determineSandwichMode (sandwich count drift)', () => {
     expect(payload.estimatedSandwichCountMax).toBeNull();
     expect(payload.estimatedSandwichRangeType).toBeNull();
   });
+
+  it('includes cancelledReason when status is cancelled (edit-form MISSING_REASON bug)', () => {
+    const payload = buildEventDataForServer(
+      {
+        ...baseFormData,
+        status: 'cancelled',
+        cancelledReason: 'Organizer cancelled',
+        cancelledNotes: 'Venue fell through',
+      },
+      {
+        mode: 'edit',
+        hasEventRequest: true,
+        eventRequestStatus: 'scheduled',
+        sandwichMode: 'total',
+        actualSandwichMode: 'total',
+      },
+    );
+    expect(payload.status).toBe('cancelled');
+    expect(payload.cancelledReason).toBe('Organizer cancelled');
+    expect(payload.cancelledNotes).toBe('Venue fell through');
+  });
 });
 
 /**

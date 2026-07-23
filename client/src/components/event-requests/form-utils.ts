@@ -110,6 +110,23 @@ export function buildEventDataForServer(
     driverInstructions: formData.driverInstructions || null,
     volunteerInstructions: formData.volunteerInstructions || null,
 
+    // Structured reason fields — required by the server when status becomes
+    // cancelled/declined. The card Cancel/Decline dialogs set these directly;
+    // the edit-form status dropdown captures them via StatusReasonDialog and
+    // stashes them on formData before save.
+    ...(resolvedStatus === 'cancelled'
+      ? {
+          cancelledReason: (formData as any).cancelledReason || null,
+          cancelledNotes: (formData as any).cancelledNotes || null,
+        }
+      : {}),
+    ...(resolvedStatus === 'declined'
+      ? {
+          declinedReason: (formData as any).declinedReason || null,
+          declinedNotes: (formData as any).declinedNotes || null,
+        }
+      : {}),
+
     // Manual entry
     manualEntrySource: formData.manualEntrySource || null,
 

@@ -35,6 +35,7 @@ import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { getEventRequestSourceIndicator } from '@/lib/event-request-source';
 import { PresenceAvatars } from '@/components/collaboration';
 import { RefrigerationWarningAlert } from './RefrigerationWarningBadge';
+import { StatusReasonDialog } from './dialogs/StatusReasonDialog';
 import {
   ContactInfoSection,
   BackupContactSection,
@@ -230,6 +231,10 @@ function buildFormDataFromEventRequest(
     followUpOneMonthDate: (eventRequest as any)?.followUpOneMonthDate ? formatDateForInput((eventRequest as any).followUpOneMonthDate) : '',
     followUpNotes: (eventRequest as any)?.followUpNotes || '',
     assignedRecipientIds: parsePostgresArrayFn((eventRequest as any)?.assignedRecipientIds),
+    cancelledReason: (eventRequest as any)?.cancelledReason || '',
+    cancelledNotes: (eventRequest as any)?.cancelledNotes || '',
+    declinedReason: (eventRequest as any)?.declinedReason || '',
+    declinedNotes: (eventRequest as any)?.declinedNotes || '',
   };
 }
 
@@ -306,6 +311,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     backupContactPhone: '', backupContactRole: '', previouslyHosted: 'i_dont_know',
     deliveryTimeWindow: '',
     deliveryParkingAccess: '', isCorporatePriority: false, standbyExpectedDate: '',
+    cancelledReason: '', cancelledNotes: '', declinedReason: '', declinedNotes: '',
     dateFlexible: null as boolean | null,
   });
 
@@ -336,6 +342,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [vanConflictChecked, setVanConflictChecked] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showStandbyFollowUpDialog, setShowStandbyFollowUpDialog] = useState(false);
+  const [showStatusReasonDialog, setShowStatusReasonDialog] = useState(false);
+  const [pendingReasonStatus, setPendingReasonStatus] = useState<'cancelled' | 'declined' | null>(null);
   const [standbyFollowUpDate, setStandbyFollowUpDate] = useState('');
   const [standbyFollowUpMode, setStandbyFollowUpMode] = useState<'specific' | 'one_week' | 'none'>('one_week');
   const standbySaveClickedRef = useRef(false);
@@ -1135,25 +1143,31 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         const hasReason = reasonFields.some((field) => {
           const incoming = (eventData as any)[field];
           const existing = (eventRequest as any)[field];
-          const formValue =
-            field === 'planningNotes'
-              ? formData.planningNotes
-              : field === 'schedulingNotes'
-                ? formData.schedulingNotes
-                : undefined;
+          const formValue = (formData as any)[field];
           const effective =
-            incoming !== undefined ? incoming : (formValue !== undefined ? formValue : existing);
+            incoming !== undefined
+              ? incoming
+              : formValue !== undefined && formValue !== ''
+                ? formValue
+                : existing;
           return typeof effective === 'string' && effective.trim() !== '';
         });
         if (!hasReason) {
           logger.log('⛔ Save blocked: missing reason for', targetStatus);
           setIsSubmitting(false);
+          // If they somehow picked cancelled/declined without going through the
+          // reason dialog (e.g. recovered draft), open it now instead of a toast.
+          if (
+            (targetStatus === 'cancelled' || targetStatus === 'declined') &&
+            eventRequest
+          ) {
+            setPendingReasonStatus(targetStatus);
+            setTimeout(() => setShowStatusReasonDialog(true), 0);
+            return;
+          }
           toast({
             title: 'Reason required',
-            description:
-              targetStatus === 'cancelled'
-                ? 'Add a brief cancellation reason in Planning Notes or Scheduling Notes, then save — or use Cancel Event on the card.'
-                : `Add a brief reason in Planning Notes or Scheduling Notes before marking this event as ${STATUS_DEFINITIONS[targetStatus]?.label || targetStatus}.`,
+            description: `Add a brief reason before marking this event as ${STATUS_DEFINITIONS[targetStatus]?.label || targetStatus}.`,
             variant: 'destructive',
             duration: 10000,
           });
@@ -1188,14 +1202,30 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // ── Status Change Handler ──────────────────────────────────────────
 
   const handleStatusChange = (newStatus: EventStatus) => {
-    if (newStatus === 'cancelled' || newStatus === 'declined' || newStatus === 'non_event' || newStatus === 'rescheduled') {
+    // Cancelled / Declined require a structured reason (server MISSING_REASON).
+    // Open the reason dialog first; only apply the status once the user confirms.
+    // Defer open so the parent non-modal Dialog doesn't tear down on focus churn
+    // (same pattern as the standby follow-up dialog).
+    if (newStatus === 'cancelled' || newStatus === 'declined') {
+      if (!eventRequest) {
+        toast({
+          title: 'Reason required',
+          description: `Add a brief reason in Planning Notes or Scheduling Notes before marking this as ${STATUS_DEFINITIONS[newStatus]?.label || newStatus}.`,
+          duration: 8000,
+        });
+        setFormData(prev => ({ ...prev, status: newStatus }));
+        return;
+      }
+      setPendingReasonStatus(newStatus);
+      setTimeout(() => setShowStatusReasonDialog(true), 0);
+      return;
+    }
+
+    if (newStatus === 'non_event' || newStatus === 'rescheduled') {
       const statusLabel = STATUS_DEFINITIONS[newStatus]?.label || newStatus;
       toast({
         title: 'Status Change Requires Documentation',
-        description:
-          newStatus === 'cancelled'
-            ? `Before saving as ${statusLabel}, add a brief reason in Planning Notes or Scheduling Notes (or use Cancel Event on the card).`
-            : `When saving, please ensure you've documented the reason for changing to ${statusLabel} in the notes field.`,
+        description: `When saving, please ensure you've documented the reason for changing to ${statusLabel} in the notes field.`,
         duration: 8000,
       });
     }
@@ -1295,6 +1325,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     showDateConfirmation ||
     showVanConflictDialog ||
     showStandbyFollowUpDialog ||
+    showStatusReasonDialog ||
     showDeleteConfirmation;
 
   // ── Render ─────────────────────────────────────────────────────────
@@ -1727,6 +1758,37 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           }
         }}
       />
+
+      {eventRequest && pendingReasonStatus && (
+        <StatusReasonDialog
+          isOpen={showStatusReasonDialog}
+          onClose={() => {
+            setShowStatusReasonDialog(false);
+            setPendingReasonStatus(null);
+          }}
+          request={eventRequest}
+          type={pendingReasonStatus}
+          onConfirm={async (_eventId, data) => {
+            // Stash status + structured reason on the form; Save will send them
+            // together and satisfy the server MISSING_REASON check (Susan's bug).
+            setFormData((prev) => ({
+              ...prev,
+              status: data.status,
+              cancelledReason: data.cancelledReason || '',
+              cancelledNotes: data.cancelledNotes || '',
+              declinedReason: data.declinedReason || '',
+              declinedNotes: data.declinedNotes || '',
+            }));
+            setShowStatusReasonDialog(false);
+            setPendingReasonStatus(null);
+            toast({
+              title: `${STATUS_DEFINITIONS[data.status as EventStatus]?.label || data.status} reason recorded`,
+              description: 'Click Save to apply the status change.',
+              duration: 6000,
+            });
+          }}
+        />
+      )}
 
       <DeleteConfirmDialog
         open={showDeleteConfirmation}
