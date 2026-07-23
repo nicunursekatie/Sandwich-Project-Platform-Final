@@ -62,6 +62,7 @@ import {
 import { format } from 'date-fns';
 import type { EventRequest } from '@shared/schema';
 import { parseSandwichTypes } from '@/lib/sandwich-utils';
+import { hasActiveSandwichRange } from '@shared/sandwich-count-utils';
 import {
   getDriverIds, getDriverCount, getTotalDriverCount,
   getVolunteerIds, getVolunteerCount
@@ -1515,7 +1516,7 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
         const count = event.estimatedSandwichCount;
         const min = event.estimatedSandwichCountMin;
         const max = event.estimatedSandwichCountMax;
-        if (min && max) return `${min}-${max}`;
+        if (hasActiveSandwichRange(min, max, count)) return `${min}-${max}`;
         return count?.toString() || '';
       },
     },

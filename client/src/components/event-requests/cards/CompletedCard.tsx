@@ -39,6 +39,7 @@ import {
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
 import { useEventQueries } from '../hooks/useEventQueries';
 import { formatSandwichTypesDisplay, parseSandwichTypes } from '@/lib/sandwich-utils';
+import { hasActiveSandwichRange } from '@shared/sandwich-count-utils';
 import { getDisplayName } from '@/lib/userHelpers';
 import { extractNameFromCustomId } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -2515,7 +2516,11 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 <span className="text-gray-700">
                   Planned <strong className="font-semibold">
                     {(() => {
-                      const hasRange = request.estimatedSandwichCountMin && request.estimatedSandwichCountMax;
+                      const hasRange = hasActiveSandwichRange(
+                        request.estimatedSandwichCountMin,
+                        request.estimatedSandwichCountMax,
+                        request.estimatedSandwichCount,
+                      );
                       if (hasRange) {
                         const rangeType = (request as any).estimatedSandwichRangeType;
                         const typeLabel = rangeType ? SANDWICH_TYPES.find(t => t.value === rangeType)?.label : null;

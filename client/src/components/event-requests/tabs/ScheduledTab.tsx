@@ -11,6 +11,7 @@ import { ScheduledCardEnhanced } from '../cards/ScheduledCardEnhanced';
 import { RescheduleDialog } from '../dialogs/RescheduleDialog';
 import { DuplicateEventDialog } from '../dialogs/DuplicateEventDialog';
 import { parseSandwichTypes, stringifySandwichTypes } from '@/lib/sandwich-utils';
+import { hasActiveSandwichRange } from '@shared/sandwich-count-utils';
 import { useConfirmation } from '@/components/ui/confirmation-dialog';
 import type { EventRequest } from '@shared/schema';
 import { ScheduledSpreadsheetView } from '../views/ScheduledSpreadsheetView';
@@ -102,6 +103,7 @@ export const ScheduledTab: React.FC = () => {
     setAiIntakeAssistantEventRequest,
     setNextActionEventRequest,
     setNextActionMode,
+    setReasonDialogEventRequest,
     editingScheduledId,
     setEditingScheduledId,
     editingField,
@@ -156,7 +158,11 @@ export const ScheduledTab: React.FC = () => {
       if (eventRequest) {
         const existingSandwichTypes = parseSandwichTypes(eventRequest.sandwichTypes) || [];
         const hasTypesData = existingSandwichTypes.length > 0;
-        const hasRangeData = (eventRequest as any).estimatedSandwichCountMin && (eventRequest as any).estimatedSandwichCountMax;
+        const hasRangeData = hasActiveSandwichRange(
+          (eventRequest as any).estimatedSandwichCountMin,
+          (eventRequest as any).estimatedSandwichCountMax,
+          eventRequest.estimatedSandwichCount,
+        );
         const totalCount = eventRequest.estimatedSandwichCount || 0;
 
         setInlineSandwichMode(hasTypesData ? 'types' : hasRangeData ? 'range' : 'total');
@@ -536,6 +542,13 @@ export const ScheduledTab: React.FC = () => {
                 onReschedule={() => {
                   setRescheduleRequest(request);
                   setShowRescheduleDialog(true);
+                }}
+                onCancelEvent={async () => {
+                  const result = await handleStatusChange(request.id, 'cancelled');
+                  if (result === 'needs_reason') {
+                    setReasonDialogEventRequest(request);
+                    openDialog('cancel');
+                  }
                 }}
                 onDuplicate={() => {
                   setDuplicateSourceRequest(request);
