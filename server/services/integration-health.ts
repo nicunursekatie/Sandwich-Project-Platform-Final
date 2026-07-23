@@ -51,7 +51,7 @@ async function pingOpenAI(
     const start = Date.now();
     await client.chat.completions.create({
       model: 'gpt-5-mini',
-      max_tokens: 5,
+      max_completion_tokens: 5,
       messages: [{ role: 'user', content: 'Reply with OK' }],
     });
 

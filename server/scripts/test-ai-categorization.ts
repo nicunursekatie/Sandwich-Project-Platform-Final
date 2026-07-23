@@ -38,7 +38,7 @@ Do not include any explanation or additional text.`,
         },
       ],
       temperature: 0.1,
-      max_tokens: 100,
+      max_completion_tokens: 100,
     });
 
     const response = completion.choices[0]?.message?.content?.trim();

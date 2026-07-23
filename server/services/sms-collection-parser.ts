@@ -389,7 +389,7 @@ async function parseWithAI(message: string): Promise<CollectionParseResult> {
       model: 'gpt-5-mini',
       response_format: { type: 'json_object' },
       temperature: 0.1,
-      max_tokens: 500,
+      max_completion_tokens: 500,
       messages: [
         {
           role: 'system',
