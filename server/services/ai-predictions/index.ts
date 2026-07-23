@@ -180,7 +180,6 @@ Current trend: ${trend}
         },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.3,
       max_completion_tokens: 500,
     });
 

@@ -137,7 +137,6 @@ Return your analysis as a JSON object with this structure:
         },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.3, // Lower temperature for more consistent categorization
       max_completion_tokens: 500,
     });
 

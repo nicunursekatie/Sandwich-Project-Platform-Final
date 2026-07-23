@@ -37,7 +37,6 @@ Do not include any explanation or additional text.`,
           content: `Categorize this organization: "${organizationName}"`,
         },
       ],
-      temperature: 0.1,
       max_completion_tokens: 100,
     });
 

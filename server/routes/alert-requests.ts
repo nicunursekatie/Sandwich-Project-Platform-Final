@@ -298,7 +298,6 @@ Be concise and practical. Frame the response as a well-written alert request tha
           },
         ],
         max_completion_tokens: 500,
-        temperature: 0.7,
       });
 
       const generatedAlert = completion.choices[0]?.message?.content || 'Unable to generate suggestion';
