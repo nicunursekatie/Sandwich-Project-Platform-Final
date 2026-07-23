@@ -27,6 +27,7 @@ import { apiRequest, invalidateEventRequestQueries, applyEventRequestSaveToCache
 import type { EventRequest } from '@shared/schema';
 import { STATUS_DEFINITIONS } from './constants';
 import type { EventStatus } from '@shared/event-status-workflow';
+import { requiresReason, getReasonSatisfyingFields } from '@shared/event-status-workflow';
 import { getPickupDateTimeForInput, parsePostgresArray } from './utils';
 import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
@@ -34,6 +35,7 @@ import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { getEventRequestSourceIndicator } from '@/lib/event-request-source';
 import { PresenceAvatars } from '@/components/collaboration';
 import { RefrigerationWarningAlert } from './RefrigerationWarningBadge';
+import { StatusReasonDialog } from './dialogs/StatusReasonDialog';
 import {
   ContactInfoSection,
   BackupContactSection,
@@ -58,6 +60,7 @@ import {
   findMismatchedSavedFields,
   getDroppedServerFields,
   determineSandwichMode,
+  determineBaselineSandwichMode,
   determineActualSandwichMode,
 } from './form-utils';
 
@@ -228,6 +231,10 @@ function buildFormDataFromEventRequest(
     followUpOneMonthDate: (eventRequest as any)?.followUpOneMonthDate ? formatDateForInput((eventRequest as any).followUpOneMonthDate) : '',
     followUpNotes: (eventRequest as any)?.followUpNotes || '',
     assignedRecipientIds: parsePostgresArrayFn((eventRequest as any)?.assignedRecipientIds),
+    cancelledReason: (eventRequest as any)?.cancelledReason || '',
+    cancelledNotes: (eventRequest as any)?.cancelledNotes || '',
+    declinedReason: (eventRequest as any)?.declinedReason || '',
+    declinedNotes: (eventRequest as any)?.declinedNotes || '',
   };
 }
 
@@ -304,6 +311,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     backupContactPhone: '', backupContactRole: '', previouslyHosted: 'i_dont_know',
     deliveryTimeWindow: '',
     deliveryParkingAccess: '', isCorporatePriority: false, standbyExpectedDate: '',
+    cancelledReason: '', cancelledNotes: '', declinedReason: '', declinedNotes: '',
     dateFlexible: null as boolean | null,
   });
 
@@ -334,6 +342,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const [vanConflictChecked, setVanConflictChecked] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showStandbyFollowUpDialog, setShowStandbyFollowUpDialog] = useState(false);
+  const [showStatusReasonDialog, setShowStatusReasonDialog] = useState(false);
+  const [pendingReasonStatus, setPendingReasonStatus] = useState<'cancelled' | 'declined' | null>(null);
   const [standbyFollowUpDate, setStandbyFollowUpDate] = useState('');
   const [standbyFollowUpMode, setStandbyFollowUpMode] = useState<'specific' | 'one_week' | 'none'>('one_week');
   const standbySaveClickedRef = useRef(false);
@@ -1062,15 +1072,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // WITHOUT fieldOverrides so a value just entered this session (e.g. the
       // standby follow-up date) correctly registers as a change.
       if (originalFormDataRef.current) {
-        // The baseline MUST be serialized in the mode the data was ORIGINALLY
-        // in, not the mode the form is in now. Serializing the baseline with the
-        // current mode would force its companion fields (range min/max,
-        // sandwichTypes) to null too — so when the user switches e.g. Range →
-        // Exact Count, the diff sees null === null and silently drops the very
-        // fields that clear the stale range. The stale range then survives in the
-        // DB and getReportableSandwichCount keeps showing its midpoint instead of
-        // the exact count the user entered (the "500 saves as 498" bug).
-        const baselineSandwichMode = determineSandwichMode(
+        // The baseline MUST be serialized from what is PHYSICALLY stored, not
+        // the preferred UI mode. determineBaselineSandwichMode treats any
+        // persisted min/max as 'range' even when a disagreeing exact count means
+        // the UI opens in Exact Count — otherwise the diff sees null === null
+        // for the companion clears and silently drops them. The stale range then
+        // survives in the DB alongside the exact count (the "500 saves as 498"
+        // bug — midpoint of a leftover 490-506 range).
+        const baselineSandwichMode = determineBaselineSandwichMode(
           originalFormDataRef.current.sandwichTypes,
           originalFormDataRef.current.estimatedSandwichCountMin,
           originalFormDataRef.current.estimatedSandwichCountMax,
@@ -1121,6 +1130,51 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         return;
       }
 
+      // Reason-required statuses (cancelled / declined / non_event) need a note
+      // or structured reason. Catch this client-side so users get a clear message
+      // instead of a generic MISSING_REASON failure from the server.
+      const targetStatus = eventData.status as EventStatus | undefined;
+      if (
+        targetStatus &&
+        targetStatus !== eventRequest.status &&
+        requiresReason(targetStatus)
+      ) {
+        const reasonFields = getReasonSatisfyingFields(targetStatus);
+        const hasReason = reasonFields.some((field) => {
+          const incoming = (eventData as any)[field];
+          const existing = (eventRequest as any)[field];
+          const formValue = (formData as any)[field];
+          const effective =
+            incoming !== undefined
+              ? incoming
+              : formValue !== undefined && formValue !== ''
+                ? formValue
+                : existing;
+          return typeof effective === 'string' && effective.trim() !== '';
+        });
+        if (!hasReason) {
+          logger.log('⛔ Save blocked: missing reason for', targetStatus);
+          setIsSubmitting(false);
+          // If they somehow picked cancelled/declined without going through the
+          // reason dialog (e.g. recovered draft), open it now instead of a toast.
+          if (
+            (targetStatus === 'cancelled' || targetStatus === 'declined') &&
+            eventRequest
+          ) {
+            setPendingReasonStatus(targetStatus);
+            setTimeout(() => setShowStatusReasonDialog(true), 0);
+            return;
+          }
+          toast({
+            title: 'Reason required',
+            description: `Add a brief reason before marking this event as ${STATUS_DEFINITIONS[targetStatus]?.label || targetStatus}.`,
+            variant: 'destructive',
+            duration: 10000,
+          });
+          return;
+        }
+      }
+
       logger.log('🔄 Updating event (diff-based save):', eventRequest.id, 'changed field count:', Object.keys(eventData).length, 'van:', eventData.vanDriverNeeded);
       // Extra status-transition diagnostic: any standby-related save logs the
       // exact status payload being sent. Helps debug the "save closes but
@@ -1148,12 +1202,31 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   // ── Status Change Handler ──────────────────────────────────────────
 
   const handleStatusChange = (newStatus: EventStatus) => {
-    if (newStatus === 'cancelled' || newStatus === 'declined' || newStatus === 'non_event' || newStatus === 'rescheduled') {
+    // Cancelled / Declined require a structured reason (server MISSING_REASON).
+    // Open the reason dialog first; only apply the status once the user confirms.
+    // Defer open so the parent non-modal Dialog doesn't tear down on focus churn
+    // (same pattern as the standby follow-up dialog).
+    if (newStatus === 'cancelled' || newStatus === 'declined') {
+      if (!eventRequest) {
+        toast({
+          title: 'Reason required',
+          description: `Add a brief reason in Planning Notes or Scheduling Notes before marking this as ${STATUS_DEFINITIONS[newStatus]?.label || newStatus}.`,
+          duration: 8000,
+        });
+        setFormData(prev => ({ ...prev, status: newStatus }));
+        return;
+      }
+      setPendingReasonStatus(newStatus);
+      setTimeout(() => setShowStatusReasonDialog(true), 0);
+      return;
+    }
+
+    if (newStatus === 'non_event' || newStatus === 'rescheduled') {
       const statusLabel = STATUS_DEFINITIONS[newStatus]?.label || newStatus;
       toast({
         title: 'Status Change Requires Documentation',
         description: `When saving, please ensure you've documented the reason for changing to ${statusLabel} in the notes field.`,
-        duration: 6000,
+        duration: 8000,
       });
     }
     setFormData(prev => ({ ...prev, status: newStatus }));
@@ -1252,6 +1325,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     showDateConfirmation ||
     showVanConflictDialog ||
     showStandbyFollowUpDialog ||
+    showStatusReasonDialog ||
     showDeleteConfirmation;
 
   // ── Render ─────────────────────────────────────────────────────────
@@ -1684,6 +1758,37 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
           }
         }}
       />
+
+      {eventRequest && pendingReasonStatus && (
+        <StatusReasonDialog
+          isOpen={showStatusReasonDialog}
+          onClose={() => {
+            setShowStatusReasonDialog(false);
+            setPendingReasonStatus(null);
+          }}
+          request={eventRequest}
+          type={pendingReasonStatus}
+          onConfirm={async (_eventId, data) => {
+            // Stash status + structured reason on the form; Save will send them
+            // together and satisfy the server MISSING_REASON check (Susan's bug).
+            setFormData((prev) => ({
+              ...prev,
+              status: data.status,
+              cancelledReason: data.cancelledReason || '',
+              cancelledNotes: data.cancelledNotes || '',
+              declinedReason: data.declinedReason || '',
+              declinedNotes: data.declinedNotes || '',
+            }));
+            setShowStatusReasonDialog(false);
+            setPendingReasonStatus(null);
+            toast({
+              title: `${STATUS_DEFINITIONS[data.status as EventStatus]?.label || data.status} reason recorded`,
+              description: 'Click Save to apply the status change.',
+              duration: 6000,
+            });
+          }}
+        />
+      )}
 
       <DeleteConfirmDialog
         open={showDeleteConfirmation}

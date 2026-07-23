@@ -98,6 +98,12 @@ export interface EventFormData {
   volunteerInstructions: string;
   // Standby follow-up
   standbyExpectedDate: string;
+  // Reason fields for cancelled / declined (filled by StatusReasonDialog
+  // when the status dropdown is used in the edit form)
+  cancelledReason: string;
+  cancelledNotes: string;
+  declinedReason: string;
+  declinedNotes: string;
 }
 
 /**

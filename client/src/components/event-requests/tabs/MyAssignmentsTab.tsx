@@ -330,6 +330,13 @@ export const MyAssignmentsTab: React.FC = () => {
             onReschedule={() => {
               // Handle reschedule if needed
             }}
+            onCancelEvent={async () => {
+              const result = await handleStatusChange(request.id, 'cancelled');
+              if (result === 'needs_reason') {
+                setReasonDialogEventRequest(request);
+                openDialog('cancel');
+              }
+            }}
             onAssignTspContact={() => {
               setTspContactEventRequest(request);
               openDialog('tspContactAssignment');
