@@ -15,6 +15,7 @@ import {
   Clock,
   XCircle,
   Edit2,
+  Copy,
 } from 'lucide-react';
 import { formatEventDate } from '@/components/event-requests/utils';
 import { TrafficConflictBadge } from '@/components/event-requests/TrafficConflictBadge';
@@ -52,6 +53,7 @@ interface StalledCardProps {
   onReactivate: () => void;
   onLogContact: () => void;
   onDecline: () => void;
+  onDuplicate?: () => void;
   canDelete?: boolean;
   resolveUserName?: (id: string) => string;
 }
@@ -155,6 +157,7 @@ export const StalledCard: React.FC<StalledCardProps> = ({
   onReactivate,
   onLogContact,
   onDecline,
+  onDuplicate,
   canDelete = true,
   resolveUserName,
 }) => {
@@ -367,6 +370,20 @@ export const StalledCard: React.FC<StalledCardProps> = ({
                 <p>Edit this event</p>
               </TooltipContent>
             </Tooltip>
+
+            {onDuplicate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={onDuplicate} data-testid="button-duplicate" className="h-8">
+                    <Copy className="w-4 h-4 mr-1" />
+                    Duplicate
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create another event from this one</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
             {request.phone && (
               <Tooltip>

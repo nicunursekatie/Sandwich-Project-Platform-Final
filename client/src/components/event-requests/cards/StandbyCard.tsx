@@ -16,6 +16,7 @@ import {
   MessageSquare,
   FileText,
   Clock,
+  Copy,
 
 } from 'lucide-react';
 import { formatEventDate } from '@/components/event-requests/utils';
@@ -55,6 +56,7 @@ interface StandbyCardProps {
   onReactivate: () => void;
   onLogContact: () => void;
   onMoveToStalled: () => void;
+  onDuplicate?: () => void;
   canDelete?: boolean;
   resolveUserName?: (id: string) => string;
 }
@@ -153,6 +155,7 @@ export const StandbyCard: React.FC<StandbyCardProps> = ({
   onReactivate,
   onLogContact,
   onMoveToStalled,
+  onDuplicate,
   canDelete = true,
   resolveUserName,
 }) => {
@@ -353,6 +356,20 @@ export const StandbyCard: React.FC<StandbyCardProps> = ({
                 <p>Edit this event</p>
               </TooltipContent>
             </Tooltip>
+
+            {onDuplicate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={onDuplicate} data-testid="button-duplicate" className="h-8">
+                    <Copy className="w-4 h-4 mr-1" />
+                    Duplicate
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create another event from this one</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
             {request.phone && (
               <Tooltip>

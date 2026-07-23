@@ -8,16 +8,21 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useConfirmation } from '@/components/ui/confirmation-dialog';
 import { NewRequestCard } from '../cards/NewRequestCard';
+import { DuplicateEventDialog } from '../dialogs/DuplicateEventDialog';
 import { EventListSkeleton } from '../EventCardSkeleton';
 import { EventListBatchProviders } from '../EventListBatchProviders';
+import type { EventRequest } from '@shared/schema';
 
 export const NewRequestsTab: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { confirm, ConfirmationDialogComponent } = useConfirmation();
   const { filterRequestsByStatus } = useEventFilters();
-  const { deleteEventRequestMutation, updateEventRequestMutation, toggleCorporatePriorityMutation } = useEventMutations();
+  const { deleteEventRequestMutation, updateEventRequestMutation, toggleCorporatePriorityMutation, createEventRequestMutation } = useEventMutations();
   const { handleStatusChange } = useEventAssignments();
+
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateSourceRequest, setDuplicateSourceRequest] = useState<EventRequest | null>(null);
 
   // Inline editing state
   const [editingNewRequestId, setEditingNewRequestId] = useState<number | null>(null);
@@ -286,6 +291,10 @@ export const NewRequestsTab: React.FC = () => {
                 setLogContactEventRequest(request);
                 openDialog('logContact');
               }}
+              onDuplicate={() => {
+                setDuplicateSourceRequest(request);
+                setShowDuplicateDialog(true);
+              }}
               onAiSuggest={() => {
                 setAiSuggestionEventRequest(request);
                 openDialog('aiDateSuggestion');
@@ -330,6 +339,19 @@ export const NewRequestsTab: React.FC = () => {
         </EventListBatchProviders>
       )}
       {ConfirmationDialogComponent}
+      <DuplicateEventDialog
+        isOpen={showDuplicateDialog}
+        onClose={() => {
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+        request={duplicateSourceRequest}
+        onConfirm={async (newEventData) => {
+          await createEventRequestMutation.mutateAsync(newEventData);
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+      />
     </>
   );
 };

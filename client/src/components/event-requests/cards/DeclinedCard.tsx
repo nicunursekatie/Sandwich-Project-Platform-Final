@@ -17,6 +17,7 @@ import {
   X,
   MessageSquare,
   FileText,
+  Copy,
 } from 'lucide-react';
 import { formatEventDate } from '@/components/event-requests/utils';
 import { statusColors, statusIcons, statusOptions, statusBorderColors, statusBgColors } from '@/components/event-requests/constants';
@@ -54,6 +55,7 @@ interface DeclinedCardProps {
   onCall: () => void;
   onReactivate: () => void;
   onLogContact: () => void;
+  onDuplicate?: () => void;
   canDelete?: boolean;
   resolveUserName?: (id: string) => string;
 }
@@ -293,6 +295,7 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
   onCall,
   onReactivate,
   onLogContact,
+  onDuplicate,
   canDelete = true,
   resolveUserName,
 }) => {
@@ -465,6 +468,20 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
                 <p>Edit this event</p>
               </TooltipContent>
             </Tooltip>
+
+            {onDuplicate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={onDuplicate} data-testid="button-duplicate" className="h-8">
+                    <Copy className="w-4 h-4 mr-1" />
+                    Duplicate
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create another event from this one</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
             {request.phone && (
               <Tooltip>

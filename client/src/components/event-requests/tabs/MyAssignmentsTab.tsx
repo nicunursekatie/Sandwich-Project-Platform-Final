@@ -11,6 +11,7 @@ import { ScheduledCardEnhanced } from '../cards/ScheduledCardEnhanced';
 import { CompletedCard } from '../cards/CompletedCard';
 import { InProcessCard } from '../cards/InProcessCard';
 import { DeclinedCard } from '../cards/DeclinedCard';
+import { DuplicateEventDialog } from '../dialogs/DuplicateEventDialog';
 import { EventListBatchProviders } from '../EventListBatchProviders';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,12 +24,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import type { EventRequest } from '@shared/schema';
 
 export const MyAssignmentsTab: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { filterRequestsByStatus } = useEventFilters();
-  const { deleteEventRequestMutation, updateEventRequestMutation, updateScheduledFieldMutation, toggleCorporatePriorityMutation } = useEventMutations();
+  const { deleteEventRequestMutation, updateEventRequestMutation, updateScheduledFieldMutation, toggleCorporatePriorityMutation, createEventRequestMutation } = useEventMutations();
   const {
     handleStatusChange,
     openAssignmentDialog,
@@ -43,6 +45,9 @@ export const MyAssignmentsTab: React.FC = () => {
 
   // State for confirmation checkbox when editing dates (needed for ScheduledCardEnhanced)
   const [tempIsConfirmed, setTempIsConfirmed] = useState(false);
+
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateSourceRequest, setDuplicateSourceRequest] = useState<EventRequest | null>(null);
 
   const {
     isLoading,
@@ -168,6 +173,10 @@ export const MyAssignmentsTab: React.FC = () => {
       onContact: () => {
         setContactEventRequest(request);
         openDialog('contactOrganizer');
+      },
+      onDuplicate: () => {
+        setDuplicateSourceRequest(request);
+        setShowDuplicateDialog(true);
       },
     };
 
@@ -339,6 +348,10 @@ export const MyAssignmentsTab: React.FC = () => {
             onLogContact={() => {
               setLogContactEventRequest(request);
               openDialog('logContact');
+            }}
+            onDuplicate={() => {
+              setDuplicateSourceRequest(request);
+              setShowDuplicateDialog(true);
             }}
             startEditing={(field, value) => {
               setEditingScheduledId(request.id);
@@ -654,6 +667,19 @@ export const MyAssignmentsTab: React.FC = () => {
         </div>
         </EventListBatchProviders>
       )}
+      <DuplicateEventDialog
+        isOpen={showDuplicateDialog}
+        onClose={() => {
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+        request={duplicateSourceRequest}
+        onConfirm={async (newEventData) => {
+          await createEventRequestMutation.mutateAsync(newEventData);
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+      />
     </div>
   );
 };
