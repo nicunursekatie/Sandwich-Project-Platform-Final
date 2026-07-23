@@ -103,6 +103,7 @@ export const ScheduledTab: React.FC = () => {
     setAiIntakeAssistantEventRequest,
     setNextActionEventRequest,
     setNextActionMode,
+    setReasonDialogEventRequest,
     editingScheduledId,
     setEditingScheduledId,
     editingField,
@@ -541,6 +542,13 @@ export const ScheduledTab: React.FC = () => {
                 onReschedule={() => {
                   setRescheduleRequest(request);
                   setShowRescheduleDialog(true);
+                }}
+                onCancelEvent={async () => {
+                  const result = await handleStatusChange(request.id, 'cancelled');
+                  if (result === 'needs_reason') {
+                    setReasonDialogEventRequest(request);
+                    openDialog('cancel');
+                  }
                 }}
                 onDuplicate={() => {
                   setDuplicateSourceRequest(request);

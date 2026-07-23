@@ -108,7 +108,7 @@ import { Flag } from 'lucide-react';
 import { ProposeToSheetButton } from '@/components/propose-to-sheet-button';
 import { InlineRecipientAllocationEditor } from '../InlineRecipientAllocationEditor';
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
-import { RefreshCw, Copy } from 'lucide-react';
+import { RefreshCw, Copy, Ban } from 'lucide-react';
 import type { RecipientAllocation } from '../RecipientAllocationEditor';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
@@ -133,6 +133,7 @@ interface ScheduledCardEnhancedProps {
   onEditTspContact: () => void;
   onLogContact: () => void;
   onReschedule: () => void;
+  onCancelEvent?: () => void;
   onDuplicate?: () => void;
   onAiIntakeAssist?: () => void;
   startEditing: (field: string, value: string) => void;
@@ -197,6 +198,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   onEditTspContact,
   onLogContact,
   onReschedule,
+  onCancelEvent,
   onDuplicate,
   onAiIntakeAssist,
   startEditing,
@@ -4125,6 +4127,26 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             <Button size="sm" variant="outline" onClick={onReschedule}>
               Reschedule
             </Button>
+
+            {onCancelEvent && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onCancelEvent}
+                    className="border-red-400 text-red-600 hover:bg-red-50"
+                    data-testid="button-cancel-event"
+                  >
+                    <Ban className="w-4 h-4 mr-1" />
+                    Cancel Event
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Cancel this scheduled event (requires a reason)</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
             {onDuplicate && (
               <Button size="sm" variant="outline" onClick={onDuplicate}>

@@ -27,6 +27,7 @@ import { apiRequest, invalidateEventRequestQueries, applyEventRequestSaveToCache
 import type { EventRequest } from '@shared/schema';
 import { STATUS_DEFINITIONS } from './constants';
 import type { EventStatus } from '@shared/event-status-workflow';
+import { requiresReason, getReasonSatisfyingFields } from '@shared/event-status-workflow';
 import { getPickupDateTimeForInput, parsePostgresArray } from './utils';
 import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
@@ -1121,6 +1122,45 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         return;
       }
 
+      // Reason-required statuses (cancelled / declined / non_event) need a note
+      // or structured reason. Catch this client-side so users get a clear message
+      // instead of a generic MISSING_REASON failure from the server.
+      const targetStatus = eventData.status as EventStatus | undefined;
+      if (
+        targetStatus &&
+        targetStatus !== eventRequest.status &&
+        requiresReason(targetStatus)
+      ) {
+        const reasonFields = getReasonSatisfyingFields(targetStatus);
+        const hasReason = reasonFields.some((field) => {
+          const incoming = (eventData as any)[field];
+          const existing = (eventRequest as any)[field];
+          const formValue =
+            field === 'planningNotes'
+              ? formData.planningNotes
+              : field === 'schedulingNotes'
+                ? formData.schedulingNotes
+                : undefined;
+          const effective =
+            incoming !== undefined ? incoming : (formValue !== undefined ? formValue : existing);
+          return typeof effective === 'string' && effective.trim() !== '';
+        });
+        if (!hasReason) {
+          logger.log('⛔ Save blocked: missing reason for', targetStatus);
+          setIsSubmitting(false);
+          toast({
+            title: 'Reason required',
+            description:
+              targetStatus === 'cancelled'
+                ? 'Add a brief cancellation reason in Planning Notes or Scheduling Notes, then save — or use Cancel Event on the card.'
+                : `Add a brief reason in Planning Notes or Scheduling Notes before marking this event as ${STATUS_DEFINITIONS[targetStatus]?.label || targetStatus}.`,
+            variant: 'destructive',
+            duration: 10000,
+          });
+          return;
+        }
+      }
+
       logger.log('🔄 Updating event (diff-based save):', eventRequest.id, 'changed field count:', Object.keys(eventData).length, 'van:', eventData.vanDriverNeeded);
       // Extra status-transition diagnostic: any standby-related save logs the
       // exact status payload being sent. Helps debug the "save closes but
@@ -1152,8 +1192,11 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       const statusLabel = STATUS_DEFINITIONS[newStatus]?.label || newStatus;
       toast({
         title: 'Status Change Requires Documentation',
-        description: `When saving, please ensure you've documented the reason for changing to ${statusLabel} in the notes field.`,
-        duration: 6000,
+        description:
+          newStatus === 'cancelled'
+            ? `Before saving as ${statusLabel}, add a brief reason in Planning Notes or Scheduling Notes (or use Cancel Event on the card).`
+            : `When saving, please ensure you've documented the reason for changing to ${statusLabel} in the notes field.`,
+        duration: 8000,
       });
     }
     setFormData(prev => ({ ...prev, status: newStatus }));
