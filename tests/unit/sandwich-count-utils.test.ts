@@ -26,6 +26,11 @@ describe('hasActiveSandwichRange', () => {
   it('is false when there is no range', () => {
     expect(hasActiveSandwichRange(null, null, 500)).toBe(false);
   });
+
+  it('is false when only one bound is present (incomplete range)', () => {
+    expect(hasActiveSandwichRange(490, null, null)).toBe(false);
+    expect(hasActiveSandwichRange(null, 506, null)).toBe(false);
+  });
 });
 
 describe('getReportableSandwichCount (500 vs 498)', () => {
