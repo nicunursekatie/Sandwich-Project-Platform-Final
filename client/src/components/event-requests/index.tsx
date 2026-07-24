@@ -25,7 +25,7 @@ import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Users, Package, HelpCircle, Calendar, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download, Filter, ChevronDown } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download, Filter, ChevronDown, FileSpreadsheet } from 'lucide-react';
 import { WEEK_SCOPE_LABELS } from './lib/eventRequestsListQuery';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -50,6 +50,7 @@ import {
 // Import existing components that we'll reuse
 import RequestFilters from '@/components/event-requests/RequestFilters';
 import { VanConflictsButton } from '@/components/event-requests/VanConflictsButton';
+import { PlanningSheetImportDialog } from '@/components/event-requests/PlanningSheetImportDialog';
 import EventSchedulingForm from '@/components/event-requests/EventSchedulingForm';
 import EventCollectionLog from '@/components/event-requests/EventCollectionLog';
 import ToolkitSentDialog from '@/components/event-requests/ToolkitSentDialog';
@@ -332,6 +333,7 @@ const EventRequestsManagementContent: React.FC = () => {
   const hasLoggedInitialView = useRef(false);
 
   // Check if user has permission to sync event requests from Google Sheets
+  const [planningImportOpen, setPlanningImportOpen] = useState(false);
   const canSyncEvents = user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_SYNC) ||
     user?.role === 'admin' || user?.role === 'super_admin';
 
@@ -609,6 +611,21 @@ const EventRequestsManagementContent: React.FC = () => {
                   {!isMobile && 'Sync'}
                 </button>
               )}
+              {canSyncEvents && (
+                <button
+                  onClick={() => setPlanningImportOpen(true)}
+                  className="premium-btn-outline text-sm"
+                  title="Compare the planning sheet with the app and import missing events (review first — nothing is added until you approve)"
+                  data-testid="button-planning-sheet-import"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  {!isMobile && 'Import from Planning Sheet'}
+                </button>
+              )}
+              <PlanningSheetImportDialog
+                open={planningImportOpen}
+                onOpenChange={setPlanningImportOpen}
+              />
               <VanConflictsButton isMobile={isMobile} />
               {/* Export — available on any list-view tab. We export the same
                   rows the tab displays (via filterRequestsByStatus, skipping

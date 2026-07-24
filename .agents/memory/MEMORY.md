@@ -4,3 +4,4 @@
 - [Prod DB connectivity](prod-db-connectivity.md) — a component "stalling/failing to load" in prod is usually Neon DB unreachable (fetch failed / ECONNRESET / "terminating connection due to administrator command"); check deploy logs before blaming the component; socket ERR_NAME_NOT_RESOLVED = client network blip.
 - [Event-request timestamp fields](event-request-timestamp-fields.md) — client-sent timestamp fields must be in the shared string→Date list or Drizzle kills the whole save (broke standby moves in prod).
 - [sandwich_collections jsonb quirk](sandwich-collections-jsonb.md) — some prod rows store group_collections as string-encoded jsonb; totals scripts must parse it or they undercount.
+- [Type-check OOM workaround](typecheck-oom.md) — full tsc needs NODE_OPTIONS=--max-old-space-size=6144; a silent zero-error result means the run crashed (repo has ~1.4k pre-existing errors).

@@ -65,6 +65,7 @@ import { createOnboardingRouter } from './onboarding';
 import { createGoogleSheetsRouter } from './google-sheets';
 import { createGoogleCalendarRouter } from './google-calendar';
 import { createPlanningSheetProposalsRouter } from './planning-sheet-proposals';
+import { createPlanningSheetImportRouter } from './planning-sheet-import';
 import { createRouteOptimizationRouter } from './routes';
 import { createRecipientTspContactsRouter } from './recipient-tsp-contacts';
 import { createSandwichDistributionsRouter } from './sandwich-distributions';
@@ -1207,6 +1208,18 @@ export function createMainRoutes(deps: RouterDependencies) {
     planningSheetProposalsRouter
   );
   router.use('/api/planning-sheet-proposals', createErrorHandler('planning-sheet-proposals'));
+
+  // Review-first PULL from the planning sheet (read sheet → human approves → create events)
+  const planningSheetImportRouter = createPlanningSheetImportRouter(
+    deps.isAuthenticated,
+    deps.requirePermission
+  );
+  router.use(
+    '/api/planning-sheet-import',
+    ...createStandardMiddleware(),
+    planningSheetImportRouter
+  );
+  router.use('/api/planning-sheet-import', createErrorHandler('planning-sheet-import'));
 
   // Google Calendar integration
   const googleCalendarRouter = createGoogleCalendarRouter(deps);
