@@ -70,25 +70,27 @@ export function getRangeMidpoint(minValue: number | string | null | undefined, m
 }
 
 /**
- * True when min/max should drive UI/reporting as an active range.
+ * True when min/max should drive UI as a complete active range.
  *
- * Returns false when an exact estimatedSandwichCount is present AND disagrees
- * with the range midpoint — that signature is the "500 saves as 498" bug:
- * a leftover range whose midpoint overrides the exact count the user entered.
- * Legitimate imports store count === midpoint and stay treated as a range.
+ * Requires BOTH bounds so call sites can safely render `${min}-${max}` without
+ * producing strings like "490-null". Also returns false when an exact
+ * estimatedSandwichCount is present AND disagrees with the range midpoint —
+ * that signature is the "500 saves as 498" bug (a leftover range whose
+ * midpoint overrides the exact count the user entered). Legitimate imports
+ * store count === midpoint and stay treated as a range.
  */
 export function hasActiveSandwichRange(
   estimatedSandwichCountMin: number | string | null | undefined,
   estimatedSandwichCountMax: number | string | null | undefined,
   estimatedSandwichCount?: number | string | null,
 ): boolean {
-  const midpoint = getRangeMidpoint(estimatedSandwichCountMin, estimatedSandwichCountMax);
-  if (midpoint === null) return false;
+  const min = toFiniteCount(estimatedSandwichCountMin);
+  const max = toFiniteCount(estimatedSandwichCountMax);
+  if (min === null || max === null) return false;
 
+  const midpoint = Math.round((Math.min(min, max) + Math.max(min, max)) / 2);
   const exact = toFiniteCount(estimatedSandwichCount);
-  if (exact !== null && exact !== midpoint) return false;
-
-  return true;
+  return exact === null || exact === midpoint;
 }
 
 export function getReportableSandwichCount(

@@ -116,14 +116,14 @@ export function buildEventDataForServer(
     // stashes them on formData before save.
     ...(resolvedStatus === 'cancelled'
       ? {
-          cancelledReason: (formData as any).cancelledReason || null,
-          cancelledNotes: (formData as any).cancelledNotes || null,
+          cancelledReason: formData.cancelledReason || null,
+          cancelledNotes: formData.cancelledNotes || null,
         }
       : {}),
     ...(resolvedStatus === 'declined'
       ? {
-          declinedReason: (formData as any).declinedReason || null,
-          declinedNotes: (formData as any).declinedNotes || null,
+          declinedReason: formData.declinedReason || null,
+          declinedNotes: formData.declinedNotes || null,
         }
       : {}),
 
