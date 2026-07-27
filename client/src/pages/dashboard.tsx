@@ -122,7 +122,6 @@ const OnboardingAdmin = lazyWithRetry(() => import('@/pages/onboarding-admin'));
 const WorkLogPage = lazyWithRetry(() => import('@/pages/work-log'));
 const SuggestionsPortal = lazyWithRetry(() => import('@/pages/suggestions'));
 const GoogleSheetsPage = lazyWithRetry(() => import('@/pages/google-sheets'));
-const PlanningSheetProposalsPage = lazyWithRetry(() => import('@/pages/planning-sheet-proposals'));
 const GmailStyleInbox = lazyWithRetry(() => import('@/components/gmail-style-inbox'));
 const MessagingInbox = lazyWithRetry(() => import('@/pages/messaging-inbox'));
 const ToolkitTabs = lazyWithRetry(() => import('@/components/toolkit-tabs').then(m => ({ default: m.ToolkitTabs })));
@@ -866,8 +865,6 @@ export default function Dashboard({
         return <SuggestionsPortal />;
       case 'google-sheets':
         return <GoogleSheetsPage />;
-      case 'planning-sheet-proposals':
-        return <PlanningSheetProposalsPage />;
       // Legacy 'committee' and 'committee-chat' routes redirect to Stream Chat
       case 'committee':
       case 'committee-chat':

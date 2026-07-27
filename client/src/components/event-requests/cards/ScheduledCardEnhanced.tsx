@@ -93,7 +93,6 @@ import { hasPermission } from '@shared/unified-auth-utils';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread } from '@/components/collaboration';
 import { useToast } from '@/hooks/use-toast';
-import { addEventToGoogleSheet, formatDateForGoogleSheet } from '@/lib/google-sheets-api';
 import { Sheet } from 'lucide-react';
 import { apiRequest, applyPatchResponseToCache } from '@/lib/queryClient';
 import { patchEventRequestVerified } from '@/lib/event-save-verification';
@@ -105,7 +104,6 @@ import {
 } from '@/components/ui/tooltip';
 import { PreEventFlagsBanner, PreEventFlagsDialog } from '@/components/pre-event-flags';
 import { Flag } from 'lucide-react';
-import { ProposeToSheetButton } from '@/components/propose-to-sheet-button';
 import { InlineRecipientAllocationEditor } from '../InlineRecipientAllocationEditor';
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
 import { RefreshCw, Copy, Ban } from 'lucide-react';
@@ -276,7 +274,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [tempEndTime, setTempEndTime] = useState('');
   const [tempPickupTime, setTempPickupTime] = useState('');
   const [tempOvernightHolding, setTempOvernightHolding] = useState('');
-  const [isExportingToSheet, setIsExportingToSheet] = useState(false);
 
   // State for recording actual/final sandwich count
   const [isEditingActualCount, setIsEditingActualCount] = useState(false);
@@ -572,244 +569,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     dateLabel = request.status === 'completed' ? 'Event Date' : 'Scheduled Date';
   }
 
-  // Handler to export event to Google Sheet
-  const handleExportToGoogleSheet = async () => {
-    const eventDate = getEffectiveEventDate(request);
-    if (!eventDate) {
-      toast({
-        title: 'Missing Date',
-        description: 'Cannot export event without a date.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!request.organizationName) {
-      toast({
-        title: 'Missing Organization Name',
-        description: 'Cannot export event without an organization name.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsExportingToSheet(true);
-
-    try {
-      // Build staffing string in the format the spreadsheet expects:
-      // D = driver needed, D: Name = driver assigned
-      // S = speaker needed, S: Name = speaker assigned
-      // V = volunteer needed, V: Name = volunteer assigned
-      // VD = van driver needed, VD: Name = van driver assigned
-      const staffingParts: string[] = [];
-
-      // Drivers
-      const assignedDriverIds = parsePostgresArray(request.assignedDriverIds);
-      const driversNeededCount = request.driversNeeded || 0;
-      assignedDriverIds.forEach(id => {
-        const isCustom = id.startsWith('custom-');
-        const idLooksLikeName = id &&
-          !id.startsWith('user_') && !id.startsWith('driver_') && !id.startsWith('driver-') &&
-          !id.startsWith('custom-') && !id.startsWith('host-contact-') &&
-          !/^\d+$/.test(id) && id.includes(' ');
-        const resolvedName = resolveUserName(id);
-        const name = isCustom
-          ? extractCustomName(id)
-          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
-        staffingParts.push(name ? `D: ${name}` : 'D');
-      });
-      // Add unfilled regular driver slots (van driver is tracked separately)
-      const unfilledDrivers = Math.max(0, driversNeededCount - assignedDriverIds.length);
-      for (let i = 0; i < unfilledDrivers; i++) {
-        staffingParts.push('D');
-      }
-
-      // Van Driver (separate from regular drivers)
-      if (request.assignedVanDriverId) {
-        const name = resolveUserName(request.assignedVanDriverId);
-        staffingParts.push(name ? `VD: ${name}` : 'VD');
-      } else if (request.vanDriverNeeded) {
-        staffingParts.push('VD');
-      }
-
-      // Speakers
-      const speakerDetails = request.speakerDetails as Record<string, { name?: string }> | null;
-      const assignedSpeakerIds = speakerDetails ? Object.keys(speakerDetails) : [];
-      const speakersNeededCount = request.speakersNeeded || 0;
-      assignedSpeakerIds.forEach(id => {
-        const detailName = speakerDetails?.[id]?.name;
-        const customName = extractCustomName(id);
-        const userName = resolveUserName(id);
-        const name = detailName || customName || userName;
-        staffingParts.push(name ? `S: ${name}` : 'S');
-      });
-      // Add unfilled speaker slots
-      const unfilledSpeakers = Math.max(0, speakersNeededCount - assignedSpeakerIds.length);
-      for (let i = 0; i < unfilledSpeakers; i++) {
-        staffingParts.push('S');
-      }
-
-      // Volunteers
-      const assignedVolunteerIds = parsePostgresArray(request.assignedVolunteerIds);
-      const volunteersNeededCount = request.volunteersNeeded || 0;
-      assignedVolunteerIds.forEach(id => {
-        const detailName = (request.volunteerDetails as Record<string, { name?: string }>)?.[id]?.name;
-        const resolvedName = resolveUserName(id);
-        const name = resolveAssignmentDisplayName(id, {
-          storedName: detailName,
-          resolvedName,
-          fallback: resolvedName || 'Unknown Volunteer',
-        });
-        staffingParts.push(name ? `V: ${name}` : 'V');
-      });
-      // Add unfilled volunteer slots
-      const unfilledVolunteers = Math.max(0, volunteersNeededCount - assignedVolunteerIds.length);
-      for (let i = 0; i < unfilledVolunteers; i++) {
-        staffingParts.push('V');
-      }
-
-      // Build details from various notes (planning notes go here)
-      const detailParts: string[] = [];
-      if (request.planningNotes) detailParts.push(request.planningNotes);
-      if (request.schedulingNotes) detailParts.push(request.schedulingNotes);
-      if (request.specialRequirements) detailParts.push(request.specialRequirements);
-      if (request.distributionNotes) detailParts.push(request.distributionNotes);
-
-      // Determine sandwich type (Deli or PBJ) and calculate total from sandwichTypes if needed
-      let sandwichTypeStr = '';
-      let sandwichTotal = request.estimatedSandwichCount || 0;
-      const parsedTypes = parseSandwichTypes(request.sandwichTypes);
-      if (parsedTypes && parsedTypes.length > 0) {
-        // Filter out unknown types and format type names nicely
-        const validTypes = parsedTypes.filter(t => t.type.toLowerCase() !== 'unknown' && t.quantity > 0);
-        sandwichTypeStr = validTypes.map(t => {
-          // Format type name: capitalize first letter, handle special cases
-          const typeName = t.type.toLowerCase();
-          if (typeName === 'pbj' || typeName === 'pb&j') return 'PB&J';
-          if (typeName === 'deli') return 'Deli';
-          return t.type.charAt(0).toUpperCase() + t.type.slice(1);
-        }).join(', ');
-        // Calculate total from sandwichTypes
-        const typesTotal = validTypes.reduce((sum, t) => sum + (t.quantity || 0), 0);
-        // Use the larger of estimatedSandwichCount or calculated total
-        if (typesTotal > sandwichTotal) {
-          sandwichTotal = typesTotal;
-        }
-      }
-
-      // Get TSP contact name - check multiple possible fields
-      let tspContactName = request.customTspContact || '';
-      if (!tspContactName && request.tspContactAssigned) {
-        tspContactName = resolveUserName(request.tspContactAssigned);
-      }
-      if (!tspContactName && request.tspContact) {
-        tspContactName = resolveUserName(request.tspContact);
-      }
-
-      // Get recipient/host info
-      const recipientIds = parsePostgresArray(request.assignedRecipientIds);
-      const recipientNames = recipientIds.map(id => getRecipientName(id)).filter(Boolean).join(', ');
-
-      // Determine van booked status with AM/PM based on event start time
-      let vanBookedStatus = '';
-      if (request.isDhlVan) {
-        vanBookedStatus = 'DHL Van';
-      } else if (request.assignedVanDriverId || request.customVanDriverName) {
-        // Van is booked - determine AM/PM/All Day from event start time
-        if (request.eventStartTime) {
-          // Parse time string (could be "14:00", "2:00 PM", etc.)
-          const timeStr = request.eventStartTime;
-          let hour = 0;
-
-          // Try parsing HH:MM format
-          const match24 = timeStr.match(/^(\d{1,2}):(\d{2})/);
-          if (match24) {
-            hour = parseInt(match24[1], 10);
-          }
-          // Check for PM indicator in 12-hour format
-          if (timeStr.toLowerCase().includes('pm') && hour < 12) {
-            hour += 12;
-          } else if (timeStr.toLowerCase().includes('am') && hour === 12) {
-            hour = 0;
-          }
-
-          vanBookedStatus = hour < 12 ? 'AM' : 'PM';
-        } else {
-          // No start time specified
-          vanBookedStatus = 'All Day';
-        }
-      } else if (request.vanDriverNeeded) {
-        vanBookedStatus = 'Needed';
-      } else if (request.selfTransport) {
-        vanBookedStatus = 'Self Transport';
-      }
-
-      // Build the payload for Google Sheets
-      const sheetPayload = {
-        // Required
-        date: formatDateForGoogleSheet(eventDate),
-        groupName: request.organizationName,
-        // Timing
-        startTime: request.eventStartTime ? formatTime12Hour(request.eventStartTime) : '',
-        endTime: request.eventEndTime ? formatTime12Hour(request.eventEndTime) : '',
-        pickupTime: request.pickupTime ? formatTime12Hour(request.pickupTime) : '',
-        // Details
-        details: detailParts.join(' | '),
-        socialPost: request.socialMediaPostNotes || '',
-        staffing: staffingParts.join(', '),
-        estimate: sandwichTotal ? String(sandwichTotal) : '',
-        sandwichType: sandwichTypeStr,
-        // Contact info - use submitter contact fields
-        contactName: [request.firstName, request.lastName].filter(Boolean).join(' ') || '',
-        contactEmail: request.email || '',
-        contactPhone: request.phone || '',
-        tspContact: tspContactName,
-        // Location
-        address: request.eventAddress || '',
-        vanBooked: vanBookedStatus,
-        // Notes
-        notes: request.followUpNotes || '',
-        additionalNotes: request.duplicateNotes || '',
-        waitingOn: '',
-        recipientHost: recipientNames,
-      };
-
-      // Debug logging - show exactly what's being sent to Google Sheets
-      console.log('=== GOOGLE SHEETS PAYLOAD ===');
-      console.log('estimate (Column J):', sheetPayload.estimate);
-      console.log('sandwichType (Column K):', sheetPayload.sandwichType);
-      console.log('tspContact (Column Q):', sheetPayload.tspContact);
-      console.log('vanBooked (Column S):', sheetPayload.vanBooked);
-      console.log('Full payload:', sheetPayload);
-
-      const result = await addEventToGoogleSheet(sheetPayload);
-
-      if (result.success) {
-        toast({
-          title: 'Added to Google Sheet',
-          description: result.message,
-        });
-        // Mark as added to official sheet
-        if (!request.addedToOfficialSheet) {
-          quickToggleBoolean('addedToOfficialSheet', false);
-        }
-      } else {
-        toast({
-          title: 'Export Failed',
-          description: result.message,
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Export Error',
-        description: error instanceof Error ? error.message : 'Unknown error occurred',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsExportingToSheet(false);
-    }
-  };
 
   // Handlers for recording actual/final sandwich count
   const startEditingActualCount = () => {
@@ -4157,17 +3916,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
             {/* Group 5 — Official calendar / Google Sheet */}
             <div className="h-6 w-px bg-slate-200 mx-0.5" aria-hidden="true" />
-            <ProposeToSheetButton
-              eventId={request.id}
-              organizationName={request.organizationName || 'Unknown'}
-              variant="outline"
-              size="sm"
-              showLabel
-            />
 
-            {/* For users who type the event into the Google Sheet by hand instead of
-                using "Push to Sheet" — lets them mark it On Calendar without an actual
-                push. Hidden once the event is already on the calendar. */}
+            {/* The app never writes to the Planning Sheet — rows are added there by hand.
+                This button only marks the event as On Calendar inside the app.
+                Hidden once the event is already on the calendar. */}
             {canEdit && !request.addedToOfficialSheet && (
               <Button
                 size="sm"
