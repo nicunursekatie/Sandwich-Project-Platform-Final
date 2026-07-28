@@ -1,6 +1,10 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
+import { db } from './db';
+import { eq, desc, inArray } from 'drizzle-orm';
+import { eventRequests, proposedSheetChanges, users } from '@shared/schema';
 import { logger } from './utils/production-safe-logger';
+import { getEffectiveEventDate } from '../shared/event-validation-utils';
 
 /**
  * Planning Sheet Column Mapping
@@ -296,9 +300,8 @@ export class PlanningSheetSyncService {
       undefined,
       cleanPrivateKey,
       [
-        // Read-only on purpose: the app must never write to the Planning Sheet.
-        // Even if write code is reintroduced by mistake, Google will reject it.
-        'https://www.googleapis.com/auth/spreadsheets.readonly',
+        'https://www.googleapis.com/auth/spreadsheets',
+        'https://www.googleapis.com/auth/drive',
       ]
     );
 
@@ -355,6 +358,884 @@ export class PlanningSheetSyncService {
     });
   }
 
+  /**
+   * Convert an EventRequest from the app into Planning Sheet row format
+   */
+  async eventToSheetRow(eventId: number): Promise<string[] | null> {
+    const event = await db
+      .select()
+      .from(eventRequests)
+      .where(eq(eventRequests.id, eventId))
+      .limit(1);
+
+    if (!event || event.length === 0) {
+      return null;
+    }
+
+    const e = event[0];
+
+    // Get assigned driver/speaker/volunteer names
+    const driverNames = await this.getAssignedNames(e.assignedDriverIds || []);
+    const speakerNames = await this.getAssignedNames(e.assignedSpeakerIds || []);
+    const volunteerNames = await this.getAssignedNames(e.assignedVolunteerIds || []);
+
+    // Resolve TSP contact - either customTspContact (free text) or
+    // tspContact (user ID). The planning sheet TSP Contact column only
+    // holds first names by convention (the team recognizes Katie/Kim/
+    // Christine etc.), so strip everything after the first whitespace.
+    // This is intentionally simple: "Kim Long" → "Kim", "Katie" → "Katie",
+    // "Kim L." → "Kim". If someone has a two-word first name we'd lose
+    // the second word, but that hasn't come up and the sheet convention
+    // is single token.
+    const toFirstName = (raw: string): string => {
+      const trimmed = (raw || '').trim();
+      if (!trimmed) return '';
+      return trimmed.split(/\s+/)[0];
+    };
+    let tspContactName = '';
+    if (e.customTspContact) {
+      tspContactName = toFirstName(e.customTspContact);
+    } else if (e.tspContact) {
+      const names = await this.getAssignedNames([e.tspContact]);
+      tspContactName = toFirstName(names[0] || e.tspContact);
+    }
+
+    // Build staffing string
+    const staffing: StaffingInfo = {
+      driver: {
+        needed: (e.driversNeeded || 0) > 0 || driverNames.length > 0,
+        assigned: driverNames.length > 0 ? driverNames.join(', ') : null,
+        isVanDriver: e.vanDriverNeeded || false,
+      },
+      speaker: {
+        needed: (e.speakersNeeded || 0) > 0 || speakerNames.length > 0,
+        assigned: speakerNames.length > 0 ? speakerNames.join(', ') : null,
+      },
+      volunteer: {
+        needed: (e.volunteersNeeded || 0) > 0 || volunteerNames.length > 0,
+        assigned: volunteerNames.length > 0 ? volunteerNames.join(', ') : null,
+      },
+    };
+
+    // Format date with 2-digit year (M/D/YY)
+    const eventDate = getEffectiveEventDate(e);
+    const eventDateObj = eventDate ? new Date(eventDate) : null;
+    const dateStr = eventDateObj ? eventDateObj.toLocaleDateString('en-US', {
+      month: 'numeric',
+      day: 'numeric',
+      year: '2-digit'
+    }) : '';
+
+    const dayOfWeek = eventDateObj ? eventDateObj.toLocaleDateString('en-US', {
+      weekday: 'long'
+    }) : '';
+
+    // Convert military time (e.g., "14:00" or "14:00:00") to 12-hour format (e.g., "2:00 PM")
+    const formatTime12Hour = (timeStr: string | null | undefined): string => {
+      if (!timeStr) return '';
+      // Handle HH:MM or HH:MM:SS format
+      const match = timeStr.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+      if (!match) return timeStr; // Return as-is if not recognized format
+
+      let hours = parseInt(match[1], 10);
+      const minutes = match[2];
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+
+      if (hours === 0) {
+        hours = 12;
+      } else if (hours > 12) {
+        hours -= 12;
+      }
+
+      return `${hours}:${minutes} ${ampm}`;
+    };
+
+    // Format sandwich types for the planning sheet using the canonical
+    // user-facing label from constants.ts SANDWICH_TYPES. The raw stored
+    // values include "deli_turkey" and "deli_ham" (because turkey/ham
+    // are deli sub-types in our taxonomy), but the planning sheet
+    // column has conditional formatting that expects the bare label —
+    // "Turkey", "Ham", "Deli", "PBJ" — not "Deli_turkey" or "Deli,
+    // Turkey". Map raw → label explicitly.
+    const sandwichTypes = e.sandwichTypes as Array<{ type: string; quantity?: number }> | null;
+    const SANDWICH_TYPE_LABELS: Record<string, string> = {
+      pbj: 'PBJ',
+      'pb&j': 'PBJ',
+      deli: 'Deli',
+      deli_turkey: 'Turkey',
+      turkey: 'Turkey',
+      deli_ham: 'Ham',
+      ham: 'Ham',
+      chicken: 'Chicken',
+      unknown: '',
+    };
+    const formatSandwichType = (type: string): string => {
+      const lower = (type || '').toLowerCase();
+      if (lower in SANDWICH_TYPE_LABELS) return SANDWICH_TYPE_LABELS[lower];
+      // Fallback for any unknown future type: capitalize first letter.
+      return type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
+    };
+    // Dedupe so an event tagged with both "deli" and "deli_turkey"
+    // doesn't render "Deli, Turkey" — pick the more specific label and
+    // drop the empties.
+    const deliOrPbj = sandwichTypes
+      ? Array.from(
+          new Set(
+            sandwichTypes
+              .map((st) => formatSandwichType(st.type))
+              .filter((label) => label.length > 0),
+          ),
+        ).join(', ')
+      : '';
+
+    // Build the row array matching column order
+    const row: string[] = new Array(27).fill('');
+    row[PLANNING_SHEET_COLUMNS.DATE] = dateStr;
+    row[PLANNING_SHEET_COLUMNS.DAY_OF_WEEK] = dayOfWeek;
+    row[PLANNING_SHEET_COLUMNS.GROUP_NAME] = e.organizationName || '';
+    row[PLANNING_SHEET_COLUMNS.EVENT_START_TIME] = formatTime12Hour(e.eventStartTime);
+    row[PLANNING_SHEET_COLUMNS.EVENT_END_TIME] = formatTime12Hour(e.eventEndTime);
+    row[PLANNING_SHEET_COLUMNS.PICK_UP_TIME] = formatTime12Hour(e.pickupTime);
+    row[PLANNING_SHEET_COLUMNS.PICK_UP_NEXT_DAY] = e.overnightHoldingLocation ? 'Yes' : '';
+    row[PLANNING_SHEET_COLUMNS.ALL_DETAILS] = e.message || '';
+    row[PLANNING_SHEET_COLUMNS.VAN_BOOKED] = e.vanDriverNeeded ? 'Yes' : '';
+    row[PLANNING_SHEET_COLUMNS.STAFFING] = formatStaffingColumn(staffing);
+    row[PLANNING_SHEET_COLUMNS.ESTIMATE_SANDWICHES] = e.estimatedSandwichCount?.toString() || '';
+    row[PLANNING_SHEET_COLUMNS.DELI_OR_PBJ] = deliOrPbj;
+    // Only show final sandwich count if it's a positive number (not 0 or null)
+    row[PLANNING_SHEET_COLUMNS.FINAL_SANDWICHES] = (e.actualSandwichCount && e.actualSandwichCount > 0) ? e.actualSandwichCount.toString() : '';
+    row[PLANNING_SHEET_COLUMNS.SOCIAL_POST] = e.socialMediaPostCompleted ? 'Yes' : '';
+    row[PLANNING_SHEET_COLUMNS.SENT_TOOLKIT] = e.toolkitSent ? 'yes' : '';
+    row[PLANNING_SHEET_COLUMNS.CONTACT_NAME] = `${e.firstName || ''} ${e.lastName || ''}`.trim();
+    row[PLANNING_SHEET_COLUMNS.EMAIL] = e.email || '';
+    row[PLANNING_SHEET_COLUMNS.PHONE] = e.phone || '';
+    row[PLANNING_SHEET_COLUMNS.TSP_CONTACT] = tspContactName;
+    row[PLANNING_SHEET_COLUMNS.ADDRESS] = e.eventAddress || '';
+    row[PLANNING_SHEET_COLUMNS.RECIPIENT_HOST] = e.deliveryDestination || '';
+    row[PLANNING_SHEET_COLUMNS.AFTER_EVENT_NOTES] = e.followUpNotes || '';
+    row[PLANNING_SHEET_COLUMNS.CANCELLED] = e.status === 'cancelled' ? 'Yes' : '';
+    row[PLANNING_SHEET_COLUMNS.NOTES] = '';
+    row[PLANNING_SHEET_COLUMNS.ADDL_NOTES] = '';
+    row[PLANNING_SHEET_COLUMNS.WAITING_ON] = e.nextAction || '';
+
+    return row;
+  }
+
+  /**
+   * Get display names for assigned user IDs
+   */
+  private async getAssignedNames(userIds: string[]): Promise<string[]> {
+    if (!userIds || userIds.length === 0) return [];
+
+    const userList = await db
+      .select({ id: users.id, firstName: users.firstName, lastName: users.lastName, displayName: users.displayName })
+      .from(users)
+      .where(inArray(users.id, userIds));
+
+    // Create a map of user IDs to names
+    const userMap = new Map(
+      userList.map(u => [
+        u.id,
+        u.displayName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || 'Unknown'
+      ])
+    );
+
+    // Return names in the same order as userIds
+    return userIds.map(id => userMap.get(id) || 'Unknown');
+  }
+
+  /**
+   * Propose adding a new row to the Planning Sheet
+   * Does NOT write to the sheet - creates a proposal for human review
+   */
+  async proposeNewRow(
+    eventId: number,
+    proposedBy: string,
+    reason: string = 'Event scheduled'
+  ): Promise<{ success: boolean; proposalId?: number; message: string }> {
+    try {
+      const rowData = await this.eventToSheetRow(eventId);
+      if (!rowData) {
+        return { success: false, message: 'Event not found' };
+      }
+
+      // Create the proposal
+      const [proposal] = await db
+        .insert(proposedSheetChanges)
+        .values({
+          eventRequestId: eventId,
+          targetSheetId: this.spreadsheetId,
+          targetSheetName: this.worksheetName,
+          targetRowIndex: null, // New row, no existing index
+          changeType: 'create_row',
+          proposedRowData: rowData,
+          proposedBy,
+          proposalReason: reason,
+          status: 'pending',
+          columnMapping: PLANNING_SHEET_COLUMNS,
+        })
+        .returning({ id: proposedSheetChanges.id });
+
+      logger.log(`Created proposal ${proposal.id} for new row in Planning Sheet`);
+      return {
+        success: true,
+        proposalId: proposal.id,
+        message: 'Proposed new row for review'
+      };
+    } catch (error) {
+      logger.error('Error creating new row proposal:', error);
+      return {
+        success: false,
+        message: `Failed to create proposal: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
+   * Propose updating a specific cell in the Planning Sheet
+   * Does NOT write to the sheet - creates a proposal for human review
+   */
+  async proposeCellUpdate(
+    eventId: number,
+    rowIndex: number,
+    fieldName: string,
+    currentValue: string,
+    proposedValue: string,
+    proposedBy: string,
+    reason: string
+  ): Promise<{ success: boolean; proposalId?: number; message: string }> {
+    try {
+      const [proposal] = await db
+        .insert(proposedSheetChanges)
+        .values({
+          eventRequestId: eventId,
+          targetSheetId: this.spreadsheetId,
+          targetSheetName: this.worksheetName,
+          targetRowIndex: rowIndex,
+          changeType: 'update_cell',
+          fieldName,
+          currentValue,
+          proposedValue,
+          proposedBy,
+          proposalReason: reason,
+          status: 'pending',
+          columnMapping: PLANNING_SHEET_COLUMNS,
+        })
+        .returning({ id: proposedSheetChanges.id });
+
+      logger.log(`Created proposal ${proposal.id} for cell update at row ${rowIndex}, field ${fieldName}`);
+      return {
+        success: true,
+        proposalId: proposal.id,
+        message: 'Proposed cell update for review'
+      };
+    } catch (error) {
+      logger.error('Error creating cell update proposal:', error);
+      return {
+        success: false,
+        message: `Failed to create proposal: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
+   * Get all pending proposals
+   */
+  async getPendingProposals(): Promise<any[]> {
+    return db
+      .select()
+      .from(proposedSheetChanges)
+      .where(eq(proposedSheetChanges.status, 'pending'))
+      .orderBy(desc(proposedSheetChanges.proposedAt));
+  }
+
+  /**
+   * Apply an approved proposal to the sheet
+   * This is the ONLY function that actually writes to Google Sheets
+   */
+  async applyApprovedProposal(
+    proposalId: number,
+    reviewedBy: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      await this.ensureInitialized();
+
+      // Get the proposal
+      const [proposal] = await db
+        .select()
+        .from(proposedSheetChanges)
+        .where(eq(proposedSheetChanges.id, proposalId))
+        .limit(1);
+
+      if (!proposal) {
+        return { success: false, message: 'Proposal not found' };
+      }
+
+      if (proposal.status !== 'pending' && proposal.status !== 'approved') {
+        return { success: false, message: `Cannot apply proposal with status: ${proposal.status}` };
+      }
+
+      // Mark as approved first
+      await db
+        .update(proposedSheetChanges)
+        .set({
+          status: 'approved',
+          reviewedBy,
+          reviewedAt: new Date(),
+          updatedAt: new Date(),
+        })
+        .where(eq(proposedSheetChanges.id, proposalId));
+
+      // Apply the change based on type
+      let result: { success: boolean; message: string };
+
+      if (proposal.changeType === 'create_row') {
+        result = await this.applyNewRow(proposal);
+      } else if (proposal.changeType === 'update_cell') {
+        result = await this.applyCellUpdate(proposal);
+      } else {
+        result = { success: false, message: `Unknown change type: ${proposal.changeType}` };
+      }
+
+      // Update proposal status based on result
+      await db
+        .update(proposedSheetChanges)
+        .set({
+          status: result.success ? 'applied' : 'failed',
+          appliedAt: result.success ? new Date() : null,
+          applyError: result.success ? null : result.message,
+          updatedAt: new Date(),
+        })
+        .where(eq(proposedSheetChanges.id, proposalId));
+
+      return result;
+    } catch (error) {
+      logger.error('Error applying approved proposal:', error);
+
+      // Mark as failed
+      await db
+        .update(proposedSheetChanges)
+        .set({
+          status: 'failed',
+          applyError: error instanceof Error ? error.message : 'Unknown error',
+          updatedAt: new Date(),
+        })
+        .where(eq(proposedSheetChanges.id, proposalId));
+
+      return {
+        success: false,
+        message: `Failed to apply: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
+   * Apply a new row to the sheet
+   */
+  private async applyNewRow(proposal: any): Promise<{ success: boolean; message: string }> {
+    const rowData = proposal.proposedRowData as string[];
+    if (!rowData || !Array.isArray(rowData)) {
+      return { success: false, message: 'Invalid row data in proposal' };
+    }
+
+    // Append the row to the sheet
+    await this.sheets.spreadsheets.values.append({
+      spreadsheetId: this.spreadsheetId,
+      range: this.getSheetRange('A:AA'),
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      resource: { values: [rowData] },
+    });
+
+    logger.log(`Applied new row to Planning Sheet for proposal ${proposal.id}`);
+    return { success: true, message: 'Row added successfully' };
+  }
+
+  /**
+   * Apply a cell update to the sheet
+   */
+  private async applyCellUpdate(proposal: any): Promise<{ success: boolean; message: string }> {
+    if (!proposal.targetRowIndex || !proposal.fieldName) {
+      return { success: false, message: 'Missing row index or field name' };
+    }
+
+    // Get column letter from field name
+    const columnIndex = PLANNING_SHEET_COLUMNS[proposal.fieldName as keyof typeof PLANNING_SHEET_COLUMNS];
+    if (columnIndex === undefined) {
+      return { success: false, message: `Unknown field: ${proposal.fieldName}` };
+    }
+
+    // Convert 0-based column index → spreadsheet letter (A, B, ..., Z, AA, AB, ...).
+    // String.fromCharCode(65 + index) only works for single letters (0–25); we now have
+    // columns past Z (WAITING_ON is at index 26 = AA) so a small loop is required.
+    const columnLetter = (() => {
+      let n = columnIndex;
+      let s = '';
+      do {
+        s = String.fromCharCode(65 + (n % 26)) + s;
+        n = Math.floor(n / 26) - 1;
+      } while (n >= 0);
+      return s;
+    })();
+    const range = this.getSheetRange(`${columnLetter}${proposal.targetRowIndex}`);
+
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: this.spreadsheetId,
+      range,
+      valueInputOption: 'USER_ENTERED',
+      resource: { values: [[proposal.proposedValue]] },
+    });
+
+    logger.log(`Applied cell update to ${range} for proposal ${proposal.id}`);
+    return { success: true, message: `Updated ${proposal.fieldName} at row ${proposal.targetRowIndex}` };
+  }
+
+  /**
+   * Reject a proposal
+   */
+  async rejectProposal(
+    proposalId: number,
+    reviewedBy: string,
+    notes?: string
+  ): Promise<{ success: boolean; message: string }> {
+    try {
+      await db
+        .update(proposedSheetChanges)
+        .set({
+          status: 'rejected',
+          reviewedBy,
+          reviewedAt: new Date(),
+          reviewNotes: notes,
+          updatedAt: new Date(),
+        })
+        .where(eq(proposedSheetChanges.id, proposalId));
+
+      return { success: true, message: 'Proposal rejected' };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to reject: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
+   * Parse a date string from the sheet (e.g., "1/15/26", "1/15/2026", or "01/15/2026") into a Date object
+   */
+  private parseSheetDate(dateStr: string): Date | null {
+    if (!dateStr || !dateStr.trim()) return null;
+
+    // Try parsing MM/DD/YY or MM/DD/YYYY format
+    const parts = dateStr.trim().split('/');
+    if (parts.length === 3) {
+      const month = parseInt(parts[0], 10) - 1; // JS months are 0-indexed
+      const day = parseInt(parts[1], 10);
+      let year = parseInt(parts[2], 10);
+
+      // Handle 2-digit years (e.g., "26" -> 2026)
+      if (year < 100) {
+        // Assume 2000s for years 00-99
+        year += 2000;
+      }
+
+      if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+        const date = new Date(year, month, day);
+        logger.log(`[PlanningSheet] Parsed date "${dateStr}" -> ${date.toISOString()}`);
+        return date;
+      }
+    }
+
+    // Fallback: try native Date parsing
+    const parsed = new Date(dateStr);
+    if (!isNaN(parsed.getTime())) {
+      logger.log(`[PlanningSheet] Fallback parsed date "${dateStr}" -> ${parsed.toISOString()}`);
+      return parsed;
+    }
+
+    logger.warn(`[PlanningSheet] Could not parse date: "${dateStr}"`);
+    return null;
+  }
+
+  /**
+   * Parse a time string like "2:00 PM" or "14:00" to minutes since midnight for comparison.
+   * Returns null if the time string can't be parsed.
+   */
+  private parseTimeToMinutes(timeStr: string): number | null {
+    if (!timeStr || !timeStr.trim()) return null;
+
+    // Try 12-hour format: "2:00 PM", "10:30 AM"
+    const match12 = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+    if (match12) {
+      let hours = parseInt(match12[1], 10);
+      const minutes = parseInt(match12[2], 10);
+      const ampm = match12[3].toUpperCase();
+      if (ampm === 'PM' && hours !== 12) hours += 12;
+      if (ampm === 'AM' && hours === 12) hours = 0;
+      return hours * 60 + minutes;
+    }
+
+    // Try 24-hour format: "14:00", "09:30"
+    const match24 = timeStr.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+    if (match24) {
+      return parseInt(match24[1], 10) * 60 + parseInt(match24[2], 10);
+    }
+
+    return null;
+  }
+
+  /**
+   * Find the correct row index to insert a new event based on date ordering,
+   * with secondary sort by time (start time or pickup time) within the same date.
+   * Returns the row index where the new row should be inserted (rows after this will shift down).
+   * If no suitable position is found, returns null (append to end).
+   */
+  private async findInsertionRowIndex(eventDate: Date, eventTimeStr?: string | null): Promise<number | null> {
+    const sheetRows = await this.readPlanningSheet();
+
+    logger.log(`[PlanningSheet] Finding insertion point for event date: ${eventDate.toISOString()}${eventTimeStr ? `, time: ${eventTimeStr}` : ''}`);
+    logger.log(`[PlanningSheet] Sheet has ${sheetRows.length} rows`);
+
+    if (sheetRows.length === 0) {
+      logger.log(`[PlanningSheet] Sheet is empty, will append`);
+      return null; // Empty sheet, just append
+    }
+
+    // Log first few dates to help debug
+    const firstRows = sheetRows.slice(0, 5);
+    logger.log(`[PlanningSheet] First 5 row dates: ${firstRows.map(r => `row${r.rowIndex}="${r.date}"`).join(', ')}`);
+
+    const eventTimeMinutes = eventTimeStr ? this.parseTimeToMinutes(eventTimeStr) : null;
+
+    // Find the correct insertion point based on date, then time within same date
+    for (const row of sheetRows) {
+      const rowDate = this.parseSheetDate(row.date);
+      if (!rowDate) continue;
+
+      if (rowDate > eventDate) {
+        // This row's date is after our event date — insert before it
+        logger.log(`[PlanningSheet] Found insertion point: row ${row.rowIndex} has date ${row.date} which is AFTER event date`);
+        return row.rowIndex;
+      }
+
+      // Same date — check time-based ordering
+      if (rowDate.getTime() === eventDate.getTime() && eventTimeMinutes !== null) {
+        // Compare by start time first, then pickup time
+        const rowTime = this.parseTimeToMinutes(row.eventStartTime) ??
+                        this.parseTimeToMinutes(row.pickUpTime);
+
+        if (rowTime !== null && eventTimeMinutes < rowTime) {
+          // Our event is earlier in the day — insert before this row
+          logger.log(`[PlanningSheet] Found insertion point by time: row ${row.rowIndex} has time ${row.eventStartTime || row.pickUpTime} which is AFTER event time ${eventTimeStr}`);
+          return row.rowIndex;
+        }
+      }
+    }
+
+    // Log the last few dates to help debug
+    const lastRows = sheetRows.slice(-5);
+    logger.log(`[PlanningSheet] Last 5 row dates: ${lastRows.map(r => `row${r.rowIndex}="${r.date}"`).join(', ')}`);
+    logger.log(`[PlanningSheet] No row found with date/time after event, will append to end`);
+
+    // No row found with a later date - append to end
+    return null;
+  }
+
+  /**
+   * Get the worksheet/sheet ID (gid) for the current worksheet name
+   */
+  private async getWorksheetId(): Promise<number | null> {
+    try {
+      const response = await this.sheets.spreadsheets.get({
+        spreadsheetId: this.spreadsheetId,
+      });
+
+      const sheets = response.data.sheets || [];
+      for (const sheet of sheets) {
+        if (sheet.properties?.title === this.worksheetName) {
+          return sheet.properties.sheetId ?? null;
+        }
+      }
+      return null;
+    } catch (error) {
+      logger.error('[PlanningSheet] Error getting worksheet ID:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Convert a PlanningSheetRow object back to a raw string array sized to match
+   * PLANNING_SHEET_COLUMNS. Used for per-column merge comparisons.
+   * Indices are read from PLANNING_SHEET_COLUMNS so a future column insertion
+   * only requires updating the column map.
+   */
+  planningSheetRowToRawArray(row: PlanningSheetRow): string[] {
+    const C = PLANNING_SHEET_COLUMNS;
+    const size = Math.max(...Object.values(C)) + 1;
+    const raw = new Array(size).fill('');
+    raw[C.DATE] = row.date;
+    raw[C.DAY_OF_WEEK] = row.dayOfWeek;
+    raw[C.GROUP_NAME] = row.groupName;
+    raw[C.EVENT_START_TIME] = row.eventStartTime;
+    raw[C.EVENT_END_TIME] = row.eventEndTime;
+    raw[C.PICK_UP_TIME] = row.pickUpTime;
+    raw[C.PICK_UP_NEXT_DAY] = row.pickUpNextDay;
+    raw[C.ALL_DETAILS] = row.allDetails;
+    raw[C.VAN_BOOKED] = row.vanBooked;
+    raw[C.STAFFING] = row.staffing;
+    raw[C.ESTIMATE_SANDWICHES] = row.estimateSandwiches;
+    raw[C.DELI_OR_PBJ] = row.deliOrPbj;
+    raw[C.FINAL_SANDWICHES] = row.finalSandwiches;
+    raw[C.TOTAL_IN_APP] = row.totalInApp;
+    raw[C.SOCIAL_POST] = row.socialPost;
+    raw[C.SENT_TOOLKIT] = row.sentToolkit;
+    raw[C.CONTACT_NAME] = row.contactName;
+    raw[C.EMAIL] = row.email;
+    raw[C.PHONE] = row.phone;
+    raw[C.TSP_CONTACT] = row.tspContact;
+    raw[C.ADDRESS] = row.address;
+    raw[C.RECIPIENT_HOST] = row.recipientHost;
+    raw[C.AFTER_EVENT_NOTES] = row.afterEventNotes;
+    raw[C.CANCELLED] = row.cancelled;
+    raw[C.NOTES] = row.notes;
+    raw[C.ADDL_NOTES] = row.addlNotes;
+    raw[C.WAITING_ON] = row.waitingOn;
+    return raw;
+  }
+
+  /**
+   * Push an event directly to the Planning Sheet (no proposal workflow)
+   * This is a direct write - user sees preview first, then pushes immediately
+   * New rows are inserted in chronological order based on event date.
+   *
+   * When mergeDecisions is provided, applies per-column merge strategy:
+   * - 'use_app': use the app's value (default)
+   * - 'keep_sheet': keep the existing sheet value
+   * - 'append': combine as "sheet value | app value"
+   */
+  async pushEventDirectly(
+    eventId: number,
+    userId: string,
+    mergeDecisions?: Record<string, 'use_app' | 'keep_sheet' | 'append'>
+  ): Promise<{ success: boolean; message: string; rowIndex?: number; isUpdate?: boolean }> {
+    try {
+      await this.ensureInitialized();
+
+      // Get the row data for this event
+      const rowData = await this.eventToSheetRow(eventId);
+      if (!rowData) {
+        return { success: false, message: 'Could not generate row data for this event' };
+      }
+
+      // Check if row already exists for this event
+      const existingRow = await this.findMatchingRow(eventId);
+
+      if (existingRow) {
+        // Build the final row data, applying merge decisions if provided
+        let finalRow: string[];
+
+        if (mergeDecisions && Object.keys(mergeDecisions).length > 0) {
+          const existingRaw = this.planningSheetRowToRawArray(existingRow);
+          finalRow = [...rowData];
+
+          for (let i = 0; i < 26; i++) {
+            const decision = mergeDecisions[String(i)];
+            if (decision === 'keep_sheet') {
+              finalRow[i] = existingRaw[i];
+            } else if (decision === 'append') {
+              const existingVal = (existingRaw[i] || '').trim();
+              const appVal = (rowData[i] || '').trim();
+              if (existingVal && appVal && existingVal !== appVal) {
+                finalRow[i] = `${existingVal} | ${appVal}`;
+              } else if (existingVal) {
+                finalRow[i] = existingVal;
+              }
+              // If only app value exists, finalRow[i] already has it
+            }
+            // 'use_app' or no decision = keep finalRow[i] as rowData[i] (default)
+          }
+
+          logger.log(`[PlanningSheet] Applied merge decisions for ${Object.keys(mergeDecisions).length} columns`);
+        } else {
+          // No merge decisions = full overwrite (backward compatible)
+          finalRow = rowData;
+        }
+
+        // Update existing row
+        const range = this.getSheetRange(`A${existingRow.rowIndex}:AA${existingRow.rowIndex}`);
+        await this.sheets.spreadsheets.values.update({
+          spreadsheetId: this.spreadsheetId,
+          range,
+          valueInputOption: 'USER_ENTERED',
+          resource: { values: [finalRow] },
+        });
+
+        logger.log(`[PlanningSheet] User ${userId} updated row ${existingRow.rowIndex} for event ${eventId}`);
+        return {
+          success: true,
+          message: `Updated row ${existingRow.rowIndex} in Planning Sheet`,
+          rowIndex: existingRow.rowIndex,
+          isUpdate: true
+        };
+      } else {
+        // Get event date for insertion point calculation
+        const event = await db
+          .select()
+          .from(eventRequests)
+          .where(eq(eventRequests.id, eventId))
+          .limit(1);
+
+        if (!event || event.length === 0) {
+          return { success: false, message: 'Event not found' };
+        }
+
+        const eventDate = getEffectiveEventDate(event[0]);
+        let eventDateObj = eventDate ? new Date(eventDate) : new Date();
+
+        // Normalize to midnight for date-only comparison (ignore time component)
+        eventDateObj = new Date(eventDateObj.getFullYear(), eventDateObj.getMonth(), eventDateObj.getDate());
+
+        // Get event time for secondary sort within same date
+        const eventTime = event[0].eventStartTime || event[0].pickupDateTime || null;
+
+        // Find the correct insertion point based on date and time
+        logger.log(`[PlanningSheet] Event date for insertion (normalized): ${eventDateObj.toISOString()}, time: ${eventTime || 'none'}`);
+        const insertBeforeRow = await this.findInsertionRowIndex(eventDateObj, eventTime);
+        logger.log(`[PlanningSheet] insertBeforeRow result: ${insertBeforeRow}`);
+
+        if (insertBeforeRow !== null) {
+          // Insert row at specific position to maintain chronological order
+          const sheetId = await this.getWorksheetId();
+          logger.log(`[PlanningSheet] Worksheet ID: ${sheetId}`);
+
+          if (sheetId === null) {
+            logger.warn(`[PlanningSheet] Could not find worksheet ID for "${this.worksheetName}", falling back to append`);
+          } else {
+            // Use batchUpdate to insert a blank row at the correct position
+            await this.sheets.spreadsheets.batchUpdate({
+              spreadsheetId: this.spreadsheetId,
+              resource: {
+                requests: [{
+                  insertDimension: {
+                    range: {
+                      sheetId: sheetId,
+                      dimension: 'ROWS',
+                      startIndex: insertBeforeRow - 1, // 0-indexed
+                      endIndex: insertBeforeRow, // Insert 1 row
+                    },
+                    inheritFromBefore: false,
+                  },
+                }],
+              },
+            });
+
+            // Now write the data to the newly inserted row
+            const range = this.getSheetRange(`A${insertBeforeRow}:AA${insertBeforeRow}`);
+            await this.sheets.spreadsheets.values.update({
+              spreadsheetId: this.spreadsheetId,
+              range,
+              valueInputOption: 'USER_ENTERED',
+              resource: { values: [rowData] },
+            });
+
+            logger.log(`[PlanningSheet] User ${userId} inserted new row at position ${insertBeforeRow} for event ${eventId} (chronological order)`);
+            return {
+              success: true,
+              message: `Inserted new row at position ${insertBeforeRow} in Planning Sheet (sorted by date)`,
+              rowIndex: insertBeforeRow,
+              isUpdate: false
+            };
+          }
+        }
+
+        // Fallback: Append to end if no insertion point found or worksheet ID unavailable
+        const response = await this.sheets.spreadsheets.values.append({
+          spreadsheetId: this.spreadsheetId,
+          range: this.getSheetRange('A:AA'),
+          valueInputOption: 'USER_ENTERED',
+          insertDataOption: 'INSERT_ROWS',
+          resource: { values: [rowData] },
+        });
+
+        // Extract the row number from the response
+        const updatedRange = response.data.updates?.updatedRange || '';
+        const rowMatch = updatedRange.match(/(\d+)$/);
+        const newRowIndex = rowMatch ? parseInt(rowMatch[1]) : undefined;
+
+        logger.log(`[PlanningSheet] User ${userId} appended new row ${newRowIndex} for event ${eventId}`);
+        return {
+          success: true,
+          message: `Added new row ${newRowIndex || ''} to Planning Sheet`,
+          rowIndex: newRowIndex,
+          isUpdate: false
+        };
+      }
+    } catch (error) {
+      logger.error(`[PlanningSheet] Error pushing event ${eventId}:`, error);
+      return {
+        success: false,
+        message: `Failed to push to sheet: ${error instanceof Error ? error.message : 'Unknown error'}`
+      };
+    }
+  }
+
+  /**
+   * Find a row in the Planning Sheet that matches an event
+   * Used to determine if we should create a new row or update existing
+   */
+  async findMatchingRow(eventId: number): Promise<PlanningSheetRow | null> {
+    const event = await db
+      .select()
+      .from(eventRequests)
+      .where(eq(eventRequests.id, eventId))
+      .limit(1);
+
+    if (!event || event.length === 0) {
+      return null;
+    }
+
+    const e = event[0];
+    const sheetRows = await this.readPlanningSheet();
+
+    // Try to match by organization name + date
+    const eventDate = getEffectiveEventDate(e);
+    const eventDateObj = eventDate ? new Date(eventDate) : null;
+    // Format with 2-digit year to match what eventToSheetRow writes (M/D/YY)
+    const eventDateStr2Digit = eventDateObj ? eventDateObj.toLocaleDateString('en-US', {
+      month: 'numeric',
+      day: 'numeric',
+      year: '2-digit'
+    }) : '';
+    // Also format with 4-digit year as fallback (M/D/YYYY)
+    const eventDateStr4Digit = eventDateObj ? eventDateObj.toLocaleDateString('en-US', {
+      month: 'numeric',
+      day: 'numeric',
+      year: 'numeric'
+    }) : '';
+
+    for (const row of sheetRows) {
+      // Match by organization name (case-insensitive) and date
+      const orgMatch = row.groupName.toLowerCase().trim() === (e.organizationName || '').toLowerCase().trim();
+      // Match date in either format (2-digit or 4-digit year) for robustness
+      const dateMatch = row.date === eventDateStr2Digit || row.date === eventDateStr4Digit;
+
+      if (orgMatch && dateMatch) {
+        return row;
+      }
+
+      // Fallback: parse both dates and compare by actual date values
+      if (orgMatch && eventDateObj) {
+        const rowDate = this.parseSheetDate(row.date);
+        if (rowDate &&
+            rowDate.getFullYear() === eventDateObj.getFullYear() &&
+            rowDate.getMonth() === eventDateObj.getMonth() &&
+            rowDate.getDate() === eventDateObj.getDate()) {
+          return row;
+        }
+      }
+    }
+
+    return null;
+  }
 }
 
 /**
