@@ -265,6 +265,91 @@ async function checkAnthropicIntegrations(
   );
 }
 
+async function checkGoogleSheetsProjectsSync(
+  liveCheck: boolean
+): Promise<IntegrationCheckResult> {
+  const name = 'Google Sheets (projects sync)';
+  const missing: string[] = [];
+  if (!process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL) missing.push('GOOGLE_SERVICE_ACCOUNT_EMAIL');
+  if (!process.env.GOOGLE_PRIVATE_KEY) missing.push('GOOGLE_PRIVATE_KEY');
+  if (!process.env.GOOGLE_PROJECT_ID) missing.push('GOOGLE_PROJECT_ID');
+  if (!process.env.PROJECTS_SHEET_ID) missing.push('PROJECTS_SHEET_ID');
+
+  if (missing.length > 0) {
+    return {
+      name,
+      configured: false,
+      healthy: false,
+      message: `Missing credentials/config: ${missing.join(', ')} — projects sheet sync will fail`,
+    };
+  }
+
+  if (!liveCheck) {
+    return {
+      name,
+      configured: true,
+      healthy: null,
+      message: 'Credentials present (run live check to verify sheet access)',
+    };
+  }
+
+  try {
+    const { getProjectsGoogleSheetsService } = await import('../google-sheets-service');
+    const service = getProjectsGoogleSheetsService();
+    if (!service) {
+      return {
+        name,
+        configured: false,
+        healthy: false,
+        message: 'Projects sheets service could not be constructed (missing configuration)',
+      };
+    }
+
+    const result = await service.verifyAuth();
+    return {
+      name,
+      configured: true,
+      healthy: result.ok,
+      message: result.message,
+      latencyMs: result.latencyMs,
+      details: result.spreadsheetTitle
+        ? { spreadsheetTitle: result.spreadsheetTitle }
+        : undefined,
+    };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      name,
+      configured: true,
+      healthy: false,
+      message: `Live check failed: ${message}`,
+    };
+  }
+}
+
+/**
+ * Startup verification for Google Sheets credentials. Runs a real
+ * authenticated call against the projects spreadsheet and raises an
+ * admin-notified application error if credentials are rotated/malformed,
+ * so the projects sync can't silently break at request time.
+ */
+export async function verifyGoogleSheetsAuthAtStartup(): Promise<void> {
+  const result = await checkGoogleSheetsProjectsSync(true);
+
+  if (result.healthy === true) {
+    return;
+  }
+
+  logApplicationError({
+    source: 'health_check',
+    severity: 'error',
+    category: 'google_sheets_projects_sync',
+    message: `Startup check — ${result.name}: ${result.message}`,
+    details: result.details,
+    notifyAdmin: true,
+  });
+}
+
 export async function runIntegrationHealthCheck(options?: {
   liveCheck?: boolean;
   logFailures?: boolean;
@@ -278,6 +363,7 @@ export async function runIntegrationHealthCheck(options?: {
     checkTwilio(liveCheck),
     Promise.resolve(checkSentry()),
     checkAnthropicIntegrations(liveCheck),
+    checkGoogleSheetsProjectsSync(liveCheck),
   ]);
 
   const unhealthy = integrations.filter(

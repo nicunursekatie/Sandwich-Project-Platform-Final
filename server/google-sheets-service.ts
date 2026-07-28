@@ -761,6 +761,57 @@ export class GoogleSheetsService {
   }
 
   /**
+   * Lightweight credential/auth verification for health checks.
+   * Performs a read-only spreadsheets.get against the configured spreadsheet.
+   * If a cached client fails (e.g. credentials rotated since init), it
+   * re-initializes auth once and retries, so the result reflects the
+   * CURRENT credentials rather than a stale cached client.
+   */
+  public async verifyAuth(): Promise<{
+    ok: boolean;
+    message: string;
+    spreadsheetTitle?: string;
+    latencyMs: number;
+  }> {
+    const start = Date.now();
+
+    const attempt = async () => {
+      await this.ensureInitialized();
+      const response = await this.sheets.spreadsheets.get({
+        spreadsheetId: this.config.spreadsheetId,
+        fields: 'spreadsheetId,properties.title',
+      });
+      return response.data.properties?.title as string | undefined;
+    };
+
+    try {
+      let title: string | undefined;
+      try {
+        title = await attempt();
+      } catch (firstError) {
+        // Cached client may be stale after a credential rotation — force
+        // a fresh auth initialization and try once more.
+        this.sheets = undefined;
+        title = await attempt();
+      }
+
+      return {
+        ok: true,
+        message: `Authenticated; spreadsheet reachable${title ? ` ("${title}")` : ''}`,
+        spreadsheetTitle: title,
+        latencyMs: Date.now() - start,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return {
+        ok: false,
+        message: `Google Sheets auth/access failed: ${message}`,
+        latencyMs: Date.now() - start,
+      };
+    }
+  }
+
+  /**
    * Check if row data has changed by comparing hashes
    */
   public hasRowChanged(previousRow: SheetRow, currentRow: SheetRow): boolean {
