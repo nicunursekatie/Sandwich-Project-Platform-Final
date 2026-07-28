@@ -310,7 +310,7 @@ export function createPlanningSheetProposalsRouter(
    *
    * NOTE: This route MUST come before /:id to avoid "sheet" being caught as an id
    */
-  router.get('/sheet/read', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.get('/sheet/read', isAuthenticated, requirePermission('manage:events'), async (req: AuthenticatedRequest, res: Response) => {
     try {
       const service = getPlanningSheetService();
       if (!service) {

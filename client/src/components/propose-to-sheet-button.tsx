@@ -202,14 +202,14 @@ export function PushToSheetButton({
     { label: 'Group', value: rawData[2] },
     { label: 'Staffing', value: rawData[9] },
     { label: 'Est. Sandwiches', value: rawData[10] },
-    { label: 'Contact', value: rawData[15] },
+    { label: 'Contact', value: rawData[16] },
   ].filter(f => f.value);
 
   const setDecision = (columnIndex: number, decision: MergeDecision) => {
     setMergeDecisions(prev => ({ ...prev, [columnIndex]: decision }));
   };
 
-  const unchangedCount = hasExistingRawData ? 26 - conflicts.length : 0;
+  const unchangedCount = hasExistingRawData ? 27 - conflicts.length : 0;
   const allMatch = hasExistingRow && hasExistingRawData && conflicts.length === 0;
 
   return (
