@@ -107,7 +107,8 @@ export function PushToSheetButton({
     if (!previewData?.rawData || !previewData?.existingRawData) return [];
 
     const result: ColumnConflict[] = [];
-    for (let i = 0; i < 26; i++) {
+    // 27 columns (0..26) — the sheet runs through AA/"Waiting On" at index 26.
+    for (let i = 0; i < 27; i++) {
       const appValue = (previewData.rawData[i] || '').trim();
       const sheetValue = (previewData.existingRawData[i] || '').trim();
       if (appValue !== sheetValue) {
@@ -436,7 +437,7 @@ export function PushToSheetButton({
                                 <div className="px-3 py-2 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
                                   Unchanged columns
                                 </div>
-                                {Array.from({ length: 26 }, (_, i) => i)
+                                {Array.from({ length: 27 }, (_, i) => i)
                                   .filter(i => {
                                     const appVal = (previewData.rawData[i] || '').trim();
                                     const sheetVal = (previewData.existingRawData[i] || '').trim();
