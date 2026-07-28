@@ -252,29 +252,13 @@ export class GoogleSheetsService {
         );
       }
 
-      // Fallback to file-based authentication if JWT fails
-      const fs = await import('fs');
-      const path = await import('path');
-
-      // Use minimal service account content - avoid empty private_key_id
-      const serviceAccountContent = JSON.stringify(
-        {
+      // Fallback to GoogleAuth with in-memory credentials if direct JWT fails
+      // (never write the service-account key to disk)
+      const auth = new google.auth.GoogleAuth({
+        credentials: {
           client_email: clientEmail,
           private_key: cleanPrivateKey,
         },
-        null,
-        2
-      );
-
-      const tempFilePath = path.join(
-        process.cwd(),
-        'google-service-account.json'
-      );
-      fs.writeFileSync(tempFilePath, serviceAccountContent);
-      logger.log('🔧 Created temporary service account file');
-
-      const auth = new google.auth.GoogleAuth({
-        keyFile: tempFilePath,
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
       });
 
@@ -282,14 +266,14 @@ export class GoogleSheetsService {
       this.auth = authClient as JWT;
       this.sheets = google.sheets({ version: 'v4', auth: authClient as any });
 
-      // Test file-based authentication with real API call
-      logger.log('🔧 Testing file-based authentication with real API call...');
+      // Test fallback authentication with real API call
+      logger.log('🔧 Testing fallback authentication with real API call...');
 
       try {
         // **REAL AUTH TEST** - Test against user's ACTUAL spreadsheet
         if (!this.config.spreadsheetId) {
           throw new Error(
-            'No spreadsheetId provided for file-based authentication test'
+            'No spreadsheetId provided for fallback authentication test'
           );
         }
 
@@ -299,7 +283,7 @@ export class GoogleSheetsService {
         });
 
         logger.log(
-          "✅ File-based authentication test successful against USER'S spreadsheet:",
+          "✅ Fallback authentication test successful against USER'S spreadsheet:",
           {
             spreadsheetId: testResponse.data.spreadsheetId,
             title: testResponse.data.properties?.title || 'Unknown',
@@ -308,19 +292,15 @@ export class GoogleSheetsService {
       } catch (testError) {
         const error = testError as Error;
         logger.error(
-          "❌ File-based authentication test failed against user's spreadsheet:",
+          "❌ Fallback authentication test failed against user's spreadsheet:",
           error.message
         );
         throw new Error(
-          `File-based JWT authentication test failed: ${error.message}`
+          `Fallback authentication test failed: ${error.message}`
         );
       }
 
-      logger.log('✅ Google Sheets file-based authentication fully verified');
-
-      // Clean up temp file
-      fs.unlinkSync(tempFilePath);
-      logger.log('🔧 Cleaned up temporary service account file');
+      logger.log('✅ Google Sheets fallback authentication fully verified');
     } catch (error) {
       const err = error as Error;
       logger.error('❌ Google Sheets authentication failed:', err.message);
@@ -334,21 +314,6 @@ export class GoogleSheetsService {
         logger.error(
           '💡 The private key from your Google Cloud Console may need to be regenerated for Node.js v20+'
         );
-      }
-
-      // Clean up temp file on error
-      try {
-        const fs = await import('fs');
-        const path = await import('path');
-        const tempFilePath = path.join(
-          process.cwd(),
-          'google-service-account.json'
-        );
-        if (fs.existsSync(tempFilePath)) {
-          fs.unlinkSync(tempFilePath);
-        }
-      } catch (cleanupError) {
-        // Ignore cleanup errors
       }
 
       throw new Error('Failed to initialize Google Sheets service');
