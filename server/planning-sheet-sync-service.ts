@@ -502,7 +502,14 @@ export class PlanningSheetSyncService {
     row[PLANNING_SHEET_COLUMNS.STAFFING] = formatStaffingColumn(staffing);
     row[PLANNING_SHEET_COLUMNS.ESTIMATE_SANDWICHES] = e.estimatedSandwichCount?.toString() || '';
     row[PLANNING_SHEET_COLUMNS.DELI_OR_PBJ] = deliOrPbj;
-    // Only show final sandwich count if it's a positive number (not 0 or null)
+    // Final sandwich count written to the sheet is intentionally the event's
+    // own actualSandwichCount reference field — NOT a total derived from the
+    // sandwich_collections log. In this org's workflow that field is a manual,
+    // for-reference-only number that does NOT feed the official sandwich count;
+    // official totals live solely in sandwich_collections. Whatever number is
+    // in the app here is meant to overrule the sheet on push. Do not "fix" this
+    // to compute from sandwich_collections — that would risk corrupting the
+    // official count records. Only show it if it's a positive number.
     row[PLANNING_SHEET_COLUMNS.FINAL_SANDWICHES] = (e.actualSandwichCount && e.actualSandwichCount > 0) ? e.actualSandwichCount.toString() : '';
     row[PLANNING_SHEET_COLUMNS.SOCIAL_POST] = e.socialMediaPostCompleted ? 'Yes' : '';
     row[PLANNING_SHEET_COLUMNS.SENT_TOOLKIT] = e.toolkitSent ? 'yes' : '';
@@ -1037,10 +1044,14 @@ export class PlanningSheetSyncService {
           const existingRaw = this.planningSheetRowToRawArray(existingRow);
           finalRow = [...rowData];
 
-          for (let i = 0; i < 26; i++) {
+          // Iterate every mapped column (0..26 inclusive — the sheet has 27
+          // columns through AA/"Waiting On"). A hard-coded 26 here previously
+          // skipped the last column, so a keep_sheet/append decision on
+          // "Waiting On" was silently ignored and always overwritten.
+          for (let i = 0; i < finalRow.length; i++) {
             const decision = mergeDecisions[String(i)];
             if (decision === 'keep_sheet') {
-              finalRow[i] = existingRaw[i];
+              finalRow[i] = existingRaw[i] ?? '';
             } else if (decision === 'append') {
               const existingVal = (existingRaw[i] || '').trim();
               const appVal = (rowData[i] || '').trim();
@@ -1212,29 +1223,49 @@ export class PlanningSheetSyncService {
       year: 'numeric'
     }) : '';
 
-    for (const row of sheetRows) {
-      // Match by organization name (case-insensitive) and date
-      const orgMatch = row.groupName.toLowerCase().trim() === (e.organizationName || '').toLowerCase().trim();
-      // Match date in either format (2-digit or 4-digit year) for robustness
-      const dateMatch = row.date === eventDateStr2Digit || row.date === eventDateStr4Digit;
-
-      if (orgMatch && dateMatch) {
-        return row;
+    // Match by organization name (case-insensitive) + date. Match the date in
+    // either format (2-digit or 4-digit year), with a parsed-date fallback.
+    const matchesOrgAndDate = (row: PlanningSheetRow): boolean => {
+      const orgMatch =
+        row.groupName.toLowerCase().trim() ===
+        (e.organizationName || '').toLowerCase().trim();
+      if (!orgMatch) return false;
+      if (row.date === eventDateStr2Digit || row.date === eventDateStr4Digit) {
+        return true;
       }
-
-      // Fallback: parse both dates and compare by actual date values
-      if (orgMatch && eventDateObj) {
+      if (eventDateObj) {
         const rowDate = this.parseSheetDate(row.date);
-        if (rowDate &&
-            rowDate.getFullYear() === eventDateObj.getFullYear() &&
-            rowDate.getMonth() === eventDateObj.getMonth() &&
-            rowDate.getDate() === eventDateObj.getDate()) {
-          return row;
+        if (
+          rowDate &&
+          rowDate.getFullYear() === eventDateObj.getFullYear() &&
+          rowDate.getMonth() === eventDateObj.getMonth() &&
+          rowDate.getDate() === eventDateObj.getDate()
+        ) {
+          return true;
         }
       }
-    }
+      return false;
+    };
 
-    return null;
+    // Normally exactly one row matches an org on a given date. But a group can
+    // (in principle) have more than one event on the same day. If we blindly
+    // returned the first match, pushEventDirectly would overwrite that first
+    // event's row with the second event's data. So only treat it as "the same
+    // event" when the match is unambiguous.
+    const sameOrgDate = sheetRows.filter(matchesOrgAndDate);
+    if (sameOrgDate.length === 0) return null;
+    if (sameOrgDate.length === 1) return sameOrgDate[0];
+
+    // Multiple rows for this org on this date: disambiguate by event start time
+    // (the sheet is also ordered by time within a date). If the start time
+    // can't single out exactly one row, return null so the caller inserts a
+    // NEW row instead of overwriting the wrong event.
+    const eventStartMinutes = this.parseTimeToMinutes(String(e.eventStartTime || ''));
+    if (eventStartMinutes === null) return null;
+    const timeMatches = sameOrgDate.filter(
+      (row) => this.parseTimeToMinutes(row.eventStartTime) === eventStartMinutes
+    );
+    return timeMatches.length === 1 ? timeMatches[0] : null;
   }
 }
 

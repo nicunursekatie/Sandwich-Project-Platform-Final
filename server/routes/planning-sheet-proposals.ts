@@ -224,7 +224,7 @@ export function createPlanningSheetProposalsRouter(
    *
    * NOTE: This route MUST come before /:id to avoid "push-event" being caught as an id
    */
-  router.post('/push-event/:eventId', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/push-event/:eventId', isAuthenticated, requirePermission('manage:events'), async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { eventId } = req.params;
       const userId = req.user?.id;
