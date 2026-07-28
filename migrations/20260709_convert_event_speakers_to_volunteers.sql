@@ -1,4 +1,4 @@
--- Convert existing "speaker" assignments into volunteer assignments.
+3-- Convert existing "speaker" assignments into volunteer assignments.
 --
 -- The Speaker event role has been retired: the scheduling form and scheduled
 -- event cards no longer expose any way to view or manage speakers. That leaves
