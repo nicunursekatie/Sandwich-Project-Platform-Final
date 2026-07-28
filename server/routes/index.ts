@@ -64,6 +64,7 @@ import { createAdminEventsRouter } from './admin-events';
 import { createOnboardingRouter } from './onboarding';
 import { createGoogleSheetsRouter } from './google-sheets';
 import { createGoogleCalendarRouter } from './google-calendar';
+import { createPlanningSheetProposalsRouter } from './planning-sheet-proposals';
 import { createPlanningSheetImportRouter } from './planning-sheet-import';
 import { createRouteOptimizationRouter } from './routes';
 import { createRecipientTspContactsRouter } from './recipient-tsp-contacts';
@@ -1195,6 +1196,18 @@ export function createMainRoutes(deps: RouterDependencies) {
     googleSheetsRouter
   );
   router.use('/api/google-sheets', createErrorHandler('google-sheets'));
+
+  // Planning Sheet Proposals - safety gate for app-to-sheet writes
+  const planningSheetProposalsRouter = createPlanningSheetProposalsRouter(
+    deps.isAuthenticated,
+    deps.requirePermission
+  );
+  router.use(
+    '/api/planning-sheet-proposals',
+    ...createStandardMiddleware(),
+    planningSheetProposalsRouter
+  );
+  router.use('/api/planning-sheet-proposals', createErrorHandler('planning-sheet-proposals'));
 
   // Review-first PULL from the planning sheet (read sheet → human approves → create events)
   const planningSheetImportRouter = createPlanningSheetImportRouter(

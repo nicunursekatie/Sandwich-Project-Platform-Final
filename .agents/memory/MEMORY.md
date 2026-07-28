@@ -5,4 +5,4 @@
 - [Event-request timestamp fields](event-request-timestamp-fields.md) — client-sent timestamp fields must be in the shared string→Date list or Drizzle kills the whole save (broke standby moves in prod).
 - [sandwich_collections jsonb quirk](sandwich-collections-jsonb.md) — some prod rows store group_collections as string-encoded jsonb; totals scripts must parse it or they undercount.
 - [Type-check OOM workaround](typecheck-oom.md) — full tsc needs NODE_OPTIONS=--max-old-space-size=6144; a silent zero-error result means the run crashed (repo has ~1.4k pre-existing errors).
-- [Planning sheet is app-read-only](planning-sheet-writers.md) — owner mandate: never rebuild app→sheet writes (removed Jul 27 2026, scope now readonly); historical writes = old push button, see added_to_official_sheet_at.
+- [Planning sheet write attribution](planning-sheet-writers.md) — "mystery rows" in the planning sheet = manual push button; check added_to_official_sheet_at timestamps first, import/bg-sync are read-only.

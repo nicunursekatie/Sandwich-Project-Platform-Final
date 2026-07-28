@@ -104,6 +104,7 @@ import {
 } from '@/components/ui/tooltip';
 import { PreEventFlagsBanner, PreEventFlagsDialog } from '@/components/pre-event-flags';
 import { Flag } from 'lucide-react';
+import { ProposeToSheetButton } from '@/components/propose-to-sheet-button';
 import { InlineRecipientAllocationEditor } from '../InlineRecipientAllocationEditor';
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
 import { RefreshCw, Copy, Ban } from 'lucide-react';
@@ -568,7 +569,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     dateFieldToEdit = 'scheduledEventDate';
     dateLabel = request.status === 'completed' ? 'Event Date' : 'Scheduled Date';
   }
-
 
   // Handlers for recording actual/final sandwich count
   const startEditingActualCount = () => {
@@ -3916,10 +3916,17 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
             {/* Group 5 — Official calendar / Google Sheet */}
             <div className="h-6 w-px bg-slate-200 mx-0.5" aria-hidden="true" />
+            <ProposeToSheetButton
+              eventId={request.id}
+              organizationName={request.organizationName || 'Unknown'}
+              variant="outline"
+              size="sm"
+              showLabel
+            />
 
-            {/* The app never writes to the Planning Sheet — rows are added there by hand.
-                This button only marks the event as On Calendar inside the app.
-                Hidden once the event is already on the calendar. */}
+            {/* For users who type the event into the Google Sheet by hand instead of
+                using "Push to Sheet" — lets them mark it On Calendar without an actual
+                push. Hidden once the event is already on the calendar. */}
             {canEdit && !request.addedToOfficialSheet && (
               <Button
                 size="sm"
