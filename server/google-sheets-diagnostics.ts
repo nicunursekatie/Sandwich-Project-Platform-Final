@@ -1,5 +1,6 @@
 import { google } from 'googleapis';
 import { logger } from './utils/production-safe-logger';
+import { repairPrivateKey } from './google-sheets-key-repair';
 
 export interface DiagnosticResult {
   issue: string;
@@ -164,17 +165,10 @@ export class GoogleSheetsDiagnostics {
         return results; // Already handled in environment check
       }
 
-      // Clean the private key using the same logic as the main service
-      let cleanPrivateKey = privateKey;
-      if (cleanPrivateKey.includes('\\n')) {
-        cleanPrivateKey = cleanPrivateKey.replace(/\\n/g, '\n');
-      }
-      if (
-        (cleanPrivateKey.startsWith('"') && cleanPrivateKey.endsWith('"')) ||
-        (cleanPrivateKey.startsWith("'") && cleanPrivateKey.endsWith("'"))
-      ) {
-        cleanPrivateKey = cleanPrivateKey.slice(1, -1);
-      }
+      // Repair the private key using the exact same logic as the main
+      // service (initializeAuth), so diagnostics test the key the app
+      // actually uses — including the single-line-key rebuild.
+      const cleanPrivateKey = repairPrivateKey(privateKey, true);
 
       // Test token generation without API call
       try {

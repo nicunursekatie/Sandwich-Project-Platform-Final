@@ -2,6 +2,7 @@ import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
 import { createHash } from 'crypto';
 import { logger } from './utils/production-safe-logger';
+import { repairPrivateKey } from './google-sheets-key-repair';
 import { assertSheetWriteAllowed } from './sheets-write-guard';
 
 export interface GoogleSheetsConfig {
@@ -51,28 +52,6 @@ export class GoogleSheetsService {
     try {
       logger.log('🔧 Initializing Google Sheets authentication...');
 
-      // Run diagnostics if authentication fails repeatedly
-      if (process.env.NODE_ENV === 'development') {
-        logger.log('🔍 Running authentication diagnostics...');
-        const { googleSheetsDiagnostics } = await import(
-          './google-sheets-diagnostics'
-        );
-        const diagnosticResults =
-          await googleSheetsDiagnostics.runFullDiagnostics();
-        const criticalIssues = diagnosticResults.filter(
-          (r) => r.severity === 'critical'
-        );
-
-        if (criticalIssues.length > 0) {
-          logger.log('❌ Critical authentication issues detected:');
-          criticalIssues.forEach((issue) => {
-            logger.log(`   - ${issue.issue}: ${issue.description}`);
-            logger.log(`     Solution: ${issue.solution}`);
-          });
-          googleSheetsDiagnostics.printDiagnosticReport(diagnosticResults);
-        }
-      }
-
       // Check for required environment variables - use consistent naming
       const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
       const privateKey = process.env.GOOGLE_PRIVATE_KEY;
@@ -85,106 +64,15 @@ export class GoogleSheetsService {
       }
 
       // Handle private key format more robustly - Node.js v20 compatibility fix
-      let cleanPrivateKey = privateKey;
-
       logger.log('🔧 Original private key format check:', {
-        hasBackslashN: cleanPrivateKey.includes('\\n'),
-        hasRealNewlines: cleanPrivateKey.includes('\n'),
-        hasBeginHeader: cleanPrivateKey.includes('-----BEGIN'),
-        length: cleanPrivateKey.length,
+        hasBackslashN: privateKey.includes('\\n'),
+        hasRealNewlines: privateKey.includes('\n'),
+        hasBeginHeader: privateKey.includes('-----BEGIN'),
+        length: privateKey.length,
       });
 
-      // **NODE.JS v20 COMPATIBILITY FIX** - Handle all newline format issues
-      // Replit often stores literal \n characters instead of actual newlines
-      if (cleanPrivateKey.includes('\\n')) {
-        cleanPrivateKey = cleanPrivateKey.replace(/\\n/g, '\n');
-        logger.log('🔧 Converted \\n to actual newlines (Node.js v20 fix)');
-      }
-
-      // Additional newline handling for different platforms
-      cleanPrivateKey = cleanPrivateKey
-        .replace(/\\r\\n/g, '\n') // Handle Windows-style escaped newlines
-        .replace(/\\r/g, '\n') // Handle Mac-style escaped newlines
-        .replace(/\r\n/g, '\n') // Normalize Windows newlines
-        .replace(/\r/g, '\n'); // Normalize Mac newlines
-
-      // **CRITICAL NODE.JS v20 FIX** - Handle single-line key format from Replit
-      if (
-        !cleanPrivateKey.includes('\n') &&
-        cleanPrivateKey.includes('-----BEGIN PRIVATE KEY-----')
-      ) {
-        logger.log(
-          '🔧 Detected single-line private key - fixing for Node.js v20...'
-        );
-
-        // Extract the actual key content between headers
-        const beginMarker = '-----BEGIN PRIVATE KEY-----';
-        const endMarker = '-----END PRIVATE KEY-----';
-        const beginIndex = cleanPrivateKey.indexOf(beginMarker);
-        const endIndex = cleanPrivateKey.indexOf(endMarker);
-
-        if (beginIndex !== -1 && endIndex !== -1) {
-          const keyContent = cleanPrivateKey
-            .substring(beginIndex + beginMarker.length, endIndex)
-            .trim();
-
-          // Rebuild key with proper line breaks every 64 characters
-          const lines = [beginMarker];
-          for (let i = 0; i < keyContent.length; i += 64) {
-            lines.push(keyContent.substring(i, i + 64));
-          }
-          lines.push(endMarker);
-
-          cleanPrivateKey = lines.join('\n');
-          logger.log(
-            '🔧 Rebuilt private key with proper line breaks for Node.js v20'
-          );
-        }
-      }
-
-      // Remove any quotes if the entire key is wrapped in quotes
-      if (
-        (cleanPrivateKey.startsWith('"') && cleanPrivateKey.endsWith('"')) ||
-        (cleanPrivateKey.startsWith("'") && cleanPrivateKey.endsWith("'"))
-      ) {
-        cleanPrivateKey = cleanPrivateKey.slice(1, -1);
-        logger.log('🔧 Removed surrounding quotes from private key');
-      }
-
-      // Ensure proper PEM format
-      if (!cleanPrivateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-        // If it's just the key content without headers, add them
-        cleanPrivateKey = `-----BEGIN PRIVATE KEY-----\n${cleanPrivateKey}\n-----END PRIVATE KEY-----`;
-        logger.log('🔧 Added PEM headers to private key');
-      }
-
-      // Clean up any extra whitespace and normalize line endings
-      cleanPrivateKey = cleanPrivateKey.trim().replace(/\r\n/g, '\n');
-
-      // Ensure proper line breaks in PEM format
-      const lines = cleanPrivateKey.split('\n');
-      const properLines = [];
-
-      for (let line of lines) {
-        line = line.trim();
-        if (
-          line === '-----BEGIN PRIVATE KEY-----' ||
-          line === '-----END PRIVATE KEY-----'
-        ) {
-          properLines.push(line);
-        } else if (line.length > 0) {
-          // Break long lines into 64-character chunks (standard PEM format)
-          while (line.length > 64) {
-            properLines.push(line.substring(0, 64));
-            line = line.substring(64);
-          }
-          if (line.length > 0) {
-            properLines.push(line);
-          }
-        }
-      }
-
-      cleanPrivateKey = properLines.join('\n');
+      // Shared repair logic (also used by diagnostics)
+      const cleanPrivateKey = repairPrivateKey(privateKey);
 
       logger.log('🔧 Final private key format:', {
         lineCount: cleanPrivateKey.split('\n').length,
@@ -304,6 +192,26 @@ export class GoogleSheetsService {
     } catch (error) {
       const err = error as Error;
       logger.error('❌ Google Sheets authentication failed:', err.message);
+
+      // Run the full diagnostic report only when authentication actually
+      // failed — a successful startup should never print a CRITICAL report.
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          logger.log('🔍 Running authentication diagnostics...');
+          const { googleSheetsDiagnostics } = await import(
+            './google-sheets-diagnostics'
+          );
+          const diagnosticResults =
+            await googleSheetsDiagnostics.runFullDiagnostics();
+          googleSheetsDiagnostics.printDiagnosticReport(diagnosticResults);
+        } catch (diagError) {
+          logger.error(
+            '⚠️ Failed to run Sheets auth diagnostics:',
+            (diagError as Error).message
+          );
+        }
+      }
+
       if (
         err.message.includes('DECODER') ||
         err.message.includes('OSSL_UNSUPPORTED')
