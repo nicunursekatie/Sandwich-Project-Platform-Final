@@ -1,6 +1,7 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
 import { logger } from '../utils/production-safe-logger';
+import { assertSheetWriteAllowed } from '../sheets-write-guard';
 
 export type ErrorLogSheetType =
   | 'user_report'
@@ -142,6 +143,11 @@ async function ensureHeaderRow(
   const firstCell = existing.data.values?.[0]?.[0];
   if (firstCell === HEADERS[0]) return;
 
+  assertSheetWriteAllowed({
+    spreadsheetId,
+    service: 'error-log-sync',
+    operation: 'values.update ensureHeaderRow',
+  });
   await sheetsClient.spreadsheets.values.update({
     spreadsheetId,
     range: headerRange,
@@ -180,6 +186,11 @@ export function appendErrorLogToSheet(entry: ErrorLogSheetEntry): void {
 
       await ensureHeaderRow(config.spreadsheetId, config.worksheetName);
 
+      assertSheetWriteAllowed({
+        spreadsheetId: config.spreadsheetId,
+        service: 'error-log-sync',
+        operation: 'values.append appendErrorLogToSheet',
+      });
       await sheetsClient.spreadsheets.values.append({
         spreadsheetId: config.spreadsheetId,
         range: sheetRange(config.worksheetName, 'A:J'),

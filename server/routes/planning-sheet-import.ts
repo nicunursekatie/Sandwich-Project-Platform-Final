@@ -28,6 +28,10 @@ import type { AuthenticatedRequest } from '../types/express';
  * - googleSheetRowId is deliberately left NULL: planning-sheet row numbers
  *   shift when rows are inserted, and storing them could collide with the
  *   intake sync's row-id dedup for a DIFFERENT sheet.
+ * - Imported events are stored with addedToOfficialSheet = true: they came
+ *   directly FROM the official planning sheet, so by definition they are
+ *   already on it. Without this flag they'd show the amber "Not on Calendar"
+ *   badge, misleading coordinators into duplicate manual handling.
  */
 
 // ---------------------------------------------------------------------------
@@ -182,6 +186,62 @@ function buildPlanningNotes(row: PlanningSheetRow): string {
   add('Waiting on', row.waitingOn);
   add('After-event notes', row.afterEventNotes);
   return lines.join('\n');
+}
+
+/** A selected sheet row resolved and validated for import. */
+export interface ImportCandidate {
+  row: PlanningSheetRow;
+  iso: string;
+  date: Date;
+  fingerprint: string;
+  status: 'scheduled' | 'completed' | 'cancelled' | 'in_process';
+}
+
+/**
+ * Build the event record inserted for one imported planning-sheet row.
+ * Exported for regression tests — notably the guarantee that imported events
+ * are stored with addedToOfficialSheet = true (they came FROM the sheet).
+ */
+export function buildImportedEventRecord(
+  c: ImportCandidate
+): typeof eventRequests.$inferInsert {
+  const est = parseSandwichCountInput(c.row.estimateSandwiches);
+  const final = parseSandwichCountInput(c.row.finalSandwiches);
+  const contactParts = (c.row.contactName || '').trim().split(/\s+/);
+  const firstName = contactParts[0] || null;
+  const lastName =
+    contactParts.length > 1 ? contactParts.slice(1).join(' ') : null;
+
+  return {
+    organizationName: c.row.groupName.trim(),
+    firstName,
+    lastName,
+    email: c.row.email?.trim() || null,
+    phone: c.row.phone?.trim() || null,
+    desiredEventDate: c.date,
+    scheduledEventDate:
+      c.status === 'scheduled' || c.status === 'completed' ? c.date : null,
+    status: c.status,
+    statusChangedAt: new Date(),
+    isConfirmed: c.status === 'scheduled' || c.status === 'completed',
+    eventAddress: c.row.address?.trim() || null,
+    estimatedSandwichCount: est.count,
+    estimatedSandwichCountMin: est.min,
+    estimatedSandwichCountMax: est.max,
+    actualSandwichCount: c.status === 'completed' ? final.count : null,
+    cancelledReason:
+      c.status === 'cancelled'
+        ? c.row.cancelled?.trim() || 'Marked cancelled on the planning sheet'
+        : null,
+    planningNotes: buildPlanningNotes(c.row),
+    externalId: c.fingerprint,
+    googleSheetRowId: null,
+    // This event came directly FROM the official planning sheet, so it
+    // is already on it — mark it so the UI shows "On Calendar" instead
+    // of the amber "Not on Calendar" action badge.
+    addedToOfficialSheet: true,
+    addedToOfficialSheetAt: new Date(),
+  };
 }
 
 const importSelectionSchema = z.object({
@@ -451,43 +511,7 @@ export function createPlanningSheetImportRouter(
             continue;
           }
 
-          const est = parseSandwichCountInput(c.row.estimateSandwiches);
-          const final = parseSandwichCountInput(c.row.finalSandwiches);
-          const contactParts = (c.row.contactName || '').trim().split(/\s+/);
-          const firstName = contactParts[0] || null;
-          const lastName =
-            contactParts.length > 1 ? contactParts.slice(1).join(' ') : null;
-
-          const record: InsertRow = {
-            organizationName: c.row.groupName.trim(),
-            firstName,
-            lastName,
-            email: c.row.email?.trim() || null,
-            phone: c.row.phone?.trim() || null,
-            desiredEventDate: c.date,
-            scheduledEventDate:
-              c.status === 'scheduled' || c.status === 'completed'
-                ? c.date
-                : null,
-            status: c.status,
-            statusChangedAt: new Date(),
-            isConfirmed: c.status === 'scheduled' || c.status === 'completed',
-            eventAddress: c.row.address?.trim() || null,
-            estimatedSandwichCount: est.count,
-            estimatedSandwichCountMin: est.min,
-            estimatedSandwichCountMax: est.max,
-            actualSandwichCount:
-              c.status === 'completed' ? final.count : null,
-            cancelledReason:
-              c.status === 'cancelled'
-                ? c.row.cancelled?.trim() ||
-                  'Marked cancelled on the planning sheet'
-                : null,
-            planningNotes: buildPlanningNotes(c.row),
-            externalId: c.fingerprint,
-            googleSheetRowId: null,
-          };
-          toInsert.push(record);
+          toInsert.push(buildImportedEventRecord(c));
         }
 
         let created: { id: number; organizationName: string | null }[] = [];

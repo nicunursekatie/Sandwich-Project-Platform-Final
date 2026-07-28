@@ -2,6 +2,7 @@ import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
 import { createHash } from 'crypto';
 import { logger } from './utils/production-safe-logger';
+import { assertSheetWriteAllowed } from './sheets-write-guard';
 
 export interface GoogleSheetsConfig {
   spreadsheetId: string;
@@ -454,6 +455,11 @@ export class GoogleSheetsService {
 
       // Batch update existing rows (preserves formatting)
       if (updates.length > 0) {
+        assertSheetWriteAllowed({
+          spreadsheetId: this.config.spreadsheetId,
+          service: 'projects-sync',
+          operation: 'values.batchUpdate updateSheet',
+        });
         await this.sheets.spreadsheets.values.batchUpdate({
           spreadsheetId: this.config.spreadsheetId,
           resource: {
@@ -477,6 +483,11 @@ export class GoogleSheetsService {
         const insertRowEnd = insertRowStart + newRows.length - 1;
 
         // Insert directly at specific row range in A:N columns
+        assertSheetWriteAllowed({
+          spreadsheetId: this.config.spreadsheetId,
+          service: 'projects-sync',
+          operation: 'values.update updateSheet insert',
+        });
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.config.spreadsheetId,
           range: `${this.config.worksheetName}!A${insertRowStart}:N${insertRowEnd}`,
@@ -546,6 +557,11 @@ export class GoogleSheetsService {
         const insertRowEnd = insertRowStart + newRows.length - 1;
 
         // Insert directly at specific row range in A:N columns
+        assertSheetWriteAllowed({
+          spreadsheetId: this.config.spreadsheetId,
+          service: 'projects-sync',
+          operation: 'values.update appendOnlySync',
+        });
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.config.spreadsheetId,
           range: `${this.config.worksheetName}!A${insertRowStart}:N${insertRowEnd}`, // FIXED: was A:M, now A:N to match column count
@@ -592,6 +608,11 @@ export class GoogleSheetsService {
         'Last Discussed Date', // Column N - FIXED: was missing entirely
       ];
 
+      assertSheetWriteAllowed({
+        spreadsheetId: this.config.spreadsheetId,
+        service: 'projects-sync',
+        operation: 'values.update ensureHeaders',
+      });
       await this.sheets.spreadsheets.values.update({
         spreadsheetId: this.config.spreadsheetId,
         range: `${this.config.worksheetName}!A1:N1`, // FIXED: was A1:L1, now A1:N1 to match read/write operations

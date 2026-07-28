@@ -7,6 +7,10 @@ import { AuditLogger } from './audit-logger';
 import { db } from './db';
 import { eq, sql, and } from 'drizzle-orm';
 import { logger } from './utils/production-safe-logger';
+import {
+  assertSheetWriteAllowed,
+  SheetWriteBlockedError,
+} from './sheets-write-guard';
 import { geocodeAddress } from './utils/geocoding';
 import { detectDateFlexibility } from './utils/date-flexibility-detection';
 
@@ -348,7 +352,18 @@ export class EventRequestsGoogleSheetsService {
     contactName: string,
     newStatus: string
   ): Promise<{ success: boolean; message: string }> {
-    // DISABLED: One-way sync only - we don't write back to Google Sheets
+    // DISABLED: One-way sync only - we don't write back to Google Sheets.
+    // Belt-and-suspenders: run the central write guard too, so even if this
+    // early return is ever removed, the write is still hard-blocked + logged.
+    try {
+      assertSheetWriteAllowed({
+        spreadsheetId: this.spreadsheetId,
+        service: 'event-requests-sync',
+        operation: 'updateEventRequestStatus',
+      });
+    } catch (err) {
+      if (!(err instanceof SheetWriteBlockedError)) throw err;
+    }
     logger.warn('⚠️ updateEventRequestStatus called but is disabled - one-way sync only');
     return {
       success: false,
@@ -420,6 +435,17 @@ export class EventRequestsGoogleSheetsService {
     message: string;
     synced?: number;
   }> {
+    // Belt-and-suspenders: run the central write guard too, so even if this
+    // early return is ever removed, the write is still hard-blocked + logged.
+    try {
+      assertSheetWriteAllowed({
+        spreadsheetId: this.spreadsheetId,
+        service: 'event-requests-sync',
+        operation: 'syncToGoogleSheets',
+      });
+    } catch (err) {
+      if (!(err instanceof SheetWriteBlockedError)) throw err;
+    }
     return {
       success: false,
       message:
