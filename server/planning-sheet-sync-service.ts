@@ -512,7 +512,7 @@ export class PlanningSheetSyncService {
     // official count records. Only show it if it's a positive number.
     row[PLANNING_SHEET_COLUMNS.FINAL_SANDWICHES] = (e.actualSandwichCount && e.actualSandwichCount > 0) ? e.actualSandwichCount.toString() : '';
     row[PLANNING_SHEET_COLUMNS.SOCIAL_POST] = e.socialMediaPostCompleted ? 'Yes' : '';
-    row[PLANNING_SHEET_COLUMNS.SENT_TOOLKIT] = e.toolkitSent ? 'yes' : '';
+    row[PLANNING_SHEET_COLUMNS.SENT_TOOLKIT] = e.toolkitSent ? 'Yes' : '';
     row[PLANNING_SHEET_COLUMNS.CONTACT_NAME] = `${e.firstName || ''} ${e.lastName || ''}`.trim();
     row[PLANNING_SHEET_COLUMNS.EMAIL] = e.email || '';
     row[PLANNING_SHEET_COLUMNS.PHONE] = e.phone || '';
