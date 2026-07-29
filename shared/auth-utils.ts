@@ -119,6 +119,7 @@ export const PERMISSIONS = {
   EVENT_REQUESTS_DELETE: 'EVENT_REQUESTS_DELETE',
   EVENT_REQUESTS_DELETE_CARD: 'EVENT_REQUESTS_DELETE_CARD', // Delete via card delete buttons
   EVENT_REQUESTS_SYNC: 'EVENT_REQUESTS_SYNC', // Google Sheets sync
+  MANAGE_EVENTS: 'manage:events', // Push events to the official planning Google Sheet (legacy string value; must stay 'manage:events' to match route guards)
   EVENT_REQUESTS_COMPLETE_CONTACT: 'EVENT_REQUESTS_COMPLETE_CONTACT', // Mark primary contact as completed
 
   // EVENT_REQUESTS - Inline editing permissions for specific fields

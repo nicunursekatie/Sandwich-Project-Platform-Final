@@ -16,3 +16,5 @@ Everything else is read-only against that sheet: the review-first import tool on
 **Why:** After the import feature shipped, new sheet rows were blamed on it; the timestamps proved they were routine manual pushes by the team. Checking this column first avoids a false-alarm investigation.
 
 **Gotcha:** the prod deployment log only covers the last ~hour, so absence of push logs there proves nothing — use the DB timestamps.
+
+**Note (Jul 2026):** the push feature was briefly removed on owner request, then deliberately restored via owner-approved task merges — do not remove it again. Its routes are gated by the legacy permission string `manage:events` (must stay exactly that value); it's now in the shared permission catalog as "Push Events to Planning Sheet" so admins can grant it per-user in User Management. In dev mode all permission checks are bypassed; role `admin`/`super_admin` always pass.
