@@ -17,6 +17,7 @@ import { PullToRefresh } from '../components/pull-to-refresh';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { copyToClipboard, openExternalUrl } from '../lib/native-actions';
 
 interface Resource {
   id: number;
@@ -109,7 +110,7 @@ export function MobileResources() {
     }
 
     if (url) {
-      window.open(url, '_blank');
+      openExternalUrl(url);
     }
   };
 
@@ -121,7 +122,7 @@ export function MobileResources() {
     }
 
     if (url) {
-      navigator.clipboard.writeText(url)
+      copyToClipboard(url)
         .then(() => {
           setCopiedId(resource.id);
           toast({ title: 'Link copied' });
