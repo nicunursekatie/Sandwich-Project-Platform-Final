@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { db } from '../db';
 import { eq, desc, and, inArray } from 'drizzle-orm';
 import { proposedSheetChanges, eventRequests, users } from '@shared/schema';
+import { PERMISSIONS } from '@shared/auth-utils';
 import {
   getPlanningSheetService,
   PLANNING_SHEET_COLUMNS,
@@ -224,7 +225,7 @@ export function createPlanningSheetProposalsRouter(
    *
    * NOTE: This route MUST come before /:id to avoid "push-event" being caught as an id
    */
-  router.post('/push-event/:eventId', isAuthenticated, requirePermission('manage:events'), async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/push-event/:eventId', isAuthenticated, requirePermission(PERMISSIONS.EVENT_REQUESTS_EDIT), async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { eventId } = req.params;
       const userId = req.user?.id;
@@ -310,7 +311,7 @@ export function createPlanningSheetProposalsRouter(
    *
    * NOTE: This route MUST come before /:id to avoid "sheet" being caught as an id
    */
-  router.get('/sheet/read', isAuthenticated, requirePermission('manage:events'), async (req: AuthenticatedRequest, res: Response) => {
+  router.get('/sheet/read', isAuthenticated, requirePermission(PERMISSIONS.EVENT_REQUESTS_EDIT), async (req: AuthenticatedRequest, res: Response) => {
     try {
       const service = getPlanningSheetService();
       if (!service) {
@@ -368,9 +369,9 @@ export function createPlanningSheetProposalsRouter(
    * Approve multiple proposals at once
    *
    * NOTE: This route MUST come before /:id/approve to avoid "batch" being caught as an id
-   * Requires 'manage:events' permission to write to Google Sheet
+   * Requires EVENT_REQUESTS_EDIT permission to write to Google Sheet
    */
-  router.post('/batch/approve', isAuthenticated, requirePermission('manage:events'), async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/batch/approve', isAuthenticated, requirePermission(PERMISSIONS.EVENT_REQUESTS_EDIT), async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { proposalIds } = req.body;
       const userId = req.user?.id;
@@ -413,9 +414,9 @@ export function createPlanningSheetProposalsRouter(
    * Reject multiple proposals at once
    *
    * NOTE: This route MUST come before /:id/reject to avoid "batch" being caught as an id
-   * Requires 'manage:events' permission
+   * Requires EVENT_REQUESTS_EDIT permission
    */
-  router.post('/batch/reject', isAuthenticated, requirePermission('manage:events'), async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/batch/reject', isAuthenticated, requirePermission(PERMISSIONS.EVENT_REQUESTS_EDIT), async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { proposalIds, notes } = req.body;
       const userId = req.user?.id;
@@ -526,9 +527,9 @@ export function createPlanningSheetProposalsRouter(
    * Approve and apply a proposal
    *
    * NOTE: This parameterized route MUST come after specific routes like /batch/approve
-   * Requires 'manage:events' permission to write to Google Sheet
+   * Requires EVENT_REQUESTS_EDIT permission to write to Google Sheet
    */
-  router.post('/:id/approve', isAuthenticated, requirePermission('manage:events'), async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/:id/approve', isAuthenticated, requirePermission(PERMISSIONS.EVENT_REQUESTS_EDIT), async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
       const userId = req.user?.id;
@@ -558,9 +559,9 @@ export function createPlanningSheetProposalsRouter(
   /**
    * POST /api/planning-sheet-proposals/:id/reject
    * Reject a proposal
-   * Requires 'manage:events' permission
+   * Requires EVENT_REQUESTS_EDIT permission
    */
-  router.post('/:id/reject', isAuthenticated, requirePermission('manage:events'), async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/:id/reject', isAuthenticated, requirePermission(PERMISSIONS.EVENT_REQUESTS_EDIT), async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
       const { notes } = req.body;
@@ -591,9 +592,9 @@ export function createPlanningSheetProposalsRouter(
   /**
    * POST /api/planning-sheet-proposals/:id/edit
    * Edit a proposal's proposed value before approving
-   * Requires 'manage:events' permission
+   * Requires EVENT_REQUESTS_EDIT permission
    */
-  router.post('/:id/edit', isAuthenticated, requirePermission('manage:events'), async (req: AuthenticatedRequest, res: Response) => {
+  router.post('/:id/edit', isAuthenticated, requirePermission(PERMISSIONS.EVENT_REQUESTS_EDIT), async (req: AuthenticatedRequest, res: Response) => {
     try {
       const { id } = req.params;
       const { proposedValue, proposedRowData } = req.body;
