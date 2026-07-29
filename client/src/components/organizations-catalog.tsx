@@ -36,6 +36,7 @@ import {
   Plus,
   X,
   ArrowUp,
+  Download,
 } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/date-utils';
 import { logger } from '@/lib/logger';
@@ -741,6 +742,98 @@ export default function GroupCatalog({
     });
   };
 
+  const escapeCsvCell = (value: unknown): string => {
+    const str = String(value ?? '');
+    return `"${str.replace(/"/g, '""')}"`;
+  };
+
+  const handleExportCSV = () => {
+    if (filteredActiveGroups.length === 0) {
+      toast({
+        title: 'Nothing to export',
+        description: 'No organizations match the current filters.',
+      });
+      return;
+    }
+
+    try {
+      const headers = [
+        'Organization',
+        'Department',
+        'Category',
+        'School Classification',
+        'Contact Name',
+        'Email',
+        'Phone',
+        'Status',
+        'Has Hosted Event',
+        'Event Date',
+        'Total Requests',
+        'Actual Sandwich Total',
+        'Actual Event Count',
+        'Latest Activity Date',
+        'Latest Collection Date',
+        'TSP Contact',
+        'Assigned To',
+        'Is Partner Entry',
+        'Partner Role',
+        'Primary Organization',
+        'Co-Hosts',
+      ];
+
+      const rows = filteredActiveGroups.map((org) => [
+        org.organizationName || '',
+        org.department || '',
+        getCategoryLabel(org.category),
+        org.schoolClassification || '',
+        org.contactName || '',
+        org.email || '',
+        org.phone || '',
+        org.status || '',
+        org.hasHostedEvent || (org.actualSandwichTotal && org.actualSandwichTotal > 0) ? 'Yes' : 'No',
+        org.eventDate ? formatDateForDisplay(org.eventDate) : '',
+        org.totalRequests ?? '',
+        org.actualSandwichTotal ?? '',
+        org.actualEventCount ?? '',
+        org.latestActivityDate ? formatDateForDisplay(org.latestActivityDate) : '',
+        org.latestCollectionDate ? formatDateForDisplay(org.latestCollectionDate) : '',
+        org.tspContactAssigned || org.tspContact || '',
+        org.assignedToName || org.assignedTo || '',
+        org.isPartnerEntry ? 'Yes' : 'No',
+        org.partnerRole || '',
+        org.primaryOrganization || '',
+        (org.coHostNames || []).join('; '),
+      ]);
+
+      const csvContent = [
+        headers.map(escapeCsvCell).join(','),
+        ...rows.map((row) => row.map(escapeCsvCell).join(',')),
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `groups-catalog-export-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Export completed',
+        description: `Exported ${filteredActiveGroups.length} organization${filteredActiveGroups.length === 1 ? '' : 's'} to CSV.`,
+      });
+    } catch (error) {
+      logger.error('Groups catalog CSV export failed:', error);
+      toast({
+        title: 'Export failed',
+        description: 'Failed to export groups catalog data.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const getStatusText = (status: string) => {
     switch (status) {
       case 'new':
@@ -870,12 +963,22 @@ export default function GroupCatalog({
         <div className="flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-teal-100 flex-shrink-0">
           <Building className="w-5 h-5 sm:w-6 sm:h-6 text-teal-600" />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Groups Catalog</h1>
           <p className="text-sm sm:text-base text-gray-600 hidden sm:block">
             Directory of all organizations we've worked with from event requests
           </p>
         </div>
+        <Button
+          variant="outline"
+          onClick={handleExportCSV}
+          className="flex items-center gap-2 flex-shrink-0 min-h-[44px]"
+          data-testid="button-export-groups-catalog"
+          title="Download a CSV of organizations matching the current filters"
+        >
+          <Download className="w-4 h-4" />
+          <span className="hidden sm:inline">Export CSV</span>
+        </Button>
       </div>
 
       {/* Search and Filter Controls */}
