@@ -51,6 +51,7 @@ import {
 import RequestFilters from '@/components/event-requests/RequestFilters';
 import { VanConflictsButton } from '@/components/event-requests/VanConflictsButton';
 import { PlanningSheetImportDialog } from '@/components/event-requests/PlanningSheetImportDialog';
+import { PlanningSheetGapsDialog } from '@/components/event-requests/PlanningSheetGapsDialog';
 import EventSchedulingForm from '@/components/event-requests/EventSchedulingForm';
 import EventCollectionLog from '@/components/event-requests/EventCollectionLog';
 import ToolkitSentDialog from '@/components/event-requests/ToolkitSentDialog';
@@ -334,6 +335,7 @@ const EventRequestsManagementContent: React.FC = () => {
 
   // Check if user has permission to sync event requests from Google Sheets
   const [planningImportOpen, setPlanningImportOpen] = useState(false);
+  const [planningGapsOpen, setPlanningGapsOpen] = useState(false);
   const canSyncEvents = user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_SYNC) ||
     user?.role === 'admin' || user?.role === 'super_admin';
 
@@ -625,6 +627,21 @@ const EventRequestsManagementContent: React.FC = () => {
               <PlanningSheetImportDialog
                 open={planningImportOpen}
                 onOpenChange={setPlanningImportOpen}
+              />
+              {user?.role === 'super_admin' && (
+                <button
+                  onClick={() => setPlanningGapsOpen(true)}
+                  className="premium-btn-outline text-sm"
+                  title="Read-only report: planning-sheet group events not represented in the app (nothing is changed)"
+                  data-testid="button-planning-sheet-gaps"
+                >
+                  <Shield className="w-4 h-4" />
+                  {!isMobile && 'Planning Sheet Gaps'}
+                </button>
+              )}
+              <PlanningSheetGapsDialog
+                open={planningGapsOpen}
+                onOpenChange={setPlanningGapsOpen}
               />
               <VanConflictsButton isMobile={isMobile} />
               {/* Export — available on any list-view tab. We export the same

@@ -258,6 +258,141 @@ const importSelectionSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// Shared read-only comparison
+// ---------------------------------------------------------------------------
+
+interface SheetComparison {
+  sheetRowCount: number;
+  skippedRows: number;
+  missing: PreviewRow[];
+  possible: PreviewRow[];
+  inApp: PreviewRow[];
+}
+
+/**
+ * READ-ONLY comparison of the planning sheet against every app event, under
+ * ANY status. It reads the sheet (values.get) and SELECTs event requests — it
+ * never writes to the spreadsheet or the database. Returns null when the
+ * planning-sheet connection is not configured.
+ *
+ * Buckets each sheet row into:
+ *  - inApp:    represented by an app event (prior import, or same-day exact/
+ *              contained name match)
+ *  - possible: a same-day event with a similar (token-overlap >= 0.5) name —
+ *              a likely-but-not-certain match a human should eyeball
+ *  - missing:  no match at all — i.e. a group event on the sheet that does not
+ *              appear to exist in the app
+ */
+async function compareSheetToApp(): Promise<SheetComparison | null> {
+  const service = getPlanningSheetService();
+  if (!service) return null;
+
+  const sheetRows = await service.readPlanningSheet();
+  const events = await db
+    .select({
+      id: eventRequests.id,
+      organizationName: eventRequests.organizationName,
+      desiredEventDate: eventRequests.desiredEventDate,
+      scheduledEventDate: eventRequests.scheduledEventDate,
+      status: eventRequests.status,
+      externalId: eventRequests.externalId,
+    })
+    .from(eventRequests);
+
+  const importedIds = new Set(events.map((e) => e.externalId));
+  const eventsByDate = new Map<string, typeof events>();
+  for (const ev of events) {
+    const keys = new Set([
+      ...eventDateKeys(ev.desiredEventDate),
+      ...eventDateKeys(ev.scheduledEventDate),
+    ]);
+    for (const key of keys) {
+      const bucket = eventsByDate.get(key);
+      if (bucket) bucket.push(ev);
+      else eventsByDate.set(key, [ev]);
+    }
+  }
+
+  const missing: PreviewRow[] = [];
+  const possible: PreviewRow[] = [];
+  const inApp: PreviewRow[] = [];
+  let skippedRows = 0;
+
+  for (const row of sheetRows) {
+    const groupName = (row.groupName || '').trim();
+    const parsed = parsePlanningDate(row.date);
+    // Skip blank rows and separator rows like "----------" whose name
+    // normalizes to nothing (they'd produce a meaningless fingerprint).
+    if (!groupName || !normalizeName(groupName) || !parsed) {
+      skippedRows++;
+      continue;
+    }
+
+    const fingerprint = planningFingerprint(parsed.iso, groupName);
+    const sameDay = eventsByDate.get(parsed.iso) || [];
+
+    // 1) Previously imported by this tool — hard match.
+    if (importedIds.has(fingerprint)) {
+      const ev = events.find((e) => e.externalId === fingerprint)!;
+      inApp.push(
+        toPreviewRow(row, parsed.iso, fingerprint, {
+          id: ev.id,
+          organizationName: ev.organizationName,
+          status: ev.status,
+        })
+      );
+      continue;
+    }
+
+    // 2) Same day + same/contained name — already in the app.
+    const exact = sameDay.find((e) =>
+      namesMatch(groupName, e.organizationName || '')
+    );
+    if (exact) {
+      inApp.push(
+        toPreviewRow(row, parsed.iso, fingerprint, {
+          id: exact.id,
+          organizationName: exact.organizationName,
+          status: exact.status,
+        })
+      );
+      continue;
+    }
+
+    // 3) Same day + similar name — a likely match to eyeball.
+    const similar = sameDay.find(
+      (e) => tokenOverlap(groupName, e.organizationName || '') >= 0.5
+    );
+    if (similar) {
+      possible.push(
+        toPreviewRow(row, parsed.iso, fingerprint, {
+          id: similar.id,
+          organizationName: similar.organizationName,
+          status: similar.status,
+        })
+      );
+      continue;
+    }
+
+    // 4) Not in the app.
+    missing.push(toPreviewRow(row, parsed.iso, fingerprint));
+  }
+
+  const byDate = (a: PreviewRow, b: PreviewRow) => a.date.localeCompare(b.date);
+  missing.sort(byDate);
+  possible.sort(byDate);
+  inApp.sort(byDate);
+
+  return {
+    sheetRowCount: sheetRows.length,
+    skippedRows,
+    missing,
+    possible,
+    inApp,
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Router
 // ---------------------------------------------------------------------------
 
@@ -281,120 +416,60 @@ export function createPlanningSheetImportRouter(
     requirePermission(PERMISSIONS.EVENT_REQUESTS_SYNC),
     async (_req: AuthenticatedRequest, res: Response) => {
       try {
-        const service = getPlanningSheetService();
-        if (!service) {
+        const result = await compareSheetToApp();
+        if (!result) {
           return res.status(503).json({
             message:
               'The planning sheet connection is not configured on this server.',
           });
         }
-
-        const sheetRows = await service.readPlanningSheet();
-        const events = await db
-          .select({
-            id: eventRequests.id,
-            organizationName: eventRequests.organizationName,
-            desiredEventDate: eventRequests.desiredEventDate,
-            scheduledEventDate: eventRequests.scheduledEventDate,
-            status: eventRequests.status,
-            externalId: eventRequests.externalId,
-          })
-          .from(eventRequests);
-
-        const importedIds = new Set(events.map((e) => e.externalId));
-        const eventsByDate = new Map<string, typeof events>();
-        for (const ev of events) {
-          const keys = new Set([
-            ...eventDateKeys(ev.desiredEventDate),
-            ...eventDateKeys(ev.scheduledEventDate),
-          ]);
-          for (const key of keys) {
-            const bucket = eventsByDate.get(key);
-            if (bucket) bucket.push(ev);
-            else eventsByDate.set(key, [ev]);
-          }
-        }
-
-        const missing: PreviewRow[] = [];
-        const possible: PreviewRow[] = [];
-        const inApp: PreviewRow[] = [];
-        let skippedRows = 0;
-
-        for (const row of sheetRows) {
-          const groupName = (row.groupName || '').trim();
-          const parsed = parsePlanningDate(row.date);
-          // Skip blank rows and separator rows like "----------" whose name
-          // normalizes to nothing (they'd produce a meaningless fingerprint).
-          if (!groupName || !normalizeName(groupName) || !parsed) {
-            skippedRows++;
-            continue;
-          }
-
-          const fingerprint = planningFingerprint(parsed.iso, groupName);
-          const sameDay = eventsByDate.get(parsed.iso) || [];
-
-          // 1) Previously imported by this tool — hard match.
-          if (importedIds.has(fingerprint)) {
-            const ev = events.find((e) => e.externalId === fingerprint)!;
-            inApp.push(
-              toPreviewRow(row, parsed.iso, fingerprint, {
-                id: ev.id,
-                organizationName: ev.organizationName,
-                status: ev.status,
-              })
-            );
-            continue;
-          }
-
-          // 2) Same day + same/contained name — already in the app.
-          const exact = sameDay.find((e) =>
-            namesMatch(groupName, e.organizationName || '')
-          );
-          if (exact) {
-            inApp.push(
-              toPreviewRow(row, parsed.iso, fingerprint, {
-                id: exact.id,
-                organizationName: exact.organizationName,
-                status: exact.status,
-              })
-            );
-            continue;
-          }
-
-          // 3) Same day + similar name — needs a human decision.
-          const similar = sameDay.find(
-            (e) => tokenOverlap(groupName, e.organizationName || '') >= 0.5
-          );
-          if (similar) {
-            possible.push(
-              toPreviewRow(row, parsed.iso, fingerprint, {
-                id: similar.id,
-                organizationName: similar.organizationName,
-                status: similar.status,
-              })
-            );
-            continue;
-          }
-
-          // 4) Not in the app.
-          missing.push(toPreviewRow(row, parsed.iso, fingerprint));
-        }
-
-        const byDate = (a: PreviewRow, b: PreviewRow) =>
-          a.date.localeCompare(b.date);
-        missing.sort(byDate);
-        possible.sort(byDate);
-        inApp.sort(byDate);
-
-        res.json({
-          sheetRowCount: sheetRows.length,
-          skippedRows,
-          missing,
-          possible,
-          inApp,
-        });
+        res.json(result);
       } catch (error) {
         logger.error('[PlanningSheetImport] Preview failed:', error);
+        res.status(500).json({
+          message: 'Could not read the planning sheet. Please try again.',
+        });
+      }
+    }
+  );
+
+  /**
+   * GET /api/planning-sheet-import/gaps
+   * READ-ONLY report. Surfaces planning-sheet group events (group + date) that
+   * do not appear to be represented by an event request in the app under ANY
+   * status — i.e. the "missing" bucket of the comparison, on its own.
+   *
+   * This endpoint ONLY reads (the sheet via values.get, and event requests via
+   * SELECT). It has no write path of any kind: it cannot modify the sheet, the
+   * database, or any event. It exists purely to show a list.
+   */
+  router.get(
+    '/gaps',
+    isAuthenticated,
+    requirePermission(PERMISSIONS.EVENT_REQUESTS_SYNC),
+    async (_req: AuthenticatedRequest, res: Response) => {
+      try {
+        const result = await compareSheetToApp();
+        if (!result) {
+          return res.status(503).json({
+            message:
+              'The planning sheet connection is not configured on this server.',
+          });
+        }
+        res.json({
+          sheetRowCount: result.sheetRowCount,
+          skippedRows: result.skippedRows,
+          inAppCount: result.inApp.length,
+          possibleMatchCount: result.possible.length,
+          // Group events on the sheet with no matching app event (any status).
+          gaps: result.missing,
+          // Near-misses (same-day event with a similar name) included so a
+          // reviewer can confirm a listed "gap" isn't really an in-app event
+          // under a slightly different name before acting on it manually.
+          possibleMatches: result.possible,
+        });
+      } catch (error) {
+        logger.error('[PlanningSheetImport] Gaps report failed:', error);
         res.status(500).json({
           message: 'Could not read the planning sheet. Please try again.',
         });
