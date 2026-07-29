@@ -89,8 +89,12 @@ export function PlanningSheetGapsDialog({
       const a = document.createElement('a');
       a.href = url;
       a.download = 'planning-sheet-gaps.csv';
+      document.body.appendChild(a);
       a.click();
-      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      // Revoke on a timer so the browser has finished reading the blob first
+      // (revoking immediately can produce an empty download in some browsers).
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     },
     [gaps]
   );

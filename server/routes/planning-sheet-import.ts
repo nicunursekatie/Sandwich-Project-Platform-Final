@@ -303,7 +303,12 @@ async function compareSheetToApp(): Promise<SheetComparison | null> {
     // the importer). Matches how the rest of the app filters event requests.
     .where(isNull(eventRequests.deletedAt));
 
-  const importedIds = new Set(events.map((e) => e.externalId));
+  // Index by external_id once for O(1) prior-import lookups (instead of a
+  // find() per sheet row).
+  const eventsByExternalId = new Map<string, (typeof events)[number]>();
+  for (const e of events) {
+    if (e.externalId) eventsByExternalId.set(e.externalId, e);
+  }
   const eventsByDate = new Map<string, typeof events>();
   for (const ev of events) {
     const keys = new Set([
@@ -336,13 +341,13 @@ async function compareSheetToApp(): Promise<SheetComparison | null> {
     const sameDay = eventsByDate.get(parsed.iso) || [];
 
     // 1) Previously imported by this tool — hard match.
-    if (importedIds.has(fingerprint)) {
-      const ev = events.find((e) => e.externalId === fingerprint)!;
+    const importedMatch = eventsByExternalId.get(fingerprint);
+    if (importedMatch) {
       inApp.push(
         toPreviewRow(row, parsed.iso, fingerprint, {
-          id: ev.id,
-          organizationName: ev.organizationName,
-          status: ev.status,
+          id: importedMatch.id,
+          organizationName: importedMatch.organizationName,
+          status: importedMatch.status,
         })
       );
       continue;
