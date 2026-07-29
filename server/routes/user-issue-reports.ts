@@ -6,6 +6,7 @@ import { desc, gte } from 'drizzle-orm';
 import type { AuthenticatedRequest } from '../types/express';
 import { getSessionUser, getUserId } from '../types/express';
 import { logger } from '../utils/production-safe-logger';
+import { appendErrorLogToSheet } from '../services/error-log-sheet-sync';
 
 const submitReportSchema = z.object({
   pagePath: z.string().min(1).max(2000),
@@ -67,6 +68,24 @@ export function createUserIssueReportsRoutes(deps: {
         pagePath: body.pagePath,
         recordType: body.recordType,
         recordId: body.recordId,
+      });
+
+      appendErrorLogToSheet({
+        type: 'user_report',
+        timestamp: report.createdAt ?? new Date(),
+        userName: displayName,
+        userEmail: sessionUser?.email ?? req.user?.email ?? null,
+        page: body.pageLabel || body.pagePath,
+        summary: body.actualOutcome,
+        details: [
+          `What doing: ${body.whatDoing}`,
+          `Expected: ${body.expectedOutcome}`,
+          body.pagePath ? `Path: ${body.pagePath}` : '',
+        ]
+          .filter(Boolean)
+          .join('\n'),
+        record: body.recordLabel || body.recordId || body.recordType || null,
+        sourceId: report.id,
       });
 
       res.status(201).json(report);

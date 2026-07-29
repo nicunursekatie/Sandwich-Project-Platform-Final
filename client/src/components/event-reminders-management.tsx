@@ -133,10 +133,7 @@ export default function EventRemindersManagement() {
   // Create reminder mutation
   const createReminderMutation = useMutation({
     mutationFn: async (data: CreateReminderInput) => {
-      return apiRequest('/api/event-reminders', {
-        method: 'POST',
-        body: JSON.stringify(data),
-      });
+      return apiRequest('POST', '/api/event-reminders', data);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/event-reminders'] });
@@ -164,13 +161,10 @@ export default function EventRemindersManagement() {
       id: number;
       data: CompleteReminderInput;
     }) => {
-      return apiRequest(`/api/event-reminders/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify({
-          status: 'completed',
-          completedAt: new Date().toISOString(),
-          completionNotes: data.completionNotes,
-        }),
+      return apiRequest('PUT', `/api/event-reminders/${id}`, {
+        status: 'completed',
+        completedAt: new Date().toISOString(),
+        completionNotes: data.completionNotes,
       });
     },
     onSuccess: () => {

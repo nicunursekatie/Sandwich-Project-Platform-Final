@@ -35,7 +35,6 @@ import {
   Users,
   Car,
   Truck,
-  Megaphone,
   UserPlus,
   Phone,
   Mail,
@@ -69,6 +68,11 @@ import {
   parseSandwichTypes,
   formatSandwichTypesDisplay,
 } from '@/lib/sandwich-utils';
+import { hasActiveSandwichRange } from '@shared/sandwich-count-utils';
+import {
+  extractNameFromAssignmentId,
+  resolveAssignmentDisplayName,
+} from '@/lib/assignment-utils';
 import type { EventRequest } from '@shared/schema';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
 import { MultiRecipientSelector } from '@/components/ui/multi-recipient-selector';
@@ -77,6 +81,7 @@ import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { ReminderRulesManager } from '@/components/event-requests/ReminderRulesManager';
 import { MessageComposer } from '@/components/message-composer';
 import { MlkDayBadge } from '@/components/event-requests/MlkDayBadge';
+import { MissingDriverTimeBadge } from '@/components/event-requests/MissingDriverTimeBadge';
 import { RefrigerationWarningBadge } from '@/components/event-requests/RefrigerationWarningBadge';
 import { TrafficConflictBadge } from '@/components/event-requests/TrafficConflictBadge';
 import { VanNeededBadgeAndButton } from '@/components/event-requests/VanNeededBadgeAndButton';
@@ -88,7 +93,6 @@ import { hasPermission } from '@shared/unified-auth-utils';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
 import { CommentThread } from '@/components/collaboration';
 import { useToast } from '@/hooks/use-toast';
-import { addEventToGoogleSheet, formatDateForGoogleSheet } from '@/lib/google-sheets-api';
 import { Sheet } from 'lucide-react';
 import { apiRequest, applyPatchResponseToCache } from '@/lib/queryClient';
 import { patchEventRequestVerified } from '@/lib/event-save-verification';
@@ -103,10 +107,11 @@ import { Flag } from 'lucide-react';
 import { ProposeToSheetButton } from '@/components/propose-to-sheet-button';
 import { InlineRecipientAllocationEditor } from '../InlineRecipientAllocationEditor';
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
-import { RefreshCw, Copy } from 'lucide-react';
+import { RefreshCw, Copy, Ban } from 'lucide-react';
 import type { RecipientAllocation } from '../RecipientAllocationEditor';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
+import { CardActionRow, ActionRowSpacer } from './card-ui';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -127,6 +132,7 @@ interface ScheduledCardEnhancedProps {
   onEditTspContact: () => void;
   onLogContact: () => void;
   onReschedule: () => void;
+  onCancelEvent?: () => void;
   onDuplicate?: () => void;
   onAiIntakeAssist?: () => void;
   startEditing: (field: string, value: string) => void;
@@ -146,8 +152,8 @@ interface ScheduledCardEnhancedProps {
   removeInlineSandwichType: (index: number) => void;
   resolveUserName: (id: string) => string;
   resolveRecipientName?: (id: string) => string;
-  openAssignmentDialog: (type: 'driver' | 'speaker' | 'volunteer', isVanDriver?: boolean) => void;
-  handleRemoveAssignment: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
+  openAssignmentDialog: (type: 'driver' | 'volunteer', isVanDriver?: boolean) => void;
+  handleRemoveAssignment: (type: 'driver' | 'volunteer', personId: string) => void;
   quickUpdateField?: (field: string, value: any) => void;
   canEdit?: boolean;
   // Next Action handlers
@@ -169,16 +175,7 @@ const parsePostgresArray = (arr: unknown): string[] => {
 };
 
 const extractCustomName = (id: string): string => {
-  if (!id || typeof id !== 'string') return '';
-  if (id.startsWith('custom-')) {
-    const parts = id.split('-');
-    if (parts.length >= 3) {
-      const nameParts = parts.slice(2);
-      return nameParts.join('-').replace(/-/g, ' ').trim() || 'Custom Volunteer';
-    }
-    return 'Custom Volunteer';
-  }
-  return ''; // Return empty string so resolveUserName gets called
+  return extractNameFromAssignmentId(id) || '';
 };
 
 export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
@@ -200,6 +197,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   onEditTspContact,
   onLogContact,
   onReschedule,
+  onCancelEvent,
   onDuplicate,
   onAiIntakeAssist,
   startEditing,
@@ -277,7 +275,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   const [tempEndTime, setTempEndTime] = useState('');
   const [tempPickupTime, setTempPickupTime] = useState('');
   const [tempOvernightHolding, setTempOvernightHolding] = useState('');
-  const [isExportingToSheet, setIsExportingToSheet] = useState(false);
 
   // State for recording actual/final sandwich count
   const [isEditingActualCount, setIsEditingActualCount] = useState(false);
@@ -476,16 +473,25 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
   // Calculate staffing
   // driversNeeded tracks regular drivers only — van driver is separate
   const driverAssigned = parsePostgresArray(request.assignedDriverIds).length;
-  const speakerAssigned = Object.keys(request.speakerDetails || {}).length;
   const volunteerAssigned = parsePostgresArray(request.assignedVolunteerIds).length;
   const driverNeeded = request.driversNeeded || 0;
-  const speakerNeeded = request.speakersNeeded || 0;
   const volunteerNeeded = request.volunteersNeeded || 0;
+  const showMarkVanNeeded =
+    canEdit &&
+    !request.selfTransport &&
+    !request.assignedVanDriverId &&
+    !request.isDhlVan &&
+    !request.vanDriverNeeded;
+  const showVolunteerSection =
+    !request.selfTransport &&
+    (volunteerNeeded > 0 || (isEditingThisCard && editingField === 'volunteersNeeded'));
+  const showCondensedStaffingAdds =
+    !request.selfTransport && !showVolunteerSection && canEdit;
   // Include van driver in staffing totals as a separate slot
   const vanDriverNeededCount = (request.vanDriverNeeded && !request.assignedVanDriverId && !request.isDhlVan) ? 1 : 0;
   const vanDriverAssignedCount = (request.assignedVanDriverId || request.isDhlVan) ? 1 : 0;
-  const totalAssigned = driverAssigned + vanDriverAssignedCount + speakerAssigned + volunteerAssigned;
-  const totalNeeded = driverNeeded + (request.vanDriverNeeded ? 1 : 0) + speakerNeeded + volunteerNeeded;
+  const totalAssigned = driverAssigned + vanDriverAssignedCount + volunteerAssigned;
+  const totalNeeded = driverNeeded + (request.vanDriverNeeded ? 1 : 0) + volunteerNeeded;
   const staffingComplete = totalAssigned >= totalNeeded && totalNeeded > 0;
 
   // Check if event is within next 7 days (for urgent staffing badge color)
@@ -504,13 +510,20 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     return eventDate <= sevenDaysFromNow && eventDate >= today;
   })();
 
-  // Staffing badge colors - red (#A31C41) if within 7 days, gold (#FBAD3F) otherwise
+  // Staffing badge colors - urgent burgundy fill (passes AA) if within 7 days,
+  // otherwise the accessible "attention" tone (dark text on light gold). The old
+  // gold fill used white text (#FBAD3F on white ≈ 1.9:1) and failed WCAG AA.
   const staffingBadgeColors = isWithin7Days
     ? 'bg-[#A31C41] text-white border border-[#A31C41]'
-    : 'bg-[#FBAD3F] text-white border border-[#FBAD3F]';
+    : 'bg-amber-50 text-amber-800 border border-amber-400';
 
-  // Sandwich info
-  const hasRange = request.estimatedSandwichCountMin && request.estimatedSandwichCountMax;
+  // Sandwich info — ignore a leftover range whose midpoint disagrees with the
+  // exact count (stale range after Exact Count save → "500 shows as 498").
+  const hasRange = hasActiveSandwichRange(
+    request.estimatedSandwichCountMin,
+    request.estimatedSandwichCountMax,
+    request.estimatedSandwichCount,
+  );
   let sandwichInfo;
   if (hasRange) {
     const rangeType = request.estimatedSandwichRangeType;
@@ -556,247 +569,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     dateFieldToEdit = 'scheduledEventDate';
     dateLabel = request.status === 'completed' ? 'Event Date' : 'Scheduled Date';
   }
-
-  // Handler to export event to Google Sheet
-  const handleExportToGoogleSheet = async () => {
-    const eventDate = getEffectiveEventDate(request);
-    if (!eventDate) {
-      toast({
-        title: 'Missing Date',
-        description: 'Cannot export event without a date.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    if (!request.organizationName) {
-      toast({
-        title: 'Missing Organization Name',
-        description: 'Cannot export event without an organization name.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setIsExportingToSheet(true);
-
-    try {
-      // Build staffing string in the format the spreadsheet expects:
-      // D = driver needed, D: Name = driver assigned
-      // S = speaker needed, S: Name = speaker assigned
-      // V = volunteer needed, V: Name = volunteer assigned
-      // VD = van driver needed, VD: Name = van driver assigned
-      const staffingParts: string[] = [];
-
-      // Drivers
-      const assignedDriverIds = parsePostgresArray(request.assignedDriverIds);
-      const driversNeededCount = request.driversNeeded || 0;
-      assignedDriverIds.forEach(id => {
-        const isCustom = id.startsWith('custom-');
-        const idLooksLikeName = id &&
-          !id.startsWith('user_') && !id.startsWith('driver_') && !id.startsWith('driver-') &&
-          !id.startsWith('custom-') && !id.startsWith('host-contact-') &&
-          !/^\d+$/.test(id) && id.includes(' ');
-        const resolvedName = resolveUserName(id);
-        const name = isCustom
-          ? extractCustomName(id)
-          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
-        staffingParts.push(name ? `D: ${name}` : 'D');
-      });
-      // Add unfilled regular driver slots (van driver is tracked separately)
-      const unfilledDrivers = Math.max(0, driversNeededCount - assignedDriverIds.length);
-      for (let i = 0; i < unfilledDrivers; i++) {
-        staffingParts.push('D');
-      }
-
-      // Van Driver (separate from regular drivers)
-      if (request.assignedVanDriverId) {
-        const name = resolveUserName(request.assignedVanDriverId);
-        staffingParts.push(name ? `VD: ${name}` : 'VD');
-      } else if (request.vanDriverNeeded) {
-        staffingParts.push('VD');
-      }
-
-      // Speakers
-      const speakerDetails = request.speakerDetails as Record<string, { name?: string }> | null;
-      const assignedSpeakerIds = speakerDetails ? Object.keys(speakerDetails) : [];
-      const speakersNeededCount = request.speakersNeeded || 0;
-      assignedSpeakerIds.forEach(id => {
-        const detailName = speakerDetails?.[id]?.name;
-        const customName = extractCustomName(id);
-        const userName = resolveUserName(id);
-        const name = detailName || customName || userName;
-        staffingParts.push(name ? `S: ${name}` : 'S');
-      });
-      // Add unfilled speaker slots
-      const unfilledSpeakers = Math.max(0, speakersNeededCount - assignedSpeakerIds.length);
-      for (let i = 0; i < unfilledSpeakers; i++) {
-        staffingParts.push('S');
-      }
-
-      // Volunteers
-      const assignedVolunteerIds = parsePostgresArray(request.assignedVolunteerIds);
-      const volunteersNeededCount = request.volunteersNeeded || 0;
-      assignedVolunteerIds.forEach(id => {
-        const isCustom = id.startsWith('custom-');
-        const idLooksLikeName = id &&
-          !id.startsWith('user_') && !id.startsWith('driver_') && !id.startsWith('volunteer_') &&
-          !id.startsWith('volunteer-') && !id.startsWith('custom-') && !id.startsWith('host-contact-') &&
-          !/^\d+$/.test(id) && id.includes(' ');
-        const resolvedName = resolveUserName(id);
-        const name = isCustom
-          ? extractCustomName(id)
-          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
-        staffingParts.push(name ? `V: ${name}` : 'V');
-      });
-      // Add unfilled volunteer slots
-      const unfilledVolunteers = Math.max(0, volunteersNeededCount - assignedVolunteerIds.length);
-      for (let i = 0; i < unfilledVolunteers; i++) {
-        staffingParts.push('V');
-      }
-
-      // Build details from various notes (planning notes go here)
-      const detailParts: string[] = [];
-      if (request.planningNotes) detailParts.push(request.planningNotes);
-      if (request.schedulingNotes) detailParts.push(request.schedulingNotes);
-      if (request.specialRequirements) detailParts.push(request.specialRequirements);
-      if (request.distributionNotes) detailParts.push(request.distributionNotes);
-
-      // Determine sandwich type (Deli or PBJ) and calculate total from sandwichTypes if needed
-      let sandwichTypeStr = '';
-      let sandwichTotal = request.estimatedSandwichCount || 0;
-      const parsedTypes = parseSandwichTypes(request.sandwichTypes);
-      if (parsedTypes && parsedTypes.length > 0) {
-        // Filter out unknown types and format type names nicely
-        const validTypes = parsedTypes.filter(t => t.type.toLowerCase() !== 'unknown' && t.quantity > 0);
-        sandwichTypeStr = validTypes.map(t => {
-          // Format type name: capitalize first letter, handle special cases
-          const typeName = t.type.toLowerCase();
-          if (typeName === 'pbj' || typeName === 'pb&j') return 'PB&J';
-          if (typeName === 'deli') return 'Deli';
-          return t.type.charAt(0).toUpperCase() + t.type.slice(1);
-        }).join(', ');
-        // Calculate total from sandwichTypes
-        const typesTotal = validTypes.reduce((sum, t) => sum + (t.quantity || 0), 0);
-        // Use the larger of estimatedSandwichCount or calculated total
-        if (typesTotal > sandwichTotal) {
-          sandwichTotal = typesTotal;
-        }
-      }
-
-      // Get TSP contact name - check multiple possible fields
-      let tspContactName = request.customTspContact || '';
-      if (!tspContactName && request.tspContactAssigned) {
-        tspContactName = resolveUserName(request.tspContactAssigned);
-      }
-      if (!tspContactName && request.tspContact) {
-        tspContactName = resolveUserName(request.tspContact);
-      }
-
-      // Get recipient/host info
-      const recipientIds = parsePostgresArray(request.assignedRecipientIds);
-      const recipientNames = recipientIds.map(id => getRecipientName(id)).filter(Boolean).join(', ');
-
-      // Determine van booked status with AM/PM based on event start time
-      let vanBookedStatus = '';
-      if (request.isDhlVan) {
-        vanBookedStatus = 'DHL Van';
-      } else if (request.assignedVanDriverId || request.customVanDriverName) {
-        // Van is booked - determine AM/PM/All Day from event start time
-        if (request.eventStartTime) {
-          // Parse time string (could be "14:00", "2:00 PM", etc.)
-          const timeStr = request.eventStartTime;
-          let hour = 0;
-
-          // Try parsing HH:MM format
-          const match24 = timeStr.match(/^(\d{1,2}):(\d{2})/);
-          if (match24) {
-            hour = parseInt(match24[1], 10);
-          }
-          // Check for PM indicator in 12-hour format
-          if (timeStr.toLowerCase().includes('pm') && hour < 12) {
-            hour += 12;
-          } else if (timeStr.toLowerCase().includes('am') && hour === 12) {
-            hour = 0;
-          }
-
-          vanBookedStatus = hour < 12 ? 'AM' : 'PM';
-        } else {
-          // No start time specified
-          vanBookedStatus = 'All Day';
-        }
-      } else if (request.vanDriverNeeded) {
-        vanBookedStatus = 'Needed';
-      } else if (request.selfTransport) {
-        vanBookedStatus = 'Self Transport';
-      }
-
-      // Build the payload for Google Sheets
-      const sheetPayload = {
-        // Required
-        date: formatDateForGoogleSheet(eventDate),
-        groupName: request.organizationName,
-        // Timing
-        startTime: request.eventStartTime ? formatTime12Hour(request.eventStartTime) : '',
-        endTime: request.eventEndTime ? formatTime12Hour(request.eventEndTime) : '',
-        pickupTime: request.pickupTime ? formatTime12Hour(request.pickupTime) : '',
-        // Details
-        details: detailParts.join(' | '),
-        socialPost: request.socialMediaPostNotes || '',
-        staffing: staffingParts.join(', '),
-        estimate: sandwichTotal ? String(sandwichTotal) : '',
-        sandwichType: sandwichTypeStr,
-        // Contact info - use submitter contact fields
-        contactName: [request.firstName, request.lastName].filter(Boolean).join(' ') || '',
-        contactEmail: request.email || '',
-        contactPhone: request.phone || '',
-        tspContact: tspContactName,
-        // Location
-        address: request.eventAddress || '',
-        vanBooked: vanBookedStatus,
-        // Notes
-        notes: request.followUpNotes || '',
-        additionalNotes: request.duplicateNotes || '',
-        waitingOn: '',
-        recipientHost: recipientNames,
-      };
-
-      // Debug logging - show exactly what's being sent to Google Sheets
-      console.log('=== GOOGLE SHEETS PAYLOAD ===');
-      console.log('estimate (Column J):', sheetPayload.estimate);
-      console.log('sandwichType (Column K):', sheetPayload.sandwichType);
-      console.log('tspContact (Column Q):', sheetPayload.tspContact);
-      console.log('vanBooked (Column S):', sheetPayload.vanBooked);
-      console.log('Full payload:', sheetPayload);
-
-      const result = await addEventToGoogleSheet(sheetPayload);
-
-      if (result.success) {
-        toast({
-          title: 'Added to Google Sheet',
-          description: result.message,
-        });
-        // Mark as added to official sheet
-        if (!request.addedToOfficialSheet) {
-          quickToggleBoolean('addedToOfficialSheet', false);
-        }
-      } else {
-        toast({
-          title: 'Export Failed',
-          description: result.message,
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      toast({
-        title: 'Export Error',
-        description: error instanceof Error ? error.message : 'Unknown error occurred',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsExportingToSheet(false);
-    }
-  };
 
   // Handlers for recording actual/final sandwich count
   const startEditingActualCount = () => {
@@ -913,37 +685,137 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         <div className="flex flex-col gap-2 mb-3">
           {/* Top: Date + Organization Name */}
           <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
-            {/* Organization Name */}
+            {/* Organization Name + Department (separate edit targets) */}
             <div className="min-w-0 flex-1">
-              {isEditingThisCard && editingField === 'organizationName' ? (
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Input
-                    value={editingValue}
-                    onChange={(e) => setEditingValue(e.target.value)}
-                    className="h-9 text-lg sm:text-xl font-bold w-full sm:w-64"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') saveEdit();
-                      if (e.key === 'Escape') cancelEdit();
-                    }}
-                  />
-                  <Button size="sm" variant="ghost" onClick={saveEdit} className="h-8 w-8 p-0">
-                    <Save className="h-4 w-4" />
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 w-8 p-0">
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <h2
-                  className={`text-lg sm:text-xl font-bold text-[#236383] break-words ${canEdit ? 'cursor-pointer hover:text-[#007E8C] group' : ''}`}
-                  onClick={() => canEdit && startEditing('organizationName', request.organizationName || '')}
-                >
-                  {request.organizationName}
-                  {request.department && <span className="text-[#236383]/70 font-medium"> • {request.department}</span>}
-                  {canEdit && <Edit2 className="w-3 h-3 sm:w-4 sm:h-4 ml-1 inline opacity-0 group-hover:opacity-100 transition-opacity" />}
-                </h2>
-              )}
+              <div className="flex items-center gap-2 flex-wrap">
+                {isEditingThisCard && editingField === 'organizationName' ? (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Input
+                      value={editingValue}
+                      onChange={(e) => setEditingValue(e.target.value)}
+                      className="h-9 text-lg sm:text-xl font-bold w-full sm:w-64"
+                      autoFocus
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') saveEdit();
+                        if (e.key === 'Escape') cancelEdit();
+                      }}
+                    />
+                    <Button size="sm" variant="ghost" onClick={saveEdit} className="h-8 w-8 p-0">
+                      <Save className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-8 w-8 p-0">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 group">
+                    <h2 className="text-lg sm:text-xl font-bold text-[#236383] break-words">
+                      {request.organizationName}
+                    </h2>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing('organizationName', request.organizationName || '')}
+                        className="h-6 px-2 hidden group-hover:inline-flex"
+                        title="Edit organization name"
+                        data-testid="button-edit-org-name"
+                      >
+                        <Edit2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {(request.department || (isEditingThisCard && editingField === 'department') || canEdit) && (
+                  <>
+                    <span className="text-gray-500 text-lg">&bull;</span>
+                    {isEditingThisCard && editingField === 'department' ? (
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Input
+                          value={editingValue}
+                          onChange={(e) => setEditingValue(e.target.value)}
+                          className="h-8 text-base sm:text-lg font-medium text-[#236383] w-full sm:w-48"
+                          placeholder="Department"
+                          autoFocus
+                          data-testid="input-department"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') saveEdit();
+                            if (e.key === 'Escape') cancelEdit();
+                          }}
+                        />
+                        <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0" data-testid="button-save-department">
+                          <Save className="h-3 w-3" />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0" data-testid="button-cancel-department">
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 group">
+                        {request.department ? (
+                          <span className="text-base sm:text-lg font-medium text-[#236383]/70 break-words">{request.department}</span>
+                        ) : canEdit ? (
+                          <span className="text-base sm:text-lg font-normal text-gray-400 italic">No department</span>
+                        ) : null}
+                        {canEdit && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => startEditing('department', request.department || '')}
+                            className="h-6 px-2 hidden group-hover:inline-flex"
+                            title={request.department ? 'Edit department' : 'Add department'}
+                            data-testid="button-edit-department"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+              {/* Date — placed directly under the org name so every card leads
+                  with date/time (consistent card skeleton). Moved here from the
+                  former top-right position. */}
+              <div className="flex items-center gap-1 mt-1 group">
+                {isEditingThisCard && editingField === dateFieldToEdit ? (
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#007E8C]" />
+                    <Input
+                      type="date"
+                      value={editingValue}
+                      onChange={(e) => setEditingValue(e.target.value)}
+                      className="h-8 bg-white text-gray-900 border-[#007E8C]/20"
+                    />
+                    <Button size="sm" onClick={saveEdit} aria-label="Save date">
+                      <Save className="w-3 h-3" aria-hidden="true" />
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100" aria-label="Cancel editing">
+                      <X className="w-3 h-3" aria-hidden="true" />
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#007E8C]" />
+                    <span className="text-sm uppercase text-gray-600 mr-1">{dateLabel}:</span>
+                    <span className="text-base sm:text-lg md:text-xl font-bold text-[#47B3CB]">
+                      {dateInfo ? dateInfo.text : <span className="text-gray-600 font-medium text-sm">No date</span>}
+                    </span>
+                    {canEdit && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
+                        className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-1 transition-colors opacity-0 group-hover:opacity-100"
+                        aria-label="Edit date"
+                      >
+                        <Edit2 className="w-3 h-3" aria-hidden="true" />
+                      </Button>
+                    )}
+                  </>
+                )}
+              </div>
               {/* Traffic conflict (e.g. World Cup matches). Once scheduled, only
                   the confirmed scheduled date matters — checking the original
                   desiredEventDate too left a stale badge when an event was
@@ -1225,43 +1097,6 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               ) : null}
             </div>
 
-            {/* Date Display */}
-            <div className="flex items-center shrink-0 group">
-              {isEditingThisCard && editingField === dateFieldToEdit ? (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <Input
-                    type="date"
-                    value={editingValue}
-                    onChange={(e) => setEditingValue(e.target.value)}
-                    className="h-8 bg-white text-gray-900 border-[#007E8C]/20"
-                  />
-                  <Button size="sm" onClick={saveEdit} aria-label="Save date">
-                    <Save className="w-3 h-3" aria-hidden="true" />
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="text-gray-600 hover:bg-gray-100" aria-label="Cancel editing">
-                    <X className="w-3 h-3" aria-hidden="true" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 group">
-                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 text-[#007E8C]" />
-                  <span className="text-base sm:text-lg md:text-xl font-bold text-[#47B3CB]">
-                    {dateInfo ? dateInfo.text : <span className="text-gray-600 font-medium text-sm">No date</span>}
-                  </span>
-                  {canEdit && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => startEditing(dateFieldToEdit, formatDateForInput(displayDate?.toString() || ''))}
-                      className="text-[#007E8C] hover:bg-[#007E8C]/10 h-6 px-1 transition-colors opacity-0 group-hover:opacity-100"
-                      aria-label="Edit date"
-                    >
-                      <Edit2 className="w-3 h-3" aria-hidden="true" />
-                    </Button>
-                  )}
-                </div>
-              )}
-            </div>
           </div>
 
           {/* Rescheduled Badge */}
@@ -1275,38 +1110,68 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           )}
 
 
-          {/* Status Badges */}
+          {/* Status & Action Badges — visually tiered.
+              Two-tier rule of thumb applied across all chips below:
+                STATUS (informational, no action required): muted gray
+                  background, no icon. Reader knows the state but isn't
+                  asked to do anything.
+                ACTION (something is wrong, missing, or undecided): solid
+                  red / amber background with ⚠️ icon prefix and white
+                  text so the eye lands on them first when scanning a
+                  list of 25 cards.
+              The previous styling treated "Date Confirmed" and "On
+              Volunteer Hub" with the same visual weight as warning
+              chips, which is why the row looked flat — every chip was
+              demanding attention equally. */}
           <div className="flex flex-wrap items-center gap-1 xs:gap-1.5 sm:gap-2 min-w-0">
             <Badge
               onClick={(e) => { e.stopPropagation(); canEdit && quickToggleBoolean('isConfirmed', request.isConfirmed); }}
-              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+              className={`cursor-pointer hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium ${
                 request.isConfirmed
-                  ? 'bg-gradient-to-br from-[#007E8C] to-[#47B3CB] text-white border border-[#007E8C]'
-                  : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
+                  ? // STATUS: date is confirmed — informational, mute it
+                    'bg-gray-100 text-gray-700 border border-gray-300'
+                  : // ACTION: date is still pending — needs attention
+                    'bg-amber-500 text-white border border-amber-600 inline-flex items-center gap-1'
               }`}
             >
-              {request.isConfirmed ? 'Date Confirmed' : 'Date Pending'}
+              {request.isConfirmed ? (
+                'Date Confirmed'
+              ) : (
+                <>
+                  <AlertTriangle className="w-3 h-3" />
+                  Date Pending
+                </>
+              )}
             </Badge>
 
             <Badge
               onClick={(e) => { e.stopPropagation(); canEdit && quickToggleBoolean('addedToOfficialSheet', request.addedToOfficialSheet); }}
-              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+              className={`cursor-pointer hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium flex items-center gap-1 ${
                 request.addedToOfficialSheet
-                  ? 'bg-gradient-to-br from-[#236383] to-[#007E8C] text-white border border-[#236383]'
-                  : 'bg-gradient-to-br from-gray-500 to-gray-600 text-white border border-gray-500'
+                  ? // STATUS: on the calendar — mute
+                    'bg-gray-100 text-gray-700 border border-gray-300'
+                  : // ACTION: not on calendar — needs attention
+                    'bg-amber-500 text-white border border-amber-600'
               }`}
             >
-              {request.addedToOfficialSheet
-                ? `On Calendar${request.addedToOfficialSheetAt ? ` · ${new Date(request.addedToOfficialSheetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`
-                : 'Not on Calendar'}
+              {request.addedToOfficialSheet ? (
+                `On Calendar${request.addedToOfficialSheetAt ? ` · ${new Date(request.addedToOfficialSheetAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}`
+              ) : (
+                <>
+                  <AlertTriangle className="w-3 h-3" />
+                  Not on Calendar
+                </>
+              )}
             </Badge>
 
             <Badge
               onClick={(e) => { e.stopPropagation(); canEdit && quickToggleBoolean('showOnVolunteerHub', (request as any).showOnVolunteerHub); }}
-              className={`cursor-pointer hover:opacity-80 transition-opacity text-xs sm:text-sm font-medium ${
+              className={`cursor-pointer hover:opacity-90 transition-opacity text-xs sm:text-sm font-medium ${
+                // STATUS in both states: hub is informational, not a
+                // call to action either way.
                 (request as any).showOnVolunteerHub
-                  ? 'bg-gradient-to-br from-[#9333EA] to-[#A855F7] text-white border border-[#9333EA]'
-                  : 'bg-gradient-to-br from-gray-400 to-gray-500 text-white border border-gray-400'
+                  ? 'bg-gray-100 text-gray-700 border border-gray-300'
+                  : 'bg-gray-50 text-gray-500 border border-gray-200'
               }`}
             >
               {(request as any).showOnVolunteerHub ? 'On Volunteer Hub' : 'Not on Hub'}
@@ -1329,15 +1194,49 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               className="text-xs sm:text-sm"
             />
 
-            {/* Sandwich count badge */}
-            <Badge
-              className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium flex items-center gap-1 min-w-0 max-w-full"
-              title={sandwichInfo}
-            >
-              <span aria-hidden="true">🥪</span>
-              <span className="min-w-0 truncate">{sandwichCountBadgeText}</span>
-              <span className="hidden sm:inline opacity-90">&nbsp;sandwiches</span>
-            </Badge>
+            <MissingDriverTimeBadge
+              driversNeeded={(request as any).driversNeeded}
+              selfTransport={(request as any).selfTransport}
+              eventStartTime={(request as any).eventStartTime}
+              eventEndTime={(request as any).eventEndTime}
+              pickupTime={(request as any).pickupTime}
+              pickupDateTime={(request as any).pickupDateTime}
+              pickupTimeWindow={(request as any).pickupTimeWindow}
+              driverPickupTime={(request as any).driverPickupTime}
+              className="text-xs sm:text-sm"
+            />
+
+            {/* Sandwich count badge.
+                STATUS when we have a real count (just informational).
+                ACTION when count is TBD — escalate to warning so it
+                stands out alongside other "data missing" chips. */}
+            {(() => {
+              const isTbd = sandwichCountBadgeText === 'TBD';
+              return (
+                <Badge
+                  className={`text-xs sm:text-sm font-medium flex items-center gap-1 min-w-0 max-w-full ${
+                    isTbd
+                      ? 'bg-amber-500 text-white border border-amber-600'
+                      : 'bg-gray-100 text-gray-700 border border-gray-300'
+                  }`}
+                  title={sandwichInfo}
+                >
+                  {isTbd ? (
+                    <AlertTriangle className="w-3 h-3" />
+                  ) : (
+                    <span aria-hidden="true">🥪</span>
+                  )}
+                  <span className="min-w-0 truncate">
+                    {isTbd ? 'Sandwich count needed' : sandwichCountBadgeText}
+                  </span>
+                  {!isTbd && (
+                    <span className="hidden sm:inline opacity-90">
+                      &nbsp;sandwiches
+                    </span>
+                  )}
+                </Badge>
+              );
+            })()}
 
             {/* Attendance badge - show when attendance is set */}
             {(request.attendanceAdults || request.attendanceTeens || request.attendanceKids) && (
@@ -1353,7 +1252,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
             {/* Self-transport badge */}
             {request.selfTransport && (
-              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium flex items-center gap-1">
+              <Badge className="bg-amber-50 text-amber-800 border border-amber-400 text-xs sm:text-sm font-medium flex items-center gap-1">
                 <Car className="w-3 h-3" />
                 <span className="hidden sm:inline">Driving Own</span>
                 <span className="sm:hidden">Self</span>
@@ -1369,13 +1268,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               </Badge>
             )}
 
-            {request.externalId && request.externalId.startsWith('manual-') && (
-              <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium">
-                <FileText className="w-3 h-3 mr-1" />
-                <span className="hidden sm:inline">Manual Entry</span>
-                <span className="sm:hidden">Manual</span>
-              </Badge>
-            )}
+            {/* Manual entry indicator moved to a subtle footer line below the
+                Activity History section so it doesn't compete visually with the
+                operational badges (van/staffing/etc.). It's a helpful note, not
+                an alert. */}
 
             {/* Only show staffing badges if NOT self-transport */}
             {!request.selfTransport && (
@@ -1393,18 +1289,25 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                         {driverNeeded - driverAssigned} driver{driverNeeded - driverAssigned > 1 ? 's' : ''} needed
                       </Badge>
                     )}
-                    {/* Show Van badge when van driver is needed but not yet assigned */}
-                    {request.vanDriverNeeded && !request.assignedVanDriverId && !request.isDhlVan && (
-                      <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        Van needed
-                      </Badge>
-                    )}
-                    {speakerNeeded > speakerAssigned && (
-                      <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
-                        <AlertTriangle className="w-3 h-3 mr-1" />
-                        {speakerNeeded - speakerAssigned} speaker{speakerNeeded - speakerAssigned > 1 ? 's' : ''} needed
-                      </Badge>
+                    {/* Van Needed badge — unified.
+                        The badge means "this event requires a van" regardless of
+                        whether a driver has been assigned yet. It also surfaces
+                        the same-day count of OTHER events needing a van that day,
+                        which matters for fleet planning. Uses the shared
+                        VanNeededBadgeAndButton (teal #007E8C) to match the badge
+                        on InProcessCard. DHL-provided vans get their own badge
+                        below since that's separate context (who supplies the van),
+                        not whether one is needed. */}
+                    {request.vanDriverNeeded && !request.isDhlVan && (
+                      <VanNeededBadgeAndButton
+                        eventRequestId={request.id}
+                        vanDriverNeeded={request.vanDriverNeeded}
+                        vanNeededLikely={(request as any).vanNeededLikely}
+                        eventDate={displayDate}
+                        canEdit={!!canEdit}
+                        simpleToggle
+                        mode="badge"
+                      />
                     )}
                     {volunteerNeeded > volunteerAssigned && (
                       <Badge className={`${staffingBadgeColors} text-xs sm:text-sm font-medium`}>
@@ -1415,11 +1318,11 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </>
                 )}
 
-                {request.assignedVanDriverId && (
-                  <Badge className="bg-[#007E8C] text-white border border-[#007E8C] text-xs sm:text-sm font-medium">
-                    🚐 Van
-                  </Badge>
-                )}
+                {/* Redundant "🚐 Van" assigned-driver badge removed — the unified
+                    Van Needed badge above already conveys "this event needs a van"
+                    regardless of assignment, and the dedicated Van slot lower in
+                    the card shows who's assigned. The earlier badge added clutter
+                    without surfacing new operational info. */}
 
                 {request.isDhlVan && (
                   <Badge className="bg-amber-100 text-amber-900 border border-amber-300 text-xs sm:text-sm font-medium">
@@ -1521,6 +1424,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               eventRequestId={request.id}
               vanDriverNeeded={request.vanDriverNeeded}
               vanNeededLikely={(request as any).vanNeededLikely}
+              eventDate={displayDate}
               canEdit={!!canEdit}
               simpleToggle
               mode="badge"
@@ -1544,28 +1448,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
           </div>
         )}
 
-        {/* Partner/Department editing modals */}
-        {isEditingThisCard && editingField === 'department' && (
-          <div className="flex items-center gap-2 mb-3">
-            <Input
-              value={editingValue}
-              onChange={(e) => setEditingValue(e.target.value)}
-              className="h-8 text-base w-48"
-              autoFocus
-              placeholder="Department"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') saveEdit();
-                if (e.key === 'Escape') cancelEdit();
-              }}
-            />
-            <Button size="sm" variant="ghost" onClick={saveEdit} className="h-7 w-7 p-0">
-              <Save className="h-3 w-3" />
-            </Button>
-            <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 w-7 p-0">
-              <X className="h-3 w-3" />
-            </Button>
-          </div>
-        )}
+        {/* Partner editing modals */}
         {isEditingThisCard && editingField?.startsWith('partnerOrg_') && (
           <div className="flex items-center gap-2 mb-3 flex-wrap">
             {(() => {
@@ -2412,7 +2295,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </div>
               ) : (
                 <div className="flex-1 group flex items-center gap-2">
-                  <Badge className="bg-[#FBAD3F] text-white text-lg font-bold px-3 py-1.5 border-2 border-[#FBAD3F] shadow-sm flex items-center gap-2">
+                  <Badge className="bg-amber-50 text-amber-800 text-lg font-bold px-3 py-1.5 border-2 border-amber-400 shadow-sm flex items-center gap-2">
                     <span className="text-xl">🥪</span>
                     <span>{sandwichInfo}</span>
                   </Badge>
@@ -2584,27 +2467,42 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 <Users className="w-4 h-4 text-[#236383]" aria-hidden="true" />
                 Team Assignments
               </h3>
-              {/* TSP Contact — moved from Event Details so all people-on-our-side info
-                  sits next to the volunteer Team Assignments. */}
-              {tspContactDisplay && (
-                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 group">
-                  <UserPlus className="w-5 h-5 shrink-0 text-[#236383]" aria-hidden="true" />
-                  <div className="flex-1 min-w-0">
-                    <div className="text-xs uppercase text-gray-600 font-medium">TSP Contact</div>
-                    <div className="text-sm font-semibold text-gray-900 truncate" title={tspContactDisplay}>
-                      {tspContactDisplay}
-                    </div>
-                  </div>
-                  {canEditTspContact && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={onEditTspContact}
-                      className="h-7 px-2 text-[#007E8C] hover:bg-[#007E8C]/10 opacity-0 group-hover:opacity-100 transition-opacity"
-                      aria-label="Edit TSP contact"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </Button>
+              {/* TSP Contact + Mark Van Needed — one compact row */}
+              {(tspContactDisplay || showMarkVanNeeded) && (
+                <div className="flex items-center gap-2 mb-3 pb-3 border-b border-gray-200 group flex-wrap">
+                  {tspContactDisplay ? (
+                    <>
+                      <UserPlus className="w-5 h-5 shrink-0 text-[#236383]" aria-hidden="true" />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs uppercase text-gray-600 font-medium">TSP Contact</div>
+                        <div className="text-sm font-semibold text-gray-900 truncate" title={tspContactDisplay}>
+                          {tspContactDisplay}
+                        </div>
+                      </div>
+                      {canEditTspContact && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={onEditTspContact}
+                          className="h-7 px-2 text-[#007E8C] hover:bg-[#007E8C]/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                          aria-label="Edit TSP contact"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex-1 min-w-0" />
+                  )}
+                  {showMarkVanNeeded && (
+                    <VanNeededBadgeAndButton
+                      eventRequestId={request.id}
+                      vanDriverNeeded={request.vanDriverNeeded}
+                      vanNeededLikely={(request as any).vanNeededLikely}
+                      canEdit={!!canEdit}
+                      simpleToggle
+                      mode="button"
+                    />
                   )}
                 </div>
               )}
@@ -3133,497 +3031,29 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                   </div>
                 ) : null}
 
-                {/* Van needed toggle — lives here in Team Assignments (next to the
-                    driver/transport controls) rather than in the bottom action row,
-                    since it switches the event between needing regular drivers and a
-                    van driver. Only the un-set "Mark Van Needed" call-to-action lives
-                    here; once a van is flagged needed the "Van Driver (Needed)" section
-                    above takes over, so this row is hidden then to avoid an empty strip
-                    (VanNeededBadgeAndButton renders nothing in that state). */}
-                {canEdit && !request.selfTransport && !request.assignedVanDriverId && !request.isDhlVan && !request.vanDriverNeeded && (
-                  <div className="flex items-center justify-between gap-2 pb-3 border-b border-gray-200">
-                    <span className="text-xs uppercase font-bold tracking-wide text-[#236383]/70">
-                      Van
-                    </span>
-                    <VanNeededBadgeAndButton
-                      eventRequestId={request.id}
-                      vanDriverNeeded={request.vanDriverNeeded}
-                      vanNeededLikely={(request as any).vanNeededLikely}
-                      canEdit={!!canEdit}
-                      simpleToggle
-                      mode="button"
-                    />
-                  </div>
-                )}
-
-                {/* Speakers */}
-                {!request.selfTransport ? ((speakerNeeded > 0 || (isEditingThisCard && editingField === 'speakersNeeded')) ? (
-                  <div className="pb-3 border-b border-gray-200">
-                    <div className="flex items-center justify-between mb-2">
-                      {isEditingThisCard && editingField === 'speakersNeeded' ? (
-                        <div className="flex items-center gap-2 flex-1">
-                          <Megaphone className="w-4 h-4 text-[#236383]" />
-                          <Input
-                            type="number"
-                            value={editingValue}
-                            onChange={(e) => setEditingValue(e.target.value)}
-                            className="h-7 w-16 text-sm"
-                            min="0"
-                            placeholder="0"
-                          />
-                          <span className="text-sm text-[#236383]">needed</span>
-                          <Button size="sm" onClick={saveEdit} className="h-6 px-2" aria-label="Save">
-                            <Save className="w-3 h-3" aria-hidden="true" />
-                          </Button>
-                          <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2" aria-label="Cancel">
-                            <X className="w-3 h-3" aria-hidden="true" />
-                          </Button>
-                        </div>
-                      ) : (
-                        <>
-                          <span className="text-base font-bold text-gray-900 flex items-center gap-1">
-                            <Megaphone className="w-5 h-5" />
-                            Speakers ({speakerAssigned}/{speakerNeeded})
-                          </span>
-                          <div className="flex items-center gap-1">
-                            {canEdit && (
-                              <div className="flex items-center border border-gray-200 rounded-md overflow-hidden">
-                                <button
-                                  onClick={() => {
-                                    const newVal = Math.max(0, speakerNeeded - 1);
-                                    if (quickUpdateField) {
-                                      quickUpdateField('speakersNeeded', newVal);
-                                    } else {
-                                      updateFieldsMutation.mutate({ speakersNeeded: newVal });
-                                    }
-                                  }}
-                                  className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
-                                  aria-label="Decrease speakers needed"
-                                  title="Decrease speakers needed"
-                                >
-                                  <Minus className="w-3 h-3" />
-                                </button>
-                                <span className="h-7 w-7 flex items-center justify-center text-xs font-semibold text-gray-700 border-x border-gray-200 bg-gray-50">{speakerNeeded}</span>
-                                <button
-                                  onClick={() => {
-                                    if (quickUpdateField) {
-                                      quickUpdateField('speakersNeeded', speakerNeeded + 1);
-                                    } else {
-                                      updateFieldsMutation.mutate({ speakersNeeded: speakerNeeded + 1 });
-                                    }
-                                  }}
-                                  className="h-7 w-7 flex items-center justify-center hover:bg-gray-100 text-gray-600 transition-colors"
-                                  aria-label="Increase speakers needed"
-                                  title="Increase speakers needed"
-                                >
-                                  <Plus className="w-3 h-3" />
-                                </button>
-                              </div>
-                            )}
-                            {canEdit && (
-                              <Button size="sm" onClick={() => openAssignmentDialog('speaker')} className="h-7" aria-label="Add speaker">
-                                <UserPlus className="w-3 h-3" aria-hidden="true" />
-                              </Button>
-                            )}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      {Object.keys(request.speakerDetails || {}).map((id) => {
-                        const detailName = (request.speakerDetails as any)?.[id]?.name;
-                        const customName = extractCustomName(id);
-                        const userName = resolveUserName(id);
-                        // Try getRecipientName for host-contact IDs
-                        const recipientName = id.startsWith('host-contact-') && getRecipientName
-                          ? getRecipientName(id)
-                          : null;
-                        // Check if detailName is actually just the ID (common with host-contact and custom IDs)
-                        const isDetailNameJustId = detailName === id ||
-                          detailName?.startsWith('host-contact-') ||
-                          detailName?.startsWith('custom-');
-
-                        // Check if the ID itself looks like a human name (not a system ID)
-                        // System IDs: user_xxx, driver_xxx, custom-xxx, host-contact-xxx, numeric, etc.
-                        const idLooksLikeName = id &&
-                          !id.startsWith('user_') &&
-                          !id.startsWith('driver_') &&
-                          !id.startsWith('admin_') &&
-                          !id.startsWith('committee_') &&
-                          !id.startsWith('volunteer_') &&
-                          !id.startsWith('custom-') &&
-                          !id.startsWith('host-contact-') &&
-                          !/^\d+$/.test(id) &&
-                          id.includes(' '); // Names typically have spaces
-
-                        // Prioritize: detail name > custom extracted name > recipient name > resolved user name > ID as name (if looks like name) > fallback
-                        const displayName = (detailName && !isDetailNameJustId && !/^\d+$/.test(detailName))
-                          ? detailName
-                          : customName || recipientName || (userName !== id ? userName : (idLooksLikeName ? id : detailName || 'Unknown Speaker'));
-                        const isUnknown = displayName === 'Unknown Speaker';
-                        const isCustom = id.startsWith('custom-');
-                        const editingFieldKey = `speaker-name-${id}`;
-                        const isEditing = isEditingThisCard && editingField === editingFieldKey;
-                        const speakerPersonNotes = (request.speakerDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
-                        const speakerNotesFieldKey = `speaker-notes-${id}`;
-                        const isEditingSpeakerNotes = isEditingThisCard && editingField === speakerNotesFieldKey;
-
-                        const saveSpeakerName = () => {
-                          const trimmed = editingValue.trim();
-                          if (isCustom) {
-                            if (!trimmed || trimmed === displayName) {
-                              cancelEdit();
-                              return;
-                            }
-                            const newId = `custom-${Date.now()}-${trimmed.replace(/\s+/g, '-')}`;
-                            const details = (request.speakerDetails as Record<string, any>) || {};
-                            const newDetails = { ...details };
-                            if (newDetails[id] !== undefined) {
-                              newDetails[newId] = newDetails[id];
-                              delete newDetails[id];
-                            }
-                            updateFieldsMutation.mutate({ speakerDetails: newDetails });
-                            cancelEdit();
-                          } else {
-                            const updatedSpeakerDetails = {
-                              ...(request.speakerDetails || {}),
-                              [id]: {
-                                ...((request.speakerDetails as any)?.[id] || {}),
-                                name: trimmed || null,
-                              },
-                            };
-                            updateFieldsMutation.mutate({ speakerDetails: updatedSpeakerDetails });
-                            cancelEdit();
-                          }
-                        };
-
-                        return (
-                          <div key={id} className="bg-[#47B3CB]/20 rounded px-3 py-1.5 border border-[#47B3CB]/30 min-w-0 group">
-                            <div className="flex items-start gap-2">
-                            {isEditing ? (
-                              <div className="flex items-center gap-2 flex-1 min-w-0">
-                                <Input
-                                  value={editingValue}
-                                  onChange={(e) => setEditingValue(e.target.value)}
-                                  onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                      saveSpeakerName();
-                                    } else if (e.key === 'Escape') {
-                                      cancelEdit();
-                                    }
-                                  }}
-                                  autoFocus
-                                  className="h-8 text-base font-bold text-[#236383] flex-1 min-w-0"
-                                  placeholder="Speaker name"
-                                />
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={saveSpeakerName}
-                                  className="h-6 px-2 text-green-600 shrink-0"
-                                >
-                                  <Check className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={cancelEdit}
-                                  className="h-6 px-2 text-gray-600 shrink-0"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            ) : (
-                              <>
-                                <span
-                                  className="text-base font-bold text-[#236383] flex-1 min-w-0 break-words leading-tight cursor-pointer hover:underline"
-                                  onClick={() => canEdit && startEditing(editingFieldKey, displayName)}
-                                  title={canEdit ? "Click to edit speaker name" : undefined}
-                                >
-                                  {displayName}
-                                  {isUnknown && (
-                                    <span className="text-xs font-normal text-gray-500 ml-1" title={`Speaker ID: ${id}`}>
-                                      (ID: {id})
-                                    </span>
-                                  )}
-                                </span>
-                                {canEdit && (
-                                  <div className="flex items-center gap-0.5 shrink-0">
-                                    {isCustom && (
-                                      <Button
-                                        size="sm"
-                                        variant="ghost"
-                                        onClick={() => startEditing(editingFieldKey, displayName)}
-                                        className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383] opacity-0 group-hover:opacity-100 transition-opacity"
-                                        title="Edit name"
-                                      >
-                                        <Edit2 className="w-3 h-3" />
-                                      </Button>
-                                    )}
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => startEditing(speakerNotesFieldKey, speakerPersonNotes)}
-                                      className="h-5 w-5 p-0 text-gray-500 hover:text-[#236383] opacity-0 group-hover:opacity-100 transition-opacity"
-                                      title="Add/edit note"
-                                    >
-                                      <MessageSquare className="w-3 h-3" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => handleRemoveAssignment('speaker', id)}
-                                      className="h-5 w-5 p-0 text-red-600 shrink-0"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </>
-                            )}
-                            </div>
-                            {isEditingSpeakerNotes ? (
-                              <div className="mt-1.5 space-y-1">
-                                <Textarea
-                                  value={editingValue}
-                                  onChange={(e) => setEditingValue(e.target.value)}
-                                  placeholder="Add a note for this speaker..."
-                                  className="text-sm min-h-[60px] resize-none"
-                                  autoFocus
-                                />
-                                <div className="flex items-center gap-1 justify-end">
-                                  {speakerPersonNotes && (
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      onClick={() => {
-                                        const updatedDetails = {
-                                          ...((request.speakerDetails as Record<string, any>) || {}),
-                                          [id]: { ...((request.speakerDetails as Record<string, any>)?.[id] || {}), notes: null },
-                                        };
-                                        updateFieldsMutation.mutate({ speakerDetails: updatedDetails });
-                                        cancelEdit();
-                                      }}
-                                      className="h-6 px-2 text-red-600 text-xs"
-                                    >
-                                      Delete
-                                    </Button>
-                                  )}
-                                  <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 text-xs">
-                                    Cancel
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    onClick={() => {
-                                      const updatedDetails = {
-                                        ...((request.speakerDetails as Record<string, any>) || {}),
-                                        [id]: { ...((request.speakerDetails as Record<string, any>)?.[id] || {}), notes: editingValue.trim() || null },
-                                      };
-                                      updateFieldsMutation.mutate({ speakerDetails: updatedDetails });
-                                      cancelEdit();
-                                    }}
-                                    className="h-6 px-2 text-xs"
-                                  >
-                                    Save
-                                  </Button>
-                                </div>
-                              </div>
-                            ) : speakerPersonNotes ? (
-                              <p
-                                className="mt-1 text-xs text-gray-600 italic cursor-pointer hover:text-gray-800 whitespace-pre-wrap"
-                                onClick={() => canEdit && startEditing(speakerNotesFieldKey, speakerPersonNotes)}
-                                title={canEdit ? "Click to edit note" : undefined}
-                              >
-                                {speakerPersonNotes}
-                              </p>
-                            ) : null}
-                          </div>
-                        );
-                      })}
-                      {speakerAssigned === 0 && parsePostgresArray(request.tentativeSpeakerIds).length === 0 && <Badge variant="outline" className="bg-[#FBAD3F]/15 text-[#B8871F] border-[#FBAD3F]/40 font-medium"><Megaphone className="w-3 h-3 mr-1" />None assigned</Badge>}
-                      {/* Tentative Speakers */}
-                      {parsePostgresArray(request.tentativeSpeakerIds).map((id) => {
-                        const isCustom = id.startsWith('custom-');
-                        const idLooksLikeName = id &&
-                          !id.startsWith('user_') &&
-                          !id.startsWith('driver_') &&
-                          !id.startsWith('custom-') &&
-                          !id.startsWith('host-contact-') &&
-                          !/^\d+$/.test(id) &&
-                          id.includes(' ');
-                        const resolvedName = resolveUserName(id);
-                        const displayName = isCustom
-                          ? extractCustomName(id)
-                          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
-                        const tSpeakerPersonNotes = (request.speakerDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
-                        const tSpeakerNotesFieldKey = `tspeaker-notes-${id}`;
-                        const isEditingTSpeakerNotes = isEditingThisCard && editingField === tSpeakerNotesFieldKey;
-                        const tSpeakerNameFieldKey = `tspeaker-name-${id}`;
-                        const isEditingTSpeakerName = isEditingThisCard && editingField === tSpeakerNameFieldKey;
-                        return (
-                        <div key={`tentative-${id}`} className="bg-amber-100 rounded px-3 py-1.5 border border-amber-300 min-w-0 group">
-                          <div className="flex items-start gap-2">
-                            <span className="text-base font-bold text-amber-700 flex-1 min-w-0 break-words leading-tight flex items-center gap-1">
-                              <HelpCircle className="w-4 h-4 text-amber-500 shrink-0" />
-                              {displayName}
-                              <span className="text-xs text-amber-500">(tentative)</span>
-                            </span>
-                            {canEdit && (
-                              <div className="flex items-center gap-0.5 shrink-0">
-                                {isCustom && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => startEditing(tSpeakerNameFieldKey, displayName)}
-                                    className="h-5 w-5 p-0 text-gray-500 hover:text-amber-700"
-                                    title="Edit name"
-                                  >
-                                    <Edit2 className="w-3 h-3" />
-                                  </Button>
-                                )}
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => startEditing(tSpeakerNotesFieldKey, tSpeakerPersonNotes)}
-                                  className="h-5 w-5 p-0 text-gray-500 hover:text-amber-700"
-                                  title="Add/edit note"
-                                >
-                                  <MessageSquare className="w-3 h-3" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => handleRemoveAssignment('speaker', id)}
-                                  className="h-5 w-5 p-0 text-red-600 shrink-0"
-                                >
-                                  <X className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            )}
-                          </div>
-                          {isEditingTSpeakerName && (
-                            <div className="mt-1.5 flex items-center gap-1">
-                              <Input
-                                value={editingValue}
-                                onChange={(e) => setEditingValue(e.target.value)}
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Escape') cancelEdit();
-                                }}
-                                autoFocus
-                                placeholder="Name"
-                                className="h-7 text-sm flex-1"
-                              />
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  const trimmed = editingValue.trim();
-                                  if (!trimmed || trimmed === displayName) {
-                                    cancelEdit();
-                                    return;
-                                  }
-                                  const newId = `custom-${Date.now()}-${trimmed.replace(/\s+/g, '-')}`;
-                                  const arr = parsePostgresArray(request.tentativeSpeakerIds);
-                                  const newArr = arr.map((x) => (x === id ? newId : x));
-                                  const details = (request.speakerDetails as Record<string, any>) || {};
-                                  const newDetails = { ...details };
-                                  if (newDetails[id] !== undefined) {
-                                    newDetails[newId] = newDetails[id];
-                                    delete newDetails[id];
-                                  }
-                                  updateFieldsMutation.mutate({ tentativeSpeakerIds: newArr, speakerDetails: newDetails });
-                                  cancelEdit();
-                                }}
-                                className="h-7 px-2 text-xs"
-                              >
-                                Save
-                              </Button>
-                              <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-7 px-2 text-xs text-gray-600">
-                                Cancel
-                              </Button>
-                            </div>
-                          )}
-                          {isEditingTSpeakerNotes ? (
-                            <div className="mt-1.5 space-y-1">
-                              <Textarea
-                                value={editingValue}
-                                onChange={(e) => setEditingValue(e.target.value)}
-                                placeholder="Add a note for this speaker..."
-                                className="text-sm min-h-[60px] resize-none"
-                                autoFocus
-                              />
-                              <div className="flex items-center gap-1 justify-end">
-                                {tSpeakerPersonNotes && (
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => {
-                                      const updatedDetails = {
-                                        ...((request.speakerDetails as Record<string, any>) || {}),
-                                        [id]: { ...((request.speakerDetails as Record<string, any>)?.[id] || {}), notes: null },
-                                      };
-                                      updateFieldsMutation.mutate({ speakerDetails: updatedDetails });
-                                      cancelEdit();
-                                    }}
-                                    className="h-6 px-2 text-red-600 text-xs"
-                                  >
-                                    Delete
-                                  </Button>
-                                )}
-                                <Button size="sm" variant="ghost" onClick={cancelEdit} className="h-6 px-2 text-gray-600 text-xs">
-                                  Cancel
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => {
-                                    const updatedDetails = {
-                                      ...((request.speakerDetails as Record<string, any>) || {}),
-                                      [id]: { ...((request.speakerDetails as Record<string, any>)?.[id] || {}), notes: editingValue.trim() || null },
-                                    };
-                                    updateFieldsMutation.mutate({ speakerDetails: updatedDetails });
-                                    cancelEdit();
-                                  }}
-                                  className="h-6 px-2 text-xs"
-                                >
-                                  Save
-                                </Button>
-                              </div>
-                            </div>
-                          ) : tSpeakerPersonNotes ? (
-                            <p
-                              className="mt-1 text-xs text-amber-800 italic cursor-pointer hover:text-amber-900 whitespace-pre-wrap"
-                              onClick={() => canEdit && startEditing(tSpeakerNotesFieldKey, tSpeakerPersonNotes)}
-                              title={canEdit ? "Click to edit note" : undefined}
-                            >
-                              {tSpeakerPersonNotes}
-                            </p>
-                          ) : null}
-                        </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ) : canEdit ? (
-                  <div className="flex items-center justify-end py-0.5 pb-3 border-b border-gray-200">
+                {/* Condensed add volunteer when the role is not needed */}
+                {showCondensedStaffingAdds && (
+                  <div className="flex items-center justify-end gap-1 py-0.5 pb-3 border-b border-gray-200">
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => startEditing('speakersNeeded', '1')}
+                          onClick={() => startEditing('volunteersNeeded', '1')}
                           className="h-5 w-5 p-0 text-[#007E8C]"
                         >
-                          <Megaphone className="w-3 h-3" />
+                          <Users className="w-3 h-3" />
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        <p>Add speaker need</p>
+                        <p>Add volunteer need</p>
                       </TooltipContent>
                     </Tooltip>
                   </div>
-                ) : null) : null}
+                )}
 
                 {/* Volunteers */}
-                {!request.selfTransport ? ((volunteerNeeded > 0 || (isEditingThisCard && editingField === 'volunteersNeeded')) ? (
+                {showVolunteerSection && (
                   <div className="pb-3 border-b border-gray-200">
                     <div className="flex items-center justify-between mb-2">
                       {isEditingThisCard && editingField === 'volunteersNeeded' ? (
@@ -3713,21 +3143,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     </div>
                     <div className="space-y-1">
                       {parsePostgresArray(request.assignedVolunteerIds).map((id) => {
-                        const isCustom = id.startsWith('custom-');
-                        // Check if the ID itself looks like a human name (not a system ID)
-                        const idLooksLikeName = id &&
-                          !id.startsWith('user_') &&
-                          !id.startsWith('driver_') &&
-                          !id.startsWith('volunteer_') &&
-                          !id.startsWith('volunteer-') &&
-                          !id.startsWith('custom-') &&
-                          !id.startsWith('host-contact-') &&
-                          !/^\d+$/.test(id) &&
-                          id.includes(' ');
+                        const detailName = (request.volunteerDetails as Record<string, { name?: string }>)?.[id]?.name;
                         const resolvedName = resolveUserName(id);
-                        const displayName = isCustom
-                          ? extractCustomName(id)
-                          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                        const displayName = resolveAssignmentDisplayName(id, {
+                          storedName: detailName,
+                          resolvedName,
+                          fallback: resolvedName || 'Unknown Volunteer',
+                        });
+                        const isCustom = id.startsWith('custom-') || /^\d{10,}[\s-]/.test(id);
                         const volunteerPersonNotes = (request.volunteerDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
                         const volunteerNotesFieldKey = `volunteer-notes-${id}`;
                         const isEditingVolunteerNotes = isEditingThisCard && editingField === volunteerNotesFieldKey;
@@ -3879,20 +3302,14 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       {volunteerAssigned === 0 && parsePostgresArray(request.tentativeVolunteerIds).length === 0 && <Badge variant="outline" className="bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40 font-medium"><Users className="w-3 h-3 mr-1" />None assigned</Badge>}
                       {/* Tentative Volunteers */}
                       {parsePostgresArray(request.tentativeVolunteerIds).map((id) => {
-                        const isCustom = id.startsWith('custom-');
-                        const idLooksLikeName = id &&
-                          !id.startsWith('user_') &&
-                          !id.startsWith('driver_') &&
-                          !id.startsWith('volunteer_') &&
-                          !id.startsWith('volunteer-') &&
-                          !id.startsWith('custom-') &&
-                          !id.startsWith('host-contact-') &&
-                          !/^\d+$/.test(id) &&
-                          id.includes(' ');
+                        const detailName = (request.volunteerDetails as Record<string, { name?: string }>)?.[id]?.name;
                         const resolvedName = resolveUserName(id);
-                        const displayName = isCustom
-                          ? extractCustomName(id)
-                          : (resolvedName !== id ? resolvedName : (idLooksLikeName ? id : resolvedName));
+                        const displayName = resolveAssignmentDisplayName(id, {
+                          storedName: detailName,
+                          resolvedName,
+                          fallback: resolvedName || 'Unknown Volunteer',
+                        });
+                        const isCustom = id.startsWith('custom-') || /^\d{10,}[\s-]/.test(id);
                         const tVolunteerPersonNotes = (request.volunteerDetails as Record<string, { notes?: string }>)?.[id]?.notes || '';
                         const tVolunteerNotesFieldKey = `tvolunteer-notes-${id}`;
                         const isEditingTVolunteerNotes = isEditingThisCard && editingField === tVolunteerNotesFieldKey;
@@ -4040,25 +3457,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                       })}
                     </div>
                   </div>
-                ) : canEdit ? (
-                  <div className="flex items-center justify-end py-0.5 pb-3 border-b border-gray-200">
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEditing('volunteersNeeded', '1')}
-                          className="h-5 px-2 text-[#007E8C] text-xs"
-                        >
-                          <Users className="w-3 h-3" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Add volunteer need</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                ) : null) : null}
+                )}
 
                 {/* Attendance */}
                 <div className="flex items-start gap-2 pb-3 border-b border-gray-200">
@@ -4379,7 +3778,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             toggle lives in the Team Assignments box, and "Follow Up" is intentionally
             absent — that step belongs to completed events, not scheduled ones. */}
         <TooltipProvider>
-          <div className="flex flex-wrap items-center gap-2 mb-4 pt-4 border-t-2 border-[#007E8C]/10">
+          <CardActionRow className="mb-4">
             {/* Group 1 — Organizer outreach */}
             <Button onClick={onContact}>
               <Mail className="w-4 h-4 mr-2" />
@@ -4488,6 +3887,26 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               Reschedule
             </Button>
 
+            {onCancelEvent && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onCancelEvent}
+                    className="border-red-400 text-red-600 hover:bg-red-50"
+                    data-testid="button-cancel-event"
+                  >
+                    <Ban className="w-4 h-4 mr-1" />
+                    Cancel Event
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Cancel this scheduled event (requires a reason)</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
             {onDuplicate && (
               <Button size="sm" variant="outline" onClick={onDuplicate}>
                 <Copy className="w-4 h-4 mr-1" />
@@ -4523,7 +3942,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {/* Spacer + card-management cluster (Edit + Delete) right-aligned */}
             {canEdit && (
               <>
-                <div className="flex-1" />
+                <ActionRowSpacer />
                 <div
                   className="self-stretch border-l border-slate-200 mx-1"
                   aria-hidden="true"
@@ -4573,7 +3992,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 </Tooltip>
               </>
             )}
-          </div>
+          </CardActionRow>
         </TooltipProvider>
 
         {/* Team Comments Section */}
@@ -4809,6 +4228,16 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
         {/* Email Log - shows if any template emails have been sent */}
         <EventEmailLogDisplay eventId={request.id} compact />
+
+        {/* Manual entry origin — a quiet note, NOT a status badge. Lives at the
+            bottom of the card so it stays discoverable for context without
+            competing with operational alerts at the top. */}
+        {request.externalId && request.externalId.startsWith('manual-') && (
+          <div className="mt-3 flex items-center gap-1.5 text-[11px] text-gray-500 italic">
+            <FileText className="w-3 h-3 text-gray-400" aria-hidden="true" />
+            <span>Created via manual entry</span>
+          </div>
+        )}
       </CardContent>
 
       {/* Message Composer Dialog */}

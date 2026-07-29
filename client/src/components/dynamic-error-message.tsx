@@ -69,7 +69,7 @@ export function DynamicErrorMessageDisplay({
       case 'contact':
         // Open email client or contact form
         window.location.href =
-          'mailto:support@sandwichproject.org?subject=Error Report';
+          'mailto:katie@thesandwichproject.org?subject=Error Report';
         break;
       case 'custom':
         // Custom actions should be handled by the parent component
@@ -300,7 +300,7 @@ export function useDynamicError() {
         break;
       case 'checkNetworkStatus':
         // Simple network check
-        fetch('/api/health-check')
+        fetch('/api/health')
           .then(() => alert('Network connection is working properly.'))
           .catch(() => alert('Network connection appears to be down.'));
         break;

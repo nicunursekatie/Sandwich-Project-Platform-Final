@@ -8,19 +8,21 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useConfirmation } from '@/components/ui/confirmation-dialog';
 import { NewRequestCard } from '../cards/NewRequestCard';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { exportEventRequestsToExcel } from '@/lib/excel-export';
+import { DuplicateEventDialog } from '../dialogs/DuplicateEventDialog';
 import { EventListSkeleton } from '../EventCardSkeleton';
 import { EventListBatchProviders } from '../EventListBatchProviders';
+import type { EventRequest } from '@shared/schema';
 
 export const NewRequestsTab: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { confirm, ConfirmationDialogComponent } = useConfirmation();
   const { filterRequestsByStatus } = useEventFilters();
-  const { deleteEventRequestMutation, updateEventRequestMutation, toggleCorporatePriorityMutation } = useEventMutations();
+  const { deleteEventRequestMutation, updateEventRequestMutation, toggleCorporatePriorityMutation, createEventRequestMutation } = useEventMutations();
   const { handleStatusChange } = useEventAssignments();
+
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateSourceRequest, setDuplicateSourceRequest] = useState<EventRequest | null>(null);
 
   // Inline editing state
   const [editingNewRequestId, setEditingNewRequestId] = useState<number | null>(null);
@@ -35,31 +37,19 @@ export const NewRequestsTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
     setSchedulingEventRequest,
-    setShowSchedulingDialog,
-    setShowScheduleCallDialog,
     setToolkitEventRequest,
-    setShowToolkitSentDialog,
-    setShowContactOrganizerDialog,
     setContactEventRequest,
-    setShowTspContactAssignmentDialog,
     setTspContactEventRequest,
-    setShowLogContactDialog,
     setLogContactEventRequest,
-    setShowAiDateSuggestionDialog,
     setAiSuggestionEventRequest,
-    setShowAiIntakeAssistantDialog,
     setAiIntakeAssistantEventRequest,
-    setShowIntakeCallDialog,
     setIntakeCallEventRequest,
-    setShowNextActionDialog,
     setNextActionEventRequest,
     setNextActionMode,
-    setShowDeclineDialog,
     setReasonDialogEventRequest,
-    setShowNonEventDialog,
     setNonEventDialogEventRequest,
+    openDialog,
   } = useEventDialogState();
 
   const newRequests = filterRequestsByStatus('new');
@@ -127,7 +117,7 @@ export const NewRequestsTab: React.FC = () => {
           if (editingField.startsWith('partnerOrg_')) {
             // Editing a single partner organization (name + optional department)
             const index = parseInt(editingField.split('_')[1]);
-            const currentEvent = eventRequests.find(r => r.id === editingNewRequestId);
+            const currentEvent = newRequests.find(r => r.id === editingNewRequestId);
             const currentPartners = Array.isArray(currentEvent?.partnerOrganizations) 
               ? (currentEvent.partnerOrganizations as any[]) 
               : [];
@@ -220,47 +210,14 @@ export const NewRequestsTab: React.FC = () => {
     setEditingValue('');
   };
 
-  const handleExport = async () => {
-    if (newRequests.length === 0) {
-      toast({
-        title: 'No data to export',
-        description: 'There are no new requests to export.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    try {
-      await exportEventRequestsToExcel(newRequests, 'new');
-      toast({
-        title: 'Export complete',
-        description: `Exported ${newRequests.length} new request${newRequests.length !== 1 ? 's' : ''} to Excel.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Export failed',
-        description: 'Failed to export requests. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   return (
     <>
-      {/* Header with count and export button */}
+      {/* Header with count. Export lives in the page-level top action bar
+          (consistent across every tab), not inline here. */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
           {isLoading ? 'Loading...' : `${newRequests.length} new request${newRequests.length !== 1 ? 's' : ''}`}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          disabled={newRequests.length === 0}
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Export to Excel
-        </Button>
       </div>
 
       {isLoading ? (
@@ -281,76 +238,85 @@ export const NewRequestsTab: React.FC = () => {
               onEdit={() => {
                 setSelectedEventRequest(request);
                 setIsEditing(true);
-                setShowEventDetails(true);
+                openDialog('eventDetails');
               }}
               onDelete={() => deleteEventRequestMutation.mutate(request.id)}
               onCall={() => handleCall(request)}
               onIntakeCall={() => {
                 setIntakeCallEventRequest(request);
-                setShowIntakeCallDialog(true);
+                openDialog('intakeCall');
               }}
               onContact={() => {
                 setContactEventRequest(request);
-                setShowContactOrganizerDialog(true);
+                openDialog('contactOrganizer');
               }}
               onToolkit={() => {
                 setSelectedEventRequest(request);
                 setToolkitEventRequest(request);
-                setShowToolkitSentDialog(true);
+                openDialog('toolkitSent');
+              }}
+              onSendToolkit={() => {
+                setSelectedEventRequest(request);
+                setToolkitEventRequest(request);
+                openDialog('sendToolkit');
               }}
               onScheduleCall={() => {
                 setSelectedEventRequest(request);
-                setShowScheduleCallDialog(true);
+                openDialog('scheduleCall');
               }}
               onAssignTspContact={() => {
                 setTspContactEventRequest(request);
-                setShowTspContactAssignmentDialog(true);
+                openDialog('tspContactAssignment');
               }}
               onEditTspContact={() => {
                 setTspContactEventRequest(request);
-                setShowTspContactAssignmentDialog(true);
+                openDialog('tspContactAssignment');
               }}
               onApprove={() => handleStatusChange(request.id, 'in_process')}
               onDecline={async () => {
                 const result = await handleStatusChange(request.id, 'declined');
                 if (result === 'needs_reason') {
                   setReasonDialogEventRequest(request);
-                  setShowDeclineDialog(true);
+                  openDialog('decline');
                 }
               }}
               onNonEvent={async () => {
                 const result = await handleStatusChange(request.id, 'non_event');
                 if (result === 'needs_reason') {
                   setNonEventDialogEventRequest(request);
-                  setShowNonEventDialog(true);
+                  openDialog('nonEvent');
                 }
               }}
               onLogContact={() => {
                 setLogContactEventRequest(request);
-                setShowLogContactDialog(true);
+                openDialog('logContact');
+              }}
+              onDuplicate={() => {
+                setDuplicateSourceRequest(request);
+                setShowDuplicateDialog(true);
               }}
               onAiSuggest={() => {
                 setAiSuggestionEventRequest(request);
-                setShowAiDateSuggestionDialog(true);
+                openDialog('aiDateSuggestion');
               }}
               onAiIntakeAssist={() => {
                 setAiIntakeAssistantEventRequest(request);
-                setShowAiIntakeAssistantDialog(true);
+                openDialog('aiIntakeAssistant');
               }}
               onAddNextAction={() => {
                 setNextActionEventRequest(request);
                 setNextActionMode('add');
-                setShowNextActionDialog(true);
+                openDialog('nextAction');
               }}
               onEditNextAction={() => {
                 setNextActionEventRequest(request);
                 setNextActionMode('edit');
-                setShowNextActionDialog(true);
+                openDialog('nextAction');
               }}
               onCompleteNextAction={() => {
                 setNextActionEventRequest(request);
                 setNextActionMode('complete');
-                setShowNextActionDialog(true);
+                openDialog('nextAction');
               }}
               onToggleCorporatePriority={(isCorporatePriority) => {
                 toggleCorporatePriorityMutation.mutate({
@@ -373,6 +339,19 @@ export const NewRequestsTab: React.FC = () => {
         </EventListBatchProviders>
       )}
       {ConfirmationDialogComponent}
+      <DuplicateEventDialog
+        isOpen={showDuplicateDialog}
+        onClose={() => {
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+        request={duplicateSourceRequest}
+        onConfirm={async (newEventData) => {
+          await createEventRequestMutation.mutateAsync(newEventData);
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+      />
     </>
   );
 };

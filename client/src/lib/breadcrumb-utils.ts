@@ -1,22 +1,37 @@
 import { NAV_ITEMS } from '@/nav.config';
 import { BreadcrumbSegment } from '@/components/page-breadcrumbs';
 
-// Group labels mapping
+/**
+ * Display labels for every nav group key currently in nav.config. Keep this
+ * in sync — when a new group is introduced in nav.config.ts, add it here too.
+ * If a group is missing from this map the breadcrumb will fall back to the
+ * raw kebab-case key, which is what produced the old "Home → settings → …"
+ * lowercase trails.
+ */
 const GROUP_LABELS: Record<string, string> = {
-  'dashboard': 'Dashboard',
-  'collections': 'Collections',
-  'communication': 'Communication',
-  'operations': 'Operations',
-  'event-planning': 'Event Planning',
-  'strategic-planning': 'Strategic Planning',
-  'analytics': 'Analytics & Reports',
-  'documentation': 'Documentation',
-  'admin': 'Administration',
-  'help': 'Help',
+  dashboard: 'Dashboard',
+  events: 'Events & Volunteers',
+  network: 'Network',
+  resources: 'Resources & Tools',
+  communication: 'Communication',
+  data: 'Data & Reports',
+  help: 'Help',
+  settings: 'Settings',
 };
 
 /**
  * Generate breadcrumb segments for a given section ID
+ *
+ * Produces trails like:
+ *   Home → Settings → User Management        (not "Home → settings → Settings → …")
+ *   Home → Events & Volunteers → Ops Dashboard
+ *
+ * Rules:
+ *   - Always start with the human group label (never the raw kebab-case key)
+ *   - Skip the group segment when it would duplicate the parent item's label —
+ *     e.g. for the "settings" group + a "Settings" parent item, we only want
+ *     one "Settings" in the trail.
+ *
  * @param sectionId - The active section ID (e.g., 'event-requests', 'analytics')
  * @param additionalSegments - Optional additional segments to append
  * @returns Array of breadcrumb segments
@@ -35,24 +50,33 @@ export function generateBreadcrumbs(
     return additionalSegments;
   }
 
-  // Add group label if it exists and isn't 'dashboard'
-  if (navItem.group && navItem.group !== 'dashboard') {
-    const groupLabel = GROUP_LABELS[navItem.group] || navItem.group;
-    segments.push({
-      label: groupLabel,
-      href: undefined, // Groups are not directly linkable
-    });
-  }
+  // Resolve the parent (if any) up front so we can de-duplicate against
+  // the group label below.
+  const parentItem =
+    navItem.isSubItem && navItem.parentId
+      ? NAV_ITEMS.find((item) => item.id === navItem.parentId)
+      : undefined;
 
-  // If this is a sub-item, find and add the parent
-  if (navItem.isSubItem && navItem.parentId) {
-    const parentItem = NAV_ITEMS.find((item) => item.id === navItem.parentId);
-    if (parentItem) {
+  // Add group label if it exists and isn't 'dashboard'. Skip it when it
+  // would duplicate the parent item (case-insensitive, trimmed).
+  if (navItem.group && navItem.group !== 'dashboard') {
+    const groupLabel = GROUP_LABELS[navItem.group] || titleCaseFromKey(navItem.group);
+    const duplicatesParent =
+      parentItem && parentItem.label.trim().toLowerCase() === groupLabel.trim().toLowerCase();
+    if (!duplicatesParent) {
       segments.push({
-        label: parentItem.label,
-        href: `/dashboard?section=${parentItem.href}`,
+        label: groupLabel,
+        href: undefined, // Groups are not directly linkable
       });
     }
+  }
+
+  // If this is a sub-item, push the parent
+  if (parentItem) {
+    segments.push({
+      label: parentItem.label,
+      href: `/dashboard?section=${parentItem.href}`,
+    });
   }
 
   // Add the current section (unless it's the dashboard itself)
@@ -65,6 +89,19 @@ export function generateBreadcrumbs(
 
   // Add any additional segments
   return [...segments, ...additionalSegments];
+}
+
+/**
+ * Convert a kebab-case key into a presentable Title Case fallback. Used as a
+ * last-resort label when a group key isn't in GROUP_LABELS so that an unmapped
+ * key surfaces as "Some Group" rather than "some-group" or "some group".
+ */
+function titleCaseFromKey(key: string): string {
+  return key
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+    .join(' ');
 }
 
 /**

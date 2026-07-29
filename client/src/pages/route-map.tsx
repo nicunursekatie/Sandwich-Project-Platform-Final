@@ -235,7 +235,6 @@ interface DriverMapData {
   isActive: boolean;
   vehicleType?: string | null;
   vanApproved?: boolean;
-  isSpeaker?: boolean;
 }
 
 // Shape returned by /api/volunteers — only the fields used on this map.
@@ -250,7 +249,6 @@ interface VolunteerMapData {
   longitude: string | null;
   isActive: boolean;
   isDriver?: boolean;
-  isSpeaker?: boolean;
 }
 
 interface SearchedLocation {
@@ -717,6 +715,7 @@ export default function LocationsMapView() {
       <div className="flex-1 flex overflow-hidden relative min-h-0">
         {/* Side Panel */}
         <div
+          data-tour="host-list-panel"
           className={`
             ${isPanelOpen ? 'w-96' : 'w-0'}
             transition-all duration-300 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col overflow-hidden
@@ -780,6 +779,7 @@ export default function LocationsMapView() {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <Input
+                      data-tour="host-search"
                       placeholder="Search hosts..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -957,7 +957,6 @@ export default function LocationsMapView() {
                             <div className="font-medium text-gray-900 text-sm truncate leading-tight">{volunteer.name}</div>
                             <div className="text-xs text-gray-500 flex items-center gap-1 flex-wrap">
                               {volunteer.isDriver && <Badge variant="outline" className="text-[10px] py-0 px-1 border-yellow-400 text-yellow-700">Driver</Badge>}
-                              {volunteer.isSpeaker && <Badge variant="outline" className="text-[10px] py-0 px-1 border-purple-400 text-purple-700">Speaker</Badge>}
                             </div>
                           </div>
                           {volunteer.distance !== undefined && (
@@ -993,7 +992,7 @@ export default function LocationsMapView() {
         </Button>
 
         {/* Map */}
-        <div className="flex-1 relative min-h-0 min-w-0">
+        <div className="flex-1 relative min-h-0 min-w-0" data-tour="host-map-container">
           <MapContainer
             center={initialMapCenter}
             zoom={11}
@@ -1184,9 +1183,6 @@ export default function LocationsMapView() {
                     <div className="flex items-center gap-1 flex-wrap mb-2">
                       {volunteer.isDriver && (
                         <Badge variant="outline" className="text-[10px] border-yellow-400 text-yellow-700">Driver</Badge>
-                      )}
-                      {volunteer.isSpeaker && (
-                        <Badge variant="outline" className="text-[10px] border-purple-400 text-purple-700">Speaker</Badge>
                       )}
                     </div>
                     {(volunteer.address || volunteer.homeAddress) && (

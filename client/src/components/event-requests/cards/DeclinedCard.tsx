@@ -17,6 +17,7 @@ import {
   X,
   MessageSquare,
   FileText,
+  Copy,
 } from 'lucide-react';
 import { formatEventDate } from '@/components/event-requests/utils';
 import { statusColors, statusIcons, statusOptions, statusBorderColors, statusBgColors } from '@/components/event-requests/constants';
@@ -43,6 +44,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { CardActionRow, ActionRowSpacer } from './card-ui';
 
 interface DeclinedCardProps {
   request: EventRequest;
@@ -53,6 +55,7 @@ interface DeclinedCardProps {
   onCall: () => void;
   onReactivate: () => void;
   onLogContact: () => void;
+  onDuplicate?: () => void;
   canDelete?: boolean;
   resolveUserName?: (id: string) => string;
 }
@@ -292,6 +295,7 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
   onCall,
   onReactivate,
   onLogContact,
+  onDuplicate,
   canDelete = true,
   resolveUserName,
 }) => {
@@ -423,7 +427,7 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
 
         {/* Action Buttons */}
         <TooltipProvider>
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
+          <CardActionRow>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -464,6 +468,20 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
                 <p>Edit this event</p>
               </TooltipContent>
             </Tooltip>
+
+            {onDuplicate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={onDuplicate} data-testid="button-duplicate" className="h-8">
+                    <Copy className="w-4 h-4 mr-1" />
+                    Duplicate
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create another event from this one</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
 
             {request.phone && (
               <Tooltip>
@@ -508,7 +526,7 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
               </TooltipContent>
             </Tooltip>
 
-            <div className="flex-1" />
+            <ActionRowSpacer />
 
             <Tooltip>
               <TooltipTrigger asChild>
@@ -556,7 +574,7 @@ export const DeclinedCard: React.FC<DeclinedCardProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-          </div>
+          </CardActionRow>
         </TooltipProvider>
       </CardContent>
 

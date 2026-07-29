@@ -43,6 +43,15 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import * as React from 'react';
 import { useAuth } from '@/hooks/useAuth';
@@ -62,6 +71,7 @@ import { OnlineUsers } from '@/components/online-users';
 import { useOnlinePresenceNotifications } from '@/hooks/useOnlinePresenceNotifications';
 import { RealTimeKudosNotifier } from '@/components/real-time-kudos-notifier';
 import { LoginMessageNotifier } from '@/components/login-message-notifier';
+import { FirstLoginTourPrompt } from '@/components/FirstLoginTourPrompt';
 import { GuidedTour } from '@/components/GuidedTour';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { DashboardNavigationProvider } from '@/contexts/dashboard-navigation-context';
@@ -75,10 +85,12 @@ import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { ReviewerBanner } from '@/components/reviewer-banner';
 import { CommandPalette, useCommandPalette } from '@/components/command-palette';
 import { QuickCalculator } from '@/components/QuickCalculator';
+import { UnifiedTopSearch } from '@/components/UnifiedTopSearch';
+import { NavViewModeProvider } from '@/contexts/nav-view-mode-context';
+import { NavViewModeToggle } from '@/components/nav-view-mode-toggle';
 
 // Lazy load all page/section components with automatic retry on failure
 const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
-const WeeklySandwichForm = lazyWithRetry(() => import('@/components/weekly-sandwich-form'));
 // CommitteeChat removed - consolidated into StreamChatRooms (Team Chat)
 const GoogleDriveLinks = lazyWithRetry(() => import('@/components/google-drive-links'));
 const DashboardOverview = lazyWithRetry(() => import('@/components/dashboard-overview'));
@@ -111,11 +123,11 @@ const WorkLogPage = lazyWithRetry(() => import('@/pages/work-log'));
 const SuggestionsPortal = lazyWithRetry(() => import('@/pages/suggestions'));
 const GoogleSheetsPage = lazyWithRetry(() => import('@/pages/google-sheets'));
 const PlanningSheetProposalsPage = lazyWithRetry(() => import('@/pages/planning-sheet-proposals'));
-const RealTimeMessages = lazyWithRetry(() => import('@/pages/real-time-messages'));
 const GmailStyleInbox = lazyWithRetry(() => import('@/components/gmail-style-inbox'));
 const MessagingInbox = lazyWithRetry(() => import('@/pages/messaging-inbox'));
 const ToolkitTabs = lazyWithRetry(() => import('@/components/toolkit-tabs').then(m => ({ default: m.ToolkitTabs })));
 const KudosInbox = lazyWithRetry(() => import('@/components/kudos-inbox').then(m => ({ default: m.KudosInbox })));
+const KudosTeamFeed = lazyWithRetry(() => import('@/components/kudos-team-feed').then(m => ({ default: m.KudosTeamFeed })));
 const StreamChatRooms = lazyWithRetry(() => import('@/components/stream-chat-rooms'));
 const EventsViewer = lazyWithRetry(() => import('@/components/events-viewer'));
 const SignUpGeniusViewer = lazyWithRetry(() => import('@/components/signup-genius-viewer'));
@@ -254,7 +266,6 @@ const HELP_BUTTON_HIDDEN_SECTIONS = [
   'chat',
   'messages',
   'inbox',
-  'stream-messages',
   'gmail-inbox',
 ];
 
@@ -287,6 +298,9 @@ export default function Dashboard({
   const [location, setLocation] = useLocation();
   const [activeSection, setActiveSection] = useState(initialSection);
   const [selectedHost, setSelectedHost] = useState<string>('');
+  // Active analytics tab — controlled so we can show a per-tab description
+  // line beneath the tab row that updates when the user switches tabs.
+  const [analyticsTab, setAnalyticsTab] = useState<string>('pace');
 
   // Helper function to get readable section/page names for activity tracking
   const getActivityContext = (section: string) => {
@@ -337,7 +351,7 @@ export default function Dashboard({
   // Show toast notifications when other users come online
   useOnlinePresenceNotifications();
 
-  // Command palette for quick navigation (Cmd+K)
+  // Command palette for quick navigation (Cmd+Shift+K; plain Cmd+K is the sidebar SmartSearch)
   const { open: commandPaletteOpen, setOpen: setCommandPaletteOpen } = useCommandPalette();
 
   // Parse URL query parameters - track search string changes independently
@@ -591,8 +605,6 @@ export default function Dashboard({
       case 'projects':
         logger.log('Rendering ProjectsManagement component');
         return <ProjectsManagement />;
-      case 'real-time-messages':
-        return <RealTimeMessages />;
       case 'messages':
         return <GmailStyleInbox />;
       case 'gmail-inbox':
@@ -601,26 +613,15 @@ export default function Dashboard({
         return <GmailStyleInbox />;
       case 'messaging-inbox':
         return <MessagingInbox />;
-      case 'stream-messages':
-        return <RealTimeMessages />;
       case 'chat':
+        // Outer "Team Chat" page header was removed — it was duplicating
+        // what the channel header already tells the user (which room
+        // they're in) and pushing the actual chat surface down the page.
+        // The chat now reads top-to-bottom like a native app, with the
+        // channel list and active room stretching to the top.
         return (
-          <div className="h-full flex flex-col">
-            <div className="flex-shrink-0 flex items-center gap-4 p-6 pb-2 border-b border-gray-200">
-              <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-teal-100">
-                <MessageCircle className="w-6 h-6 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">Team Chat</h1>
-                <p className="text-sm sm:text-base text-gray-600 break-words">
-                  Real-time communication with your team across different
-                  channels
-                </p>
-              </div>
-            </div>
-            <div className="flex-1 min-h-0">
-              <StreamChatRooms defaultTab={urlParams.tab} />
-            </div>
+          <div className="h-full min-h-0">
+            <StreamChatRooms defaultTab={urlParams.tab} />
           </div>
         );
       case 'kudos':
@@ -631,13 +632,31 @@ export default function Dashboard({
                 <Trophy className="w-6 h-6 text-yellow-600" />
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">Your Kudos</h1>
+                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900 break-words">Kudos</h1>
                 <p className="text-sm sm:text-base text-gray-600 break-words">
-                  Recognition received for your great work
+                  See recognition you've received — and celebrate the rest of the team.
                 </p>
               </div>
             </div>
-            <KudosInbox />
+            {/* Tabs split the page into two views:
+                  - Your Kudos: existing per-user inbox of kudos received
+                  - Team Feed: shared recognition feed of recent kudos
+                    sent across the org. Builds community morale because
+                    seeing teammates being celebrated is contagious.
+                The default tab stays "Your Kudos" so existing users land
+                where they always have. */}
+            <Tabs defaultValue="received" className="w-full">
+              <TabsList>
+                <TabsTrigger value="received">Your Kudos</TabsTrigger>
+                <TabsTrigger value="team-feed">Team Feed</TabsTrigger>
+              </TabsList>
+              <TabsContent value="received" className="mt-4">
+                <KudosInbox />
+              </TabsContent>
+              <TabsContent value="team-feed" className="mt-4">
+                <KudosTeamFeed />
+              </TabsContent>
+            </Tabs>
           </div>
         );
       case 'profile':
@@ -757,41 +776,60 @@ export default function Dashboard({
               <h1 className="text-lg sm:text-xl md:text-2xl font-main-heading text-primary break-words">
                 Impact & Analytics Dashboard
               </h1>
-              <p className="text-sm sm:text-base font-body text-muted-foreground break-words">
+              <p className="text-base font-body text-muted-foreground break-words">
                 Track community impact, collection trends, and host performance
               </p>
             </div>
-            <Tabs defaultValue="pace" className="w-full">
-              <TabsList className="grid w-full grid-cols-4 h-9 sm:h-10 bg-brand-primary/10 border-brand-primary/20">
+            <Tabs value={analyticsTab} onValueChange={setAnalyticsTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-4 min-h-11 sm:min-h-12 bg-brand-primary/10 border-brand-primary/20">
                 <TabsTrigger
                   value="pace"
-                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
+                  className="text-sm sm:text-base data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Pace &amp; Comparison
                 </TabsTrigger>
                 <TabsTrigger
                   value="impact"
-                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
+                  className="text-sm sm:text-base data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Impact Dashboard
                 </TabsTrigger>
                 <TabsTrigger
                   value="low-high-weeks"
-                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
+                  className="text-sm sm:text-base data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
                 >
                   <TrendingUp className="w-4 h-4 mr-2" />
                   Low / High Weeks
                 </TabsTrigger>
                 <TabsTrigger
                   value="hosts"
-                  className="text-xs sm:text-sm data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
+                  className="text-sm sm:text-base data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
                 >
                   <Users className="w-4 h-4 mr-2" />
                   Host Analytics
                 </TabsTrigger>
               </TabsList>
+              {/* Plain-language description of the active tab. Sits between
+                  the tab row and content so a new user understands what
+                  they're looking at without having to interpret jargon
+                  ("Low / High Weeks" being the worst offender). Greyed
+                  and small so it guides without dominating. */}
+              <p
+                className="mt-2 text-[13px] text-gray-500 leading-snug"
+                aria-live="polite"
+                data-testid="analytics-tab-description"
+              >
+                {analyticsTab === 'pace' &&
+                  "How this year's totals compare to last year and to your annual goal."}
+                {analyticsTab === 'impact' &&
+                  'Totals by sandwich type, collection category, and all-time records.'}
+                {analyticsTab === 'low-high-weeks' &&
+                  'Which weeks had the lowest and highest collection volume — useful for spotting seasonal patterns.'}
+                {analyticsTab === 'hosts' &&
+                  'Breakdown of collection performance by individual host location.'}
+              </p>
               <TabsContent value="pace" className="mt-6">
                 <PaceComparisonAnalytics />
               </TabsContent>
@@ -834,7 +872,11 @@ export default function Dashboard({
       case 'committee':
       case 'committee-chat':
         // Redirect to main Team Chat
-        return <StreamChatRooms defaultTab={urlParams.tab} />;
+        return (
+          <div className="h-full min-h-0">
+            <StreamChatRooms defaultTab={urlParams.tab} />
+          </div>
+        );
       case 'my-availability':
         return <MyAvailability />;
       case 'team-availability':
@@ -894,14 +936,16 @@ export default function Dashboard({
   }
 
   return (
+    <NavViewModeProvider>
     <>
       {/* Real-Time Kudos Notifier */}
       <RealTimeKudosNotifier />
       <LoginMessageNotifier />
+      <FirstLoginTourPrompt />
       <TextIdeaAnnouncementModal />
       <WhatsNewModal />
 
-      {/* Command Palette for quick navigation (Cmd+K) */}
+      {/* Command Palette for quick navigation (Cmd+Shift+K) */}
       <CommandPalette open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen} />
 
       <DashboardNavigationProvider setActiveSection={enhancedSetActiveSection}>
@@ -942,48 +986,29 @@ export default function Dashboard({
             </h1>
           </div>
 
-          {/* Flexible spacer - min width to ensure buttons don't get pushed off */}
-          <div className="flex-1 min-w-0" />
+          {/* Center: universal search — primary navigation affordance */}
+          <div className="hidden sm:flex flex-1 justify-center px-2 sm:px-4 min-w-0 max-w-xl mx-auto">
+            <UnifiedTopSearch />
+          </div>
 
           {/* Right side container - optimized for tablets/mobile */}
           <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
-            {/* Compact user indicator for tablets - hidden on very small screens */}
-            {user && (
-              <div className="hidden xs:flex items-center gap-1 sm:gap-2 px-2 py-1.5 bg-white/15 rounded-lg border border-white/20 max-w-[100px] sm:max-w-[150px] md:max-w-none">
-                <div className="w-5 h-5 sm:w-6 sm:h-6 bg-white/20 rounded-full flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs font-medium text-white">
-                    {(user as any)?.firstName?.charAt(0) ||
-                      (user as any)?.email?.charAt(0) ||
-                      'U'}
-                  </span>
-                </div>
-                <div className="hidden lg:flex flex-col min-w-0">
-                  <span className="text-xs font-medium text-white truncate">
-                    {(user as any)?.firstName
-                      ? `${(user as any).firstName} ${
-                          (user as any)?.lastName || ''
-                        }`.trim()
-                      : (user as any)?.email}
-                  </span>
-                  <span className="text-xs text-white/70 truncate">
-                    {(user as any)?.email}
-                  </span>
-                </div>
-                <div className="lg:hidden min-w-0 flex-1">
-                  <span className="text-xs font-medium text-white truncate block">
-                    {(user as any)?.firstName
-                      ? `${(user as any).firstName}`
-                      : (user as any)?.email?.split('@')[0] || 'User'}
-                  </span>
-                </div>
-              </div>
-            )}
+            {/* The standalone "K Katie Long" gray badge that used to live here
+                was removed — it duplicated identity already conveyed by the
+                circular user-avatar dropdown on the far right. The avatar
+                menu now shows the user's full name + email at the top of its
+                dropdown, plus Account Settings + Logout. One identity slot,
+                less header noise. */}
 
             {/* Header actions - organized into logical groups */}
             <TooltipProvider delayDuration={300}>
             <div className="flex items-center gap-1 sm:gap-2 relative z-50 flex-shrink-0">
-              
-              {/* Group 1: Communication */}
+
+              {/* Communications cluster — all "is something happening?" tools
+                  share a single translucent tray so they read as one group:
+                  Chat, Threads, Who's Online, Notifications. Operational
+                  tools (Calculator) live outside the tray with a visible
+                  separator to mark the function-type switch. */}
               <div className="flex items-center gap-0.5 bg-white/10 rounded-lg p-0.5">
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -994,7 +1019,7 @@ export default function Dashboard({
                         setActiveSection('chat');
                         setIsMobileMenuOpen(false);
                       }}
-                      className={`p-1.5 sm:p-2 rounded-md transition-colors ${
+                      className={`flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 rounded-md transition-colors text-sm font-medium ${
                         activeSection === 'chat'
                           ? 'bg-white text-brand-primary shadow-sm'
                           : 'text-white/80 hover:bg-white/15 hover:text-white'
@@ -1002,6 +1027,7 @@ export default function Dashboard({
                       aria-label="Team Chat"
                     >
                       <Hash className="w-4 h-4" />
+                      <span className="hidden lg:inline">Chat</span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" sideOffset={8}>Team Chat</TooltipContent>
@@ -1016,7 +1042,7 @@ export default function Dashboard({
                         setActiveSection('gmail-inbox');
                         setIsMobileMenuOpen(false);
                       }}
-                      className={`p-1.5 sm:p-2 rounded-md transition-colors ${
+                      className={`flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 rounded-md transition-colors text-sm font-medium ${
                         activeSection === 'gmail-inbox'
                           ? 'bg-white text-brand-primary shadow-sm'
                           : 'text-white/80 hover:bg-white/15 hover:text-white'
@@ -1024,6 +1050,7 @@ export default function Dashboard({
                       aria-label="Project Threads"
                     >
                       <Inbox className="w-4 h-4" />
+                      <span className="hidden lg:inline">Threads</span>
                     </button>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" sideOffset={8}>Project Threads</TooltipContent>
@@ -1040,10 +1067,10 @@ export default function Dashboard({
                     <TooltipContent side="bottom" sideOffset={8}>Who's Online</TooltipContent>
                   </Tooltip>
                 </div>
-              </div>
 
-              {/* Group 2: Notifications */}
-              <div className="flex items-center gap-0.5">
+                {/* Notifications — pulled into the comms tray so all
+                    "is something happening?" tools cluster as one group
+                    instead of sitting in their own separate slot. */}
                 {typeof window !== 'undefined' && (
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1056,115 +1083,191 @@ export default function Dashboard({
                 )}
               </div>
 
-              {/* Quick Calculator */}
+              {/* Thin vertical separator — marks the function-type switch
+                  from communications (left) to operational tools (right).
+                  Hidden on mobile where space is tight and the gap between
+                  groups is already implied by smaller padding. */}
+              <div
+                aria-hidden="true"
+                className="hidden sm:block w-px h-6 bg-white/20 mx-0.5"
+              />
+
+              {/* Quick Calculator — operational tool, sits outside the comms
+                  tray. The vertical separator above visually distinguishes
+                  its role from chat/threads/notifications. */}
               <div className="flex items-center">
                 <QuickCalculator />
               </div>
 
-              {/* Group 3: Help & Navigation */}
-              <div className="hidden sm:flex items-center gap-0.5 bg-white/10 rounded-lg p-0.5">
-                {NAV_ITEMS.filter(item => item.topNav && (!item.permission || hasPermission(user, item.permission))).map(item => {
-                  const Icon = item.icon;
-                  return (
-                    <Tooltip key={item.id}>
+              <NavViewModeToggle />
+
+              {/* Group 3: Support dropdown — consolidates Help, Suggestions,
+                  and Report Issue under a single ? icon. These actions are
+                  used occasionally (not every session) so they don't deserve
+                  their own header real estate — but they need to stay
+                  discoverable. Standard SaaS "help menu" pattern. */}
+              {(() => {
+                // Resolve which topNav items the user actually has access to so
+                // we don't render menu items that route to permission-denied pages.
+                const supportNavItems = NAV_ITEMS.filter(
+                  (item) => item.topNav && (!item.permission || hasPermission(user, item.permission))
+                );
+                const hasAnySupport = supportNavItems.length > 0 || true; // Report Issue is always shown
+                if (!hasAnySupport) return null;
+                return (
+                  <DropdownMenu>
+                    <Tooltip>
                       <TooltipTrigger asChild>
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            logger.log(`${item.label} button clicked`);
-                            trackButtonClick(item.id, 'dashboard_header');
-                            localStorage.setItem('navigation_update_2024_v2_seen', 'true');
-                            if (item.href === 'help') {
-                              setLocation('/help');
-                            } else {
-                              setActiveSection(item.href);
-                              window.history.pushState({}, '', `/dashboard?section=${item.href}`);
-                            }
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            className="flex items-center justify-center w-9 h-9 rounded-md transition-colors text-white/80 hover:bg-white/15 hover:text-white"
+                            aria-label="Help and support"
+                            data-testid="header-support-menu"
+                          >
+                            <HelpCircle className="w-5 h-5" />
+                          </button>
+                        </DropdownMenuTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" sideOffset={8}>Help & Support</TooltipContent>
+                    </Tooltip>
+                    <DropdownMenuContent align="end" sideOffset={8} className="w-52 z-[10000]">
+                      <DropdownMenuLabel className="text-xs text-slate-500">
+                        Help & Support
+                      </DropdownMenuLabel>
+                      <DropdownMenuSeparator />
+                      {supportNavItems.map((item) => {
+                        const Icon = item.icon;
+                        return (
+                          <DropdownMenuItem
+                            key={item.id}
+                            onSelect={() => {
+                              logger.log(`${item.label} button clicked`);
+                              trackButtonClick(item.id, 'dashboard_header');
+                              localStorage.setItem('navigation_update_2024_v2_seen', 'true');
+                              if (item.href === 'help') {
+                                setLocation('/help');
+                              } else {
+                                setActiveSection(item.href);
+                                window.history.pushState({}, '', `/dashboard?section=${item.href}`);
+                              }
+                              setIsMobileMenuOpen(false);
+                            }}
+                            className="cursor-pointer"
+                          >
+                            {Icon && <Icon className="w-4 h-4 mr-2 text-slate-500" />}
+                            <span>{item.label}</span>
+                          </DropdownMenuItem>
+                        );
+                      })}
+                      <DropdownMenuItem
+                        onSelect={() => {
+                          trackButtonClick('report_issue', 'dashboard_header');
+                          openReportDialog();
+                        }}
+                        className="cursor-pointer"
+                      >
+                        <AlertCircle className="w-4 h-4 mr-2 text-slate-500" />
+                        <span>Report an issue</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                );
+              })()}
+
+              {/* Group 4: Account avatar dropdown — replaces the standalone
+                  Account button + Logout button. Avatar shows the user's
+                  initials (or profile picture). Menu has Account Settings
+                  + Logout, with logout styled destructively. Standard SaaS
+                  pattern — every other app's user menu lives here. */}
+              <div className="flex items-center pl-1 border-l border-white/20">
+                {(() => {
+                  // Compute initials + display name once.
+                  const u = user as any;
+                  const firstName = u?.firstName || '';
+                  const lastName = u?.lastName || '';
+                  const displayName = u?.displayName || `${firstName} ${lastName}`.trim() || u?.email?.split('@')[0] || 'User';
+                  const initials = (() => {
+                    if (firstName && lastName) {
+                      return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+                    }
+                    if (firstName) return firstName.substring(0, 2).toUpperCase();
+                    if (u?.displayName) {
+                      const parts = u.displayName.trim().split(/\s+/);
+                      if (parts.length >= 2) {
+                        return `${parts[0].charAt(0)}${parts[parts.length - 1].charAt(0)}`.toUpperCase();
+                      }
+                      return u.displayName.substring(0, 2).toUpperCase();
+                    }
+                    if (u?.email) return u.email.substring(0, 2).toUpperCase();
+                    return 'U';
+                  })();
+
+                  return (
+                    <DropdownMenu>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <DropdownMenuTrigger asChild>
+                            <button
+                              className="flex items-center gap-2 p-0.5 rounded-full transition-colors hover:bg-white/15"
+                              aria-label="User menu"
+                              data-testid="header-user-menu"
+                            >
+                              <Avatar className="h-8 w-8 ring-2 ring-white/30">
+                                <AvatarImage src={u?.profileImageUrl || undefined} />
+                                <AvatarFallback className="bg-white text-brand-primary font-semibold text-sm">
+                                  {initials}
+                                </AvatarFallback>
+                              </Avatar>
+                            </button>
+                          </DropdownMenuTrigger>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" sideOffset={8}>Account menu</TooltipContent>
+                      </Tooltip>
+                      <DropdownMenuContent align="end" sideOffset={8} className="w-56 z-[10000]">
+                        <DropdownMenuLabel className="flex flex-col">
+                          <span className="text-sm font-semibold text-slate-800 truncate">{displayName}</span>
+                          {u?.email && (
+                            <span className="text-xs font-normal text-slate-500 truncate">{u.email}</span>
+                          )}
+                        </DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            trackButtonClick('profile', 'dashboard_header');
+                            setActiveSection('profile');
+                            window.history.pushState({}, '', '/dashboard?section=profile');
                             setIsMobileMenuOpen(false);
                           }}
-                          className={`p-2 rounded-md transition-colors ${
-                            activeSection === item.href
-                              ? 'bg-white text-brand-primary shadow-sm'
-                              : 'text-white/80 hover:bg-white/15 hover:text-white'
-                          }`}
-                          aria-label={item.label}
+                          className="cursor-pointer"
                         >
-                          {Icon && <Icon className="w-4 h-4" />}
-                        </button>
-                      </TooltipTrigger>
-                      <TooltipContent side="bottom" sideOffset={8}>{item.label}</TooltipContent>
-                    </Tooltip>
+                          <UserCog className="w-4 h-4 mr-2 text-slate-500" />
+                          <span>Account Settings</span>
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          onSelect={async () => {
+                            try {
+                              trackButtonClick('logout', 'dashboard_header');
+                              await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+                              queryClient.clear();
+                              queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
+                              queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
+                              window.location.href = '/login';
+                            } catch (error) {
+                              logger.error('Logout error:', error);
+                              queryClient.clear();
+                              window.location.href = '/login';
+                            }
+                          }}
+                          className="cursor-pointer text-red-600 focus:text-red-700 focus:bg-red-50"
+                        >
+                          <LogOut className="w-4 h-4 mr-2" />
+                          <span>Logout</span>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   );
-                })}
-              </div>
-
-              {/* Group 4: Account Menu */}
-              <div className="flex items-center gap-0.5 sm:gap-1 pl-1 border-l border-white/20">
-                {/* Report an issue — opens the same dialog as error-toast "Report" actions */}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        trackButtonClick('report_issue', 'dashboard_header');
-                        openReportDialog();
-                      }}
-                      className="p-1.5 sm:p-2 rounded-md transition-colors text-white/80 hover:bg-white/15 hover:text-white"
-                      aria-label="Report an issue"
-                    >
-                      <AlertCircle className="w-4 h-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={8}>Report an issue</TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        trackButtonClick('profile', 'dashboard_header');
-                        setActiveSection('profile');
-                        window.history.pushState({}, '', '/dashboard?section=profile');
-                        setIsMobileMenuOpen(false);
-                      }}
-                      className={`p-1.5 sm:p-2 rounded-md transition-colors ${
-                        activeSection === 'profile'
-                          ? 'bg-white text-brand-primary shadow-sm'
-                          : 'text-white/80 hover:bg-white/15 hover:text-white'
-                      }`}
-                      aria-label="Account Settings"
-                    >
-                      <UserCog className="w-4 h-4" />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" sideOffset={8}>Account Settings</TooltipContent>
-                </Tooltip>
-
-                <button
-                  onClick={async () => {
-                    try {
-                      trackButtonClick('logout', 'dashboard_header');
-                      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
-                      queryClient.clear();
-                      queryClient.invalidateQueries({ queryKey: ['/api/auth/user'] });
-                      queryClient.removeQueries({ queryKey: ['/api/auth/user'] });
-                      window.location.href = '/login';
-                    } catch (error) {
-                      logger.error('Logout error:', error);
-                      queryClient.clear();
-                      window.location.href = '/login';
-                    }
-                  }}
-                  className="flex items-center gap-1 px-1.5 sm:px-2.5 py-1.5 text-white/80 hover:text-red-200 rounded-md hover:bg-white/10 transition-colors text-sm font-medium"
-                  aria-label="Logout"
-                >
-                  <LogOut className="w-4 h-4" />
-                  <span className="hidden md:inline">Logout</span>
-                </button>
+                })()}
               </div>
             </div>
             </TooltipProvider>
@@ -1206,7 +1309,7 @@ export default function Dashboard({
             </div>
 
             {/* Simple Navigation with enhanced mobile scrolling */}
-            <div className="flex-1 overflow-y-auto pb-6 touch-pan-y overscroll-auto">
+            <div className="flex-1 overflow-y-auto pb-6 touch-pan-y overscroll-auto sidebar-nav-scroll">
               <MultiViewSidebar
                 navigationItems={NAV_ITEMS}
                 isCollapsed={isSidebarCollapsed}
@@ -1287,7 +1390,7 @@ export default function Dashboard({
 
                   if (isDriverPlanning) {
                     return (
-                      <div className="h-full min-h-0 overflow-y-auto overflow-x-hidden w-full max-w-full">
+                      <div className="h-full min-h-0 overflow-hidden w-full max-w-full">
                         {renderContent(section)}
                       </div>
                     );
@@ -1339,5 +1442,6 @@ export default function Dashboard({
         </MultiViewProvider>
       </DashboardNavigationProvider>
     </>
+    </NavViewModeProvider>
   );
 }

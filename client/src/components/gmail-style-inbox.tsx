@@ -534,12 +534,12 @@ export default function GmailStyleInbox() {
     },
   });
 
-  // Delete permanently mutation - use conversation delete
+  // Delete permanently mutation - delete the underlying email rows
   const deleteMutation = useMutation({
     mutationFn: async (messageIds: number[]) => {
-      // Delete conversation messages one by one
+      // Delete emails one by one (this inbox is backed by /api/emails)
       const deletePromises = messageIds.map((id) =>
-        apiRequest('DELETE', `/api/messages/${id}`)
+        apiRequest('DELETE', `/api/emails/${id}`)
       );
       return Promise.all(deletePromises);
     },
@@ -910,6 +910,7 @@ export default function GmailStyleInbox() {
           </div>
           <ButtonTooltip explanation="Write a new message to send to team members. You can choose who to send it to and what it's about.">
             <Button
+              data-tour="compose-button"
               onClick={() => setShowCompose(true)}
               className="w-full gap-2 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-['Roboto'] font-medium shadow-lg hover:shadow-xl transition-all duration-200"
             >
@@ -920,10 +921,11 @@ export default function GmailStyleInbox() {
         </div>
 
         <ScrollArea className="flex-1">
-          <div className="px-2">
+          <div className="px-2" data-tour="inbox-folders">
             {folders.map((folder) => (
               <button
                 key={folder.id}
+                data-tour={folder.id === 'kudos' ? 'folder-kudos' : undefined}
                 onClick={() => {
                   setActiveFolder(folder.id);
                   // On mobile, collapse sidebar when selecting a folder to show content
@@ -972,6 +974,26 @@ export default function GmailStyleInbox() {
           className="flex-1 flex-col bg-white min-w-0 overflow-hidden border-r"
           style={{ display: 'flex' }}
         >
+          {/* "What's this?" explainer — Project Threads vs Team Chat is
+              the #1 source of confusion for new users. Pinning a one-line
+              clarifier above the toolbar so it's visible on every folder
+              eliminates that confusion before it starts. */}
+          <div className="border-b bg-blue-50/60 px-4 py-2 text-xs sm:text-sm text-slate-700 flex items-start gap-2">
+            <InboxIcon className="w-4 h-4 mt-0.5 text-blue-700 flex-shrink-0" aria-hidden="true" />
+            <span>
+              <span className="font-semibold text-blue-900">
+                Project Threads
+              </span>{' '}
+              are for longer email-style conversations — use this when a topic
+              needs a thread history.{' '}
+              <a
+                href="/dashboard?section=chat"
+                className="text-blue-700 font-medium hover:underline whitespace-nowrap"
+              >
+                💬 Chat instead
+              </a>
+            </span>
+          </div>
           {/* Toolbar */}
           <div className="border-b p-4 space-y-3 bg-white">
             <div className="flex items-center justify-between">
@@ -1239,27 +1261,34 @@ export default function GmailStyleInbox() {
                             </div>
                           </div>
                           
-                          {/* Show subject for kudos */}
+                          {/* Subject — primary inbox navigation affordance */}
                           {isKudos && message.subject && (
-                            <p className="text-sm font-semibold text-yellow-700 mb-1">
+                            <p className="text-sm font-semibold text-yellow-700 mb-1 truncate">
                               🎉 {message.subject}
+                            </p>
+                          )}
+                          {!isKudos && (
+                            <p
+                              className={`text-sm truncate mb-1 ${
+                                !message.isRead
+                                  ? 'font-semibold text-gray-900'
+                                  : 'font-medium text-gray-800'
+                              }`}
+                            >
+                              {message.subject?.trim() || '(No subject)'}
                             </p>
                           )}
                           
                           <p
-                            className={`text-sm leading-relaxed ${
+                            className={`text-sm leading-relaxed truncate ${
                               isKudos
                                 ? 'font-medium text-gray-700'
                                 : !message.isRead
                                 ? 'font-bold text-gray-900'
                                 : 'font-normal text-gray-600'
                             }`}
-                            style={{
-                              wordBreak: 'break-word',
-                              whiteSpace: 'pre-wrap',
-                            }}
                           >
-                            {message.content || message.subject || '(No content)'}
+                            {message.content?.trim() || '(No preview)'}
                           </p>
 
                           {/* Show attachment indicator */}

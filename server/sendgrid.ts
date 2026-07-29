@@ -35,12 +35,28 @@ interface EmailParams {
   attachments?: (string | EmailAttachment | Base64Attachment)[];
 }
 
-export async function sendEmail(params: EmailParams): Promise<boolean> {
+/**
+ * Result of an email send attempt. `error` carries the specific SendGrid
+ * rejection reason (e.g. "from address does not match a verified Sender
+ * Identity") so callers can surface something actionable. Returned per-call so
+ * there's no shared/global state that could leak one request's reason into
+ * another under concurrent sends.
+ */
+export interface SendEmailResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Send an email and return the outcome together with the failure reason.
+ * Prefer this over sendEmail() when you need to report why a send failed.
+ */
+export async function sendEmailWithResult(params: EmailParams): Promise<SendEmailResult> {
   if (!process.env.SENDGRID_API_KEY) {
     logger.warn('Email sending skipped - SENDGRID_API_KEY not configured');
-    return false;
+    return { success: false, error: 'SENDGRID_API_KEY is not configured' };
   }
-  
+
   try {
     logger.log(
       `Attempting to send email to ${params.to} from ${params.from} with subject: ${params.subject}`
@@ -85,8 +101,29 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
       }
     }
     
-    // Set BCC with all recipients (deduplicated)
-    emailData.bcc = [...new Set(bccList)];
+    // Set BCC with all recipients, deduplicated (case-insensitively) AND
+    // excluding any address that is already in `to` (or `cc`). SendGrid rejects
+    // the ENTIRE send with a 400 if the same address appears in both `to` and
+    // `bcc` — and since we always force-BCC the admin (katie@), every email sent
+    // *to* that same admin address would otherwise fail. (See SendGrid error:
+    // "Each email address ... should be unique between to, cc, and bcc".)
+    const excludeAddresses = new Set(
+      [params.to, (params as any).cc]
+        .flat()
+        .filter((addr): addr is string => typeof addr === 'string')
+        .map((addr) => addr.trim().toLowerCase())
+    );
+    const seenBcc = new Set<string>();
+    const finalBcc = bccList.filter((addr) => {
+      const key = (addr || '').trim().toLowerCase();
+      if (!key || excludeAddresses.has(key) || seenBcc.has(key)) return false;
+      seenBcc.add(key);
+      return true;
+    });
+    // SendGrid rejects an empty bcc array — only attach when there's something left
+    if (finalBcc.length > 0) {
+      emailData.bcc = finalBcc;
+    }
     
     // Process attachments if provided
     if (params.attachments && params.attachments.length > 0) {
@@ -157,17 +194,37 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
     
     await mailService.send(emailData);
     logger.log(`Email sent successfully to ${params.to}`);
-    return true;
+    return { success: true };
   } catch (error) {
     logger.error('SendGrid email error:', error);
-    if (error.response && error.response.body) {
+    // Surface the real SendGrid rejection reason (e.g. "from address does not
+    // match a verified Sender Identity") so callers can report something
+    // actionable instead of a generic "check API key configuration".
+    const sendGridErrors = error?.response?.body?.errors;
+    let reason: string;
+    if (Array.isArray(sendGridErrors) && sendGridErrors.length > 0) {
       logger.error(
         'SendGrid error details:',
         JSON.stringify(error.response.body, null, 2)
       );
+      reason = sendGridErrors
+        .map((e: { message?: string }) => e?.message)
+        .filter(Boolean)
+        .join('; ');
+    } else {
+      reason = error instanceof Error ? error.message : 'Unknown SendGrid error';
     }
-    return false;
+    return { success: false, error: reason };
   }
+}
+
+/**
+ * Backwards-compatible boolean wrapper around sendEmailWithResult() for the
+ * many callers that only care whether the send succeeded.
+ */
+export async function sendEmail(params: EmailParams): Promise<boolean> {
+  const result = await sendEmailWithResult(params);
+  return result.success;
 }
 
 export async function sendSuggestionNotification(suggestion: {

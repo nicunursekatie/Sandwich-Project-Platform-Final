@@ -1,14 +1,20 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode, useMemo, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { EventRequest, EventVolunteer } from '@shared/schema';
 import { useAuth } from '@/hooks/useAuth';
 import { getEventRequestDefaults } from '@shared/role-view-defaults';
 import { logger } from '@/lib/logger';
 import { useLocation } from 'wouter';
-import { buildEventRequestsListQuery } from '../lib/eventRequestsListQuery';
+import { buildEventRequestsListQuery, type EventRequestsWeekScope } from '../lib/eventRequestsListQuery';
 import { EventDialogProvider, useEventDialogState } from './EventDialogContext';
 import { useIssueReport } from '@/contexts/issue-report-context';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
+import {
+  computeUnviewedNewCount,
+  markEventRequestsViewed,
+  pruneViewedEventIds,
+  subscribeEventRequestViewedChanges,
+} from '@/lib/event-request-viewed';
 
 interface EventRequestContextType {
   // Event requests data
@@ -17,6 +23,8 @@ interface EventRequestContextType {
   isPlaceholderData?: boolean;
   quickFilter: 'week' | 'today' | 'needsDriver' | 'needsVan' | 'corporatePriority' | null;
   setQuickFilter: (filter: 'week' | 'today' | 'needsDriver' | 'needsVan' | 'corporatePriority' | null) => void;
+  weekScope: EventRequestsWeekScope;
+  setWeekScope: (scope: EventRequestsWeekScope) => void;
 
   // View state
   viewMode: 'list' | 'calendar' | 'map';
@@ -65,6 +73,8 @@ interface EventRequestContextType {
     my_assignments: number;
   };
   statusCountsLoading: boolean;
+  /** New requests this user hasn't opened yet (workflow status may still be `new`). */
+  unviewedNewCount: number;
 }
 
 const EventRequestContext = createContext<EventRequestContextType | null>(null);
@@ -121,6 +131,7 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
 
   // Quick filter state for special date ranges (This Week, Today, etc.)
   const [quickFilter, setQuickFilter] = useState<'week' | 'today' | 'needsDriver' | 'needsVan' | 'corporatePriority' | null>(null);
+  const [weekScope, setWeekScope] = useState<EventRequestsWeekScope>(null);
 
   // View state - use role-based defaults if no initialTab provided
   const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'map'>('list');
@@ -140,19 +151,27 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [myAssignmentsStatusFilter, setMyAssignmentsStatusFilter] = useState<string[]>(['new', 'in_process', 'scheduled']);
 
   // Build list query key + URL in one place (also used by Dashboard prefetch)
   const { queryKey: listQueryKey, listUrl: listQueryUrl, fullUrl: fullQueryUrl } = useMemo(
-    () => buildEventRequestsListQuery(activeTab, quickFilter),
-    [activeTab, quickFilter]
+    () => buildEventRequestsListQuery(activeTab, quickFilter, weekScope),
+    [activeTab, quickFilter, weekScope]
   );
 
   // Reset quickFilter when activeTab changes to something incompatible
   useEffect(() => {
-    if (quickFilter && !['scheduled', 'new', 'in_process'].includes(activeTab)) {
+    if (quickFilter && !['scheduled', 'new', 'in_process', 'all'].includes(activeTab)) {
       setQuickFilter(null);
     }
   }, [activeTab, quickFilter]);
+
+  // Week scope from dashboard pipeline cards only applies on the All tab.
+  useEffect(() => {
+    if (weekScope && activeTab !== 'all') {
+      setWeekScope(null);
+    }
+  }, [activeTab, weekScope]);
 
   // Fetch event requests with filtering and stale-while-revalidate
   // Uses lightweight /list endpoint for better performance
@@ -248,7 +267,6 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
       setActiveTab('new');
     }
   }, [location, activeTab]);
-  const [myAssignmentsStatusFilter, setMyAssignmentsStatusFilter] = useState<string[]>(['new', 'in_process', 'scheduled']);
 
   // Pre-fill issue report context when working on event requests
   useEffect(() => {
@@ -395,15 +413,134 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     my_assignments: serverStatusCounts?.my_assignments ?? 0,
   };
 
+  const queryClient = useQueryClient();
+  const [viewedRevision, setViewedRevision] = useState(0);
+  useEffect(() => subscribeEventRequestViewedChanges(() => setViewedRevision((v) => v + 1)), []);
+
+  const newTabListQuery = useMemo(() => buildEventRequestsListQuery('new', null), []);
+  const {
+    data: newEventsForBadge,
+    isFetched: newEventsListFetched,
+  } = useQuery<EventRequest[]>({
+    queryKey: newTabListQuery.queryKey,
+    queryFn: async () => {
+      const response = await fetch(newTabListQuery.listUrl, { credentials: 'include' });
+      if (!response.ok) throw new Error('Failed to fetch new event requests');
+      return response.json();
+    },
+    enabled: !!user?.id && statusCounts.new > 0,
+    staleTime: 2 * 60 * 1000,
+  });
+
+  const newEventsForUnviewedCount = useMemo(() => {
+    if (newEventsForBadge && newEventsForBadge.length > 0) {
+      return newEventsForBadge;
+    }
+    if (activeTab === 'new' && eventRequests.length > 0) {
+      return eventRequests;
+    }
+    const cached = queryClient.getQueryData<EventRequest[]>(newTabListQuery.queryKey);
+    return cached ?? [];
+  }, [
+    newEventsForBadge,
+    activeTab,
+    eventRequests,
+    queryClient,
+    newTabListQuery.queryKey,
+  ]);
+
+  useEffect(() => {
+    if (!user?.id || newEventsForUnviewedCount.length === 0) return;
+    pruneViewedEventIds(
+      user.id,
+      newEventsForUnviewedCount
+        .filter((event) => event.status === 'new')
+        .map((event) => event.id)
+    );
+  }, [user?.id, newEventsForUnviewedCount]);
+
+  // Visiting the New tab means the user has seen what's there — clear the
+  // tab dot without changing workflow status. New arrivals while they're on
+  // another tab will bump unviewedNewCount again.
+  useEffect(() => {
+    if (activeTab !== 'new' || !user?.id || statusCounts.new === 0) return;
+
+    const newEventIds = newEventsForUnviewedCount
+      .filter((event) => event.status === 'new')
+      .map((event) => event.id);
+
+    if (newEventIds.length === 0) return;
+
+    markEventRequestsViewed(user.id, newEventIds);
+  }, [
+    activeTab,
+    user?.id,
+    statusCounts.new,
+    newEventsForUnviewedCount,
+  ]);
+
+  const unviewedNewCount = useMemo(() => {
+    void viewedRevision;
+    if (!user?.id || statusCounts.new === 0) return 0;
+
+    const listResolved =
+      newEventsForUnviewedCount.some((event) => event.status === 'new') ||
+      newEventsListFetched;
+
+    return computeUnviewedNewCount(
+      user.id,
+      newEventsForUnviewedCount,
+      statusCounts.new,
+      listResolved
+    );
+  }, [
+    user?.id,
+    statusCounts.new,
+    newEventsForUnviewedCount,
+    newEventsListFetched,
+    viewedRevision,
+  ]);
+
   // Sync state with role defaults when user loads (handles async user fetch)
   // Only applies defaults if no explicit initialTab was provided (respects URL navigation)
+  // and no dashboard drill-down filter is pending (Operational Overview / My Assignments).
   useEffect(() => {
-    if (!initialTab) {
-      setActiveTab(roleDefaults.defaultTab);
-      setConfirmationFilter(roleDefaults.defaultConfirmationFilter);
-      setSortBy(roleDefaults.defaultSort);
-      setItemsPerPage(roleDefaults.itemsPerPage);
+    if (initialTab) return;
+
+    try {
+      const raw = sessionStorage.getItem('eventRequests.pendingFilter');
+      if (raw) {
+        const parsed = JSON.parse(raw) as {
+          tab?: string;
+          filter?: string;
+          weekScope?: EventRequestsWeekScope;
+          myAssignmentsStatuses?: string[];
+        };
+        sessionStorage.removeItem('eventRequests.pendingFilter');
+        const validTabs = ['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments'];
+        const validFilters = ['week', 'today', 'needsDriver', 'needsVan', 'corporatePriority'];
+        const validWeekScopes: EventRequestsWeekScope[] = ['current', 'next', '+2', '+3'];
+        if (parsed.tab && validTabs.includes(parsed.tab)) setActiveTab(parsed.tab);
+        if (parsed.weekScope && validWeekScopes.includes(parsed.weekScope)) {
+          setWeekScope(parsed.weekScope);
+          setQuickFilter(null);
+        } else if (parsed.filter && validFilters.includes(parsed.filter)) {
+          setQuickFilter(parsed.filter as typeof quickFilter);
+          setWeekScope(null);
+        }
+        if (parsed.myAssignmentsStatuses?.length) {
+          setMyAssignmentsStatusFilter(parsed.myAssignmentsStatuses);
+        }
+        return;
+      }
+    } catch {
+      // ignore malformed/unavailable sessionStorage
     }
+
+    setActiveTab(roleDefaults.defaultTab);
+    setConfirmationFilter(roleDefaults.defaultConfirmationFilter);
+    setSortBy(roleDefaults.defaultSort);
+    setItemsPerPage(roleDefaults.itemsPerPage);
   }, [roleDefaults.defaultTab, roleDefaults.defaultConfirmationFilter, roleDefaults.defaultSort, roleDefaults.itemsPerPage, initialTab]);
 
   // Synchronize statusFilter with activeTab (only for status-based tabs)
@@ -506,9 +643,12 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     isPlaceholderData,
     quickFilter,
     setQuickFilter,
+    weekScope,
+    setWeekScope,
     requestsByStatus,
     statusCounts,
     statusCountsLoading,
+    unviewedNewCount,
 
     // View state
     viewMode,
@@ -538,9 +678,9 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
   }), [
     // Query results / data this context owns
     eventRequests, isLoading, isPlaceholderData, statusCountsLoading,
-    requestsByStatus, statusCounts,
+    requestsByStatus, statusCounts, unviewedNewCount,
     // View state this context owns
-    quickFilter, viewMode, scheduledViewMode, activeTab, searchQuery, debouncedSearchQuery,
+    quickFilter, weekScope, viewMode, scheduledViewMode, activeTab, searchQuery, debouncedSearchQuery,
     statusFilter, myAssignmentsStatusFilter, confirmationFilter, sortBy,
     // Pagination
     currentPage, itemsPerPage,

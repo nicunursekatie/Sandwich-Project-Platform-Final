@@ -350,7 +350,7 @@ async function bootstrap() {
             name: 'Messages',
             short_name: 'Messages',
             description: 'View team messages and notifications',
-            url: baseUrl + '/?section=real-time-messages',
+            url: baseUrl + '/?section=gmail-inbox',
             icons: [
               {
                 src: '/attached_assets/LOGOS/TSP_transparent.png',
@@ -589,6 +589,30 @@ async function bootstrap() {
             serverLogger.info('✅ SMS provider initialized');
           } catch (error) {
             serverLogger.error('SMS provider initialization failed:', error);
+          }
+
+          // Startup verification of Google Sheets credentials — raises an
+          // admin-notified application error if credentials are rotated or
+          // malformed, so the projects sheet sync can't silently break.
+          try {
+            const { verifyGoogleSheetsAuthAtStartup } = await import(
+              './services/integration-health'
+            );
+            void verifyGoogleSheetsAuthAtStartup()
+              .then(() =>
+                serverLogger.info('✅ Google Sheets startup auth check completed')
+              )
+              .catch((error) =>
+                serverLogger.error(
+                  'Google Sheets startup auth check failed to run:',
+                  error
+                )
+              );
+          } catch (error) {
+            serverLogger.error(
+              'Failed to start Google Sheets startup auth check:',
+              error
+            );
           }
 
           // Background Google Sheets sync

@@ -1,10 +1,11 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { useErrorToast } from '@/hooks/use-error-toast';
-import { apiRequest, invalidateEventRequestQueries, applyEventRequestSaveToCache, applyPatchResponseToCache, patchEventInListCaches, refreshEventRequestListAndCounts, describeApiError, isServerUnavailableError } from '@/lib/queryClient';
+import { apiRequest, invalidateEventRequestQueries, applyPatchResponseToCache, applyEventRequestSaveToCache, patchEventInListCaches, refreshEventRequestListAndCounts, findEventInListCaches, describeApiError, isServerUnavailableError } from '@/lib/queryClient';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventDialogState } from '../context/EventDialogContext';
 import { logger } from '@/lib/logger';
+import { sumSandwichTypeQuantities } from '../form-utils';
 
 export const useEventMutations = () => {
   const { toast } = useToast();
@@ -13,19 +14,15 @@ export const useEventMutations = () => {
   const {
     selectedEventRequest,
     setSelectedEventRequest,
-    setShowEventDetails,
     setIsEditing,
-    setShowToolkitSentDialog,
     setToolkitEventRequest,
-    setShowScheduleCallDialog,
     setScheduleCallDate,
     setScheduleCallTime,
-    setShowOneDayFollowUpDialog,
-    setShowOneMonthFollowUpDialog,
     setFollowUpNotes,
     setEditingScheduledId,
     setEditingField,
     setEditingValue,
+    closeDialog,
   } = useEventDialogState();
 
   const eventReportContext = () =>
@@ -71,7 +68,7 @@ export const useEventMutations = () => {
         ),
       });
       await invalidateEventRequestQueries(queryClient);
-      setShowEventDetails(false);
+      closeDialog('eventDetails');
       setSelectedEventRequest(null);
     },
     onError: (error: any) => {
@@ -133,17 +130,19 @@ export const useEventMutations = () => {
         });
       }
 
-      // Patch caches surgically — avoid refetching every list while other forms may be open.
-      const statusChanged =
-        !!selectedEventRequest?.status &&
-        !!updatedEvent?.status &&
-        selectedEventRequest.status !== updatedEvent.status;
-      await applyEventRequestSaveToCache(queryClient, updatedEvent, {
-        statusChanged,
+      // Patch caches surgically — infer status change from the cached row (or the
+      // open dialog event), not only selectedEventRequest (card actions like
+      // Approve often run with no dialog open).
+      const previousStatus =
+        findEventInListCaches(queryClient, variables.id)?.status ??
+        (selectedEventRequest?.id === variables.id ? selectedEventRequest.status : undefined);
+
+      await applyPatchResponseToCache(queryClient, updatedEvent, {
+        previousStatus,
         touchedFields: Object.keys(variables.data || {}),
       });
 
-      setShowEventDetails(false);
+      closeDialog('eventDetails');
       setSelectedEventRequest(null);
       setIsEditing(false);
 
@@ -244,7 +243,7 @@ export const useEventMutations = () => {
       // Await query invalidation so the list reflects the new event
       await invalidateEventRequestQueries(queryClient);
 
-      setShowEventDetails(false);
+      closeDialog('eventDetails');
       setSelectedEventRequest(null);
       setIsEditing(false);
     },
@@ -300,16 +299,25 @@ export const useEventMutations = () => {
         description: message,
       });
       await applyPatchResponseToCache(queryClient, updatedEvent, {
-        previousStatus: selectedEventRequest?.status,
+        previousStatus:
+          findEventInListCaches(queryClient, variables.id)?.status ??
+          (selectedEventRequest?.id === variables.id ? selectedEventRequest.status : undefined),
         touchedFields: ['toolkitSentDate', 'status', 'contactAttempts'],
-        statusChanged: true,
       });
 
       if (selectedEventRequest && selectedEventRequest.id === variables.id) {
         setSelectedEventRequest(updatedEvent);
       }
 
-      setShowToolkitSentDialog(false);
+      // markToolkitSentMutation is shared by two dialogs:
+      //   - 'toolkitSent'  (log-only path)
+      //   - 'sendToolkit'  (send-email path)
+      // Passing the dialog name to closeDialog would only close it if
+      // that name happens to be the active one — when the OTHER dialog
+      // is the active one, the call silently no-ops and leaves the
+      // dialog stuck open after a successful save. Close whichever
+      // dialog is active by omitting the argument.
+      closeDialog();
       setToolkitEventRequest(null);
     },
     onError: (error: any) => {
@@ -347,7 +355,7 @@ export const useEventMutations = () => {
         setSelectedEventRequest(updatedEvent);
       }
 
-      setShowScheduleCallDialog(false);
+      closeDialog('scheduleCall');
       setScheduleCallDate('');
       setScheduleCallTime('');
     },
@@ -369,7 +377,36 @@ export const useEventMutations = () => {
       id: number;
       field: string;
       value: any;
-    }) => apiRequest('PATCH', `/api/event-requests/${id}`, { [field]: value }),
+    }) => {
+      const payload: Record<string, unknown> = { [field]: value };
+
+      // Keep estimatedSandwichCount and sandwichTypes in sync on single-field edits.
+      // Otherwise a spreadsheet/card edit to "200" leaves stale types (e.g. 198)
+      // that hijack the next full-form save.
+      if (field === 'estimatedSandwichCount') {
+        payload.sandwichTypes = null;
+        payload.estimatedSandwichCountMin = null;
+        payload.estimatedSandwichCountMax = null;
+        payload.estimatedSandwichRangeType = null;
+      } else if (field === 'sandwichTypes') {
+        const total = sumSandwichTypeQuantities(value);
+        payload.estimatedSandwichCount = total > 0 ? total : null;
+        payload.estimatedSandwichCountMin = null;
+        payload.estimatedSandwichCountMax = null;
+        payload.estimatedSandwichRangeType = null;
+      }
+
+      return apiRequest('PATCH', `/api/event-requests/${id}`, payload);
+    },
+    // KEEP (Unit 2 decision, 2026-06-25): this is the one intentional optimistic
+    // update left in the event-requests path. It targets the correct
+    // `/api/event-requests/list` cache family (via patchEventInListCaches), cancels
+    // in-flight list fetches, snapshots for rollback, and reverts in onError. Inline
+    // scheduled-field edits (spreadsheet/card cells) need pre-response feedback so the
+    // cell doesn't visibly lag a round-trip before committing — onSuccess's surgical
+    // applyEventRequestSaveToCache alone would leave that gap. The bug Unit 2 looked
+    // for was optimistic writes to DEAD keys (['/api/event-requests'] / [...,'v2']);
+    // an audit confirmed none remain, so this correct-key patch stays.
     onMutate: async ({ id, field, value }) => {
       await queryClient.cancelQueries({
         predicate: (query) =>
@@ -387,6 +424,20 @@ export const useEventMutations = () => {
       patchEventInListCaches(queryClient, id, (existing) => ({
         ...existing,
         [field]: value,
+        ...(field === 'estimatedSandwichCount'
+          ? {
+              sandwichTypes: null,
+              estimatedSandwichCountMin: null,
+              estimatedSandwichCountMax: null,
+            }
+          : {}),
+        ...(field === 'sandwichTypes'
+          ? {
+              estimatedSandwichCount: sumSandwichTypeQuantities(value) || null,
+              estimatedSandwichCountMin: null,
+              estimatedSandwichCountMax: null,
+            }
+          : {}),
       }));
 
       return { previousLists };
@@ -466,7 +517,7 @@ export const useEventMutations = () => {
         setSelectedEventRequest(updatedEvent);
       }
 
-      setShowOneDayFollowUpDialog(false);
+      closeDialog('oneDayFollowUp');
       setFollowUpNotes('');
     },
     onError: (error: any) => {
@@ -500,7 +551,7 @@ export const useEventMutations = () => {
         setSelectedEventRequest(updatedEvent);
       }
 
-      setShowOneMonthFollowUpDialog(false);
+      closeDialog('oneMonthFollowUp');
       setFollowUpNotes('');
     },
     onError: (error: any) => {

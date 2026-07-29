@@ -36,7 +36,13 @@ export type SortColumn =
   | 'primaryContact'
   | 'tspContact'
   | 'contract'
-  | 'reportingGroup';
+  | 'reportingGroup'
+  | 'address'
+  | 'survey'
+  | 'cadence'
+  | 'peopleServed'
+  | 'peopleServedFrequency'
+  | 'fruitSnacks';
 
 export type SortDirection = 'asc' | 'desc';
 
@@ -131,7 +137,57 @@ export function getRecipientRegion(recipient: Recipient): string {
 }
 
 export function getEstimatedSandwiches(recipient: Recipient): number | null {
+  // Falls back to weeklyEstimate (legacy) then estimatedSandwiches.
+  // Treated as the MIN of any range — see getEstimatedSandwichesRange for the full range.
   return recipient.weeklyEstimate ?? recipient.estimatedSandwiches ?? null;
+}
+
+/**
+ * Estimated sandwiches as a range. Returns null when no number is set.
+ * If only a single number is stored, min === max.
+ */
+export function getEstimatedSandwichesRange(
+  recipient: Recipient
+): { min: number; max: number } | null {
+  const min = getEstimatedSandwiches(recipient);
+  if (min == null) return null;
+  const maxRaw = (recipient as Recipient & { estimatedSandwichesMax?: number | null })
+    .estimatedSandwichesMax;
+  const max = typeof maxRaw === 'number' && maxRaw >= min ? maxRaw : min;
+  return { min, max };
+}
+
+export type PlannedBreakdownRow = { type: string; min: number; max: number };
+
+/** Read the planned sandwich breakdown safely, filtering out empty rows. */
+export function getPlannedSandwichBreakdown(recipient: Recipient): PlannedBreakdownRow[] {
+  const raw = (recipient as Recipient & { plannedSandwichBreakdown?: PlannedBreakdownRow[] })
+    .plannedSandwichBreakdown;
+  if (!Array.isArray(raw)) return [];
+  return raw.filter(
+    (r): r is PlannedBreakdownRow =>
+      !!r && typeof r.type === 'string' && Number.isFinite(r.min) && Number.isFinite(r.max)
+  );
+}
+
+/** Sum the breakdown into a total min/max range. Returns null when the list is empty. */
+export function sumBreakdownRange(
+  rows: PlannedBreakdownRow[]
+): { min: number; max: number } | null {
+  if (rows.length === 0) return null;
+  let min = 0;
+  let max = 0;
+  for (const r of rows) {
+    min += r.min;
+    max += r.max;
+  }
+  return { min, max };
+}
+
+/** Format a min/max pair: "200" if single, "150-200" if range. */
+export function formatRange(min: number, max: number): string {
+  if (min === max) return min.toLocaleString();
+  return `${min.toLocaleString()}-${max.toLocaleString()}`;
 }
 
 export type ContractStatus = 'signed' | 'pending' | 'none';
@@ -200,12 +256,127 @@ export function sortRecipients(
       }
       case 'reportingGroup':
         return compareStrings(a.reportingGroup || '', b.reportingGroup || '');
+      case 'address':
+        // Alphabetical sort by address; blank addresses sink to the bottom.
+        return compareStrings(a.address || '￿', b.address || '￿');
+      case 'survey': {
+        // Submitted before not-submitted in ascending order.
+        const sa = (a as Recipient & { surveySubmitted?: boolean }).surveySubmitted ? 0 : 1;
+        const sb = (b as Recipient & { surveySubmitted?: boolean }).surveySubmitted ? 0 : 1;
+        if (sa !== sb) return compareNumbers(sa, sb);
+        return compareStrings(a.name || '', b.name || '');
+      }
+      case 'cadence': {
+        // Order: most reliable → least reliable → none.
+        const order = {
+          weekly_priority: 0,
+          as_requested_consistently: 1,
+          when_extras: 2,
+          as_requested: 3,
+          as_needed: 4,
+        } as const;
+        const ca = (a as Recipient & { deliveryCadence?: string | null }).deliveryCadence;
+        const cb = (b as Recipient & { deliveryCadence?: string | null }).deliveryCadence;
+        const ra = ca && ca in order ? order[ca as keyof typeof order] : 5;
+        const rb = cb && cb in order ? order[cb as keyof typeof order] : 5;
+        if (ra !== rb) return compareNumbers(ra, rb);
+        return compareStrings(a.name || '', b.name || '');
+      }
+      case 'peopleServed': {
+        const pa = (a as Recipient & { averagePeopleServed?: number | null }).averagePeopleServed ?? -1;
+        const pb = (b as Recipient & { averagePeopleServed?: number | null }).averagePeopleServed ?? -1;
+        if (pa !== pb) return compareNumbers(pa, pb);
+        return compareStrings(a.name || '', b.name || '');
+      }
+      case 'peopleServedFrequency': {
+        // daily (most frequent) → weekly → monthly → none (least), asc.
+        const order = { daily: 0, weekly: 1, monthly: 2 } as const;
+        const fa = (a as Recipient & { peopleServedFrequency?: string | null }).peopleServedFrequency;
+        const fb = (b as Recipient & { peopleServedFrequency?: string | null }).peopleServedFrequency;
+        const ra = fa && fa in order ? order[fa as keyof typeof order] : 3;
+        const rb = fb && fb in order ? order[fb as keyof typeof order] : 3;
+        if (ra !== rb) return compareNumbers(ra, rb);
+        return compareStrings(a.name || '', b.name || '');
+      }
+      case 'fruitSnacks': {
+        // receiving (0) → interested (1) → none (2). Combined across both
+        // fruit + snacks fields since the business rule treats them as one.
+        const rank = (r: Recipient) => {
+          const recv =
+            !!(r as Recipient & { receivingFruit?: boolean }).receivingFruit ||
+            !!(r as Recipient & { receivingSnacks?: boolean }).receivingSnacks;
+          const want =
+            !!(r as Recipient & { wantsFruit?: boolean }).wantsFruit ||
+            !!(r as Recipient & { wantsSnacks?: boolean }).wantsSnacks;
+          if (recv) return 0;
+          if (want) return 1;
+          return 2;
+        };
+        const ra = rank(a);
+        const rb = rank(b);
+        if (ra !== rb) return compareNumbers(ra, rb);
+        return compareStrings(a.name || '', b.name || '');
+      }
       default:
         return compareStrings(a.name || '', b.name || '');
     }
   });
 
   return sorted;
+}
+
+export type DeliveryCadence =
+  | 'weekly_priority'
+  | 'as_requested_consistently'
+  | 'when_extras'
+  | 'as_requested'
+  | 'as_needed';
+
+/**
+ * Delivery cadence describes HOW OFTEN we serve an org — independent of the
+ * sandwich count. Used as a planning / prioritization signal.
+ */
+export const DELIVERY_CADENCE_OPTIONS: ReadonlyArray<{
+  value: DeliveryCadence;
+  label: string;
+  description: string;
+  /** Class for badge background + text + border in one shot. */
+  badgeClass: string;
+}> = [
+  {
+    value: 'weekly_priority',
+    label: 'Weekly priority',
+    description: 'Regular committed orgs we serve every week.',
+    badgeClass: 'bg-[#007E8C]/15 text-[#236383] border-[#007E8C]/40',
+  },
+  {
+    value: 'as_requested_consistently',
+    label: 'As requested (consistent)',
+    description: 'They request reliably on a regular cadence.',
+    badgeClass: 'bg-[#47B3CB]/15 text-[#236383] border-[#47B3CB]/40',
+  },
+  {
+    value: 'when_extras',
+    label: 'When we have extras',
+    description: 'Served when we have surplus / leftovers.',
+    badgeClass: 'bg-[#FBAD3F]/15 text-[#B8860B] border-[#FBAD3F]/40',
+  },
+  {
+    value: 'as_requested',
+    label: 'As requested',
+    description: 'They ask occasionally; we serve when they do.',
+    badgeClass: 'bg-[#FBAD3F]/10 text-[#B8860B] border-[#FBAD3F]/30',
+  },
+  {
+    value: 'as_needed',
+    label: 'As needed',
+    description: 'Irregular or special-circumstance orgs.',
+    badgeClass: 'bg-slate-100 text-slate-700 border-slate-300',
+  },
+];
+
+export function getCadenceMeta(cadence: string | null | undefined) {
+  return DELIVERY_CADENCE_OPTIONS.find((c) => c.value === cadence) || null;
 }
 
 export const RECIPIENT_FOCUS_AREAS = [
@@ -281,6 +452,51 @@ export function getTimeForDayOnSchedule(
     }
   }
   return undefined;
+}
+
+/** Notes/frequency string for a specific weekday within a schedule list. */
+export function getNotesForDayOnSchedule(
+  schedules: ScheduleEntry[],
+  day: string
+): string | undefined {
+  for (const entry of schedules) {
+    const matchedDays = extractDaysFromText(entry.day);
+    if (matchedDays.includes(day)) {
+      return entry.notes?.trim() || undefined;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Convert a free-text time string (e.g. "9:00 AM", "11:30 AM - 1:00 PM", "noon")
+ * to minutes-since-midnight for sorting. Returns Infinity for unparseable times
+ * so they sort to the end. Uses only the FIRST time when a range is given.
+ */
+export function timeStringToMinutes(time: string | undefined | null): number {
+  if (!time) return Number.POSITIVE_INFINITY;
+  const trimmed = time.trim().toLowerCase();
+  if (!trimmed) return Number.POSITIVE_INFINITY;
+
+  // Quick keyword cases.
+  if (/^noon\b/.test(trimmed)) return 12 * 60;
+  if (/^midnight\b/.test(trimmed)) return 0;
+
+  // Match HH or HH:MM, optionally followed by am/pm. Use the first occurrence.
+  const match = trimmed.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/);
+  if (!match) return Number.POSITIVE_INFINITY;
+
+  let hours = parseInt(match[1], 10);
+  const minutes = match[2] ? parseInt(match[2], 10) : 0;
+  const ampm = match[3];
+
+  if (Number.isNaN(hours) || hours > 23 || hours < 0) return Number.POSITIVE_INFINITY;
+  if (Number.isNaN(minutes) || minutes > 59 || minutes < 0) return Number.POSITIVE_INFINITY;
+
+  if (ampm === 'pm' && hours < 12) hours += 12;
+  if (ampm === 'am' && hours === 12) hours = 0;
+
+  return hours * 60 + minutes;
 }
 
 /** Build schedule array from day chip selection + time (table inline edit). */

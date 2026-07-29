@@ -27,61 +27,68 @@ import React, {
 } from 'react';
 import type { EventRequest } from '@shared/schema';
 
+/**
+ * The single source of truth for "which dialog is open."
+ *
+ * This replaces the 23 independent `showXDialog` booleans this context used to
+ * carry (Unit 5 of the Event Requests Reliability Plan). Because exactly one
+ * dialog can be open at a time, a single discriminated value both eliminates a
+ * whole class of "two dialogs open at once / stuck dialog" bugs and makes the
+ * open/close transitions trivially debuggable.
+ *
+ * The per-dialog *event* references (schedulingEventRequest, etc.) intentionally
+ * stay as separate state below — several of them (e.g. selectedEventRequest) are
+ * shared across multiple dialogs, so folding them into this union would force
+ * duplication rather than remove it.
+ */
+export type ActiveDialog =
+  | 'none'
+  | 'eventDetails'
+  | 'eventDetailsPreview'
+  | 'scheduling'
+  | 'toolkitSent'
+  | 'sendToolkit'
+  | 'scheduleCall'
+  | 'oneDayFollowUp'
+  | 'oneMonthFollowUp'
+  | 'contactOrganizer'
+  | 'collectionLog'
+  | 'assignment'
+  | 'tspContactAssignment'
+  | 'sandwichPlanning'
+  | 'staffingPlanning'
+  | 'logContact'
+  | 'editContact'
+  | 'aiDateSuggestion'
+  | 'aiIntakeAssistant'
+  | 'intakeCall'
+  | 'decline'
+  | 'cancel'
+  | 'nonEvent'
+  | 'reschedule'
+  | 'nextAction';
+
 export interface EventDialogContextType {
   // Selected event for the main details dialog (the most-used field on
-  // the old context). Pairs with isEditing/showEventDetails.
+  // the old context). Pairs with isEditing/activeDialog === 'eventDetails'.
   selectedEventRequest: EventRequest | null;
   setSelectedEventRequest: (event: EventRequest | null) => void;
   isEditing: boolean;
   setIsEditing: (editing: boolean) => void;
 
-  // Dialog visibility booleans
-  showEventDetails: boolean;
-  setShowEventDetails: (show: boolean) => void;
-  showEventDetailsPreview: boolean;
-  setShowEventDetailsPreview: (show: boolean) => void;
-  showSchedulingDialog: boolean;
-  setShowSchedulingDialog: (show: boolean) => void;
-  showToolkitSentDialog: boolean;
-  setShowToolkitSentDialog: (show: boolean) => void;
-  showScheduleCallDialog: boolean;
-  setShowScheduleCallDialog: (show: boolean) => void;
-  showOneDayFollowUpDialog: boolean;
-  setShowOneDayFollowUpDialog: (show: boolean) => void;
-  showOneMonthFollowUpDialog: boolean;
-  setShowOneMonthFollowUpDialog: (show: boolean) => void;
-  showContactOrganizerDialog: boolean;
-  setShowContactOrganizerDialog: (show: boolean) => void;
-  showCollectionLog: boolean;
-  setShowCollectionLog: (show: boolean) => void;
-  showAssignmentDialog: boolean;
-  setShowAssignmentDialog: (show: boolean) => void;
-  showTspContactAssignmentDialog: boolean;
-  setShowTspContactAssignmentDialog: (show: boolean) => void;
-  showSandwichPlanningModal: boolean;
-  setShowSandwichPlanningModal: (show: boolean) => void;
-  showStaffingPlanningModal: boolean;
-  setShowStaffingPlanningModal: (show: boolean) => void;
-  showLogContactDialog: boolean;
-  setShowLogContactDialog: (show: boolean) => void;
-  showEditContactDialog: boolean;
-  setShowEditContactDialog: (show: boolean) => void;
-  showAiDateSuggestionDialog: boolean;
-  setShowAiDateSuggestionDialog: (show: boolean) => void;
-  showAiIntakeAssistantDialog: boolean;
-  setShowAiIntakeAssistantDialog: (show: boolean) => void;
-  showIntakeCallDialog: boolean;
-  setShowIntakeCallDialog: (show: boolean) => void;
-  showDeclineDialog: boolean;
-  setShowDeclineDialog: (show: boolean) => void;
-  showCancelDialog: boolean;
-  setShowCancelDialog: (show: boolean) => void;
-  showNonEventDialog: boolean;
-  setShowNonEventDialog: (show: boolean) => void;
-  showRescheduleDialog: boolean;
-  setShowRescheduleDialog: (show: boolean) => void;
-  showNextActionDialog: boolean;
-  setShowNextActionDialog: (show: boolean) => void;
+  // Which dialog (if any) is currently open. Replaces the old pile of
+  // showXDialog booleans.
+  activeDialog: ActiveDialog;
+  setActiveDialog: (dialog: ActiveDialog) => void;
+  /** Open a dialog (closes any other open dialog automatically). */
+  openDialog: (dialog: Exclude<ActiveDialog, 'none'>) => void;
+  /**
+   * Close the open dialog. Pass a dialog name to close *only* if that specific
+   * dialog is the one currently open — this makes "open A, close B" sequences
+   * order-independent (closing B is a no-op once A is already open), which the
+   * old independent-boolean model relied on.
+   */
+  closeDialog: (only?: Exclude<ActiveDialog, 'none'>) => void;
 
   // Per-dialog active event references
   schedulingEventRequest: EventRequest | null;
@@ -118,8 +125,8 @@ export interface EventDialogContextType {
   setNextActionMode: (mode: 'add' | 'edit' | 'complete') => void;
 
   // Assignment dialog working state
-  assignmentType: 'driver' | 'speaker' | 'volunteer' | null;
-  setAssignmentType: (type: 'driver' | 'speaker' | 'volunteer' | null) => void;
+  assignmentType: 'driver' | 'volunteer' | null;
+  setAssignmentType: (type: 'driver' | 'volunteer' | null) => void;
   assignmentEventId: number | null;
   setAssignmentEventId: (id: number | null) => void;
   selectedAssignees: string[];
@@ -208,30 +215,17 @@ export const EventDialogProvider: React.FC<{ children: ReactNode }> = ({
   const [selectedEventRequest, setSelectedEventRequest] = useState<EventRequest | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
-  // Dialog visibility states
-  const [showEventDetails, setShowEventDetails] = useState(false);
-  const [showEventDetailsPreview, setShowEventDetailsPreview] = useState(false);
-  const [showSchedulingDialog, setShowSchedulingDialog] = useState(false);
-  const [showToolkitSentDialog, setShowToolkitSentDialog] = useState(false);
-  const [showScheduleCallDialog, setShowScheduleCallDialog] = useState(false);
-  const [showOneDayFollowUpDialog, setShowOneDayFollowUpDialog] = useState(false);
-  const [showOneMonthFollowUpDialog, setShowOneMonthFollowUpDialog] = useState(false);
-  const [showContactOrganizerDialog, setShowContactOrganizerDialog] = useState(false);
-  const [showCollectionLog, setShowCollectionLog] = useState(false);
-  const [showAssignmentDialog, setShowAssignmentDialog] = useState(false);
-  const [showTspContactAssignmentDialog, setShowTspContactAssignmentDialog] = useState(false);
-  const [showSandwichPlanningModal, setShowSandwichPlanningModal] = useState(false);
-  const [showStaffingPlanningModal, setShowStaffingPlanningModal] = useState(false);
-  const [showLogContactDialog, setShowLogContactDialog] = useState(false);
-  const [showEditContactDialog, setShowEditContactDialog] = useState(false);
-  const [showAiDateSuggestionDialog, setShowAiDateSuggestionDialog] = useState(false);
-  const [showAiIntakeAssistantDialog, setShowAiIntakeAssistantDialog] = useState(false);
-  const [showIntakeCallDialog, setShowIntakeCallDialog] = useState(false);
-  const [showDeclineDialog, setShowDeclineDialog] = useState(false);
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [showNonEventDialog, setShowNonEventDialog] = useState(false);
-  const [showRescheduleDialog, setShowRescheduleDialog] = useState(false);
-  const [showNextActionDialog, setShowNextActionDialog] = useState(false);
+  // Which dialog is open. One field replaces the old 23 boolean flags.
+  const [activeDialog, setActiveDialog] = useState<ActiveDialog>('none');
+  const openDialog = useCallback(
+    (dialog: Exclude<ActiveDialog, 'none'>) => setActiveDialog(dialog),
+    []
+  );
+  const closeDialog = useCallback(
+    (only?: Exclude<ActiveDialog, 'none'>) =>
+      setActiveDialog((prev) => (only && prev !== only ? prev : 'none')),
+    []
+  );
 
   // Per-dialog active event references
   const [schedulingEventRequest, setSchedulingEventRequest] = useState<EventRequest | null>(null);
@@ -252,7 +246,7 @@ export const EventDialogProvider: React.FC<{ children: ReactNode }> = ({
   const [nextActionMode, setNextActionMode] = useState<'add' | 'edit' | 'complete'>('add');
 
   // Assignment dialog state
-  const [assignmentType, setAssignmentType] = useState<'driver' | 'speaker' | 'volunteer' | null>(null);
+  const [assignmentType, setAssignmentType] = useState<'driver' | 'volunteer' | null>(null);
   const [assignmentEventId, setAssignmentEventId] = useState<number | null>(null);
   const [selectedAssignees, setSelectedAssignees] = useState<string[]>([]);
   const [isEditingAssignment, setIsEditingAssignment] = useState(false);
@@ -297,7 +291,7 @@ export const EventDialogProvider: React.FC<{ children: ReactNode }> = ({
     (event: EventRequest, options?: { isEditing?: boolean }) => {
       setSelectedEventRequest(event);
       setIsEditing(!!options?.isEditing);
-      setShowEventDetails(true);
+      setActiveDialog('eventDetails');
     },
     []
   );
@@ -310,53 +304,11 @@ export const EventDialogProvider: React.FC<{ children: ReactNode }> = ({
       isEditing,
       setIsEditing,
 
-      // Dialog visibility
-      showEventDetails,
-      setShowEventDetails,
-      showEventDetailsPreview,
-      setShowEventDetailsPreview,
-      showSchedulingDialog,
-      setShowSchedulingDialog,
-      showToolkitSentDialog,
-      setShowToolkitSentDialog,
-      showScheduleCallDialog,
-      setShowScheduleCallDialog,
-      showOneDayFollowUpDialog,
-      setShowOneDayFollowUpDialog,
-      showOneMonthFollowUpDialog,
-      setShowOneMonthFollowUpDialog,
-      showContactOrganizerDialog,
-      setShowContactOrganizerDialog,
-      showCollectionLog,
-      setShowCollectionLog,
-      showAssignmentDialog,
-      setShowAssignmentDialog,
-      showTspContactAssignmentDialog,
-      setShowTspContactAssignmentDialog,
-      showSandwichPlanningModal,
-      setShowSandwichPlanningModal,
-      showStaffingPlanningModal,
-      setShowStaffingPlanningModal,
-      showLogContactDialog,
-      setShowLogContactDialog,
-      showEditContactDialog,
-      setShowEditContactDialog,
-      showAiDateSuggestionDialog,
-      setShowAiDateSuggestionDialog,
-      showAiIntakeAssistantDialog,
-      setShowAiIntakeAssistantDialog,
-      showIntakeCallDialog,
-      setShowIntakeCallDialog,
-      showDeclineDialog,
-      setShowDeclineDialog,
-      showCancelDialog,
-      setShowCancelDialog,
-      showNonEventDialog,
-      setShowNonEventDialog,
-      showRescheduleDialog,
-      setShowRescheduleDialog,
-      showNextActionDialog,
-      setShowNextActionDialog,
+      // Dialog visibility (single source of truth)
+      activeDialog,
+      setActiveDialog,
+      openDialog,
+      closeDialog,
 
       // Active event references
       schedulingEventRequest,
@@ -455,14 +407,7 @@ export const EventDialogProvider: React.FC<{ children: ReactNode }> = ({
     }),
     [
       selectedEventRequest, isEditing,
-      showEventDetails, showEventDetailsPreview, showSchedulingDialog,
-      showToolkitSentDialog, showScheduleCallDialog, showOneDayFollowUpDialog,
-      showOneMonthFollowUpDialog, showContactOrganizerDialog, showCollectionLog,
-      showAssignmentDialog, showTspContactAssignmentDialog, showSandwichPlanningModal,
-      showStaffingPlanningModal, showLogContactDialog, showEditContactDialog,
-      showAiDateSuggestionDialog, showAiIntakeAssistantDialog, showIntakeCallDialog,
-      showDeclineDialog, showCancelDialog, showNonEventDialog,
-      showRescheduleDialog, showNextActionDialog,
+      activeDialog, openDialog, closeDialog,
       schedulingEventRequest, toolkitEventRequest, collectionLogEventRequest,
       contactEventRequest, tspContactEventRequest, logContactEventRequest,
       editContactEventRequest, editContactAttemptData, aiSuggestionEventRequest,

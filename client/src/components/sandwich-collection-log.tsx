@@ -29,6 +29,7 @@ import {
   ChevronRight,
   HelpCircle,
   Heart,
+  Star,
   CheckCircle,
   AlertCircle,
   MessageCircle,
@@ -64,6 +65,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import BulkDataManager from '@/components/bulk-data-manager';
 import CollectionFormSelector from '@/components/collection-form-selector';
@@ -80,7 +87,7 @@ import {
   canDeleteCollection,
 } from '@shared/auth-utils';
 import type { SandwichCollection, Host } from '@shared/schema';
-import { HelpBubble, helpContent } from '@/components/help-system';
+import { HelpBubble } from '@/components/help-system';
 import {
   calculateTotalSandwiches,
   calculateGroupSandwiches,
@@ -254,6 +261,17 @@ export default function SandwichCollectionLog() {
 
   const [sortConfig, setSortConfig] = useState(getInitialSortConfig());
   const [showFilters, setShowFilters] = useState(false);
+  // One-tap quick-filter chip below the global search. Each chip applies an
+  // additive filter to the same client-side filtering pipeline that the
+  // search input + advanced filters use.
+  //   'all'         — no chip filter active (default)
+  //   'host'        — records with an individual sandwich count > 0
+  //   'group'       — records with at least one group collection entry
+  //   'thisMonth'   — collectionDate within the current calendar month
+  //   'last30Days'  — collectionDate within the past 30 days
+  //   'mine'        — records the current user submitted (createdBy === user.id)
+  type QuickFilter = 'all' | 'host' | 'group' | 'thisMonth' | 'last30Days' | 'mine';
+  const [quickFilter, setQuickFilter] = useState<QuickFilter>('all');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(collectionDefaults.itemsPerPage);
   const [editFormData, setEditFormData] = useState({
@@ -434,9 +452,14 @@ export default function SandwichCollectionLog() {
 
   // Memoize expensive computations using debounced filters
   // Only fetch all data when we need client-side filtering/sorting, not for basic pagination
+  // Also triggers when a quick-filter chip is active so the chip can filter
+  // across the full dataset, not just the current paginated slice.
   const needsAllData = useMemo(
-    () => showFilters || Object.values(debouncedSearchFilters).some((v) => v),
-    [showFilters, debouncedSearchFilters]
+    () =>
+      showFilters ||
+      quickFilter !== 'all' ||
+      Object.values(debouncedSearchFilters).some((v) => v),
+    [showFilters, quickFilter, debouncedSearchFilters]
   );
 
   const queryKey = useMemo(
@@ -447,6 +470,7 @@ export default function SandwichCollectionLog() {
       itemsPerPage, // Always include to trigger refetch when items per page changes
       debouncedSearchFilters,
       sortConfig,
+      quickFilter, // Re-evaluate when the chip changes
     ],
     [
       needsAllData,
@@ -454,6 +478,7 @@ export default function SandwichCollectionLog() {
       itemsPerPage,
       debouncedSearchFilters,
       sortConfig,
+      quickFilter,
     ]
   );
 
@@ -477,7 +502,7 @@ export default function SandwichCollectionLog() {
           const searchTerm = debouncedSearchFilters.hostName.toLowerCase();
           filteredCollections = filteredCollections.filter(
             (c: SandwichCollection) =>
-              c.hostName?.toLowerCase().includes(searchTerm)
+              c.hostName?.toLowerCase()?.includes(searchTerm)
           );
           logger.log(
             `Host name filter '${searchTerm}' applied: ${filteredCollections.length} results`
@@ -524,15 +549,30 @@ export default function SandwichCollectionLog() {
           const searchTerm = debouncedSearchFilters.globalSearch.toLowerCase();
           filteredCollections = filteredCollections.filter(
             (c: SandwichCollection) => {
-              // Search in host name
+              // Search in host name (also serves as the "collection location"
+              // for individual/host drop-offs).
               const hostNameMatch = c.hostName
                 ?.toLowerCase()
-                .includes(searchTerm);
+                ?.includes(searchTerm) ?? false;
 
-              // Search in group names using the getGroupCollections function
+              // Search in submitter name (createdByName) so the user can
+              // find "all the collections Katie submitted" in one query.
+              const submitterMatch = c.createdByName
+                ?.toLowerCase()
+                ?.includes(searchTerm) ?? false;
+
+              // Search in group names AND the group's department/organization
+              // — a "Cox Enterprises" search should find a Cox group whose
+              // groupName is the company and whose department is the team.
               const groupData = getGroupCollections(c);
               const groupNameMatch = groupData.some((group) =>
-                group.groupName?.toLowerCase().includes(searchTerm)
+                group.groupName?.toLowerCase()?.includes(searchTerm)
+              );
+              // getGroupCollections returns a union type where the legacy
+              // fallback branch lacks `department` — only the JSONB branch has
+              // it. Cast to any to read it safely; missing values just no-op.
+              const organizationMatch = groupData.some((group) =>
+                (group as any).department?.toLowerCase()?.includes(searchTerm)
               );
 
               // Search in collection date - check multiple formats
@@ -577,11 +617,17 @@ export default function SandwichCollectionLog() {
                   }
                 } catch (error) {
                   // If date parsing fails, fall back to string matching on the raw date string
-                  dateMatch = c.collectionDate?.toLowerCase().includes(searchTerm) || false;
+                  dateMatch = c.collectionDate?.toLowerCase()?.includes(searchTerm) ?? false;
                 }
               }
 
-              return hostNameMatch || groupNameMatch || dateMatch;
+              return (
+                hostNameMatch ||
+                submitterMatch ||
+                groupNameMatch ||
+                organizationMatch ||
+                dateMatch
+              );
             }
           );
           logger.log(
@@ -596,12 +642,74 @@ export default function SandwichCollectionLog() {
             (c: SandwichCollection) => {
               const groupData = getGroupCollections(c);
               return groupData.some((group) =>
-                group.groupName?.toLowerCase().includes(searchTerm)
+                group.groupName?.toLowerCase()?.includes(searchTerm)
               );
             }
           );
           logger.log(
             `Group name filter '${searchTerm}' applied: ${filteredCollections.length} results`
+          );
+        }
+
+        // Quick-filter chip — applied last so it composes additively with
+        // search + advanced filters. A user can search for "Smith" AND
+        // narrow to This Month with the chip.
+        if (quickFilter !== 'all') {
+          const beforeCount = filteredCollections.length;
+          if (quickFilter === 'host') {
+            // Records with individual sandwich pickups (host drop-offs).
+            filteredCollections = filteredCollections.filter(
+              (c: SandwichCollection) => (c.individualSandwiches || 0) > 0
+            );
+          } else if (quickFilter === 'group') {
+            // Records with at least one group collection entry.
+            filteredCollections = filteredCollections.filter(
+              (c: SandwichCollection) => getGroupCollections(c).length > 0
+            );
+          } else if (quickFilter === 'thisMonth') {
+            // collectionDate within the current calendar month, in user's local time.
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+            filteredCollections = filteredCollections.filter(
+              (c: SandwichCollection) => {
+                if (!c.collectionDate) return false;
+                const dateStr = c.collectionDate;
+                const date = typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
+                  ? new Date(dateStr + 'T12:00:00')
+                  : new Date(dateStr);
+                if (isNaN(date.getTime())) return false;
+                return date >= monthStart && date <= monthEnd;
+              }
+            );
+          } else if (quickFilter === 'last30Days') {
+            // collectionDate within the past 30 days.
+            const cutoff = new Date();
+            cutoff.setDate(cutoff.getDate() - 30);
+            cutoff.setHours(0, 0, 0, 0);
+            filteredCollections = filteredCollections.filter(
+              (c: SandwichCollection) => {
+                if (!c.collectionDate) return false;
+                const dateStr = c.collectionDate;
+                const date = typeof dateStr === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateStr)
+                  ? new Date(dateStr + 'T12:00:00')
+                  : new Date(dateStr);
+                if (isNaN(date.getTime())) return false;
+                return date >= cutoff;
+              }
+            );
+          } else if (quickFilter === 'mine') {
+            // Records the current user submitted. Requires a logged-in user.
+            if (user?.id) {
+              filteredCollections = filteredCollections.filter(
+                (c: SandwichCollection) => String((c as any).createdBy) === String(user.id)
+              );
+            } else {
+              filteredCollections = [];
+            }
+          }
+          logger.log(
+            `Quick filter '${quickFilter}' applied: ${beforeCount} → ${filteredCollections.length} results`
           );
         }
 
@@ -725,6 +833,7 @@ export default function SandwichCollectionLog() {
       sortConfig,
       collectionDefaults.showOwnFirst,
       user?.id,
+      quickFilter,
     ]),
   });
 
@@ -752,6 +861,73 @@ export default function SandwichCollectionLog() {
       const response = await fetch('/api/sandwich-collections/stats');
       if (!response.ok) throw new Error('Failed to fetch stats');
       return response.json();
+    },
+  });
+
+  // The user's personal "notable" bookmarks. Kept as a Set for O(1)
+  // membership checks when rendering each row. Loaded once and updated
+  // optimistically on toggle so the star fills/empties instantly.
+  const { data: favoritesData } = useQuery<{ collectionIds: number[] }>({
+    queryKey: ['/api/collection-favorites'],
+    queryFn: async () => {
+      const response = await fetch('/api/collection-favorites', {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to load favorites');
+      return response.json();
+    },
+  });
+  const favoritedIds = React.useMemo(
+    () => new Set(favoritesData?.collectionIds ?? []),
+    [favoritesData],
+  );
+
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: async (params: { collectionId: number; favorited: boolean }) => {
+      const { collectionId, favorited } = params;
+      // Toggle: if currently favorited, send DELETE; otherwise POST.
+      const method = favorited ? 'DELETE' : 'POST';
+      const response = await fetch(`/api/collection-favorites/${collectionId}`, {
+        method,
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error('Failed to update favorite');
+      return response.json();
+    },
+    onMutate: async ({ collectionId, favorited }) => {
+      // Optimistic update so the star flips immediately on click.
+      await queryClient.cancelQueries({
+        queryKey: ['/api/collection-favorites'],
+      });
+      const previous = queryClient.getQueryData<{ collectionIds: number[] }>([
+        '/api/collection-favorites',
+      ]);
+      queryClient.setQueryData<{ collectionIds: number[] }>(
+        ['/api/collection-favorites'],
+        (current) => {
+          const set = new Set(current?.collectionIds ?? []);
+          if (favorited) set.delete(collectionId);
+          else set.add(collectionId);
+          return { collectionIds: Array.from(set) };
+        },
+      );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(
+          ['/api/collection-favorites'],
+          context.previous,
+        );
+      }
+      toast({
+        title: 'Could not update favorite',
+        description: 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/collection-favorites'] });
     },
   });
 
@@ -814,10 +990,25 @@ export default function SandwichCollectionLog() {
     };
   };
 
-  // Determine if we're showing filtered data and get all data for calculations
-  const hasActiveFilters = Object.values(debouncedSearchFilters).some(
-    (v) => v && v.trim() !== ''
-  );
+  // Determine if we're showing filtered data and get all data for calculations.
+  // Include quick-filter chips — they filter the dataset the same way as search
+  // filters but live in separate state.
+  const hasActiveFilters =
+    quickFilter !== 'all' ||
+    Object.values(debouncedSearchFilters).some((v) => v && v.trim() !== '');
+
+  const quickFilterLabel =
+    quickFilter === 'host'
+      ? 'Host Collections'
+      : quickFilter === 'group'
+        ? 'Group Collections'
+        : quickFilter === 'thisMonth'
+          ? 'This Month'
+          : quickFilter === 'last30Days'
+            ? 'Last 30 Days'
+            : quickFilter === 'mine'
+              ? 'My Submissions'
+              : null;
 
   // Calculate current statistics to display
   // Priority: filtered collections from main query > global stats (only when no filters)
@@ -2381,42 +2572,139 @@ export default function SandwichCollectionLog() {
           </div>
         )}
 
-        {/* Global Search Field - Prominent placement at top */}
+        {/* Global Search Field - Prominent placement at top.
+            Includes a "?" affordance because the placeholder can't
+            comfortably list every searchable field. Hovering / tapping
+            the icon reveals the full set so users know they can search
+            by date range, group name, etc. — not just the three things
+            the placeholder names. */}
         <div className="mb-6">
-          <div className="relative max-w-md mx-auto">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Scan className="h-5 w-5 text-slate-400" />
-            </div>
-            <Input
-              data-testid="input-global-search"
-              type="text"
-              placeholder="Search collections (host names, groups, dates...)"
-              value={searchFilters.globalSearch}
-              onChange={(e) =>
-                setSearchFilters((prev) => ({
-                  ...prev,
-                  globalSearch: e.target.value,
-                }))
-              }
-              className="pl-10 pr-4 py-3 w-full border-2 border-slate-300 focus:border-blue-500 focus:ring-brand-primary-muted rounded-lg text-base"
-            />
-            {searchFilters.globalSearch && (
-              <button
-                data-testid="button-clear-global-search"
-                onClick={() =>
-                  setSearchFilters((prev) => ({ ...prev, globalSearch: '' }))
+          <div className="relative max-w-md mx-auto flex items-center gap-2">
+            <div className="relative flex-1">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Scan className="h-5 w-5 text-slate-400" />
+              </div>
+              <Input
+                data-testid="input-global-search"
+                type="text"
+                placeholder="Search hosts, organizations, submitters..."
+                value={searchFilters.globalSearch}
+                onChange={(e) =>
+                  setSearchFilters((prev) => ({
+                    ...prev,
+                    globalSearch: e.target.value,
+                  }))
                 }
-                className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                className="pl-10 pr-4 py-3 w-full border-2 border-slate-300 focus:border-blue-500 focus:ring-brand-primary-muted rounded-lg text-base"
+              />
+              {searchFilters.globalSearch && (
+                <button
+                  data-testid="button-clear-global-search"
+                  onClick={() =>
+                    setSearchFilters((prev) => ({ ...prev, globalSearch: '' }))
+                  }
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                >
+                  <X className="h-5 w-5 text-slate-400 hover:text-slate-600" />
+                </button>
+              )}
+            </div>
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="What can I search?"
+                  data-testid="button-search-help"
+                  className="flex-shrink-0 inline-flex items-center justify-center w-9 h-9 rounded-full text-slate-500 hover:bg-slate-100 hover:text-[#236383] transition-colors focus:outline-none focus:ring-2 focus:ring-brand-primary-muted"
+                >
+                  <HelpCircle className="w-5 h-5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                side="bottom"
+                align="end"
+                className="w-72 text-sm"
               >
-                <X className="h-5 w-5 text-slate-400 hover:text-slate-600" />
-              </button>
-            )}
+                <p className="font-semibold text-[#236383] mb-2">
+                  What can I search?
+                </p>
+                <p className="text-slate-600 mb-2 text-xs">
+                  This search box matches any of the fields below — partial
+                  matches work too.
+                </p>
+                <ul className="space-y-1 text-xs text-slate-700">
+                  <li>
+                    <span className="font-semibold">Host name</span> &nbsp;
+                    <span className="text-slate-500">e.g. Alpharetta</span>
+                  </li>
+                  <li>
+                    <span className="font-semibold">Organization</span> &nbsp;
+                    <span className="text-slate-500">e.g. Boy Scouts</span>
+                  </li>
+                  <li>
+                    <span className="font-semibold">Submitter</span> &nbsp;
+                    <span className="text-slate-500">person who logged it</span>
+                  </li>
+                  <li>
+                    <span className="font-semibold">Group name</span> &nbsp;
+                    <span className="text-slate-500">inside group breakdowns</span>
+                  </li>
+                  <li>
+                    <span className="font-semibold">Date</span> &nbsp;
+                    <span className="text-slate-500">
+                      try <code>2026</code>, <code>Jan 2026</code>, <code>1/15</code>
+                    </span>
+                  </li>
+                </ul>
+              </PopoverContent>
+            </Popover>
           </div>
           {searchFilters.globalSearch && (
             <p className="text-center text-base text-slate-600 mt-2">
-              Searching across host names, group names, and dates
+              Searching across hosts, organizations, submitters, group names, and dates
             </p>
           )}
+
+          {/* Quick-filter chips — one-tap shortcuts that compose with the
+              global search and advanced filters above. Each chip narrows the
+              current result set; selecting a different chip swaps the filter
+              rather than stacking (single-select). "All" is the default. */}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+            {(
+              [
+                { value: 'all', label: 'All' },
+                { value: 'host', label: 'Host Collections' },
+                { value: 'group', label: 'Group Collections' },
+                { value: 'thisMonth', label: 'This Month' },
+                { value: 'last30Days', label: 'Last 30 Days' },
+                { value: 'mine', label: 'My Submissions' },
+              ] as Array<{ value: typeof quickFilter; label: string }>
+            ).map(({ value, label }) => {
+              const isActive = quickFilter === value;
+              // Hide "My Submissions" if there's no signed-in user — clicking
+              // it would otherwise just produce an empty list.
+              if (value === 'mine' && !user?.id) return null;
+              return (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => {
+                    setQuickFilter(value);
+                    setCurrentPage(1); // Reset pagination so the user sees results from the top
+                  }}
+                  data-testid={`chip-quick-filter-${value}`}
+                  className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all ${
+                    isActive
+                      ? 'bg-[#007E8C] text-white border-[#007E8C] shadow-sm'
+                      : 'bg-white text-slate-700 border-slate-300 hover:border-[#007E8C] hover:text-[#007E8C]'
+                  }`}
+                  aria-pressed={isActive}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div className="flex flex-col gap-3 mb-4">
@@ -2430,7 +2718,9 @@ export default function SandwichCollectionLog() {
                   <span className="font-medium">
                     {currentStats.hostName
                       ? `Statistics for ${currentStats.hostName}`
-                      : 'Filtered Statistics'}
+                      : quickFilterLabel
+                        ? `Statistics for ${quickFilterLabel}`
+                        : 'Filtered Statistics'}
                   </span>
                 </div>
                 {currentStats.dateRange && (
@@ -2539,6 +2829,7 @@ export default function SandwichCollectionLog() {
                   trigger="hover"
                 >
                   <Button
+                    data-tour="add-collection"
                     onClick={() => setShowSubmitForm(!showSubmitForm)}
                     variant="default"
                     size="sm"
@@ -2868,7 +3159,7 @@ export default function SandwichCollectionLog() {
             )}
           </div>
         )}
-        <div className="space-y-3 sm:space-y-4">
+        <div className="space-y-2" data-tour="collections-table">
           {paginatedCollections.map((collection: SandwichCollection) => {
             const groupData = getGroupCollections(collection);
             const totalSandwiches = calculateTotal(collection);
@@ -2883,7 +3174,8 @@ export default function SandwichCollectionLog() {
             return (
               <div
                 key={collection.id}
-                className={`border-b py-4 px-3 hover:bg-slate-50 transition-colors ${
+                // py-4 → py-3 trims 8px per card; gap reduced inside.
+                className={`border-b py-3 px-3 hover:bg-slate-50 transition-colors ${
                   isSelected
                     ? 'bg-brand-primary-lighter'
                     : isInactiveHost
@@ -2891,8 +3183,9 @@ export default function SandwichCollectionLog() {
                       : ''
                 }`}
               >
-                {/* Responsive layout: vertical stack for all rows */}
-                <div className="flex flex-col gap-3">
+                {/* Responsive layout: vertical stack for all rows.
+                    gap-3 → gap-2 saves 4px per card across 3 row breaks. */}
+                <div className="flex flex-col gap-2">
                   {/* First Row: Checkbox, Date, Host */}
                   <div className="flex items-center gap-3 flex-wrap">
                     {/* Checkbox */}
@@ -2939,12 +3232,17 @@ export default function SandwichCollectionLog() {
                     </div>
                   </div>
 
-                  {/* Second Row: Individual & Groups (locked columns for alignment) */}
-                  <div className="flex flex-col gap-3 sm:grid sm:grid-cols-[160px_minmax(280px,1fr)] sm:min-h-[88px] md:gap-4 items-start ml-4 sm:ml-20 md:ml-28 lg:ml-32">
-                    {/* Individual - show placeholder to keep column alignment when empty */}
-                    <div className="w-full sm:min-w-[160px] sm:pl-3 md:pl-4">
-                      <div className="text-sm text-slate-500 mb-1 font-semibold uppercase tracking-wide">Individual</div>
-                      {collection.individualSandwiches > 0 ? (
+                  {/* Second Row: Individual & Group Event.
+                      Empty columns now collapse instead of reserving 64px of
+                      placeholder space, and the min-h-[88px] anchor is gone —
+                      content drives height. A record with only Individual or
+                      only Group Event no longer carries dead air in the other
+                      column. Saves roughly 64-88px on any single-type card. */}
+                  <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[160px_minmax(280px,1fr)] md:gap-4 items-start ml-4 sm:ml-20 md:ml-28 lg:ml-32">
+                    {/* Individual — render only when there's a value */}
+                    {collection.individualSandwiches > 0 && (
+                      <div className="w-full sm:min-w-[160px] sm:pl-3 md:pl-4">
+                        <div className="text-xs text-slate-500 mb-0.5 font-semibold uppercase tracking-wide">Individual</div>
                         <div className="text-base lg:text-lg font-bold">
                           {(() => {
                             const hasTypes = collection.individualDeli || collection.individualPbj || (collection as any).individualGeneric;
@@ -2960,23 +3258,27 @@ export default function SandwichCollectionLog() {
                             return collection.individualSandwiches;
                           })()}
                         </div>
-                      ) : (
-                        <div className="h-[64px] rounded border border-slate-200 bg-slate-50" aria-hidden="true" />
+                      </div>
+                    )}
+                    {/* If the Individual column is empty but Group Event is
+                        present, render an empty spacer ONLY in sm+ layouts so
+                        the CSS grid columns stay aligned. On mobile (single
+                        column) the spacer is unnecessary. */}
+                    {!(collection.individualSandwiches > 0) &&
+                      calculateGroupTotal(collection) > 0 &&
+                      groupData.length > 0 && (
+                        <div className="hidden sm:block" aria-hidden="true" />
                       )}
-                    </div>
 
-                    {/* Groups - inline breakdown when available; keeps its column even if Individuals missing */}
-                    <div className="w-full sm:min-w-[200px] sm:pl-3 md:pl-4">
-                      <div className="text-sm text-slate-500 mb-1 font-semibold uppercase tracking-wide">Groups</div>
-                      <div className="text-base lg:text-lg font-bold">
-                        {(() => {
-                          if (calculateGroupTotal(collection) <= 0 || groupData.length === 0) {
-                            return <div className="h-[64px] rounded border border-slate-200 bg-slate-50" aria-hidden="true" />;
-                          }
-
-                          return (
-                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                              {groupData.map((group: any, index: number) => {
+                    {/* Group Event — render only when there's data */}
+                    {calculateGroupTotal(collection) > 0 && groupData.length > 0 && (
+                      <div className="w-full sm:min-w-[200px] sm:pl-3 md:pl-4">
+                        <div className="text-xs text-slate-500 mb-0.5 font-semibold uppercase tracking-wide">Group Event</div>
+                        <div className="text-base lg:text-lg font-bold">
+                          {(() => {
+                            return (
+                              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                {groupData.map((group: any, index: number) => {
                                 const hasTypes = group.deli || group.pbj || group.generic;
                                 const colors = ['#236383', '#FBAD3F', '#007E8C', '#47B3CB'];
                                 const colorIndex = index % colors.length;
@@ -3012,74 +3314,156 @@ export default function SandwichCollectionLog() {
                         })()}
                       </div>
                     </div>
+                    )}
                   </div>
 
                   {/* Third Row: Total & Actions */}
                   <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 lg:gap-4 ml-4 sm:ml-20 md:ml-28 lg:ml-32">
-                    {/* Total */}
+                    {/* Total — slightly downsized so the card height drops
+                        without sacrificing legibility. text-xl on mobile,
+                        text-xl on desktop (down from text-2xl). */}
                     <div className="shrink-0 flex items-center gap-2 lg:flex-col lg:items-end lg:gap-0 justify-self-end">
                       <div className="text-xs text-slate-500 font-semibold">Total:</div>
-                      <div className="text-xl lg:text-2xl font-bold">{totalSandwiches}</div>
+                      <div className="text-lg lg:text-xl font-bold">{totalSandwiches}</div>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex items-center gap-1.5 shrink-0 justify-self-end">
-                      {collection.createdBy &&
-                        collection.createdByName && (
-                          <SendKudosButton
-                            recipientId={collection.createdBy}
-                            recipientName={collection.createdByName}
-                            contextType="task"
-                            contextId={collection.id.toString()}
-                            contextTitle={`${totalSandwiches} sandwiches from ${collection.hostName}`}
-                            size="sm"
-                            variant="outline"
-                            iconOnly={true}
-                            className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                    {/* Actions — each icon-only button is wrapped in a
+                        Tooltip so users who aren't used to icon-only
+                        interfaces get a hover label explaining what the
+                        button does (star = personal favorite, kudos =
+                        send recognition to the submitter, comment =
+                        message, pencil = edit, trash = delete). */}
+                    <TooltipProvider delayDuration={200}>
+                      <div className="flex items-center gap-1.5 shrink-0 justify-self-end">
+                        {/* Star = personal "notable" bookmark. Distinct
+                            from the kudos icon: this stays on the entry
+                            for the current user, not on the submitter. */}
+                        {(() => {
+                          const isFavorited = favoritedIds.has(collection.id);
+                          return (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={toggleFavoriteMutation.isPending}
+                                  onClick={() =>
+                                    toggleFavoriteMutation.mutate({
+                                      collectionId: collection.id,
+                                      favorited: isFavorited,
+                                    })
+                                  }
+                                  aria-label={
+                                    isFavorited
+                                      ? 'Remove from your favorites'
+                                      : 'Mark this entry as notable'
+                                  }
+                                  aria-pressed={isFavorited}
+                                  data-testid={`button-favorite-${collection.id}`}
+                                  className={`h-8 w-8 p-0 bg-white border-gray-300 ${
+                                    isFavorited
+                                      ? 'text-amber-500 hover:text-amber-600'
+                                      : 'text-gray-500 hover:text-amber-500'
+                                  } hover:bg-amber-50`}
+                                >
+                                  <Star
+                                    className={`w-4 h-4 ${isFavorited ? 'fill-amber-500' : ''}`}
+                                  />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {isFavorited
+                                  ? 'Remove from your favorites'
+                                  : 'Mark this entry as notable'}
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })()}
+                        {collection.createdBy &&
+                          collection.createdByName && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex">
+                                  <SendKudosButton
+                                    recipientId={collection.createdBy}
+                                    recipientName={collection.createdByName}
+                                    contextType="task"
+                                    contextId={collection.id.toString()}
+                                    contextTitle={`${totalSandwiches} sandwiches from ${collection.hostName}`}
+                                    size="sm"
+                                    variant="outline"
+                                    iconOnly={true}
+                                    className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                  />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                Send kudos to {collection.createdByName}
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setMessageCollection(collection)}
+                              aria-label="Message about this collection"
+                              className="h-8 w-8 p-0"
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            Message about this collection
+                          </TooltipContent>
+                        </Tooltip>
+                        {canEditCollection(user, collection) && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleEdit(collection)}
+                                aria-label="Edit this entry"
+                                className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>Edit this entry</TooltipContent>
+                          </Tooltip>
+                        )}
+                        {canDeleteCollection(user, collection) && (
+                          <ConfirmationDialog
+                            trigger={
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    aria-label="Delete this entry"
+                                    className="h-8 w-8 p-0 text-gray-600 hover:text-[#A31C41] hover:bg-red-50 bg-white border-gray-300"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Delete this entry</TooltipContent>
+                              </Tooltip>
+                            }
+                            title="Delete Collection Entry"
+                            description="Are you sure you want to delete this collection? You can undo this action within 5 seconds."
+                            confirmText="Delete"
+                            variant="destructive"
+                            onConfirm={() => handleDelete(collection.id)}
                           />
                         )}
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setMessageCollection(collection)}
-                        title="Message about this collection"
-                        className="h-8 w-8 p-0"
-                      >
-                        <MessageCircle className="w-4 h-4" />
-                      </Button>
-                      {canEditCollection(user, collection) && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(collection)}
-                          className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                      )}
-                      {canDeleteCollection(user, collection) && (
-                        <ConfirmationDialog
-                          trigger={
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-8 w-8 p-0 text-gray-600 hover:text-[#A31C41] hover:bg-red-50 bg-white border-gray-300"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          }
-                          title="Delete Collection Entry"
-                          description="Are you sure you want to delete this collection? You can undo this action within 5 seconds."
-                          confirmText="Delete"
-                          variant="destructive"
-                          onConfirm={() => handleDelete(collection.id)}
-                        />
-                      )}
-                    </div>
+                      </div>
+                    </TooltipProvider>
                   </div>
 
                   {/* Submission info - small footer detail */}
-                  <div className="mt-2 ml-4 sm:ml-20 md:ml-28 lg:ml-32 text-xs text-slate-500 leading-snug">
+                  <div className="mt-1 ml-4 sm:ml-20 md:ml-28 lg:ml-32 text-xs text-slate-500 leading-snug">
                     Submitted {formatSubmittedAt(collection.submittedAt)}
                     {collection.createdByName && (
                       <span className="ml-1 font-medium">

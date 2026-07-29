@@ -1,6 +1,7 @@
 import { Component, ReactNode, ErrorInfo } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, MessageSquareWarning } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { reportProblem } from '@/contexts/issue-report-context';
 import {
   Card,
   CardContent,
@@ -121,10 +122,10 @@ export class ErrorBoundary extends Component<Props, State> {
                   )}
                 </div>
               )}
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
                 <Button
                   onClick={this.handleReload}
-                  className="flex-1"
+                  className="flex-1 min-w-[120px]"
                   variant="outline"
                 >
                   <RefreshCw className="w-4 h-4 mr-2" />
@@ -132,9 +133,24 @@ export class ErrorBoundary extends Component<Props, State> {
                 </Button>
                 <Button
                   onClick={() => window.location.reload()}
-                  className="flex-1"
+                  className="flex-1 min-w-[120px]"
                 >
                   Refresh Page
+                </Button>
+                <Button
+                  variant="secondary"
+                  className="w-full sm:w-auto"
+                  onClick={() =>
+                    reportProblem({
+                      whatDoing: 'Using this section of the app',
+                      expectedOutcome: 'The page should load and work normally.',
+                      actualOutcome: this.state.error?.message || 'The page crashed.',
+                      pageLabel: typeof document !== 'undefined' ? document.title : undefined,
+                    })
+                  }
+                >
+                  <MessageSquareWarning className="w-4 h-4 mr-2" />
+                  Report this
                 </Button>
               </div>
             </CardContent>

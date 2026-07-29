@@ -128,7 +128,7 @@ export class BackgroundSyncService {
       
       await sendEmail({
         to: adminEmail,
-        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@sandwichproject.org',
+        from: process.env.SENDGRID_FROM_EMAIL || 'katie@thesandwichproject.org',
         subject: '🚨 CRITICAL: Event Requests Sync Service Stopped',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -449,7 +449,7 @@ Action Required:
       
       await sendEmail({
         to: adminEmail,
-        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@sandwichproject.org',
+        from: process.env.SENDGRID_FROM_EMAIL || 'katie@thesandwichproject.org',
         subject: '🚨 CRITICAL: Event Requests Sync Has Never Completed',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -554,7 +554,7 @@ Action Required:
       
       await sendEmail({
         to: adminEmail,
-        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@sandwichproject.org',
+        from: process.env.SENDGRID_FROM_EMAIL || 'katie@thesandwichproject.org',
         subject: '🚨 CRITICAL: Event Requests Sync Failing',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
@@ -641,7 +641,7 @@ This alert will not be sent again for ${this.ALERT_COOLDOWN_MINUTES} minutes unl
       
       await sendEmail({
         to: adminEmail,
-        from: process.env.SENDGRID_FROM_EMAIL || 'noreply@sandwichproject.org',
+        from: process.env.SENDGRID_FROM_EMAIL || 'katie@thesandwichproject.org',
         subject: '⚠️ WARNING: Event Requests Sync Stale',
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">

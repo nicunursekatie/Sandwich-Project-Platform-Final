@@ -7,9 +7,49 @@ import {
   validateSMSConfig,
 } from '../sms-service';
 import { logger } from '../utils/production-safe-logger';
-import { checkWeeklySubmissions } from '../weekly-monitoring';
+import {
+  checkWeeklySubmissions,
+  getWeekRange,
+  getExpectedHostLocations,
+} from '../weekly-monitoring';
+import { db } from '../db';
+import { sandwichCollections } from '@shared/schema';
+import { and, gte, lte, isNull, asc } from 'drizzle-orm';
 
 const router = Router();
+
+/**
+ * Placeholder/categorization host names that are NOT real weekly locations and
+ * should never appear in the submission grid. These are data-collection
+ * artifacts (e.g. historical group collections logged under a "Groups"
+ * pseudo-location). Compared lower-cased and trimmed.
+ */
+const NON_LOCATION_HOST_NAMES = new Set([
+  'groups',
+  'group',
+  'unassigned',
+  'unknown',
+  'unnamed groups',
+]);
+
+/**
+ * Loosely match a collection's free-text hostName against a host location name.
+ * Uses normalized equality first, then a guarded substring match (shorter side
+ * must be >= 4 chars) to tolerate variations like "East Cobb" vs
+ * "East Cobb/Roswell" without producing false positives on tiny names.
+ */
+function hostNameMatches(collectionHostName: string, locationName: string): boolean {
+  const a = (collectionHostName || '').toLowerCase().trim();
+  const b = (locationName || '').toLowerCase().trim();
+  if (!a || !b) return false;
+  if (a === b) return true;
+  const sa = a.replace(/[\/\-\s]/g, '');
+  const sb = b.replace(/[\/\-\s]/g, '');
+  if (!sa || !sb) return false;
+  if (sa === sb) return true;
+  const [shorter, longer] = sa.length <= sb.length ? [sa, sb] : [sb, sa];
+  return shorter.length >= 4 && longer.includes(shorter);
+}
 
 // Get SMS configuration status with enhanced health checks
 router.get('/sms-config', async (req, res) => {
@@ -183,17 +223,8 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
     const weekReports = [];
     const locationStats: { [location: string]: { submitted: number; missed: number } } = {};
 
-    // Get all expected locations
-    const expectedLocations = [
-      'East Cobb/Roswell',
-      'Dunwoody/PTC',
-      'Alpharetta',
-      'Sandy Springs',
-      'Intown/Druid Hills',
-      'Dacula',
-      'Flowery Branch',
-      'Collective Learning',
-    ];
+    // Get all expected locations (inactive/hidden hosts are excluded)
+    const expectedLocations = await getExpectedHostLocations();
 
     // Initialize stats for all locations
     expectedLocations.forEach((location) => {
@@ -211,8 +242,9 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
       endOfWeek.setDate(startOfWeek.getDate() + 6);
       endOfWeek.setHours(23, 59, 59, 999);
 
-      // Get submission status for this week
-      const submissionStatus = await checkWeeklySubmissions(i);
+      // Get submission status for this week (reuse expected locations to
+      // avoid a redundant hosts query per week)
+      const submissionStatus = await checkWeeklySubmissions(i, expectedLocations);
 
       // Update location stats
       submissionStatus.forEach((status: any) => {
@@ -280,6 +312,132 @@ router.get('/multi-week-report/:weeks', async (req, res) => {
   } catch (error) {
     logger.error('Error getting multi-week report:', error);
     res.status(500).json({ error: 'Failed to get multi-week report' });
+  }
+});
+
+// Get submission grid covering ALL host locations (rows) x weeks (columns)
+router.get('/grid-report/:weeks', async (req, res) => {
+  try {
+    const numWeeks = Math.min(
+      Math.max(parseInt(req.params.weeks, 10) || 12, 1),
+      52
+    );
+
+    // All host locations from the hosts table (active only by default)
+    const includeInactive = req.query.includeInactive === 'true';
+    const allHosts = await storage.getAllHosts();
+    const hostsToShow = allHosts
+      .filter((h: any) =>
+        includeInactive ? true : (h.status ?? 'active') === 'active'
+      )
+      // Exclude placeholder/categorization hosts that aren't real weekly
+      // locations (e.g. "Groups", "Unassigned", "Unknown") — these are data
+      // artifacts, not locations expected to submit a weekly log.
+      .filter((h: any) => !NON_LOCATION_HOST_NAMES.has(
+        String(h.name).toLowerCase().trim()
+      ))
+      .sort((a: any, b: any) =>
+        String(a.name).localeCompare(String(b.name))
+      );
+
+    // Wednesday-Tuesday week windows, matching the rest of monitoring.
+    // Index 0 = this week (most recent), so the last window is the oldest.
+    const weekWindows = Array.from({ length: numWeeks }, (_, i) => {
+      const { startDate, endDate } = getWeekRange(i);
+      return {
+        i,
+        startDate,
+        endDate,
+        startStr: startDate.toISOString().split('T')[0],
+        endStr: endDate.toISOString().split('T')[0],
+      };
+    });
+
+    // Fetch the whole span in a single query (ordered by date so the last
+    // match per host is the most recent), then bucket by week in memory —
+    // avoids one DB round-trip per week (up to 52).
+    const rangeStartStr = weekWindows[weekWindows.length - 1].startStr;
+    const rangeEndStr = weekWindows[0].endStr;
+    const allSubmissions = await db
+      .select({
+        hostName: sandwichCollections.hostName,
+        collectionDate: sandwichCollections.collectionDate,
+        individualSandwiches: sandwichCollections.individualSandwiches,
+      })
+      .from(sandwichCollections)
+      .where(
+        and(
+          gte(sandwichCollections.collectionDate, rangeStartStr),
+          lte(sandwichCollections.collectionDate, rangeEndStr),
+          isNull(sandwichCollections.deletedAt)
+        )
+      )
+      .orderBy(asc(sandwichCollections.collectionDate));
+
+    const weeks = weekWindows.map(({ i, startDate, endDate, startStr, endStr }) => {
+      // collectionDate is a YYYY-MM-DD string, so lexical comparison is safe
+      const submissions = allSubmissions.filter(
+        (s) => s.collectionDate >= startStr && s.collectionDate <= endStr
+      );
+
+      const submissionStatus = hostsToShow
+        // Skip weeks before a host existed so new locations don't get
+        // false "missing" marks (and depressed rates) for weeks that
+        // predate them. The grid renders an omitted host/week as no-data.
+        .filter((host: any) => {
+          if (!host.createdAt) return true;
+          return new Date(host.createdAt) <= endDate;
+        })
+        .map((host: any) => {
+          const matches = submissions.filter((s) =>
+            hostNameMatches(s.hostName, host.name)
+          );
+
+          // Dunwoody/PTC mirrors the weekly-monitoring rule: the week is
+          // only complete with 2+ logs that have individual sandwich counts.
+          const isDunwoody = String(host.name)
+            .toLowerCase()
+            .includes('dunwoody');
+          let hasSubmitted: boolean;
+          if (isDunwoody) {
+            const logsWithCounts = matches.filter(
+              (m) =>
+                typeof m.individualSandwiches === 'number' &&
+                m.individualSandwiches > 0
+            );
+            hasSubmitted = logsWithCounts.length >= 2;
+          } else {
+            hasSubmitted = matches.length > 0;
+          }
+
+          return {
+            location: host.name,
+            hasSubmitted,
+            lastSubmissionDate:
+              matches.length > 0
+                ? matches[matches.length - 1].collectionDate
+                : undefined,
+          };
+        });
+
+      const weekLabel =
+        i === 0 ? 'This Week' : i === 1 ? 'Last Week' : `${i} Weeks Ago`;
+
+      return {
+        weekRange: { startDate, endDate },
+        weekLabel,
+        submissionStatus,
+      };
+    });
+
+    res.json({
+      weeks,
+      totalHosts: hostsToShow.length,
+      totalWeeks: numWeeks,
+    });
+  } catch (error) {
+    logger.error('Error getting grid report:', error);
+    res.status(500).json({ error: 'Failed to get submission grid report' });
   }
 });
 

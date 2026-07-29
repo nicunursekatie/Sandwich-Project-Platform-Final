@@ -22,35 +22,25 @@ interface HelpBubbleProps {
 }
 
 interface Character {
-  name: string;
   avatar: string;
-  personality: string;
   color: string;
 }
 
 const characters: Record<string, Character> = {
   sandy: {
-    name: 'Sandy',
     avatar: '🥪',
-    personality: 'warm and encouraging',
     color: 'bg-yellow-50 border-yellow-200 text-yellow-800',
   },
   helper: {
-    name: 'Helper',
     avatar: '🤝',
-    personality: 'supportive and practical',
     color: 'bg-brand-primary-lighter border-brand-primary-border text-brand-primary-dark',
   },
   guide: {
-    name: 'Guide',
     avatar: '🧭',
-    personality: 'patient and informative',
     color: 'bg-green-50 border-green-200 text-green-800',
   },
   coordinator: {
-    name: 'Coordinator',
     avatar: '📋',
-    personality: 'organized and efficient',
     color: 'bg-purple-50 border-purple-200 text-purple-800',
   },
 };
@@ -117,30 +107,21 @@ export const HelpBubble: React.FC<HelpBubbleProps> = ({
           <Card
             className={`p-4 shadow-lg border-2 max-w-xs ${characterData.color}`}
           >
-            {/* Character Header */}
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-lg">{characterData.avatar}</span>
-              <div>
-                <h4 className="font-medium text-sm">{characterData.name}</h4>
-                <p className="text-xs opacity-75">
-                  {characterData.personality}
-                </p>
-              </div>
-              {trigger === 'click' && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsOpen(false)}
-                  className="ml-auto p-1 h-6 w-6"
-                >
-                  <X className="w-3 h-3" />
-                </Button>
-              )}
-            </div>
-
-            {/* Help Content */}
             <div className="space-y-2">
-              <h5 className="font-medium text-sm">{title}</h5>
+              <div className="flex items-start gap-2">
+                <span className="text-lg leading-none">{characterData.avatar}</span>
+                <h5 className="font-medium text-sm flex-1">{title}</h5>
+                {trigger === 'click' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsOpen(false)}
+                    className="ml-auto p-1 h-6 w-6 -mt-1"
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                )}
+              </div>
               <p className="text-sm leading-relaxed">{content}</p>
             </div>
           </Card>

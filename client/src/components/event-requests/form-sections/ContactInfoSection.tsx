@@ -59,17 +59,14 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
           {isCreateMode && (
             <div className="md:col-span-2">
               <Label htmlFor="manualEntrySource" className="text-sm font-semibold">
-                How did this request come in? <span className="text-red-500">*</span>
+                How did this request come in? <span className="text-slate-500 font-normal">(recommended)</span>
               </Label>
               <Select
                 value={formData.manualEntrySource || ''}
                 onValueChange={(value) => setFormData(prev => ({ ...prev, manualEntrySource: value }))}
               >
-                <SelectTrigger
-                  id="manualEntrySource"
-                  className={!formData.manualEntrySource ? 'border-red-300' : ''}
-                >
-                  <SelectValue placeholder="Select request source" />
+                <SelectTrigger id="manualEntrySource">
+                  <SelectValue placeholder="Select request source (optional)" />
                 </SelectTrigger>
                 <SelectContent className="z-[200]" position="popper" sideOffset={5}>
                   <SelectItem value="phone_call">Phone Call</SelectItem>
@@ -78,13 +75,12 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
                   <SelectItem value="social_media">Social Media DM</SelectItem>
                   <SelectItem value="in_person">In Person</SelectItem>
                   <SelectItem value="referral">Referral</SelectItem>
-                  <SelectItem value="website_form">Website Form (manual re-entry)</SelectItem>
                   <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
-              {!formData.manualEntrySource && (
-                <p className="text-xs text-red-500 mt-1">Required — record where this request came from</p>
-              )}
+              <p className="text-xs text-slate-500 mt-1">
+                Optional — you can save with just an org name or event date and fill contact details later.
+              </p>
             </div>
           )}
           <div>
@@ -109,19 +105,23 @@ export const ContactInfoSection: React.FC<ContactInfoSectionProps> = ({
             <Label htmlFor="contactEmail">Email</Label>
             <Input
               id="contactEmail"
-              type="email"
+              type="text"
+              inputMode="email"
+              autoComplete="email"
               value={formData.email || ''}
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-              placeholder="Enter email address"
+              placeholder="Enter email address (optional)"
             />
           </div>
           <div>
             <Label htmlFor="contactPhone">Phone</Label>
             <Input
               id="contactPhone"
+              type="tel"
+              autoComplete="tel"
               value={formData.phone || ''}
               onChange={(e) => setFormData(prev => ({ ...prev, phone: e.target.value }))}
-              placeholder="Enter phone number"
+              placeholder="Enter phone number (optional)"
             />
           </div>
           <div>

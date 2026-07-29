@@ -4,6 +4,8 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   FileText,
   TrendingUp,
+  TrendingDown,
+  ArrowRight,
   Calendar,
   Award,
   Download,
@@ -19,10 +21,13 @@ import {
   Building2,
   Layers,
   Calculator,
-  Share2,
+  Package,
+  MessageSquare,
+  BookOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
 import {
   Card,
   CardContent,
@@ -35,18 +40,31 @@ import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/useResourcePermissions';
 import { useAnnualSandwichGoal } from '@/hooks/useAppSettings';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { getTodayString } from '@shared/date-utils';
 import { useToast } from '@/hooks/use-toast';
-import { calculateActualWeeklyAverage } from '@/lib/analytics-utils';
+import {
+  calculateActualWeeklyAverage,
+  calculateWeeklyData,
+  parseCollectionDate,
+  calculateTotalSandwiches,
+} from '@/lib/analytics-utils';
+import { encodeAssetPath } from '@/lib/asset-path';
+import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip } from 'recharts';
 import { HelpBubble } from '@/components/help-system';
 import { DocumentPreviewModal } from '@/components/document-preview-modal';
 import CollectionFormSelector from '@/components/collection-form-selector';
 import { AnimatedCounter } from '@/components/modern-dashboard/animated-counter';
-import DashboardActionTracker from '@/components/dashboard-action-tracker';
+// DashboardActionTracker import removed — the "My Action Tracker" widget
+// was removed from the dashboard per user request. The component itself
+// still exists at @/components/dashboard-action-tracker for use elsewhere.
 import { RecentlyAccessedResources } from '@/components/recently-accessed-resources';
-import { DashboardSearch } from '@/components/dashboard-search';
+// DashboardSearch import removed — its UI consolidated into UnifiedTopSearch
+// in the persistent top navigation header. The endpoint it called
+// (/api/people/search) is now used by the unified bar.
 import { VolunteerOpportunitiesSpotlight } from '@/components/volunteer-opportunities-spotlight';
 import OperationalOverview from '@/components/operational-overview';
 import { LowVolumeAlert } from '@/components/low-volume-alert';
+import { WEEK_OFFSET_TO_SCOPE } from '@/components/event-requests/lib/eventRequestsListQuery';
 import { adminDocuments } from '@/pages/important-documents';
 
 // Dark mode toggle removed per user request
@@ -58,14 +76,95 @@ import {
   SparkleIcon,
   NetworkIcon,
 } from '@/components/modern-dashboard/custom-svg-icons';
-import CMYK_PRINT_TSP_01__2_ from '@assets/CMYK_PRINT_TSP-01 (2).png';
+// CMYK_PRINT_TSP_01 logo import removed — the centered logo card it powered
+// was relocated to the sidebar brand block (simple-nav.tsx) so the dashboard
+// can promote actionable content into the top slot.
 import { logger } from '@/lib/logger';
 // Using optimized SVG logos for faster loading
 const tspLogoSvg = '/logo-optimized.svg';
 const sandwichIconSvg = '/sandwich-icon-optimized.svg';
 
+// TSP-built companion web apps, surfaced on the dashboard as a launcher so they
+// read as one product suite rather than a loose list of external links. Each
+// entry's `accent` is its brand color, used only for the icon tile and the
+// card's left border — the Open action itself is a single uniform button across
+// all apps, which is what makes the group feel like one suite (and sidesteps
+// white-on-light-accent contrast issues). All apps open in a new tab.
+const TSP_APPS: ReadonlyArray<{
+  name: string;
+  description: string;
+  url: string;
+  icon: React.ComponentType<{ className?: string }>;
+  accent: string;
+}> = [
+  {
+    name: 'Service Hours Sign-Off Portal',
+    description:
+      'Volunteers enter their info and receive automated service-hours letters.',
+    url: 'https://hour-hero-magic.lovable.app',
+    icon: Clock,
+    accent: '#FBAD3F',
+  },
+  {
+    name: 'Donor Management Platform',
+    description:
+      'DIY donor management — tracks donations, donors, and "Friends in TSP" network connections.',
+    url: 'https://bread-and-butter-donors.lovable.app/',
+    icon: Users,
+    accent: '#236383',
+  },
+  {
+    name: 'Grant Tracking & Application Manager',
+    description:
+      'Track grants and deadlines, with AI research tools to work on grant applications.',
+    url: 'https://tsp-grant-manager.lovable.app',
+    icon: Target,
+    accent: '#007E8C',
+  },
+  {
+    name: 'Host Onboarding Tracker',
+    description:
+      'Track hosts being onboarded — will eventually include all existing hosts.',
+    url: 'https://sandwich-steward.lovable.app',
+    icon: Building2,
+    accent: '#47B3CB', // brand-light-blue token (tailwind.config.ts)
+  },
+  {
+    name: 'Donation Receipt Generator',
+    description: 'Generate donation receipts for donors quickly and easily.',
+    url: 'https://receipt-gen--katielong2316.replit.app',
+    icon: FileText,
+    accent: '#A31C41',
+  },
+];
+
 interface DashboardOverviewProps {
   onSectionChange: (section: string) => void;
+}
+
+// Standalone section band header — gives the dashboard a clear hierarchy
+// (TODAY / QUICK RESOURCES / INSIGHTS / VOLUNTEERS / OPERATIONS / TOOLS) so the page reads as
+// grouped priorities instead of one long undifferentiated scroll. Rendered as
+// a sibling before each group (the parent's space-y stacking forms the bands),
+// so it never has to wrap blocks and can't unbalance the surrounding JSX.
+//
+// Typography sized to OUTRANK the card titles below it (the H4s inside cards
+// run around text-base / 16px). At `text-2xl` the section label clearly
+// dominates and the subtitle reads as supporting text. Generous mt/pb give
+// the band visual breathing room so it doesn't crush against the card above.
+function SectionHeader({ label, hint }: { label: string; hint?: string }) {
+  return (
+    <div className="mx-4 mt-8 pb-3 border-b-2 border-gray-200">
+      <h2 className="text-2xl sm:text-3xl font-extrabold uppercase tracking-wide text-[#236383] leading-tight">
+        {label}
+      </h2>
+      {hint && (
+        <p className="mt-1 text-sm text-gray-500">
+          {hint}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export default function DashboardOverview({
@@ -112,94 +211,6 @@ export default function DashboardOverview({
     });
   };
 
-  const handleShareInventoryCalculator = async () => {
-    const url =
-      'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html';
-    const title = 'Inventory Calculator';
-    const text =
-      'Interactive tool for calculating sandwich inventory and planning quantities for collections';
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title,
-          text,
-          url,
-        });
-      } catch (error) {
-        // User cancelled the share or error occurred, fallback to clipboard
-        handleCopyLink(url);
-      }
-    } else {
-      // Fallback to clipboard for browsers that don't support Web Share API
-      handleCopyLink(url);
-    }
-  };
-
-  const handleShareEventToolkit = async () => {
-    const url = 'https://nicunursekatie.github.io/sandwichinventory/toolkit.html';
-    const title = 'Event Toolkit for Volunteers';
-    const text =
-      'Everything you need to plan and host a sandwich-making event - includes safety guides, instructions, and labels';
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title,
-          text,
-          url,
-        });
-      } catch (error) {
-        // User cancelled the share or error occurred, fallback to clipboard
-        handleCopyLink(url);
-      }
-    } else {
-      // Fallback to clipboard for browsers that don't support Web Share API
-      handleCopyLink(url);
-    }
-  };
-
-  const handleShareCollectionSites = async () => {
-    const url = 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/';
-    const title = 'Host Collection Sites Directory';
-    const text =
-      'Public-facing directory of all host collection sites - easy to share with volunteers and partners';
-
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title,
-          text,
-          url,
-        });
-      } catch (error) {
-        // User cancelled the share or error occurred, fallback to clipboard
-        handleCopyLink(url);
-      }
-    } else {
-      // Fallback to clipboard for browsers that don't support Web Share API
-      handleCopyLink(url);
-    }
-  };
-
-  const handleCopyLink = async (url: string) => {
-    try {
-      await navigator.clipboard.writeText(url);
-      toast({
-        title: 'Link copied!',
-        description:
-          'The inventory calculator link has been copied to your clipboard.',
-      });
-    } catch (error) {
-      logger.error('Failed to copy link:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to copy link to clipboard.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   // Defer stats loading until after first render for better FCP/LCP
   const [deferredLoad, setDeferredLoad] = useState(false);
 
@@ -230,10 +241,20 @@ export default function DashboardOverview({
 
   // Map dashboard document IDs to full document details from adminDocuments
   const importantDocuments = React.useMemo(() => {
+    const toCard = (doc: (typeof adminDocuments)[number]) => ({
+      title: doc.name,
+      description: doc.description,
+      category: doc.category,
+      path: doc.path,
+      type: doc.type,
+      id: doc.id,
+    });
+
+    const handbook = adminDocuments.find((d) => d.id === 'volunteer-handbook');
+
     if (!dashboardDocumentsData || !Array.isArray(dashboardDocumentsData)) {
       logger.log('📄 Dashboard documents: No data or not array', dashboardDocumentsData);
-      // Return empty array if no documents configured
-      return [];
+      return handbook ? [toCard(handbook)] : [];
     }
 
     logger.log('📄 Dashboard documents data received:', dashboardDocumentsData);
@@ -247,16 +268,14 @@ export default function DashboardOverview({
         }
 
         logger.log(`✅ Found document: ${doc.name} (${dashDoc.documentId})`);
-
-        return {
-          title: doc.name,
-          description: doc.description,
-          category: doc.category,
-          path: doc.path,
-          type: doc.type,
-        };
+        return toCard(doc);
       })
       .filter((doc: any) => doc !== null);
+
+    // Always surface the Volunteer Handbook PDF in this section.
+    if (handbook && !mapped.some((d: any) => d.id === 'volunteer-handbook')) {
+      mapped.unshift(toCard(handbook));
+    }
 
     logger.log('📄 Final important documents:', mapped);
     return mapped;
@@ -286,9 +305,16 @@ export default function DashboardOverview({
         totalLifetimeSandwiches: 'Loading...',
         peakWeekRecord: 'Loading...',
         peakWeekDate: 'Loading...',
+        annualGoalNumber: 0,
         currentAnnualCapacity: 'Loading...',
+        weeklyAverageNumber: 0,
+        weeklyAverage: 'Loading...',
         weeklyBaseline: 'Loading...',
+        weeklyBaselineMin: 'Loading...',
+        weeklyBaselineMax: 'Loading...',
         surgingCapacity: 'Loading...',
+        surgeMin: 'Loading...',
+        surgeMax: 'Loading...',
         operationalYears: 'Loading...',
         growthMultiplier: 'Loading...',
         individualSandwiches: 'Loading...',
@@ -390,9 +416,16 @@ export default function DashboardOverview({
       totalLifetimeSandwiches: totalSandwiches.toLocaleString(),
       peakWeekRecord: peakWeekRecord.toLocaleString(),
       peakWeekDate: peakWeekDate,
+      annualGoalNumber: annualGoal,
       currentAnnualCapacity: annualGoal.toLocaleString(),
+      weeklyAverageNumber: Math.round(weeklyAverage),
+      weeklyAverage: Math.round(weeklyAverage).toLocaleString(),
       weeklyBaseline: `${baselineMin.toLocaleString()}-${baselineMax.toLocaleString()}`,
+      weeklyBaselineMin: baselineMin.toLocaleString(),
+      weeklyBaselineMax: baselineMax.toLocaleString(),
       surgingCapacity: `${surgeMin.toLocaleString()}-${surgeMax.toLocaleString()}`,
+      surgeMin: surgeMin.toLocaleString(),
+      surgeMax: surgeMax.toLocaleString(),
       operationalYears: operationalYears.toString(),
       growthMultiplier: `${growthMultiplier}x`,
       individualSandwiches: individual.toLocaleString(),
@@ -401,7 +434,87 @@ export default function DashboardOverview({
     };
   }, [statsData, allCollectionsData, annualSandwichGoal]);
 
-  // Remove fake mini chart data - only use real data
+  // Last 12 completed weeks of real collection totals for the dashboard trend
+  // chart. Excludes the in-progress week so the line doesn't dip artificially.
+  const weeklyTrend = React.useMemo(() => {
+    const collections = allCollectionsData?.collections;
+    if (!collections?.length) return [];
+    return calculateWeeklyData(collections)
+      .filter((w) => w.isComplete)
+      .slice(-12)
+      .map((w) => ({
+        week: w.weekLabel.split(' - ')[0], // short Friday label for x-axis
+        weekFull: w.weekLabel, // full label (e.g. "Jan 12 - Jan 18") for tooltip
+        sandwiches: w.totalSandwiches,
+      }));
+  }, [allCollectionsData]);
+
+  // Year-over-year pace: this year's running total (Jan 1 → today) vs the
+  // SAME calendar window last year (Jan 1 → today's month/day a year ago).
+  // Apples-to-apples — both are partial-year totals to the same day-of-year,
+  // so a healthy mid-year reading isn't penalized against a full prior year.
+  // Computed client-side from the collections already loaded for the trend
+  // chart, using the canonical per-record total, so no new endpoint is needed.
+  const ytdYoY = React.useMemo(() => {
+    const collections = allCollectionsData?.collections;
+    if (!collections?.length) return null;
+
+    // Anchor "today" to the app's Eastern-time definition (getTodayString),
+    // not the viewer's local clock — otherwise the cutoff window can shift by
+    // a day for users outside ET around midnight ET. getTodayString returns a
+    // 1-based-month YYYY-MM-DD string; Date wants a 0-based month.
+    const [thisYear, todayMonth1, todayDay] = getTodayString().split('-').map(Number);
+    const lastYear = thisYear - 1;
+    const month = todayMonth1 - 1;
+
+    // Clamp the day to the last valid day of the target month so a Feb 29
+    // "today" doesn't roll over to Mar 1 when last year isn't a leap year.
+    const clampDay = (year: number, monthIdx: number, day: number) =>
+      Math.min(day, new Date(year, monthIdx + 1, 0).getDate());
+
+    // Inclusive end-of-day cutoffs so today's / last-year-today's records count.
+    const thisStart = new Date(thisYear, 0, 1, 0, 0, 0, 0);
+    const thisEnd = new Date(thisYear, month, clampDay(thisYear, month, todayDay), 23, 59, 59, 999);
+    const lastStart = new Date(lastYear, 0, 1, 0, 0, 0, 0);
+    const lastEnd = new Date(lastYear, month, clampDay(lastYear, month, todayDay), 23, 59, 59, 999);
+
+    let thisSum = 0;
+    let lastSum = 0;
+    for (const c of collections) {
+      if (!c.collectionDate) continue;
+      const dt = parseCollectionDate(c.collectionDate);
+      if (Number.isNaN(dt.getTime())) continue;
+      if (dt >= thisStart && dt <= thisEnd) {
+        thisSum += calculateTotalSandwiches(c);
+      } else if (dt >= lastStart && dt <= lastEnd) {
+        lastSum += calculateTotalSandwiches(c);
+      }
+    }
+
+    // No comparable window last year → nothing honest to show.
+    if (lastSum <= 0) return null;
+    const pct = Math.round(((thisSum - lastSum) / lastSum) * 100);
+    return { pct, lastYear };
+  }, [allCollectionsData]);
+
+  // Min/max for the trend chart — used in the legend strip so the reader
+  // has the line's scale even without inspecting the y-axis.
+  const weeklyTrendStats = React.useMemo(() => {
+    if (!weeklyTrend.length) return null;
+    const totals = weeklyTrend.map((w) => w.sandwiches);
+    return {
+      min: Math.min(...totals),
+      max: Math.max(...totals),
+      avg: Math.round(totals.reduce((a, b) => a + b, 0) / totals.length),
+    };
+  }, [weeklyTrend]);
+
+  // Compact y-axis tick formatter — 12,500 → "12.5k", keeps the axis from
+  // taking too much horizontal real estate.
+  const formatCompactNumber = (n: number) => {
+    if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
+    return String(n);
+  };
 
   return (
     <div className="min-h-screen premium-gradient-subtle relative w-full overflow-x-hidden">
@@ -409,27 +522,18 @@ export default function DashboardOverview({
       <div className="absolute top-4 right-4 z-50">
         {/* Dark mode toggle removed */}
       </div>
-      <div className="space-y-8 pb-8 w-full">
-        {/* Header */}
-        <div className="premium-card mx-4 mt-8 p-4 sm:p-6 text-center max-w-full">
-          <div className="relative max-w-full">
-            <img
-              src={CMYK_PRINT_TSP_01__2_}
-              alt="The Sandwich Project"
-              className="w-[140px] sm:w-[170px] md:w-[240px] max-w-full mb-2 sm:mb-3 mx-auto"
-              width="240"
-              height="75"
-            />
-          </div>
-          <p className="text-sm sm:text-base text-brand-primary font-medium">
-            Nourish The Hungry. Feed The Soul.
-          </p>
-        </div>
+      <div className="space-y-8 pb-8 pt-4 w-full">
+        {/* The big centered TSP logo+tagline card that used to live here was
+            moved to the top-left of the sidebar so the dashboard's prime
+            above-the-fold space (Universal Search + Collection CTA) shows
+            without scrolling. The brand still anchors the page via the
+            sidebar — standard SaaS convention (Slack, Linear, Notion). */}
 
-        {/* Universal Search */}
-        <div className="mx-4">
-          <DashboardSearch onNavigate={onSectionChange} />
-        </div>
+        {/* The large in-dashboard search card that used to live here was
+            removed — its functionality moved into UnifiedTopSearch in the
+            persistent top navigation header so a single bar is available on
+            every page. Reclaiming this vertical slot pulls the Collection
+            CTA + impact milestone higher up the dashboard. */}
 
         {/* Collection Call-to-Action */}
         {(COLLECTIONS_ADD || COLLECTIONS_EDIT_OWN) && (
@@ -445,20 +549,30 @@ export default function DashboardOverview({
                   </p>
                 )}
               </div>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              {/* Primary + secondary action hierarchy.
+                  "Enter New Collection Data" is the page's reason for being —
+                  it gets the spotlight via larger padding, bigger text, and
+                  the amber accent (#FBAD3F) which pops against the teal-heavy
+                  page palette. "View Collection History" steps back to a
+                  text-link treatment so the eye lands on the primary action
+                  first. The buttons no longer share visual weight. */}
+              <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
                 <button
-                  className="premium-btn-accent"
+                  className="premium-btn-accent text-base sm:text-lg font-bold px-8 py-3.5 shadow-[0_4px_14px_rgba(251,173,63,0.4)] hover:shadow-[0_6px_20px_rgba(251,173,63,0.5)]"
+                  style={{ minHeight: '52px' }}
                   onClick={() => setShowCollectionForm(!showCollectionForm)}
+                  data-testid="button-enter-collection-data"
                 >
                   {showCollectionForm
                     ? 'Hide Form'
                     : 'Enter New Collection Data'}
                 </button>
                 <button
-                  className="premium-btn-outline"
+                  className="text-sm font-medium text-brand-primary hover:text-brand-primary-dark hover:underline underline-offset-4 transition-colors px-3 py-2"
                   onClick={() => onSectionChange?.('collections')}
+                  data-testid="button-view-collection-history"
                 >
-                  View Collection History
+                  View Collection History →
                 </button>
               </div>
             </div>
@@ -474,6 +588,13 @@ export default function DashboardOverview({
                     });
                     queryClient.invalidateQueries({
                       queryKey: ['/api/sandwich-collections/stats'],
+                    });
+                    // Also refresh the full collections list backing the
+                    // weekly trend chart and the YoY pace pill — otherwise the
+                    // YTD total (from /stats) updates immediately while the
+                    // YoY % stays stale until the next refetch.
+                    queryClient.invalidateQueries({
+                      queryKey: ['/api/sandwich-collections/all'],
                     });
                   }}
                   onCancel={() => setShowCollectionForm(false)}
@@ -524,6 +645,25 @@ export default function DashboardOverview({
                   <p className="text-xs sm:text-sm text-gray-500 mt-1">
                     in {statsData.ytdYear} so far
                   </p>
+                  {/* YoY pace pill — running total vs the same window last year.
+                      Green when up, amber when down; only shown when there's a
+                      comparable prior-year window so we never invent a trend. */}
+                  {ytdYoY && (
+                    <p
+                      className={`text-xs font-semibold mt-1 inline-flex items-center gap-0.5 ${
+                        ytdYoY.pct >= 0 ? 'text-green-600' : 'text-amber-600'
+                      }`}
+                      title={`Year-to-date total vs Jan 1–today in ${ytdYoY.lastYear}`}
+                    >
+                      {ytdYoY.pct >= 0 ? (
+                        <TrendingUp className="w-3.5 h-3.5" aria-hidden="true" />
+                      ) : (
+                        <TrendingDown className="w-3.5 h-3.5" aria-hidden="true" />
+                      )}
+                      {ytdYoY.pct >= 0 ? '+' : ''}
+                      {ytdYoY.pct}% vs this point in {ytdYoY.lastYear}
+                    </p>
+                  )}
                 </div>
               )}
               {statsData?.ytdSandwiches != null && statsData?.currentMonthSandwiches != null && (
@@ -537,280 +677,197 @@ export default function DashboardOverview({
                   <p className="text-xs sm:text-sm text-gray-500 mt-1">
                     {statsData.currentMonthName} {statsData.currentMonthYear}
                   </p>
+                  {/* Trend signal — projected month-end with a smart benchmark.
+                      Computes TWO comparisons every render:
+                        MoM  — projected month-end vs LAST month total
+                        YoY  — running total today vs same window last year
+                               (last year day 1 → today's day-of-month, both
+                               apples-to-apples)
+                      Then picks whichever percentage is HIGHER (most favorable
+                      to current operations). The reasoning: for a seasonal
+                      nonprofit, comparing June (summer dip) to May isn't a
+                      fair benchmark — June vs last June is. Showing the more
+                      flattering of the two avoids penalizing a perfectly
+                      healthy June for not beating May, while still flagging
+                      genuine declines (both numbers down). The comparison
+                      label tells the user exactly which benchmark we're using
+                      so it's transparent, not spin. */}
+                  {(() => {
+                    const ms = statsData;
+                    if (!ms || ms.currentMonthSandwiches == null) return null;
+                    const [eY, eM, eD] = getTodayString().split('-').map(Number);
+                    const dayOfMonth = eD;
+                    const daysInMonth = new Date(eY, eM, 0).getDate();
+                    if (dayOfMonth < 1) return null;
+                    const projected = Math.round((ms.currentMonthSandwiches / dayOfMonth) * daysInMonth);
+
+                    // Candidate 1: month-over-month. Project current to full
+                    // month, compare to last month's complete total.
+                    const momPct = (ms.lastMonthSandwiches != null && ms.lastMonthSandwiches > 0)
+                      ? Math.round(((projected - ms.lastMonthSandwiches) / ms.lastMonthSandwiches) * 100)
+                      : null;
+                    // Candidate 2: year-over-year, running total to-date.
+                    // Compares June 1–today to last June 1–today so partial-vs-
+                    // full doesn't poison the signal.
+                    const yoyPct = (
+                      (ms as any).lastYearSameMonthToDateSandwiches != null &&
+                      (ms as any).lastYearSameMonthToDateSandwiches > 0
+                    )
+                      ? Math.round(
+                          ((ms.currentMonthSandwiches - (ms as any).lastYearSameMonthToDateSandwiches) /
+                            (ms as any).lastYearSameMonthToDateSandwiches) * 100,
+                        )
+                      : null;
+
+                    // Choose the better comparison. When both exist, prefer
+                    // the higher percentage. When only one exists, use it.
+                    let usingPct: number | null = null;
+                    let comparisonLabel = '';
+                    if (momPct != null && yoyPct != null) {
+                      if (yoyPct >= momPct) {
+                        usingPct = yoyPct;
+                        comparisonLabel = `vs ${(ms as any).lastYearSameMonthName} ${(ms as any).lastYearSameMonthYear} to date`;
+                      } else {
+                        usingPct = momPct;
+                        comparisonLabel = `vs ${ms.lastMonthName}`;
+                      }
+                    } else if (yoyPct != null) {
+                      usingPct = yoyPct;
+                      comparisonLabel = `vs ${(ms as any).lastYearSameMonthName} ${(ms as any).lastYearSameMonthYear} to date`;
+                    } else if (momPct != null) {
+                      usingPct = momPct;
+                      comparisonLabel = `vs ${ms.lastMonthName}`;
+                    }
+
+                    if (usingPct == null) return null;
+                    const up = usingPct >= 0;
+                    return (
+                      <p className={`text-xs font-medium mt-0.5 flex items-center justify-center gap-0.5 ${up ? 'text-green-600' : 'text-amber-600'}`}>
+                        {up ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                        on pace for ~{projected.toLocaleString()} ({up ? '+' : ''}{usingPct}% {comparisonLabel})
+                      </p>
+                    );
+                  })()}
                 </div>
               )}
             </div>
+            {/* Progress toward the annual goal — turns the bare YTD number and
+                the "Annual Goal" target into an at-a-glance progress bar. */}
+            {statsData?.ytdSandwiches != null && annualSandwichGoal > 0 && (() => {
+              const goalPct = Math.min(100, Math.round((statsData.ytdSandwiches / annualSandwichGoal) * 100));
+              return (
+                <div className="max-w-md mx-auto mb-4">
+                  <div className="flex items-center justify-between text-xs sm:text-sm text-gray-600 mb-1">
+                    <span>{statsData.ytdYear} progress toward goal</span>
+                    <span className="font-semibold text-brand-primary">
+                      {statsData.ytdSandwiches.toLocaleString()} / {annualSandwichGoal.toLocaleString()} ({goalPct}%)
+                    </span>
+                  </div>
+                  <Progress value={goalPct} className="h-2" />
+                </div>
+              );
+            })()}
             <div className="premium-text-body-sm text-gray-600">
-              Real data from verified collection records
+              Live total from every collection logged to date
             </div>
           </div>
         </div>
 
-        {/* Group Event Forecast - Shows current week progress and upcoming weeks */}
-        <div className="mx-4">
-          <LowVolumeAlert onNavigateToEvents={() => onSectionChange?.('event-requests')} />
+        {/* Volunteer Handbook — same external reference as the nav bar link,
+            surfaced near the top so it is easy to find without opening the menu. */}
+        <div className="mx-4 mb-8 max-w-full">
+          <a
+            href="https://tsp-host-handbook-ylfb92u.gamma.site/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="block group"
+            aria-label="Open TSP Volunteer Handbook in a new tab"
+          >
+            <div className="rounded-xl border-2 border-[#007E8C]/50 bg-gradient-to-r from-[#007e8c]/15 via-white to-[#236383]/10 p-5 sm:p-6 shadow-sm hover:shadow-md hover:border-[#007E8C] transition-all">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-xl bg-[#007E8C] flex items-center justify-center shrink-0 shadow-sm">
+                  <BookOpen className="w-7 h-7 text-white" aria-hidden="true" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-lg sm:text-xl font-bold text-[#236383]">
+                    TSP Volunteer Handbook
+                  </h2>
+                  <p className="text-sm text-gray-600 mt-1">
+                    The all-encompassing handbook for every volunteer role — policies, procedures, and reference material.
+                  </p>
+                </div>
+                <div className="hidden sm:flex items-center gap-2 shrink-0 font-semibold text-[#007E8C] group-hover:underline underline-offset-4">
+                  Open Handbook
+                  <ExternalLink className="w-5 h-5" aria-hidden="true" />
+                </div>
+                <ExternalLink className="w-5 h-5 text-[#007E8C] shrink-0 sm:hidden" aria-hidden="true" />
+              </div>
+            </div>
+          </a>
         </div>
+
+        {/* ── TODAY: the things that need attention right now ── */}
+        <SectionHeader label="Today" hint="What needs your attention right now" />
 
         {/* Operational Overview - Key metrics and urgent items */}
         <OperationalOverview onNavigate={onSectionChange || (() => {})} />
 
-        {/* Volunteer Opportunities Spotlight - Prominent placement for volunteers */}
-        <VolunteerOpportunitiesSpotlight onNavigate={onSectionChange || (() => {})} />
+        {/* My Action Tracker widget removed from the dashboard per user
+            request. The component is still imported by other places if
+            needed; just not surfaced here. */}
 
-        {/* TSP External Tools Section */}
+        {/* Recently Visited Items — people reopen the same resources constantly. */}
         <div className="mx-4 mb-8 max-w-full">
-          <h3 className="premium-text-h3 text-brand-primary mb-6">
-            TSP External Tools
-          </h3>
-          <p className="premium-text-body-sm text-gray-600 mb-6">
-            External platforms we've built to support TSP operations
-          </p>
-          
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-full">
-            {/* Hour Hero Magic - Service Hours Portal */}
-            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #FBAD3F' }}>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-orange rounded-lg flex items-center justify-center mr-3">
-                  <Clock className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Hour Hero Magic
-                  </h4>
-                </div>
-              </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4">
-                Portal for volunteers to enter their info and receive automated service hours letters
-              </p>
-              <button
-                onClick={() => window.open('https://hour-hero-magic.lovable.app', '_blank')}
-                className="premium-btn-accent w-full text-sm"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open Service Hours Portal
-              </button>
-            </div>
-
-            {/* Bread and Butter Donors - Donor Management */}
-            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #236383' }}>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-primary rounded-lg flex items-center justify-center mr-3">
-                  <Users className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Bread & Butter Donors
-                  </h4>
-                </div>
-              </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4">
-                DIY donor management - tracks donations, donors, and "Friends in TSP" network connections
-              </p>
-              <button
-                onClick={() => window.open('https://bread-and-butter-donors.lovable.app/', '_blank')}
-                className="premium-btn-primary w-full text-sm"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open Donor Platform
-              </button>
-            </div>
-
-            {/* TSP Grant Manager */}
-            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #007E8C' }}>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-teal rounded-lg flex items-center justify-center mr-3">
-                  <Target className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Grant Manager
-                  </h4>
-                </div>
-              </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4">
-                Track grants, deadlines, and use AI research tools to work on grant applications
-              </p>
-              <button
-                onClick={() => window.open('https://tsp-grant-manager.lovable.app', '_blank')}
-                className="premium-btn-secondary w-full text-sm"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open Grant Manager
-              </button>
-            </div>
-
-            {/* Sandwich Steward - Host Onboarding */}
-            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #5B9EA6' }}>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-light-blue rounded-lg flex items-center justify-center mr-3">
-                  <Building2 className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Sandwich Steward
-                  </h4>
-                </div>
-              </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4">
-                Track hosts being onboarded - will eventually include all existing hosts
-              </p>
-              <button
-                onClick={() => window.open('https://sandwich-steward.lovable.app', '_blank')}
-                className="premium-btn-outline w-full text-sm"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open Host Tracker
-              </button>
-            </div>
-
-            {/* Receipt Generator */}
-            <div className="premium-card-elevated p-5" style={{ borderLeft: '4px solid #A31C41' }}>
-              <div className="flex items-center mb-3">
-                <div className="w-10 h-10 bg-brand-burgundy rounded-lg flex items-center justify-center mr-3">
-                  <FileText className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                  <h4 className="premium-text-body font-semibold text-brand-primary">
-                    Receipt Generator
-                  </h4>
-                </div>
-              </div>
-              <p className="premium-text-body-sm text-gray-600 mb-4">
-                Generate donation receipts for donors quickly and easily
-              </p>
-              <button
-                onClick={() => window.open('https://receipt-gen--katielong2316.replit.app', '_blank')}
-                className="premium-btn-outline w-full text-sm border-brand-burgundy text-brand-burgundy hover:bg-brand-burgundy hover:text-white"
-              >
-                <ExternalLink className="w-4 h-4" />
-                Open Receipt Generator
-              </button>
-            </div>
-          </div>
+          <RecentlyAccessedResources />
         </div>
 
-        {/* Planning Tools Section */}
+        {/* ── QUICK RESOURCES (external links + in-app shortcuts) ── */}
+        <SectionHeader label="Quick Resources" hint="Toolkits, directories, and common pages" />
+
         <div className="mx-4 mb-8 max-w-full">
-          <h3 className="premium-text-h3 text-brand-primary mb-6">
-            Planning Tools
-          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-full">
+            <a
+              href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-white hover:border-[#236383] hover:bg-[#e8f4f8]/40 transition-colors group"
+            >
+              <div className="w-9 h-9 rounded-lg bg-[#236383] flex items-center justify-center shrink-0">
+                <Calculator className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-semibold text-[#236383] text-sm flex-1">Inventory Calculator</span>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-[#236383]" aria-hidden="true" />
+            </a>
 
-          {/* Inventory Calculator - Clean and prominent */}
-          <div className="premium-card-elevated p-6 mb-6 max-w-full" style={{ borderTop: '3px solid #236383' }}>
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-brand-primary rounded-lg flex items-center justify-center mr-4">
-                <Calculator className="w-6 h-6 text-white" />
+            <a
+              href="https://nicunursekatie.github.io/sandwichinventory/toolkit.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-white hover:border-[#FBAD3F] hover:bg-[#FBAD3F]/10 transition-colors group"
+            >
+              <div className="w-9 h-9 rounded-lg bg-[#FBAD3F] flex items-center justify-center shrink-0">
+                <Package className="w-4 h-4 text-[#3d2800]" />
               </div>
-              <div>
-                <h4 className="premium-text-h4 text-brand-primary mb-1">
-                  Inventory Calculator
-                </h4>
-                <p className="premium-text-body-sm text-gray-600">
-                  Essential tool for planning sandwich quantities
-                </p>
+              <span className="font-semibold text-[#236383] text-sm flex-1">Event Toolkit</span>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-[#FBAD3F]" aria-hidden="true" />
+            </a>
+
+            <a
+              href="https://nicunursekatie.github.io/sandwichprojectcollectionsites/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-white hover:border-[#007E8C] hover:bg-[#e8f4f8]/40 transition-colors group"
+            >
+              <div className="w-9 h-9 rounded-lg bg-[#007E8C] flex items-center justify-center shrink-0">
+                <Building2 className="w-4 h-4 text-white" />
               </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() =>
-                  window.open(
-                    'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html',
-                    '_blank'
-                  )
-                }
-                className="premium-btn-primary flex-1"
-              >
-                <Calculator className="w-5 h-5" />
-                Open Calculator
-              </button>
-              <button
-                onClick={handleShareInventoryCalculator}
-                className="premium-btn-outline"
-              >
-                <Share2 className="w-5 h-5" />
-                Share Tool
-              </button>
-            </div>
+              <span className="font-semibold text-[#236383] text-sm flex-1">Host Finder Tool</span>
+              <ExternalLink className="w-4 h-4 text-gray-400 group-hover:text-[#007E8C]" aria-hidden="true" />
+            </a>
           </div>
 
-          {/* Event Toolkit - Share with volunteers */}
-          <div className="premium-card-elevated p-6 mb-6 max-w-full" style={{ borderTop: '3px solid #FBAD3F' }}>
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-brand-orange rounded-lg flex items-center justify-center mr-4">
-                <span className="text-2xl">📦</span>
-              </div>
-              <div>
-                <h4 className="premium-text-h4 text-brand-orange mb-1">
-                  Event Toolkit for Volunteers
-                </h4>
-                <p className="premium-text-body-sm text-gray-600">
-                  Share with anyone making sandwiches - includes guides and labels
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() =>
-                  window.open(
-                    'https://nicunursekatie.github.io/sandwichinventory/toolkit.html',
-                    '_blank'
-                  )
-                }
-                className="premium-btn-primary flex-1"
-              >
-                <ExternalLink className="w-5 h-5" />
-                Open Event Toolkit
-              </button>
-              <button
-                onClick={handleShareEventToolkit}
-                className="premium-btn-outline"
-              >
-                <Share2 className="w-5 h-5" />
-                Share Toolkit
-              </button>
-            </div>
-          </div>
-
-          {/* Host Collection Sites Directory */}
-          <div className="premium-card-elevated p-6 mb-6 max-w-full" style={{ borderTop: '3px solid #007E8C' }}>
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-brand-teal rounded-lg flex items-center justify-center mr-4">
-                <Building2 className="w-6 h-6 text-white" />
-              </div>
-              <div>
-                <h4 className="premium-text-h4 text-brand-teal mb-1">
-                  Host Collection Sites Directory
-                </h4>
-                <p className="premium-text-body-sm text-gray-600">
-                  Public directory of all collection sites - share with volunteers and partners
-                </p>
-              </div>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() =>
-                  window.open(
-                    'https://nicunursekatie.github.io/sandwichprojectcollectionsites/',
-                    '_blank'
-                  )
-                }
-                className="premium-btn-secondary flex-1"
-              >
-                <Building2 className="w-5 h-5" />
-                View Collection Sites
-              </button>
-              <button
-                onClick={handleShareCollectionSites}
-                className="premium-btn-outline"
-              >
-                <Share2 className="w-5 h-5" />
-                Share Directory
-              </button>
-            </div>
-          </div>
-
-          {/* Quick Actions Grid */}
-          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 max-w-full">
+          {/* In-app shortcuts — separated from external links above */}
+          <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 max-w-full mt-8 pt-8 border-t border-gray-200">
             <div
               className="premium-card premium-interactive p-4 group cursor-pointer"
               onClick={() => onSectionChange?.('collections')}
@@ -882,7 +939,7 @@ export default function DashboardOverview({
               onClick={() => onSectionChange?.('messages')}
             >
               <div className="w-12 h-12 bg-brand-burgundy rounded-lg flex items-center justify-center mb-3">
-                <Calendar className="w-6 h-6 text-white" />
+                <MessageSquare className="w-6 h-6 text-white" />
               </div>
               <h3 className="premium-text-body font-semibold text-brand-primary mb-1">
                 Messages
@@ -895,15 +952,111 @@ export default function DashboardOverview({
           </div>
         </div>
 
-        {/* Action Tracker Widget */}
-        <div className="mx-4 mb-8 max-w-full">
-          <DashboardActionTracker onNavigate={onSectionChange || (() => {})} />
-        </div>
+        {/* ── INSIGHTS ── (Action Tracker moved up to the Today section) */}
+        <SectionHeader label="Insights" hint="Totals, capacity, and resources" />
 
-        {/* Recently Accessed Resources Widget */}
-        <div className="mx-4 mb-8 max-w-full">
-          <RecentlyAccessedResources />
-        </div>
+        {/* Weekly collections trend — a compact 12-week chart so the dashboard
+            shows momentum visually, not just as numbers. Full analytics live on
+            the dedicated pages; this is the at-a-glance snapshot. */}
+        {weeklyTrend.length > 1 && (
+          <div className="mx-4 mb-8 max-w-full">
+            <div className="premium-card p-4 sm:p-6">
+              <div className="flex items-start justify-between mb-1 gap-2">
+                <div>
+                  <h3 className="premium-text-caption text-brand-primary uppercase">
+                    Weekly Collections — last {weeklyTrend.length} weeks
+                  </h3>
+                  <p className="text-sm text-gray-700 mt-0.5">
+                    Total sandwiches collected each week (individual + group)
+                  </p>
+                </div>
+                <button
+                  onClick={() => onSectionChange?.('analytics')}
+                  className="text-sm text-brand-primary hover:underline flex items-center gap-1 flex-shrink-0 mt-1"
+                >
+                  Full analytics <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Legend strip — color swatch makes the line's meaning explicit
+                  and the min/avg/max anchors give the reader scale before
+                  they hover any point. */}
+              {weeklyTrendStats && (
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mb-3 text-xs text-gray-600">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span
+                      className="inline-block w-3 h-3 rounded-sm"
+                      style={{ backgroundColor: '#007E8C' }}
+                      aria-hidden="true"
+                    />
+                    <span>Sandwiches per week</span>
+                  </span>
+                  <span className="text-gray-300" aria-hidden="true">·</span>
+                  <span>
+                    Low <span className="font-semibold text-gray-800">{weeklyTrendStats.min.toLocaleString()}</span>
+                  </span>
+                  <span>
+                    Avg <span className="font-semibold text-gray-800">{weeklyTrendStats.avg.toLocaleString()}</span>
+                  </span>
+                  <span>
+                    High <span className="font-semibold text-gray-800">{weeklyTrendStats.max.toLocaleString()}</span>
+                  </span>
+                </div>
+              )}
+
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={weeklyTrend} margin={{ top: 5, right: 8, left: 4, bottom: 4 }}>
+                  <defs>
+                    <linearGradient id="dashTrendFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#007E8C" stopOpacity={0.35} />
+                      <stop offset="100%" stopColor="#007E8C" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="#e5e7eb" strokeDasharray="3 3" vertical={false} />
+                  <XAxis
+                    dataKey="week"
+                    tick={{ fontSize: 11, fill: '#6b7280' }}
+                    interval="preserveStartEnd"
+                    label={{
+                      value: 'Week ending (Friday)',
+                      position: 'insideBottom',
+                      offset: -2,
+                      style: { fontSize: 10, fill: '#9ca3af' },
+                    }}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: '#6b7280' }}
+                    tickFormatter={formatCompactNumber}
+                    width={44}
+                    label={{
+                      value: 'Sandwiches',
+                      angle: -90,
+                      position: 'insideLeft',
+                      offset: 12,
+                      style: { fontSize: 10, fill: '#9ca3af', textAnchor: 'middle' },
+                    }}
+                  />
+                  <RechartsTooltip
+                    formatter={(value: number) => [`${value.toLocaleString()} sandwiches`, 'Total collected']}
+                    labelFormatter={(_label, payload) => {
+                      const full = (payload?.[0]?.payload as { weekFull?: string } | undefined)?.weekFull;
+                      return full ? `Week of ${full}` : '';
+                    }}
+                    labelStyle={{ color: '#236383', fontWeight: 600 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="sandwiches"
+                    name="Sandwiches collected"
+                    stroke="#007E8C"
+                    strokeWidth={2}
+                    fill="url(#dashTrendFill)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
 
         {/* Key Metrics Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mx-4 mb-6 sm:mb-8 max-w-full">
@@ -921,6 +1074,9 @@ export default function DashboardOverview({
             </div>
             <p className="premium-text-body-sm text-gray-600">
               Personal contributions
+            </p>
+            <p className="text-xs text-gray-400 mt-1 uppercase tracking-wide">
+              All-time total
             </p>
           </div>
 
@@ -946,6 +1102,9 @@ export default function DashboardOverview({
             <p className="premium-text-body-sm text-gray-600">
               Organization donations
             </p>
+            <p className="text-xs text-gray-400 mt-1 uppercase tracking-wide">
+              All-time total
+            </p>
           </div>
 
           <div className="premium-card premium-interactive p-4 sm:p-6 sm:col-span-2 lg:col-span-1">
@@ -961,62 +1120,212 @@ export default function DashboardOverview({
               <AnimatedCounter value={statsData?.totalEntries || 0} />
             </div>
             <p className="premium-text-body-sm text-gray-600">Data submissions</p>
+            <p className="text-xs text-gray-400 mt-1 uppercase tracking-wide">
+              All-time total
+            </p>
           </div>
         </div>
 
-        {/* Operational Capacity - Clean Design with Brand Color Accents */}
+        {/* Operational Capacity — Narrative-forward storytelling cards.
+            Each card leads with an emoji + headline, anchors the big number
+            visually, and closes with a supporting sentence that explains
+            what the number means and the window it reflects. */}
         <div className="mx-4 mb-6 sm:mb-8 max-w-full">
           <div className="premium-card p-4 sm:p-6 max-w-full">
             <h2 className="premium-text-h3 text-gray-700 mb-4 sm:mb-6">
               Operational Capacity
             </h2>
             <div className="grid grid-cols-1 xs:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 max-w-full">
-              {/* Peak Week - Burgundy accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-burgundy border-l-4 border-l-brand-burgundy elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h3 text-brand-burgundy mb-1">
-                  {organizationalStats.peakWeekRecord}
+              {/* Peak Week — Our Best Week Ever (Burgundy) */}
+              <div className="min-w-0 overflow-hidden premium-card-elevated border-l-4 border-l-brand-burgundy p-4 sm:p-5 flex flex-col">
+                <div className="text-sm font-semibold text-brand-burgundy uppercase tracking-wide">
+                  <span aria-hidden="true">🏆</span> Our Best Week Ever
                 </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Peak Week
+                <div className="mt-3 mb-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
+                  <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-brand-burgundy leading-none break-all">
+                    {organizationalStats.peakWeekRecord}
+                  </span>
+                  <span className="text-sm text-gray-600 font-medium">
+                    sandwiches
+                  </span>
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">{organizationalStats.peakWeekDate}</div>
+                <p className="text-sm text-gray-700 leading-snug mt-2 break-words">
+                  Our highest single-week total ever, set on{' '}
+                  <span className="font-semibold">
+                    {organizationalStats.peakWeekDate}
+                  </span>
+                  .
+                </p>
               </div>
 
-              {/* Annual Goal - Orange accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-orange border-l-4 border-l-brand-orange elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h3 text-brand-orange mb-1">
-                  {organizationalStats.currentAnnualCapacity}
+              {/* Annual Goal — This Year's Goal (Orange) */}
+              <div className="min-w-0 overflow-hidden premium-card-elevated border-l-4 border-l-brand-orange p-4 sm:p-5 flex flex-col">
+                <div className="text-sm font-semibold text-brand-orange uppercase tracking-wide">
+                  <span aria-hidden="true">🎯</span> This Year's Goal
                 </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Annual Goal
+                <div className="mt-3 mb-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
+                  <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-brand-orange leading-none break-all">
+                    {organizationalStats.currentAnnualCapacity}
+                  </span>
+                  <span className="text-sm text-gray-600 font-medium">
+                    sandwiches
+                  </span>
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">2025 Target</div>
+                <p className="text-sm text-gray-700 leading-snug mt-2 break-words">
+                  What we're aiming to collect together in{' '}
+                  <span className="font-semibold">
+                    {new Date().getFullYear()}
+                  </span>
+                  .
+                </p>
               </div>
 
-              {/* Weekly Baseline - Light Blue accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-light-blue border-l-4 border-l-brand-light-blue elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h4 text-brand-light-blue mb-1">
-                  {organizationalStats.weeklyBaseline}
+              {/* Weekly Baseline — What a Typical Week Looks Like (Light Blue) */}
+              <div className="min-w-0 overflow-hidden premium-card-elevated border-l-4 border-l-brand-light-blue p-4 sm:p-5 flex flex-col">
+                <div className="text-sm font-semibold text-brand-light-blue uppercase tracking-wide">
+                  <span aria-hidden="true">📦</span> A Typical Week
                 </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Weekly Baseline
+                <div className="mt-3 mb-1 flex flex-wrap items-baseline gap-x-1.5 gap-y-0">
+                  <span className="text-2xl sm:text-3xl xl:text-4xl font-extrabold text-brand-light-blue leading-none break-all">
+                    ~{organizationalStats.weeklyAverage}
+                  </span>
+                  <span className="text-sm text-gray-600 font-medium">
+                    sandwiches
+                  </span>
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">Regular ops</div>
+                <p className="text-sm text-gray-700 leading-snug mt-2 break-words">
+                  On any given week, most weeks fall between{' '}
+                  <span className="font-semibold">
+                    {organizationalStats.weeklyBaselineMin}
+                  </span>{' '}
+                  and{' '}
+                  <span className="font-semibold">
+                    {organizationalStats.weeklyBaselineMax}
+                  </span>
+                  . Every single week, thousands are fed because of this team.
+                </p>
               </div>
 
-              {/* Surge Capacity - Dark Teal accent */}
-              <div className="bg-white rounded-lg p-3 sm:p-4 text-center border border-brand-teal border-l-4 border-l-brand-teal elevation-1 hover:elevation-2 transition-all">
-                <div className="premium-text-h4 text-brand-teal mb-1">
-                  {organizationalStats.surgingCapacity}
+              {/* Surge Capacity — When We Mobilize (Dark Teal).
+                  Range is shown as stacked From/To lines so long numbers
+                  never break mid-digit in a narrow grid column. */}
+              <div className="min-w-0 overflow-hidden premium-card-elevated border-l-4 border-l-brand-teal p-4 sm:p-5 flex flex-col">
+                <div className="text-sm font-semibold text-brand-teal uppercase tracking-wide">
+                  <span aria-hidden="true">⚡</span> When We Mobilize
                 </div>
-                <div className="premium-text-body-sm text-gray-700 font-medium">
-                  Surge Capacity
+                <div className="mt-3 mb-1 space-y-1">
+                  <div className="flex items-baseline gap-2 min-w-0">
+                    <span className="text-xs font-semibold text-gray-500 uppercase shrink-0 w-9">
+                      From
+                    </span>
+                    <span className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-brand-teal leading-none tabular-nums">
+                      {organizationalStats.surgeMin}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-2 min-w-0">
+                    <span className="text-xs font-semibold text-gray-500 uppercase shrink-0 w-9">
+                      To
+                    </span>
+                    <span className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-brand-teal leading-none tabular-nums">
+                      {organizationalStats.surgeMax}
+                    </span>
+                  </div>
+                  <p className="text-sm text-gray-600 font-medium pl-11">
+                    sandwiches
+                  </p>
                 </div>
-                <div className="premium-text-caption text-gray-600 mt-1">
-                  Peak mobilization
-                </div>
+                <p className="text-sm text-gray-700 leading-snug mt-2 break-words">
+                  What we've reached when the call goes out — 3 to 5 times a
+                  normal week's pace.
+                </p>
               </div>
             </div>
+          </div>
+        </div>
+
+        {/* ── VOLUNTEERS ── */}
+        <SectionHeader label="Volunteers" hint="Upcoming events that need people" />
+
+        {/* Volunteer Opportunities Spotlight */}
+        <VolunteerOpportunitiesSpotlight onNavigate={onSectionChange || (() => {})} />
+
+        {/* ── GROUP EVENT FORECAST ── */}
+        <SectionHeader label="Group Event Forecast" />
+
+        {/* Group Event Forecast - current week progress and upcoming weeks */}
+        <div className="mx-4">
+          <LowVolumeAlert
+            onNavigateToWeek={(weekOffset) => {
+              const weekScope = WEEK_OFFSET_TO_SCOPE[weekOffset] ?? 'current';
+              try {
+                sessionStorage.setItem(
+                  'eventRequests.pendingFilter',
+                  JSON.stringify({ tab: 'all', weekScope }),
+                );
+              } catch {
+                // ignore unavailable sessionStorage
+              }
+              onSectionChange?.('event-requests');
+            }}
+          />
+        </div>
+
+        {/* ── TOOLS ── */}
+        <SectionHeader label="Tools" hint="Calculators, toolkits, and TSP apps" />
+
+        {/* TSP Apps launcher — companion web apps rendered uniformly from
+            TSP_APPS so they read as one product suite. One card pattern, one
+            "Open" action; per-app brand color lives on the icon tile + left
+            border only. */}
+        <div className="mx-4 mb-8 max-w-full">
+          <h3 className="premium-text-h3 text-brand-primary mb-1">
+            TSP Apps
+          </h3>
+          <p className="premium-text-body-sm text-gray-600 mb-6">
+            Companion apps we've built for TSP operations — each opens in a new tab.
+          </p>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-full">
+            {TSP_APPS.map((app) => {
+              const Icon = app.icon;
+              return (
+                <div
+                  key={app.url}
+                  className="premium-card-elevated p-5 flex flex-col"
+                  style={{ borderLeft: `4px solid ${app.accent}` }}
+                >
+                  <div className="flex items-center mb-3">
+                    <div
+                      className="w-10 h-10 rounded-lg flex items-center justify-center mr-3 shrink-0"
+                      style={{ backgroundColor: app.accent }}
+                    >
+                      <Icon className="w-5 h-5 text-white" aria-hidden="true" />
+                    </div>
+                    <h4 className="premium-text-body font-semibold text-brand-primary">
+                      {app.name}
+                    </h4>
+                  </div>
+                  {/* flex-1 pushes every Open button to the same baseline
+                      regardless of description length, so the row stays tidy. */}
+                  <p className="premium-text-body-sm text-gray-600 mb-4 flex-1">
+                    {app.description}
+                  </p>
+                  {/* Anchor (not button + window.open) so it carries real link
+                      semantics — copy link, middle-click, context menu, and
+                      screen-reader link recognition. rel guards the new tab. */}
+                  <a
+                    href={app.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="premium-btn-primary w-full text-sm inline-flex items-center justify-center gap-1.5"
+                    aria-label={`Open ${app.name} in a new tab`}
+                  >
+                    Open
+                    <ExternalLink className="w-3.5 h-3.5 opacity-80" aria-hidden="true" />
+                  </a>
+                </div>
+              );
+            })}
           </div>
         </div>
 
@@ -1057,13 +1366,20 @@ export default function DashboardOverview({
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 max-w-full">
-                {importantDocuments.map((doc, index) => (
+                {importantDocuments.map((doc, index) => {
+                const isLink = doc.type === 'link' || doc.path.startsWith('http');
+                const openUrl = isLink ? doc.path : encodeAssetPath(doc.path);
+                return (
                 <div
-                  key={index}
+                  key={doc.id || index}
                   className="bg-gray-50 rounded-lg p-4 hover:shadow-md transition-all duration-200 border hover:border-brand-primary/30"
                 >
                   <div className="flex items-center mb-3">
-                    <FileText className="h-5 w-5 text-brand-primary mr-2 flex-shrink-0" />
+                    {isLink ? (
+                      <BookOpen className="h-5 w-5 text-brand-primary mr-2 flex-shrink-0" />
+                    ) : (
+                      <FileText className="h-5 w-5 text-brand-primary mr-2 flex-shrink-0" />
+                    )}
                     <div className="min-w-0 flex-1">
                       <h4 className="text-sm font-semibold text-brand-primary truncate">
                         {doc.title}
@@ -1072,7 +1388,9 @@ export default function DashboardOverview({
                         <span className="text-xs bg-brand-primary/10 text-brand-primary px-2 py-0.5 rounded">
                           {doc.category}
                         </span>
-                        <span className="text-xs text-gray-500">PDF</span>
+                        <span className="text-xs text-gray-500">
+                          {isLink ? 'Link' : 'PDF'}
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -1080,28 +1398,42 @@ export default function DashboardOverview({
                     {doc.description}
                   </p>
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() =>
-                        openPreviewModal(doc.path, doc.title, 'pdf')
-                      }
-                      className="flex-1 h-8 text-xs border-brand-primary/30 hover:border-brand-primary text-brand-primary"
-                    >
-                      <Eye className="h-3 w-3 mr-1" />
-                      Preview
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => window.open(doc.path, '_blank')}
-                      className="flex-1 h-8 text-xs bg-brand-primary hover:bg-brand-primary-dark text-white"
-                    >
-                      <Download className="h-3 w-3 mr-1" />
-                      Download
-                    </Button>
+                    {isLink ? (
+                      <Button
+                        size="sm"
+                        onClick={() => window.open(openUrl, '_blank', 'noopener,noreferrer')}
+                        className="flex-1 h-8 text-xs bg-brand-primary hover:bg-brand-primary-dark text-white"
+                      >
+                        <ExternalLink className="h-3 w-3 mr-1" />
+                        Open
+                      </Button>
+                    ) : (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() =>
+                            openPreviewModal(doc.path, doc.title, 'pdf')
+                          }
+                          className="flex-1 h-8 text-xs border-brand-primary/30 hover:border-brand-primary text-brand-primary"
+                        >
+                          <Eye className="h-3 w-3 mr-1" />
+                          Preview
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => window.open(openUrl, '_blank')}
+                          className="flex-1 h-8 text-xs bg-brand-primary hover:bg-brand-primary-dark text-white"
+                        >
+                          <Download className="h-3 w-3 mr-1" />
+                          Download
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
-              ))}
+                );
+                })}
               </div>
             )}
           </div>

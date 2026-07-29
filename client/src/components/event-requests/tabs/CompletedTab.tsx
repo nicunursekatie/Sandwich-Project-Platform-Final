@@ -7,9 +7,6 @@ import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { CompletedCard } from '../cards/CompletedCard';
 import { DuplicateEventDialog } from '../dialogs/DuplicateEventDialog';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
 import { EventListBatchProviders } from '../EventListBatchProviders';
 import type { EventRequest } from '@shared/schema';
@@ -38,65 +35,24 @@ export const CompletedTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
-    setShowCollectionLog,
     setCollectionLogEventRequest,
-    setShowContactOrganizerDialog,
     setContactEventRequest,
-    setShowOneDayFollowUpDialog,
-    setShowOneMonthFollowUpDialog,
     setTspContactEventRequest,
-    setShowTspContactAssignmentDialog,
-    setShowLogContactDialog,
     setLogContactEventRequest,
-    setShowNextActionDialog,
     setNextActionEventRequest,
     setNextActionMode,
+    openDialog,
   } = useEventDialogState();
 
   const completedRequests = filterRequestsByStatus('completed') || [];
 
-  const handleExport = async () => {
-    if (completedRequests.length === 0) {
-      toast({
-        title: 'No data to export',
-        description: 'There are no completed events to export.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    try {
-      await exportEventRequestsToExcel(completedRequests, 'completed');
-      toast({
-        title: 'Export complete',
-        description: `Exported ${completedRequests.length} completed event${completedRequests.length !== 1 ? 's' : ''} to Excel.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Export failed',
-        description: 'Failed to export events. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   return (
     <>
-      {/* Header with count and export button */}
+      {/* Header with count. Export lives in the page-level top action bar. */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
           {isLoading ? 'Loading...' : `${completedRequests.length} completed event${completedRequests.length !== 1 ? 's' : ''}`}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          disabled={completedRequests.length === 0}
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Export to Excel
-        </Button>
       </div>
 
       <div className="space-y-4">
@@ -116,12 +72,12 @@ export const CompletedTab: React.FC = () => {
             onView={() => {
               setSelectedEventRequest(request);
               setIsEditing(false);
-              setShowEventDetails(true);
+              openDialog('eventDetails');
             }}
             onEdit={() => {
               setSelectedEventRequest(request);
               setIsEditing(true);
-              setShowEventDetails(true);
+              openDialog('eventDetails');
             }}
             onDelete={() => {
               if (
@@ -149,19 +105,19 @@ export const CompletedTab: React.FC = () => {
             }}
             onContact={() => {
               setContactEventRequest(request);
-              setShowContactOrganizerDialog(true);
+              openDialog('contactOrganizer');
             }}
             onFollowUp1Day={() => {
               setSelectedEventRequest(request);
-              setShowOneDayFollowUpDialog(true);
+              openDialog('oneDayFollowUp');
             }}
             onFollowUp1Month={() => {
               setSelectedEventRequest(request);
-              setShowOneMonthFollowUpDialog(true);
+              openDialog('oneMonthFollowUp');
             }}
             onViewCollectionLog={() => {
               setCollectionLogEventRequest(request);
-              setShowCollectionLog(true);
+              openDialog('collectionLog');
             }}
             onReschedule={() => {
               if (
@@ -178,30 +134,30 @@ export const CompletedTab: React.FC = () => {
             }}
             onAssignTspContact={() => {
               setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
+              openDialog('tspContactAssignment');
             }}
             onEditTspContact={() => {
               setTspContactEventRequest(request);
-              setShowTspContactAssignmentDialog(true);
+              openDialog('tspContactAssignment');
             }}
             onLogContact={() => {
               setLogContactEventRequest(request);
-              setShowLogContactDialog(true);
+              openDialog('logContact');
             }}
             onAddNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('add');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             onEditNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('edit');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             onCompleteNextAction={() => {
               setNextActionEventRequest(request);
               setNextActionMode('complete');
-              setShowNextActionDialog(true);
+              openDialog('nextAction');
             }}
             openAssignmentDialog={(type, isVanDriver) => openAssignmentDialog(request.id, type, isVanDriver)}
             openEditAssignmentDialog={(type, personId) => openEditAssignmentDialog(request.id, type, personId)}

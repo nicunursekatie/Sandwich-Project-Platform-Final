@@ -37,12 +37,11 @@ import {
 import { logger } from '@/lib/logger';
 import { REGULAR_THURSDAY_CAPACITY, SPECIAL_PLACEMENT_HIGH_THRESHOLD } from '@/lib/sandwich-utils';
 import { calculatePlacementTotals } from '@/lib/week-planning-utils';
-import { getTotalDriverCount, getSpeakerCount } from '@/lib/assignment-utils';
+import { getTotalDriverCount } from '@/lib/assignment-utils';
 import LargeEventLogisticsModal from '@/components/modals/large-event-logistics-modal';
 import FollowUpEventsModal from '@/components/modals/follow-up-events-modal';
 import GrowthOpportunitiesModal from '@/components/modals/growth-opportunities-modal';
 import MissingDriversModal from '@/components/modals/missing-drivers-modal';
-import MissingSpeakersModal from '@/components/modals/missing-speakers-modal';
 import WeekOutlookModal from '@/components/modals/week-outlook-modal';
 import NextMonthPlanningModal from '@/components/modals/next-month-planning-modal';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
@@ -80,9 +79,6 @@ export default function ActionCenter() {
 
   const [isMissingDriversModalOpen, setIsMissingDriversModalOpen] = useState(false);
   const [missingDriversEvents, setMissingDriversEvents] = useState<EventRequest[]>([]);
-
-  const [isMissingSpeakersModalOpen, setIsMissingSpeakersModalOpen] = useState(false);
-  const [missingSpeakersEvents, setMissingSpeakersEvents] = useState<EventRequest[]>([]);
 
   const [isWeekOutlookModalOpen, setIsWeekOutlookModalOpen] = useState(false);
 
@@ -295,40 +291,6 @@ export default function ActionCenter() {
         impact: `HIGH RISK: ${atRiskSandwiches.toLocaleString()} sandwiches at risk of cancellation without drivers`,
         action: `Assign drivers for ${upcomingEventsMissingDrivers.slice(0, 3).map(e => e.organizationName).join(', ')}${upcomingEventsMissingDrivers.length > 3 ? ` and ${upcomingEventsMissingDrivers.length - 3} more` : ''}`,
         data: { events: upcomingEventsMissingDrivers, driversNeeded: totalDriversNeeded },
-      });
-    }
-
-    // Find upcoming events missing speaker assignments
-    const upcomingEventsMissingSpeakers = (eventRequests || []).filter((event) => {
-      if (!['in_process', 'scheduled'].includes(event.status)) return false;
-      if (!event.desiredEventDate) return false;
-      if ((event.speakersNeeded || 0) === 0) return false;
-
-      const eventDate = new Date(event.desiredEventDate);
-      if (eventDate < today || eventDate > twoWeeksFromNow) return false;
-
-      const assignedSpeakersCount = getSpeakerCount(event);
-      const speakersNeeded = event.speakersNeeded || 0;
-
-      return assignedSpeakersCount < speakersNeeded;
-    });
-
-    if (upcomingEventsMissingSpeakers.length > 0) {
-      const totalSpeakersNeeded = upcomingEventsMissingSpeakers.reduce((sum, e) => {
-        const assigned = getSpeakerCount(e);
-        const needed = e.speakersNeeded || 0;
-        return sum + (needed - assigned);
-      }, 0);
-
-      actions.push({
-        id: 'missing-speakers',
-        priority: 'medium',
-        category: 'scheduling',
-        title: `${upcomingEventsMissingSpeakers.length} Upcoming Event${upcomingEventsMissingSpeakers.length !== 1 ? 's' : ''} Need Speaker${totalSpeakersNeeded !== 1 ? 's' : ''}`,
-        description: `Events in next 2 weeks need ${totalSpeakersNeeded} more speaker${totalSpeakersNeeded !== 1 ? 's' : ''}`,
-        impact: `Speakers help share the mission and recruit future volunteers`,
-        action: `Assign speakers for ${upcomingEventsMissingSpeakers.slice(0, 3).map(e => e.organizationName).join(', ')}${upcomingEventsMissingSpeakers.length > 3 ? ` and ${upcomingEventsMissingSpeakers.length - 3} more` : ''}`,
-        data: { events: upcomingEventsMissingSpeakers, speakersNeeded: totalSpeakersNeeded },
       });
     }
 
@@ -1011,10 +973,6 @@ export default function ActionCenter() {
                         // Open missing drivers modal
                         setMissingDriversEvents(item.data.events);
                         setIsMissingDriversModalOpen(true);
-                      } else if (item.id === 'missing-speakers' && item.data?.events) {
-                        // Open missing speakers modal
-                        setMissingSpeakersEvents(item.data.events);
-                        setIsMissingSpeakersModalOpen(true);
                       } else if (item.id === 'early-week-planning') {
                         // Open Week Outlook Modal
                         setIsWeekOutlookModalOpen(true);
@@ -1079,16 +1037,6 @@ export default function ActionCenter() {
       open={isMissingDriversModalOpen}
       onOpenChange={setIsMissingDriversModalOpen}
       events={missingDriversEvents}
-    />
-
-    <MissingSpeakersModal
-      open={isMissingSpeakersModalOpen}
-      onOpenChange={setIsMissingSpeakersModalOpen}
-      events={missingSpeakersEvents}
-      onAssignSpeakers={(eventId) => {
-        // Navigate to event requests - user can find and assign from there
-        setLocation('/event-requests');
-      }}
     />
 
     <WeekOutlookModal

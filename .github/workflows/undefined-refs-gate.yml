@@ -1,0 +1,44 @@
+name: Undefined-reference gate
+
+# Fails a PR when it introduces a NEW "Cannot find name" / bad-import error in
+# shipped client code — the bug class that crashed event-requests in production
+# (used-but-not-imported identifier → runtime ReferenceError the Vite build does
+# not catch). Pre-existing offenders are baselined in
+# scripts/undefined-refs-baseline.json and do not fail the build.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  undefined-refs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run check:undefined-refs
+
+  # Fails a PR when client/server route references drift out of sync with the
+  # committed docs/route-inventory.md. The check ignores :line suffixes, so only
+  # genuine route drift (added/removed/renamed API paths or mounts) fails it —
+  # regenerate locally with `npm run inventory:routes` and commit the result.
+  route-inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Evaluate the PR's actual head commit, not the synthetic merge with a
+          # moving base branch — otherwise unrelated commits on main inject route
+          # changes that drift the inventory and fail the PR through no fault of
+          # its own. Empty on workflow_dispatch, which falls back to the ref.
+          ref: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run inventory:routes:check

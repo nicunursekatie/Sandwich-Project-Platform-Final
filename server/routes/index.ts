@@ -58,12 +58,15 @@ import { createHostsRouter } from './hosts';
 import { createEventRemindersRouter } from './event-reminders';
 import eventCheckInRemindersRouter from './event-check-in-reminders';
 import { createEmailRouter } from './email-routes';
+import { createEmailDraftsRouter } from './email-drafts';
+import { createMobileDashboardRouter } from './mobile-dashboard';
 import { createAdminMigrationsRouter } from './admin-migrations';
 import { createAdminEventsRouter } from './admin-events';
 import { createOnboardingRouter } from './onboarding';
 import { createGoogleSheetsRouter } from './google-sheets';
 import { createGoogleCalendarRouter } from './google-calendar';
 import { createPlanningSheetProposalsRouter } from './planning-sheet-proposals';
+import { createPlanningSheetImportRouter } from './planning-sheet-import';
 import { createRouteOptimizationRouter } from './routes';
 import { createRecipientTspContactsRouter } from './recipient-tsp-contacts';
 import { createSandwichDistributionsRouter } from './sandwich-distributions';
@@ -86,6 +89,8 @@ import { predictionsRouter } from './predictions';
 import { aiChatRouter } from './ai-chat';
 import { createAlertRequestsRouter, createAIAlertRouter } from './alert-requests';
 import { createAppSettingsRouter } from './app-settings';
+import { createNavUserViewRouter } from './nav-user-view';
+import { createCollectionFavoritesRouter } from './collection-favorites';
 import { createGroupEngagementRoutes } from './group-engagement';
 import { createOrganizationsAdminRoutes } from './organizations-admin';
 import peopleSearchRouter from './people-search';
@@ -1060,6 +1065,17 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/hosts*', createErrorHandler('hosts'));
 
+  // Mobile home dashboard: /api/dashboard/stats + /api/activity/recent
+  const mobileDashboardRouter = createMobileDashboardRouter(deps);
+  router.use(
+    '/api',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    mobileDashboardRouter
+  );
+  router.use('/api/dashboard*', createErrorHandler('dashboard'));
+  router.use('/api/activity*', createErrorHandler('activity'));
+
   // Event reminders
   const eventRemindersRouter = createEventRemindersRouter(deps);
   router.use(
@@ -1099,6 +1115,27 @@ export function createMainRoutes(deps: RouterDependencies) {
   );
   router.use('/api/app-settings', createErrorHandler('app-settings'));
 
+  const navUserViewRouter = createNavUserViewRouter(deps);
+  router.use(
+    '/api/nav-user-view-config',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    navUserViewRouter
+  );
+  router.use('/api/nav-user-view-config', createErrorHandler('nav-user-view-config'));
+
+  // Per-user "notable" bookmarks on collection log entries. Distinct
+  // from the kudos icon (which sends recognition to the submitter) —
+  // these are private bookmarks the user controls.
+  const collectionFavoritesRouter = createCollectionFavoritesRouter(deps);
+  router.use(
+    '/api/collection-favorites',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    collectionFavoritesRouter,
+  );
+  router.use('/api/collection-favorites', createErrorHandler('collection-favorites'));
+
   // AI alert generation
   const aiAlertRouter = createAIAlertRouter(deps);
   router.use(
@@ -1118,6 +1155,16 @@ export function createMainRoutes(deps: RouterDependencies) {
     emailRouter
   );
   router.use('/api/emails', createErrorHandler('emails'));
+
+  // Email drafts (Project Threads compose auto-save)
+  const emailDraftsRouter = createEmailDraftsRouter(deps);
+  router.use(
+    '/api/drafts',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    emailDraftsRouter
+  );
+  router.use('/api/drafts', createErrorHandler('email-drafts'));
 
   // Admin migrations (one-time data fixes)
   const adminMigrationsRouter = createAdminMigrationsRouter({ isAuthenticated: deps.isAuthenticated });
@@ -1170,6 +1217,18 @@ export function createMainRoutes(deps: RouterDependencies) {
     planningSheetProposalsRouter
   );
   router.use('/api/planning-sheet-proposals', createErrorHandler('planning-sheet-proposals'));
+
+  // Review-first PULL from the planning sheet (read sheet → human approves → create events)
+  const planningSheetImportRouter = createPlanningSheetImportRouter(
+    deps.isAuthenticated,
+    deps.requirePermission
+  );
+  router.use(
+    '/api/planning-sheet-import',
+    ...createStandardMiddleware(),
+    planningSheetImportRouter
+  );
+  router.use('/api/planning-sheet-import', createErrorHandler('planning-sheet-import'));
 
   // Google Calendar integration
   const googleCalendarRouter = createGoogleCalendarRouter(deps);
@@ -1377,6 +1436,19 @@ export function createMainRoutes(deps: RouterDependencies) {
           })
           .returning({ id: clientErrorLogs.id });
         dbErrorId = inserted?.id ?? null;
+
+        const { appendErrorLogToSheet } = await import('../services/error-log-sheet-sync');
+        appendErrorLogToSheet({
+          type: 'client_crash',
+          timestamp: new Date(timestamp || Date.now()),
+          userName,
+          userEmail,
+          page: url || null,
+          summary: message || 'Unknown error',
+          stack: stack || componentStack || null,
+          details: componentStack ? 'React component stack captured' : null,
+          sourceId: dbErrorId,
+        });
       } catch (dbErr) {
         logger.error('Failed to persist client error to DB:', dbErr);
       }

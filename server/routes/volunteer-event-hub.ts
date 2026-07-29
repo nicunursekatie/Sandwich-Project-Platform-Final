@@ -7,7 +7,7 @@
 
 import { Router, Response } from 'express';
 import { z } from 'zod';
-import { eq, and, or, gte, inArray, sql, desc } from 'drizzle-orm';
+import { eq, and, or, gte, inArray, sql, desc, isNull } from 'drizzle-orm';
 import { db } from '../db';
 import {
   eventRequests,
@@ -25,8 +25,9 @@ import { EmailNotificationService } from '../services/email-notification-service
 import { getAppBaseUrl } from '../config/constants';
 import sgMail from '@sendgrid/mail';
 import { EMAIL_FOOTER_HTML } from '../utils/email-footer';
-import { getUnfilledCounts, getSpeakerCount, getVolunteerCount, getTotalDriverCount } from '../utils/assignment-utils';
+import { getUnfilledCounts, getVolunteerCount, getTotalDriverCount } from '../utils/assignment-utils';
 import { getEffectiveEventDate } from '../../shared/event-validation-utils';
+import { isEligibleForRole, getIneligibilityReason, type EventRole } from '../../shared/event-role-eligibility';
 
 const router = Router();
 
@@ -36,6 +37,72 @@ const COORDINATOR_EMAILS = [
 ];
 
 const ACTIVE_SIGNUP_STATUSES = ['pending', 'confirmed', 'assigned'];
+
+type VolunteerHubEventRow = typeof eventRequests.$inferSelect;
+
+/** Prefer active scheduled records when sheet sync created duplicate rows. */
+function pickVolunteerHubDuplicate(a: VolunteerHubEventRow, b: VolunteerHubEventRow): VolunteerHubEventRow {
+  const activeStatuses = new Set(['scheduled', 'rescheduled']);
+  const aActive = activeStatuses.has(a.status);
+  const bActive = activeStatuses.has(b.status);
+  if (aActive !== bActive) return aActive ? a : b;
+  const aTime = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+  const bTime = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+  if (aTime !== bTime) return aTime > bTime ? a : b;
+  return a.id > b.id ? a : b;
+}
+
+/** Collapse duplicate hub rows (same googleSheetRowId) so calendar days don't list one event twice. */
+function dedupeVolunteerHubEvents(events: VolunteerHubEventRow[]): VolunteerHubEventRow[] {
+  const byId = new Map<number, VolunteerHubEventRow>();
+  const bySheetRow = new Map<string, VolunteerHubEventRow>();
+
+  for (const event of events) {
+    const sheetKey = event.googleSheetRowId?.trim();
+    if (sheetKey) {
+      const existing = bySheetRow.get(sheetKey);
+      if (existing) {
+        const keep = pickVolunteerHubDuplicate(existing, event);
+        byId.delete(existing.id);
+        byId.set(keep.id, keep);
+        bySheetRow.set(sheetKey, keep);
+        continue;
+      }
+      bySheetRow.set(sheetKey, event);
+    }
+    if (!byId.has(event.id)) {
+      byId.set(event.id, event);
+    }
+  }
+
+  return Array.from(byId.values());
+}
+
+/**
+ * Whether an event is a genuine volunteer opportunity that belongs on the hub.
+ *
+ * Two kinds of events are auto-excluded even when a coordinator left
+ * `showOnVolunteerHub` on:
+ *   1. Self-transport events — the group handles its own logistics and isn't
+ *      looking for sign-ups at all.
+ *   2. Events with no role explicitly designated as needed — surfacing these
+ *      shows a misleading "extra help welcome" sign-up on events that never
+ *      asked for volunteers.
+ *
+ * Note this gates on the *designated* need (count > 0), not unfilled slots, so
+ * a fully-staffed event that did request help still appears (the existing
+ * "fully staffed, extra help welcome" behavior is preserved for those). The van
+ * driver role only counts when it isn't a DHL-provided van — DHL handling the
+ * van/driver means there was never a volunteer van-driver role to begin with.
+ */
+function eventOffersVolunteerOpportunity(event: VolunteerHubEventRow): boolean {
+  if (event.selfTransport) return false;
+  return (
+    (event.driversNeeded ?? 0) > 0 ||
+    (event.volunteersNeeded ?? 0) > 0 ||
+    (!!event.vanDriverNeeded && !event.isDhlVan)
+  );
+}
 
 // ============================================================================
 // Helper Functions
@@ -64,14 +131,7 @@ async function sendVolunteerSignupNotification(
     const volunteerHubUrl = `${baseUrl}/volunteer-hub`;
 
     // Format event date
-    const formattedDate = eventDate
-      ? new Date(eventDate).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })
-      : 'Date TBD';
+    const formattedDate = formatEventDateLong(eventDate);
 
     // Format roles for display
     const roleDisplay = roles
@@ -191,14 +251,7 @@ async function sendVolunteerSignupConfirmationEmail(
   }
 
   try {
-    const formattedDate = eventDate
-      ? new Date(eventDate).toLocaleDateString('en-US', {
-          weekday: 'long',
-          year: 'numeric',
-          month: 'long',
-          day: 'numeric'
-        })
-      : 'Date TBD';
+    const formattedDate = formatEventDateLong(eventDate);
 
     const timeDisplay = eventStartTime
       ? `${eventStartTime}${eventEndTime ? ` – ${eventEndTime}` : ''}`
@@ -303,9 +356,61 @@ function displayRole(role: string | null | undefined): string {
   return ROLE_DISPLAY[role] || role;
 }
 
+const CALENDAR_TIMEZONE = 'America/New_York';
+
 /**
- * Parse "HH:MM" or "H:MM AM/PM" into a Date on the given dateOnly day (UTC).
- * If parsing fails, returns null so caller can fall back to all-day.
+ * Offset (in ms) of the app timezone from UTC at a given instant.
+ * For Eastern this is negative (-4h EDT, -5h EST).
+ */
+function calendarTimezoneOffsetMs(date: Date): number {
+  const dtf = new Intl.DateTimeFormat('en-US', {
+    timeZone: CALENDAR_TIMEZONE,
+    hour12: false,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  });
+  const map: Record<string, string> = {};
+  for (const part of dtf.formatToParts(date)) {
+    if (part.type !== 'literal') map[part.type] = part.value;
+  }
+  let hour = Number(map.hour);
+  if (hour === 24) hour = 0; // some engines render midnight as 24
+  const asUtc = Date.UTC(
+    Number(map.year),
+    Number(map.month) - 1,
+    Number(map.day),
+    hour,
+    Number(map.minute),
+    Number(map.second),
+  );
+  return asUtc - date.getTime();
+}
+
+/**
+ * Convert an Eastern wall-clock time (calendar day + h:mm) into the true UTC
+ * instant, handling daylight saving automatically.
+ */
+function easternWallClockToUtc(
+  year: number,
+  monthIndex: number,
+  day: number,
+  hours: number,
+  minutes: number,
+): Date {
+  const guess = Date.UTC(year, monthIndex, day, hours, minutes, 0);
+  return new Date(guess - calendarTimezoneOffsetMs(new Date(guess)));
+}
+
+/**
+ * Parse "HH:MM" or "H:MM AM/PM" into the true UTC Date for that Eastern
+ * wall-clock time on the given calendar day. Event times are stored as Eastern
+ * (America/New_York) wall-clock, so e.g. "10:00 AM" must land on a calendar as
+ * 10am Eastern — not 10:00 UTC, which would show as 6am. If parsing fails,
+ * returns null so caller can fall back to all-day.
  */
 function combineDateAndTime(dateOnly: Date, time: string | null | undefined): Date | null {
   if (!time) return null;
@@ -319,9 +424,14 @@ function combineDateAndTime(dateOnly: Date, time: string | null | undefined): Da
   if (ampm === 'PM' && hours < 12) hours += 12;
   if (ampm === 'AM' && hours === 12) hours = 0;
   if (hours > 23 || minutes > 59) return null;
-  const out = new Date(dateOnly);
-  out.setUTCHours(hours, minutes, 0, 0);
-  return out;
+  // dateOnly holds the intended calendar day in its UTC parts.
+  return easternWallClockToUtc(
+    dateOnly.getUTCFullYear(),
+    dateOnly.getUTCMonth(),
+    dateOnly.getUTCDate(),
+    hours,
+    minutes,
+  );
 }
 
 function formatICalDate(d: Date, allDay: boolean): string {
@@ -443,15 +553,54 @@ interface EventForEmail {
   tspContact?: string | null;
 }
 
+/**
+ * Format an event date for display, e.g. "Tuesday, July 22, 2025".
+ *
+ * Event dates live in `timestamp` columns that serialize as UTC midnight
+ * (e.g. "2025-07-22T00:00:00.000Z"). The intended calendar day is therefore in
+ * the value's UTC parts — we read those directly and format without timezone
+ * conversion. Converting to Eastern would shift UTC-midnight back to the
+ * previous day. This matches the calendar-link logic (buildEventTimes) and the
+ * client's parseEventDate, so the displayed date always matches the .ics entry.
+ */
+function formatEventDateLong(value: string | Date | null | undefined): string {
+  if (!value) return 'Date TBD';
+  let year: number;
+  let monthIndex: number;
+  let day: number;
+  if (value instanceof Date) {
+    if (isNaN(value.getTime())) return 'Date TBD';
+    year = value.getUTCFullYear();
+    monthIndex = value.getUTCMonth();
+    day = value.getUTCDate();
+  } else {
+    const m = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (m) {
+      year = Number(m[1]);
+      monthIndex = Number(m[2]) - 1;
+      day = Number(m[3]);
+    } else {
+      const parsed = new Date(value);
+      if (isNaN(parsed.getTime())) return 'Date TBD';
+      year = parsed.getUTCFullYear();
+      monthIndex = parsed.getUTCMonth();
+      day = parsed.getUTCDate();
+    }
+  }
+  return new Date(Date.UTC(year, monthIndex, day, 12, 0, 0)).toLocaleDateString('en-US', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    timeZone: 'UTC',
+  });
+}
+
 function eventDisplayDate(event: EventForEmail): { iso: string | null; formatted: string } {
   const date = getEffectiveEventDate(event);
   if (!date) return { iso: null, formatted: 'Date TBD' };
-  const d = new Date(date);
-  const formatted = d.toLocaleDateString('en-US', {
-    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-    timeZone: 'America/New_York',
-  });
-  return { iso: typeof date === 'string' ? date : d.toISOString(), formatted };
+  const iso = typeof date === 'string' ? date : new Date(date).toISOString();
+  return { iso, formatted: formatEventDateLong(date) };
 }
 
 /**
@@ -787,47 +936,104 @@ Thanks!
  */
 router.get('/available-events', isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
   try {
-    // Show scheduled + completed events to volunteers
+    // Returns:
+    //   - All upcoming events (status scheduled/rescheduled, date ≥ today)
+    //     for list, map, and forward-looking calendar views.
+    //   - Optionally, completed events for a SINGLE past month — when the
+    //     calendar is showing a month with past dates, the client passes
+    //     `?pastMonth=YYYY-MM` and we add only that month's completed
+    //     events so the calendar can render them as faded "Completed"
+    //     context. We do NOT load all completed events at once because
+    //     the calendar only shows one month at a time anyway.
+    //
     // Use Eastern Time to determine "today" since server may be in UTC
     // (at 7pm+ EST, UTC has already rolled to the next day)
     const now = new Date();
     const easternNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
     const today = new Date(easternNow.getFullYear(), easternNow.getMonth(), easternNow.getDate());
 
-    logger.log(`[VolunteerHub] Fetching scheduled events`);
+    // Parse optional pastMonth=YYYY-MM (e.g. "2026-05"). Strict format —
+    // any malformed value is ignored rather than rejected, so a stale
+    // client doesn't fail the whole request.
+    const pastMonthRaw = typeof req.query.pastMonth === 'string' ? req.query.pastMonth : '';
+    const pastMonthMatch = /^(\d{4})-(\d{1,2})$/.exec(pastMonthRaw);
+    let pastWindowStart: Date | null = null;
+    let pastWindowEnd: Date | null = null;
+    if (pastMonthMatch) {
+      const year = parseInt(pastMonthMatch[1], 10);
+      const monthIdx = parseInt(pastMonthMatch[2], 10) - 1;
+      if (monthIdx >= 0 && monthIdx <= 11) {
+        const candidateStart = new Date(year, monthIdx, 1);
+        const candidateEnd = new Date(year, monthIdx + 1, 1);
+        // Only honor pastMonth if it's actually in the past — no point
+        // doing the extra completed-event query for the current or
+        // future month (those events are already covered by the
+        // upcoming branch below).
+        if (candidateEnd <= today) {
+          pastWindowStart = candidateStart;
+          pastWindowEnd = candidateEnd;
+        }
+      }
+    }
 
-    const events = await db
+    logger.log(
+      `[VolunteerHub] Fetching events` +
+        (pastWindowStart ? ` + completed events for ${pastMonthRaw}` : ''),
+    );
+
+    const rawEvents = await db
       .select()
       .from(eventRequests)
       .where(
         and(
+          isNull(eventRequests.deletedAt),
           eq(eventRequests.showOnVolunteerHub, true),
           or(
             eq(eventRequests.status, 'scheduled'),
-            eq(eventRequests.status, 'rescheduled')
+            eq(eventRequests.status, 'rescheduled'),
+            eq(eventRequests.status, 'completed')
           )
         )
       )
       .orderBy(eventRequests.scheduledEventDate);
 
-    logger.log(`[VolunteerHub] Found ${events.length} total events with scheduled/completed status`);
+    const events = dedupeVolunteerHubEvents(rawEvents);
 
-    // Filter to events with dates today or in the future
-    // Include events with no date set (they're still active)
-    const upcomingEvents = events.filter(event => {
+    logger.log(
+      `[VolunteerHub] Found ${rawEvents.length} hub events` +
+        (events.length !== rawEvents.length ? ` (${events.length} after dedupe)` : ''),
+    );
+
+    // Build the visible set:
+    //   - Future or undated events: always include.
+    //   - Past events: include ONLY if status=completed AND they fall
+    //     within the requested past-month window. A scheduled event
+    //     whose date slipped into the past without being marked complete
+    //     is stale data — don't surface it.
+    const visibleEvents = events.filter(event => {
+      // Auto-exclude self-transport events and events with no designated
+      // volunteer need, regardless of the showOnVolunteerHub flag — these
+      // have nothing for a volunteer to sign up for.
+      if (!eventOffersVolunteerOpportunity(event)) return false;
+
       const eventDate = getEffectiveEventDate(event);
-      if (!eventDate) {
-        // Include events without dates - they're still active
-        return true;
-      }
+      if (!eventDate) return true;
       const eventDateObj = new Date(eventDate);
-      return eventDateObj >= today;
+      const isPast = eventDateObj < today;
+      if (!isPast) return true;
+      // Past events: only completed AND within the requested window
+      if (event.status !== 'completed') return false;
+      if (!pastWindowStart || !pastWindowEnd) return false;
+      return eventDateObj >= pastWindowStart && eventDateObj < pastWindowEnd;
     });
 
-    logger.log(`[VolunteerHub] ${upcomingEvents.length} events are upcoming or have no date set`);
+    logger.log(
+      `[VolunteerHub] ${visibleEvents.length} events visible after filtering` +
+        (pastWindowStart ? ` (incl. completed events for ${pastMonthRaw})` : ''),
+    );
 
     // Calculate unfilled needs for each event using centralized utils
-    const eventsWithNeeds = upcomingEvents.map(event => {
+    const eventsWithNeeds = visibleEvents.map(event => {
       const counts = getUnfilledCounts(event);
       const vanDriverNeeded = !!(event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan);
 
@@ -1240,12 +1446,45 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
     const normalizedRoles = Array.from(new Set(requestedRoles.filter(Boolean)));
 
     if (normalizedRoles.length === 0) {
-      return res.status(400).json({ error: 'At least one role is required (driver, speaker, or general)' });
+      return res.status(400).json({ error: 'At least one role is required (driver or general)' });
     }
 
-    const invalidRoles = normalizedRoles.filter(r => !['driver', 'speaker', 'general'].includes(r));
+    // Speaker role retired — only driver and general self-signups are accepted.
+    const invalidRoles = normalizedRoles.filter(r => !['driver', 'general'].includes(r));
     if (invalidRoles.length > 0) {
-      return res.status(400).json({ error: 'Valid roles are driver, speaker, or general' });
+      return res.status(400).json({ error: 'Valid roles are driver or general' });
+    }
+
+    // Eligibility gate (self-signup only). A volunteer can only sign THEMSELVES
+    // up for roles they're willing AND (where required) approved for. Coordinators
+    // assigning others deliberately bypass this — assigning is itself the
+    // coordinator vouching for the person, and driver assignment is already
+    // gated by DRIVER_SIGNUP_APPROVE below. The hub UI hides ineligible roles;
+    // this is the server-side backstop against a hand-crafted request.
+    if (!isAssigningOther) {
+      const ineligible = normalizedRoles.filter(
+        (r) => !isEligibleForRole(user, r as EventRole)
+      );
+      if (ineligible.length > 0) {
+        // Tailor the message to WHY it's blocked: not opted-in (willingness) vs
+        // opted-in but awaiting coordinator approval. Keying off the role name
+        // alone would tell a not-willing user they need "approval", which is wrong.
+        const reasons = ineligible.map((r) => getIneligibilityReason(user, r as EventRole));
+        const needsApproval = reasons.includes('not_approved');
+        const needsWillingness = reasons.includes('not_willing');
+        let error: string;
+        if (needsApproval && !needsWillingness) {
+          error =
+            "That role needs coordinator approval. You've said you're willing — a coordinator just needs to approve you before you can sign up.";
+        } else if (needsWillingness && !needsApproval) {
+          error =
+            "You haven't opted into that role yet. Update the roles you're willing to do in your profile.";
+        } else {
+          error =
+            "You're not set up for that role yet. Update the roles you're willing to do in your profile — driver also needs coordinator approval.";
+        }
+        return res.status(403).json({ error, ineligibleRoles: ineligible });
+      }
     }
 
     // Check if target user already signed up for this event with any requested role
@@ -1345,9 +1584,7 @@ router.post('/signup/:eventId', isAuthenticated, async (req: AuthenticatedReques
         if (normalizedRoles.includes('driver')) {
           updates.assignedDriverIds = addUnique(eventRow.assignedDriverIds);
         }
-        if (normalizedRoles.includes('speaker')) {
-          updates.assignedSpeakerIds = addUnique(eventRow.assignedSpeakerIds);
-        }
+        // (Speaker role retired — no speaker branch here.)
         if (normalizedRoles.includes('general')) {
           updates.assignedVolunteerIds = addUnique(eventRow.assignedVolunteerIds);
         }
@@ -1568,19 +1805,22 @@ router.get('/coverage-summary', isAuthenticated, async (req: AuthenticatedReques
     const easternNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/New_York' }));
     const today = new Date(easternNow.getFullYear(), easternNow.getMonth(), easternNow.getDate());
 
-    const events = await db
-      .select()
-      .from(eventRequests)
-      .where(
-        and(
-          eq(eventRequests.showOnVolunteerHub, true),
-          or(
-            eq(eventRequests.status, 'scheduled'),
-            eq(eventRequests.status, 'rescheduled')
+    const events = dedupeVolunteerHubEvents(
+      await db
+        .select()
+        .from(eventRequests)
+        .where(
+          and(
+            isNull(eventRequests.deletedAt),
+            eq(eventRequests.showOnVolunteerHub, true),
+            or(
+              eq(eventRequests.status, 'scheduled'),
+              eq(eventRequests.status, 'rescheduled')
+            )
           )
         )
-      )
-      .orderBy(eventRequests.scheduledEventDate);
+        .orderBy(eventRequests.scheduledEventDate),
+    );
 
     const upcomingEvents = events.filter((event) => {
       const eventDate = getEffectiveEventDate(event);
@@ -1638,13 +1878,7 @@ router.get('/coverage-summary', isAuthenticated, async (req: AuthenticatedReques
         status: event.status,
         vanDriverNeeded,
         roles: [
-          {
-            role: 'speaker',
-            label: 'Speakers',
-            needed: counts.speakersNeeded,
-            assigned: counts.speakersAssigned,
-            unfilled: counts.speakersUnfilled,
-          },
+          // (Speaker role retired — no speaker entry in the needs breakdown.)
           {
             role: 'general',
             label: 'Volunteers',
@@ -1911,8 +2145,9 @@ router.patch('/signup/:signupId/role', isAuthenticated, async (req: Authenticate
     if (!signupId || isNaN(signupId)) {
       return res.status(400).json({ error: 'Valid signup ID required' });
     }
-    if (!newRole || !['driver', 'speaker', 'general'].includes(newRole)) {
-      return res.status(400).json({ error: 'Valid role required (driver, speaker, or general)' });
+    // Speaker role retired — a coordinator can no longer move a signup to speaker.
+    if (!newRole || !['driver', 'general'].includes(newRole)) {
+      return res.status(400).json({ error: 'Valid role required (driver or general)' });
     }
     if (!hasPermission(req.user, PERMISSIONS.VOLUNTEER_SIGNUP_APPROVE)) {
       return res.status(403).json({ error: 'VOLUNTEER_SIGNUP_APPROVE permission required' });

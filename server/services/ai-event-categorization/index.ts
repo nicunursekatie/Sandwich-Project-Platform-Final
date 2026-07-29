@@ -84,7 +84,7 @@ export async function categorizeEventRequest(
     // Call OpenAI API
     const client = getOpenAIClient();
     const completion = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: 'gpt-5-mini',
       messages: [
         {
           role: 'system',
@@ -114,7 +114,6 @@ CATEGORIZATION GUIDELINES:
 - refrigeration: Needs refrigeration, lacks storage, special storage requirements
 - delivery: Requires delivery service, specific delivery instructions
 - volunteers: Needs volunteer support, mentions volunteer coordination
-- speakers: Requests speaker or presentation
 - drivers: Needs transportation assistance
 - setup: Requires setup support, table arrangements, etc.
 - timing: Time-sensitive, specific timing requirements
@@ -138,8 +137,7 @@ Return your analysis as a JSON object with this structure:
         },
       ],
       response_format: { type: 'json_object' },
-      temperature: 0.3, // Lower temperature for more consistent categorization
-      max_tokens: 500,
+      max_completion_tokens: 500,
     });
 
     const responseContent = completion.choices[0].message.content;
@@ -244,9 +242,6 @@ function getFallbackCategorization(input: CategorizationInput): EventCategorizat
   }
   if (descLower.includes('volunteer')) {
     specialNeeds.push('volunteers');
-  }
-  if (descLower.includes('speaker') || descLower.includes('presentation')) {
-    specialNeeds.push('speakers');
   }
   if (descLower.includes('driver')) {
     specialNeeds.push('drivers');

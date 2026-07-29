@@ -8,10 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { MentionTextarea, MessageWithMentions } from '@/components/mention-input';
-import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import {
   Loader2,
   Plus,
+  Circle,
   CheckCircle2,
   AlertTriangle,
   User,
@@ -1331,24 +1331,19 @@ export default function HoldingZone() {
   if (!canView) {
     return (
       <div className="container mx-auto p-6">
-        <PageBreadcrumbs segments={[{ label: 'Holding Zone' }]} />
-        <div className="mt-6">
-          <PermissionDenied
-            action="view the Holding Zone"
-            requiredPermission="TEAM_BOARD_VIEW"
-            variant="card"
-          />
-        </div>
+        <PermissionDenied
+          action="view the Holding Zone"
+          requiredPermission="TEAM_BOARD_VIEW"
+          variant="card"
+        />
       </div>
     );
   }
 
   return (
     <div className="container mx-auto p-6 max-w-6xl">
-      <PageBreadcrumbs segments={[{ label: 'Holding Zone' }]} />
-
       {/* Header */}
-      <div className="flex items-center justify-between mt-6 mb-6">
+      <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Holding Zone</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
@@ -1542,7 +1537,18 @@ export default function HoldingZone() {
               key={item.id}
               className={`transition-all hover:shadow-md border-l-4 ${
                 item.isUrgent ? 'border-l-red-500' : ''
-              } ${isChildItem ? 'ml-8 border-l-2 opacity-95' : ''}`}
+              } ${isChildItem ? 'ml-8 border-l-2 opacity-95' : ''} ${
+                // Workflow-status background tint. The left border is
+                // reserved for category color / urgency, so status is
+                // signaled by a soft card-wide tint instead. This makes
+                // workflow stage scannable at a glance without rebuilding
+                // the layout into Kanban columns.
+                item.status === 'done'
+                  ? 'bg-gray-50/70 dark:bg-gray-900/40'
+                  : item.status === 'todo'
+                    ? 'bg-blue-50/40 dark:bg-blue-950/20'
+                    : ''
+              }`}
               style={!item.isUrgent && item.categories?.length > 0 ? { borderLeftColor: item.categories[0].color } : undefined}
               data-testid={`card-item-${item.id}`}
             >
@@ -1577,14 +1583,32 @@ export default function HoldingZone() {
                             : 'Private (only you)'}
                         </Badge>
                       )}
+                      {/* Workflow status badge — every item now carries
+                          one (Open / To-Do / Done) so the workflow state
+                          is explicit instead of inferred from the
+                          presence of a To-Do or Done badge. Open is the
+                          default "in the holding zone" state; To-Do
+                          means actively being worked; Done is complete. */}
+                      {item.status === 'open' && (
+                        <Badge
+                          variant="outline"
+                          className="gap-1 border-slate-400 text-slate-700 bg-white"
+                        >
+                          <Circle className="h-3 w-3" />
+                          Open
+                        </Badge>
+                      )}
                       {item.status === 'todo' && (
-                        <Badge variant="default" className="gap-1 bg-blue-600">
-                          <CheckCircle2 className="h-3 w-3" />
+                        <Badge variant="default" className="gap-1 bg-blue-600 hover:bg-blue-700">
+                          <Clock className="h-3 w-3" />
                           To-Do
                         </Badge>
                       )}
                       {item.status === 'done' && (
-                        <Badge variant="default" className="gap-1">
+                        <Badge
+                          variant="default"
+                          className="gap-1 bg-green-600 hover:bg-green-700"
+                        >
                           <CheckCircle2 className="h-3 w-3" />
                           Done
                         </Badge>

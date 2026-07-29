@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import DOMPurify from 'dompurify';
+import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -1498,11 +1499,19 @@ ${userEmail}`;
       console.error('[EventEmailComposer] Email sending failed:', error);
       console.error('[EventEmailComposer] Error details:', {
         message: error?.message,
-        response: error?.response,
-        data: error?.response?.data,
+        status: error?.status,
+        data: error?.data,
       });
 
-      const errorMessage = error?.response?.data?.message || error?.message || 'Please try again';
+      // ApiError exposes the parsed server body on `.data` (not `.response.data`).
+      // The event-email route returns { message, error } where `error` holds the
+      // specific SendGrid rejection reason — prefer that so the operator sees an
+      // actionable message instead of a generic one.
+      const errorMessage =
+        error?.data?.error ||
+        error?.data?.message ||
+        error?.message ||
+        'Please try again';
 
       toast({
         title: 'Failed to send email',

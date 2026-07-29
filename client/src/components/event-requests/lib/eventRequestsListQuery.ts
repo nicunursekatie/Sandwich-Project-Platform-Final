@@ -1,7 +1,25 @@
 export type EventRequestsQuickFilter = 'week' | 'today' | 'needsDriver' | 'needsVan' | 'corporatePriority' | null;
 
+/** Monday–Sunday calendar week scope (matches dashboard pipeline cards). */
+export type EventRequestsWeekScope = 'current' | 'next' | '+2' | '+3' | null;
+
+export const WEEK_SCOPE_LABELS: Record<Exclude<EventRequestsWeekScope, null>, string> = {
+  current: 'This Week',
+  next: 'Next Week',
+  '+2': '2 Weeks Out',
+  '+3': '3 Weeks Out',
+};
+
+export const WEEK_OFFSET_TO_SCOPE: Exclude<EventRequestsWeekScope, null>[] = [
+  'current',
+  'next',
+  '+2',
+  '+3',
+];
+
 export type EventRequestsListFilterParams = {
   days?: number;
+  week?: string;
   status?: string;
   needsAction?: string;
   needsDriver?: string;
@@ -12,6 +30,7 @@ export type EventRequestsListFilterParams = {
 function buildQueryString(filterParams: EventRequestsListFilterParams): string {
   const queryParams = new URLSearchParams();
   if (filterParams.days) queryParams.set('days', filterParams.days.toString());
+  if (filterParams.week) queryParams.set('week', filterParams.week);
   if (filterParams.status) queryParams.set('status', filterParams.status);
   if (filterParams.needsAction) queryParams.set('needsAction', filterParams.needsAction);
   if (filterParams.needsDriver) queryParams.set('needsDriver', filterParams.needsDriver);
@@ -22,10 +41,24 @@ function buildQueryString(filterParams: EventRequestsListFilterParams): string {
 
 export function buildEventRequestsListFilterParams(
   activeTab: string,
-  quickFilter: EventRequestsQuickFilter
+  quickFilter: EventRequestsQuickFilter,
+  weekScope: EventRequestsWeekScope = null,
 ): EventRequestsListFilterParams {
+  const ALL_ACTIVE_STATUSES = 'new,in_process,scheduled,rescheduled';
+  const PIPELINE_STATUSES = 'new,in_process,scheduled';
+
+  // Dashboard pipeline / forecast cards drill into a specific calendar week.
+  if (weekScope) {
+    return { week: weekScope, status: PIPELINE_STATUSES };
+  }
+
   // Handle quick filters first
   if (quickFilter === 'week') {
+    // Dashboard "This Week" tile: all active events within the current
+    // Monday-Sunday calendar week (Eastern), matching thisWeekEventsCount.
+    if (activeTab === 'all') {
+      return { week: 'current', status: ALL_ACTIVE_STATUSES };
+    }
     const status =
       activeTab === 'scheduled'
         ? 'scheduled'
@@ -50,6 +83,11 @@ export function buildEventRequestsListFilterParams(
   }
 
   if (quickFilter === 'needsDriver') {
+    // Dashboard "Need Drivers" tile: all active events that need drivers,
+    // matching eventsNeedingDrivers. The chip stays scheduled-scoped.
+    if (activeTab === 'all') {
+      return { status: ALL_ACTIVE_STATUSES, needsDriver: 'true' };
+    }
     // Show ALL scheduled (or rescheduled) events that need drivers (no date restriction)
     return { status: 'scheduled,rescheduled', needsDriver: 'true' };
   }
@@ -92,16 +130,18 @@ export function buildEventRequestsListFilterParams(
   return { status: 'new,in_process,scheduled,rescheduled' };
 }
 
-export function buildEventRequestsListQuery(activeTab: string, quickFilter: EventRequestsQuickFilter) {
-  const filterParams = buildEventRequestsListFilterParams(activeTab, quickFilter);
+export function buildEventRequestsListQuery(
+  activeTab: string,
+  quickFilter: EventRequestsQuickFilter,
+  weekScope: EventRequestsWeekScope = null,
+) {
+  const filterParams = buildEventRequestsListFilterParams(activeTab, quickFilter, weekScope);
   const queryString = buildQueryString(filterParams);
 
   const listUrl = queryString ? `/api/event-requests/list?${queryString}` : '/api/event-requests/list';
   const fullUrl = queryString ? `/api/event-requests?${queryString}` : '/api/event-requests';
 
-  // IMPORTANT: Keep this query key aligned with EventRequestContext's useQuery key.
-  // Dashboard prefetch relies on this to warm the exact cache entry the context consumes.
-  const queryKey = ['/api/event-requests/list', filterParams, quickFilter, 'v3'] as const;
+  const queryKey = ['/api/event-requests/list', filterParams, quickFilter, weekScope, 'v3'] as const;
 
   return { queryKey, listUrl, fullUrl, filterParams, queryString };
 }

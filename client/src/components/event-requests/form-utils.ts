@@ -7,6 +7,7 @@
  * 3. Simplify the performSubmit function
  */
 
+import { hasActiveSandwichRange } from '@shared/sandwich-count-utils';
 import type { EventFormData } from './form-sections/types';
 export { findMismatchedSavedFields, getDroppedServerFields } from '@/lib/event-save-verification';
 
@@ -94,7 +95,6 @@ export function buildEventDataForServer(
     driversNeeded: formData.selfTransport ? 0 : (parseInt(formData.driversNeeded?.toString() || '0') || 0),
     selfTransport: formData.selfTransport || false,
     vanDriverNeeded: formData.selfTransport ? false : ((formData.vanDriverNeeded || false) || formData.isDhlVan),
-    speakersNeeded: parseInt(formData.speakersNeeded?.toString() || '0') || 0,
     volunteersNeeded: parseInt(formData.volunteersNeeded?.toString() || '0') || 0,
     estimatedAttendance: parseInt(formData.estimatedAttendance?.toString() || '0') || null,
 
@@ -109,32 +109,46 @@ export function buildEventDataForServer(
     nextAction: formData.nextAction || null,
     driverInstructions: formData.driverInstructions || null,
     volunteerInstructions: formData.volunteerInstructions || null,
-    speakerInstructions: formData.speakerInstructions || null,
+
+    // Structured reason fields — required by the server when status becomes
+    // cancelled/declined. The card Cancel/Decline dialogs set these directly;
+    // the edit-form status dropdown captures them via StatusReasonDialog and
+    // stashes them on formData before save.
+    ...(resolvedStatus === 'cancelled'
+      ? {
+          cancelledReason: formData.cancelledReason || null,
+          cancelledNotes: formData.cancelledNotes || null,
+        }
+      : {}),
+    ...(resolvedStatus === 'declined'
+      ? {
+          declinedReason: formData.declinedReason || null,
+          declinedNotes: formData.declinedNotes || null,
+        }
+      : {}),
 
     // Manual entry
     manualEntrySource: formData.manualEntrySource || null,
 
     // Contact information
-    firstName: formData.firstName || null,
-    lastName: formData.lastName || null,
-    email: formData.email || null,
-    phone: formData.phone || null,
-    organizationName: formData.organizationName || null,
+    firstName: formData.firstName?.trim() || null,
+    lastName: formData.lastName?.trim() || null,
+    email: formData.email?.trim() || null,
+    phone: formData.phone?.trim() || null,
+    organizationName: formData.organizationName?.trim() || null,
     department: formData.department || null,
     organizationCategory: formData.organizationCategory || null,
     schoolClassification: formData.schoolClassification || null,
 
     // Backup contact
-    backupContactFirstName: formData.backupContactFirstName || null,
-    backupContactLastName: formData.backupContactLastName || null,
-    backupContactEmail: formData.backupContactEmail || null,
-    backupContactPhone: formData.backupContactPhone || null,
+    backupContactFirstName: formData.backupContactFirstName?.trim() || null,
+    backupContactLastName: formData.backupContactLastName?.trim() || null,
+    backupContactEmail: formData.backupContactEmail?.trim() || null,
+    backupContactPhone: formData.backupContactPhone?.trim() || null,
     backupContactRole: formData.backupContactRole || null,
 
     // Misc
     previouslyHosted: formData.previouslyHosted || null,
-    speakerAudienceType: formData.speakerAudienceType || null,
-    speakerDuration: formData.speakerDuration || null,
     deliveryTimeWindow: formData.deliveryTimeWindow || null,
     deliveryParkingAccess: formData.deliveryParkingAccess || null,
 
@@ -156,19 +170,31 @@ export function buildEventDataForServer(
 
     // Standby
     standbyExpectedDate: (() => {
-      const date = fieldOverrides?.standbyExpectedDate || formData.standbyExpectedDate;
+      // Respect an EXPLICIT null/empty override (the "No reminder" choice in
+      // the standby dialog must clear the date, not fall back to the stale
+      // formData value from the closure) — only fall back when the override
+      // key wasn't provided at all.
+      const date =
+        fieldOverrides && 'standbyExpectedDate' in fieldOverrides
+          ? fieldOverrides.standbyExpectedDate
+          : formData.standbyExpectedDate;
       return formData.status === 'standby' && date
         ? serializeDateToISO(typeof date === 'string' ? date : new Date(date).toISOString().split('T')[0])
         : null;
     })(),
   };
 
-  // Sandwich data based on mode
+  // Sandwich data based on mode.
+  // Each mode owns exactly one representation of the count; the OTHER two
+  // representations must be explicitly nulled so a stale range/breakdown can't
+  // survive in the DB alongside an exact count (the "500 shows as 498" bug).
+  // See the diff-based save note in EventSchedulingForm.
   if (sandwichMode === 'total') {
     eventData.estimatedSandwichCount = formData.totalSandwichCount;
     eventData.sandwichTypes = null;
     eventData.estimatedSandwichCountMin = null;
     eventData.estimatedSandwichCountMax = null;
+    eventData.estimatedSandwichRangeType = null;
   } else if (sandwichMode === 'range') {
     eventData.estimatedSandwichCountMin = formData.estimatedSandwichCountMin || null;
     eventData.estimatedSandwichCountMax = formData.estimatedSandwichCountMax || null;
@@ -177,9 +203,10 @@ export function buildEventDataForServer(
     eventData.sandwichTypes = null;
   } else {
     eventData.sandwichTypes = JSON.stringify(formData.sandwichTypes);
-    eventData.estimatedSandwichCount = formData.sandwichTypes.reduce((sum, item) => sum + item.quantity, 0);
+    eventData.estimatedSandwichCount = sumSandwichTypeQuantities(formData.sandwichTypes);
     eventData.estimatedSandwichCountMin = null;
     eventData.estimatedSandwichCountMax = null;
+    eventData.estimatedSandwichRangeType = null;
   }
 
   // Attendee counts
@@ -220,18 +247,98 @@ export function buildEventDataForServer(
 }
 
 /**
+ * Sum quantities from a sandwichTypes value (array or JSON string).
+ */
+export function sumSandwichTypeQuantities(sandwichTypes: unknown): number {
+  if (!sandwichTypes) return 0;
+  try {
+    const parsed =
+      typeof sandwichTypes === 'string' ? JSON.parse(sandwichTypes) : sandwichTypes;
+    if (!Array.isArray(parsed)) return 0;
+    return parsed.reduce(
+      (sum, item) => sum + (Number((item as { quantity?: number })?.quantity) || 0),
+      0,
+    );
+  } catch {
+    return 0;
+  }
+}
+
+/**
  * Determine sandwich mode from existing event data.
+ *
+ * When estimatedSandwichCount disagrees with a stale sandwichTypes breakdown,
+ * prefer Exact Count so a full-form save does not silently revert the total
+ * (e.g. user enters 200 but old types still sum to 198).
+ *
+ * Same rule for a leftover range whose midpoint disagrees with the exact count
+ * (e.g. exact 500 + stale 490-506 → midpoint 498): open Exact Count, not Range.
  */
 export function determineSandwichMode(
   sandwichTypes: any,
   estimatedSandwichCountMin: any,
-  estimatedSandwichCountMax: any
+  estimatedSandwichCountMax: any,
+  estimatedSandwichCount?: number | null,
 ): 'total' | 'range' | 'types' {
-  const parsed = sandwichTypes ?
-    (typeof sandwichTypes === 'string' ? JSON.parse(sandwichTypes) : sandwichTypes) : [];
+  if (
+    hasActiveSandwichRange(
+      estimatedSandwichCountMin,
+      estimatedSandwichCountMax,
+      estimatedSandwichCount,
+    )
+  ) {
+    return 'range';
+  }
+
+  let parsed: unknown[] = [];
+  try {
+    parsed = sandwichTypes
+      ? typeof sandwichTypes === 'string'
+        ? JSON.parse(sandwichTypes)
+        : sandwichTypes
+      : [];
+  } catch {
+    parsed = [];
+  }
   const hasTypesData = Array.isArray(parsed) && parsed.length > 0;
-  const hasRangeData = estimatedSandwichCountMin && estimatedSandwichCountMax;
-  return hasTypesData ? 'types' : hasRangeData ? 'range' : 'total';
+  if (!hasTypesData) return 'total';
+
+  const typesTotal = sumSandwichTypeQuantities(parsed);
+  const storedTotal =
+    typeof estimatedSandwichCount === 'number' && estimatedSandwichCount > 0
+      ? estimatedSandwichCount
+      : null;
+
+  if (storedTotal !== null && typesTotal !== storedTotal) {
+    return 'total';
+  }
+
+  return 'types';
+}
+
+/**
+ * Mode for diff-baseline serialization of what is PHYSICALLY stored.
+ *
+ * Unlike determineSandwichMode (UI), any persisted min/max counts as 'range'
+ * even when a disagreeing exact count means the range is stale. That way a
+ * subsequent Exact Count save still detects min/max → null as a real change
+ * and clears the leftover range instead of dropping the clears (null === null).
+ */
+export function determineBaselineSandwichMode(
+  sandwichTypes: any,
+  estimatedSandwichCountMin: any,
+  estimatedSandwichCountMax: any,
+  estimatedSandwichCount?: number | null,
+): 'total' | 'range' | 'types' {
+  if (estimatedSandwichCountMin && estimatedSandwichCountMax) {
+    return 'range';
+  }
+  return determineSandwichMode(
+    sandwichTypes,
+    estimatedSandwichCountMin,
+    estimatedSandwichCountMax,
+    estimatedSandwichCount,
+  );
 }
 
 /**
@@ -241,30 +348,4 @@ export function determineActualSandwichMode(actualSandwichTypes: any): 'total' |
   const parsed = actualSandwichTypes ?
     (typeof actualSandwichTypes === 'string' ? JSON.parse(actualSandwichTypes) : actualSandwichTypes) : [];
   return Array.isArray(parsed) && parsed.length > 0 ? 'types' : 'total';
-}
-
-/**
- * Calculate total relevant sandwiches for speaker warning check.
- * Returns the count of sandwiches that should trigger a speaker recommendation.
- */
-export function calculateRelevantSandwichCount(
-  formData: EventFormData,
-  sandwichMode: 'total' | 'range' | 'types'
-): number {
-  if (sandwichMode === 'types' && formData.sandwichTypes?.length > 0) {
-    return formData.sandwichTypes
-      .filter(item => {
-        const typeLower = item.type.toLowerCase();
-        return typeLower === 'deli' || typeLower.includes('deli') ||
-               typeLower === 'turkey' || typeLower === 'deli_turkey' ||
-               typeLower === 'unknown';
-      })
-      .reduce((sum, item) => sum + item.quantity, 0);
-  } else if (sandwichMode === 'total' && formData.totalSandwichCount > 500) {
-    return formData.totalSandwichCount;
-  } else if (sandwichMode === 'range') {
-    const maxCount = formData.estimatedSandwichCountMax || formData.estimatedSandwichCountMin || 0;
-    return maxCount > 500 ? maxCount : 0;
-  }
-  return 0;
 }

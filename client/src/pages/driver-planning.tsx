@@ -28,6 +28,7 @@ import {
   getVolunteerIds, getVolunteerCount
 } from '@/lib/assignment-utils';
 import { getRecipientDisplayRegion } from '@/lib/atlanta-regions';
+import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
 
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -518,32 +519,27 @@ const formatTime12Hour = (time: string | null): string => {
   }
 };
 
-const formatSandwichType = (type: string | null | undefined): string => {
-  const normalized = (type || '').trim().toLowerCase();
-  if (!normalized) return 'type not set';
-  if (normalized === 'pbj' || normalized === 'pb&j' || normalized.includes('peanut')) return 'PB&J';
-  if (normalized.includes('deli')) return 'deli';
-  return type!.trim();
-};
-
-const formatSandwichBreakdown = (sandwichTypes: EventMapData['sandwichTypes']): string => {
-  if (!Array.isArray(sandwichTypes) || sandwichTypes.length === 0) return '';
-
-  return sandwichTypes
-    .filter((item) => item && (item.quantity || item.type))
-    .map((item) => {
-      const quantity = Number(item.quantity || 0);
-      const type = formatSandwichType(item.type);
-      return quantity > 0 ? `${quantity} ${type}` : type;
-    })
-    .join(', ');
-};
-
+// Sandwich summary used across the driver-planning surfaces (event
+// popups, side panel, map markers, etc.). Previously this file had its
+// own per-type formatter that flattened the stored values "deli_turkey"
+// and "deli_ham" down to plain "deli" — which both lost the meaningful
+// distinction AND made events with turkey/ham read as "(type not set)"
+// when the breakdown ended up empty. We now defer to the canonical
+// formatter in @/lib/sandwich-utils (the same one ScheduledCard uses),
+// so the Driver Planning tool and the Scheduled card always agree on
+// what a given event is making.
 const formatSandwichSummary = (event: Pick<EventMapData, 'estimatedSandwichCount' | 'sandwichTypes'>): string => {
   const count = event.estimatedSandwichCount || 0;
-  const breakdown = formatSandwichBreakdown(event.sandwichTypes);
   const countText = count > 0 ? `~${count} sandwiches` : 'Sandwich count not set';
-  return breakdown ? `${countText} (${breakdown})` : `${countText} (type not set)`;
+  const breakdown = formatSandwichTypesDisplay(event.sandwichTypes, undefined);
+  // formatSandwichTypesDisplay returns 'Not specified' when there are
+  // truly no usable types — only show a "type not set" suffix in that
+  // case, not when we have a real breakdown.
+  const hasBreakdown =
+    breakdown &&
+    breakdown !== 'Not specified' &&
+    !breakdown.endsWith(' total');
+  return hasBreakdown ? `${countText} (${breakdown})` : `${countText} (type not set)`;
 };
 
 // Extract city from address
@@ -623,7 +619,7 @@ const doesDriverMatchEventArea = (driver: Driver, eventAddress: string | null): 
 
 // Type for focused map item (host, recipient, or driver)
 interface FocusedMapItem {
-  type: 'host' | 'recipient' | 'driver' | 'speaker';
+  type: 'host' | 'recipient' | 'driver';
   id: number | string;
   latitude: string;
   longitude: string;
@@ -637,7 +633,7 @@ interface DrivingRoute {
   duration: number; // in seconds (without traffic)
   durationInTraffic: number | null; // in seconds (with traffic, if available)
   fromEvent: { lat: number; lng: number };
-  toItem: { lat: number; lng: number; type: 'host' | 'recipient' | 'driver' | 'speaker'; id: number | string };
+  toItem: { lat: number; lng: number; type: 'host' | 'recipient' | 'driver'; id: number | string };
 }
 
 // Type for selected driver/destination for trip planning
@@ -1022,7 +1018,6 @@ export default function DriverPlanningDashboard() {
   const [showAllHosts, setShowAllHosts] = useState(false);
   const [showAllRecipients, setShowAllRecipients] = useState(false);
   const [showAllNearbyDrivers, setShowAllNearbyDrivers] = useState(false);
-  const [showAllSpeakers, setShowAllSpeakers] = useState(false);
   const [driverSearch, setDriverSearch] = useState('');
   const [assigningDriverId, setAssigningDriverId] = useState<string | null>(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -2206,57 +2201,6 @@ export default function DriverPlanningDashboard() {
     return allRecipientsWithDistance.filter((r) => !designatedIds.has(r.id));
   }, [effectiveSelectedEvent, designatedRecipients, allRecipientsWithDistance]);
 
-  // All speakers near the selected event (volunteers with isSpeaker=true that have coordinates)
-  const nearbySpeakers = useMemo(() => {
-    if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) return [];
-
-    const eventLat = parseFloat(effectiveSelectedEvent.latitude);
-    const eventLng = parseFloat(effectiveSelectedEvent.longitude);
-
-    // Get IDs of speakers already assigned to this event
-    const assignedIds = new Set(
-      getSpeakerIds(effectiveSelectedEvent).map(id => {
-        const strId = String(id);
-        return strId.replace(/^(volunteer-|speaker-)/, '');
-      })
-    );
-
-    const speakersWithDistance = volunteers
-      .filter(v => v.isSpeaker && v.isActive && v.latitude && v.longitude)
-      .map(v => ({
-        id: v.id,
-        name: v.name,
-        phone: v.phone,
-        latitude: v.latitude!,
-        longitude: v.longitude!,
-        isAssigned: assignedIds.has(String(v.id)),
-        distance: calculateDistanceInMiles(
-          eventLat,
-          eventLng,
-          parseFloat(v.latitude!),
-          parseFloat(v.longitude!)
-        ),
-      }))
-      .sort((a, b) => {
-        // Assigned speakers first, then by distance
-        if (a.isAssigned && !b.isAssigned) return -1;
-        if (!a.isAssigned && b.isAssigned) return 1;
-        return a.distance - b.distance;
-      });
-
-    // Try progressively larger radii until we have at least 3 speakers (or run out of options)
-    const radii = [15, 30, 50, 75];
-    for (const radius of radii) {
-      const speakersInRadius = speakersWithDistance.filter(s => s.distance < radius || s.isAssigned);
-      if (speakersInRadius.length >= 3) {
-        return speakersInRadius.slice(0, 10);
-      }
-    }
-
-    // If still not enough, just return whatever we have (sorted by distance)
-    return speakersWithDistance.slice(0, 10);
-  }, [effectiveSelectedEvent, volunteers]);
-
   // Assigned driver(s) explicitly assigned on the event (if any)
   // Returns full DriverCandidate objects for drivers with valid coordinates
   const assignedDrivers = useMemo(() => {
@@ -2420,33 +2364,16 @@ export default function DriverPlanningDashboard() {
     });
   }, [driverSearchTerm, assignedDrivers, nearbyDriversAll, effectiveSelectedEvent?.vanDriverNeeded]);
 
-  // Compute volunteers/speakers assigned to visible events with geocoded locations
+  // Compute volunteers assigned to visible events with geocoded locations
   // Shows volunteers that are assigned to ANY visible event (not just selected)
   const volunteersWithLocations = useMemo(() => {
     if (!showVolunteersSpeakers || volunteers.length === 0) return [];
 
-    // Collect all assigned volunteer/speaker IDs from ALL visible events
+    // Collect all assigned volunteer IDs from ALL visible events
     const assignedVolunteerIds = new Set<string>();
-    const volunteerToEvents = new Map<string, { eventId: number; eventName: string; role: 'speaker' | 'volunteer' }[]>();
+    const volunteerToEvents = new Map<string, { eventId: number; eventName: string; role: 'volunteer' }[]>();
 
     for (const event of events) {
-      // Get speaker IDs from speakerDetails or assignedSpeakerIds
-      const speakerIds = getSpeakerIds(event);
-      for (const id of speakerIds) {
-        const strId = String(id);
-        // Extract numeric ID if it's a prefixed ID like "volunteer-123"
-        const numericId = strId.replace(/^(volunteer-|speaker-)/, '');
-        assignedVolunteerIds.add(numericId);
-        if (!volunteerToEvents.has(numericId)) {
-          volunteerToEvents.set(numericId, []);
-        }
-        volunteerToEvents.get(numericId)!.push({
-          eventId: event.id,
-          eventName: event.organizationName || 'Unknown',
-          role: 'speaker',
-        });
-      }
-
       // Get volunteer IDs from volunteerDetails or assignedVolunteerIds
       const volunteerIds = getVolunteerIds(event);
       for (const id of volunteerIds) {
@@ -2456,7 +2383,6 @@ export default function DriverPlanningDashboard() {
         if (!volunteerToEvents.has(numericId)) {
           volunteerToEvents.set(numericId, []);
         }
-        // Avoid duplicate entries if someone is both speaker and volunteer
         const existing = volunteerToEvents.get(numericId)!;
         if (!existing.some(e => e.eventId === event.id && e.role === 'volunteer')) {
           existing.push({
@@ -2679,7 +2605,7 @@ export default function DriverPlanningDashboard() {
 
   if (isLoading) {
     return (
-      <div className="h-[calc(100dvh-140px)] lg:h-[calc(100dvh-80px)] min-h-[400px] flex items-center justify-center">
+      <div className="h-full min-h-[400px] flex items-center justify-center">
         <div className="text-center">
           <Skeleton className="h-12 w-12 rounded-full mx-auto mb-4" />
           <Skeleton className="h-6 w-48 mx-auto" />
@@ -2689,7 +2615,7 @@ export default function DriverPlanningDashboard() {
   }
 
   return (
-    <div className="h-[calc(100dvh-140px)] lg:h-[calc(100dvh-80px)] min-h-[400px] flex flex-col">
+    <div className="h-full min-h-0 flex flex-col overflow-hidden">
       {/* Header - Desktop */}
       <div className="flex-shrink-0 p-4 bg-white border-b hidden lg:block">
         <PageBreadcrumbs
@@ -2752,7 +2678,7 @@ export default function DriverPlanningDashboard() {
       </div>
 
       {/* Main Content - Desktop 3-Panel Layout */}
-      <ResizablePanelGroup direction="horizontal" className="flex-1 hidden lg:flex overflow-hidden">
+      <ResizablePanelGroup direction="horizontal" className="flex-1 min-h-0 hidden lg:flex overflow-hidden">
         {/* Left Panel - Event List */}
         <ResizablePanel defaultSize={20} minSize={15} maxSize={35}>
         <div className="h-full border-r bg-gray-50 flex flex-col" data-testid="driver-planning-events-list" onClick={() => setFocusedItem(null)}>
@@ -2806,7 +2732,7 @@ export default function DriverPlanningDashboard() {
                 onChange={(e) => setShowVolunteersSpeakers(e.target.checked)}
                 className="rounded border-gray-300 text-purple-600 focus:ring-purple-600"
               />
-              <span className="text-gray-600">Show speakers/volunteers on map</span>
+              <span className="text-gray-600">Show volunteers on map</span>
             </label>
             <label className="flex items-center gap-2 text-xs cursor-pointer">
               <input
@@ -3025,17 +2951,6 @@ export default function DriverPlanningDashboard() {
                             No driver requirement
                           </Badge>
                         )}
-                        {/* Speakers - only show if needed > 0 */}
-                        {speakersNeeded > 0 && (
-                          <Badge
-                            variant={speakersAssigned < speakersNeeded ? 'destructive' : 'default'}
-                            className="text-xs"
-                            title={getAssignedSpeakersLabel(event) ? `Speakers: ${getAssignedSpeakersLabel(event)}` : undefined}
-                          >
-                            <Megaphone className="w-3 h-3 mr-1" />
-                            {`${speakersAssigned}/${speakersNeeded} spk`}
-                          </Badge>
-                        )}
                         {/* Volunteers - only show if needed > 0 */}
                         {volunteersNeeded > 0 && (
                           <Badge
@@ -3075,7 +2990,6 @@ export default function DriverPlanningDashboard() {
                             Drivers {totalDriversAssigned}/{driversNeeded || 0}
                             {event.vanDriverNeeded && !event.isDhlVan && ` • Van ${event.assignedVanDriverId ? 'assigned' : 'needed'}`}
                             {event.isDhlVan && ' • DHL van'}
-                            {speakersNeeded > 0 && ` • Speakers ${speakersAssigned}/${speakersNeeded}`}
                             {volunteersNeeded > 0 && ` • Volunteers ${volunteersAssigned}/${volunteersNeeded}`}
                           </span>
                         </div>
@@ -3095,12 +3009,6 @@ export default function DriverPlanningDashboard() {
                           <div className="text-[11px] text-gray-700">
                             <span className="font-semibold">Van driver:</span>{' '}
                             <span className="text-gray-600">{getAssignedDriversLabel({ ...event, assignedDriverIds: [event.assignedVanDriverId] } as any)}</span>
-                          </div>
-                        )}
-                        {getAssignedSpeakersLabel(event) && (
-                          <div className="text-[11px] text-gray-700">
-                            <span className="font-semibold">Speakers:</span>{' '}
-                            <span className="text-gray-600">{getAssignedSpeakersLabel(event)}</span>
                           </div>
                         )}
                         {getAssignedVolunteersLabel(event) && (
@@ -3205,14 +3113,13 @@ export default function DriverPlanningDashboard() {
         <ResizableHandle withHandle />
 
         {/* Center Panel - Map */}
-        <ResizablePanel defaultSize={55} minSize={30}>
-        <div className="h-full flex flex-col" data-testid="driver-planning-map">
-          <div className="relative flex-1">
+        <ResizablePanel defaultSize={55} minSize={30} className="min-h-0">
+        <div className="h-full min-h-0 flex flex-col overflow-hidden" data-testid="driver-planning-map">
+          <div className="relative flex-1 min-h-0 w-full">
           <MapContainer
             center={mapCenter}
             zoom={10}
-            style={{ height: '100%', width: '100%' }}
-            className="z-0"
+            className="absolute inset-0 z-0"
           >
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
@@ -3559,7 +3466,6 @@ export default function DriverPlanningDashboard() {
                     <h3 className="font-semibold text-purple-700 text-sm flex items-center gap-1">
                       <Megaphone className="w-3 h-3" />
                       {volunteer.name}
-                      {volunteer.isSpeaker && <span className="text-purple-400 text-[11px]">(Speaker)</span>}
                     </h3>
                     {volunteer.homeAddress && (
                       <p className="text-xs text-gray-600">{volunteer.homeAddress}</p>
@@ -3576,7 +3482,7 @@ export default function DriverPlanningDashboard() {
                         <ul className="text-xs text-gray-600 mt-1">
                           {volunteer.assignedEvents.map((evt, i) => (
                             <li key={i} className="flex items-center gap-1">
-                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: evt.role === 'speaker' ? colors.volunteer : '#a78bfa' }} />
+                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#a78bfa' }} />
                               {evt.eventName} ({evt.role})
                             </li>
                           ))}
@@ -3907,8 +3813,8 @@ export default function DriverPlanningDashboard() {
                 </div>
               )}
 
-              {/* Select button for previewed item (not for speakers - they're informational only) */}
-              {focusedItem && focusedItem.type !== 'speaker' && (
+              {/* Select button for previewed item */}
+              {focusedItem && (
                 <button
                   onClick={() => {
                     if (focusedItem.type === 'driver') {
@@ -3949,133 +3855,141 @@ export default function DriverPlanningDashboard() {
             </div>
           )}
 
-          </div>
-
-          <div className="border-t bg-white px-4 py-3 overflow-x-auto">
-            <div className="flex flex-nowrap items-start gap-3 min-w-max">
-              <div className="bg-white rounded-lg shadow-sm border inline-block flex-shrink-0" data-testid="driver-planning-legend">
+          {/* Legend overlay — on the map so trip-planning footer doesn't shrink map height */}
+          <div
+            className="absolute bottom-4 left-4 z-[1000] max-w-[min(540px,calc(100%-2rem))] max-h-[min(240px,40%)] overflow-y-auto bg-white rounded-lg shadow-lg border"
+            data-testid="driver-planning-legend"
+          >
+            <button
+              onClick={() => setDesktopLegendCollapsed(!desktopLegendCollapsed)}
+              className="flex items-center gap-1.5 w-full p-2 text-xs font-semibold hover:bg-gray-50 rounded-lg sticky top-0 bg-white z-10"
+            >
+              <span>Legend</span>
+              <svg
+                className={`w-3 h-3 transition-transform ${desktopLegendCollapsed ? '' : 'rotate-180'}`}
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+              </svg>
+            </button>
+            {!desktopLegendCollapsed && (
+              <div className="text-xs px-2 pb-2">
+                <p className="text-[11px] leading-tight text-gray-500 mb-1.5">
+                  Checked items are visible. Click a row to show or hide those pins.
+                </p>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 items-center">
                 <button
-                  onClick={() => setDesktopLegendCollapsed(!desktopLegendCollapsed)}
-                  className="flex items-center gap-1.5 w-full p-2 text-xs font-semibold hover:bg-gray-50 rounded-lg"
+                  type="button"
+                  onClick={() => toggleLayer('events')}
+                  className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.events ? '' : 'opacity-60'}`}
+                  title={layerVisibility.events ? 'Click to hide Event pins' : 'Click to show Event pins'}
+                  aria-pressed={layerVisibility.events}
+                  data-testid="toggle-layer-events"
                 >
-                  <span>Legend</span>
-                  <svg
-                    className={`w-3 h-3 transition-transform ${desktopLegendCollapsed ? '' : 'rotate-180'}`}
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                  <LayerToggleCheck checked={layerVisibility.events} />
+                  <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
                   </svg>
+                  <span>Event{layerVisibility.events ? '' : ' (hidden)'}</span>
                 </button>
-                {!desktopLegendCollapsed && (
-                  <div className="text-xs px-2 pb-2">
-                    <p className="text-[11px] leading-tight text-gray-500 mb-1.5">
-                      Checked items are visible. Click a row to show or hide those pins.
-                    </p>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1 items-center">
+                <div className="flex items-center gap-2">
+                  <svg viewBox="0 0 12 18" className="w-3.5 h-5" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="1"/>
+                    <circle cx="6" cy="6" r="2.5" fill="white"/>
+                    <circle cx="6" cy="6" r="1.2" fill="#ff0000"/>
+                  </svg>
+                  <span className="font-semibold">Selected Event (pulses)</span>
+                </div>
+                {effectiveSelectedEvent && (
+                  <>
                     <button
                       type="button"
-                      onClick={() => toggleLayer('events')}
-                      className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.events ? '' : 'opacity-60'}`}
-                      title={layerVisibility.events ? 'Click to hide Event pins' : 'Click to show Event pins'}
-                      aria-pressed={layerVisibility.events}
-                      data-testid="toggle-layer-events"
+                      onClick={() => toggleLayer('hosts')}
+                      className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.hosts ? '' : 'opacity-60'}`}
+                      title={layerVisibility.hosts ? 'Click to hide Host pins' : 'Click to show Host pins'}
+                      aria-pressed={layerVisibility.hosts}
+                      data-testid="toggle-layer-hosts"
                     >
-                      <LayerToggleCheck checked={layerVisibility.events} />
-                      <svg viewBox="0 0 12 18" className="w-3 h-4" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#3388ff" stroke="white" strokeWidth="0.5"/>
+                      <LayerToggleCheck checked={layerVisibility.hosts} />
+                      <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
+                      <span>Host (circle){layerVisibility.hosts ? '' : ' (hidden)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleLayer('recipients')}
+                      className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.recipients ? '' : 'opacity-60'}`}
+                      title={layerVisibility.recipients ? 'Click to hide Recipient pins' : 'Click to show Recipient pins'}
+                      aria-pressed={layerVisibility.recipients}
+                      data-testid="toggle-layer-recipients"
+                    >
+                      <LayerToggleCheck checked={layerVisibility.recipients} />
+                      <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
+                      <span>Recipient (diamond){layerVisibility.recipients ? '' : ' (hidden)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleLayer('drivers')}
+                      className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.drivers ? '' : 'opacity-60'}`}
+                      title={layerVisibility.drivers ? 'Click to hide Driver pins' : 'Click to show Driver pins'}
+                      aria-pressed={layerVisibility.drivers}
+                      data-testid="toggle-layer-drivers"
+                    >
+                      <LayerToggleCheck checked={layerVisibility.drivers} />
+                      <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
+                      <span>Driver (triangle){layerVisibility.drivers ? '' : ' (hidden)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowVolunteersSpeakers((v) => !v)}
+                      className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${showVolunteersSpeakers ? '' : 'opacity-60'}`}
+                      title={showVolunteersSpeakers ? 'Click to hide Volunteer pins' : 'Click to show Volunteer pins'}
+                      aria-pressed={showVolunteersSpeakers}
+                      data-testid="toggle-layer-volunteers"
+                    >
+                      <LayerToggleCheck checked={showVolunteersSpeakers} />
+                      <svg viewBox="0 0 24 24" className="w-4 h-4 drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" fill="#8b5cf6" stroke="white" strokeWidth="1.5"/>
                       </svg>
-                      <span>Event{layerVisibility.events ? '' : ' (hidden)'}</span>
+                      <span>Volunteers (star){showVolunteersSpeakers ? '' : ' (hidden)'}</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowTeamMembers((v) => !v)}
+                      className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${showTeamMembers ? '' : 'opacity-60'}`}
+                      title={showTeamMembers ? 'Click to hide Team Member pins' : 'Click to show Team Member pins'}
+                      aria-pressed={showTeamMembers}
+                      data-testid="toggle-layer-team-members"
+                    >
+                      <LayerToggleCheck checked={showTeamMembers} />
+                      <div className="w-3.5 h-3.5 rounded-[4px] bg-red-500 border border-white shadow-sm" />
+                      <span>Team Members (rounded square){showTeamMembers ? '' : ' (hidden)'}</span>
                     </button>
                     <div className="flex items-center gap-2">
-                      <svg viewBox="0 0 12 18" className="w-3.5 h-5" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M6 0C2.7 0 0 2.7 0 6c0 4.5 6 12 6 12s6-7.5 6-12c0-3.3-2.7-6-6-6z" fill="#ff0000" stroke="white" strokeWidth="1"/>
-                        <circle cx="6" cy="6" r="2.5" fill="white"/>
-                        <circle cx="6" cy="6" r="1.2" fill="#ff0000"/>
+                      <svg viewBox="0 0 26 26" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="13" cy="13" r="11" fill="#2ecc71" stroke="white" strokeWidth="2"/>
+                        <path d="M13 6L19 18H7L13 6Z" fill="#f1c40f" stroke="white" strokeWidth="1.5"/>
                       </svg>
-                      <span className="font-semibold">Selected Event (pulses)</span>
+                      <span>Host+Driver</span>
                     </div>
-                    {effectiveSelectedEvent && (
-                      <>
-                        <button
-                          type="button"
-                          onClick={() => toggleLayer('hosts')}
-                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.hosts ? '' : 'opacity-60'}`}
-                          title={layerVisibility.hosts ? 'Click to hide Host pins' : 'Click to show Host pins'}
-                          aria-pressed={layerVisibility.hosts}
-                          data-testid="toggle-layer-hosts"
-                        >
-                          <LayerToggleCheck checked={layerVisibility.hosts} />
-                          <div className="w-3 h-3 rounded-full bg-green-500 border border-white shadow-sm" />
-                          <span>Host (circle){layerVisibility.hosts ? '' : ' (hidden)'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => toggleLayer('recipients')}
-                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.recipients ? '' : 'opacity-60'}`}
-                          title={layerVisibility.recipients ? 'Click to hide Recipient pins' : 'Click to show Recipient pins'}
-                          aria-pressed={layerVisibility.recipients}
-                          data-testid="toggle-layer-recipients"
-                        >
-                          <LayerToggleCheck checked={layerVisibility.recipients} />
-                          <div className="w-3 h-3 bg-purple-500 border border-white shadow-sm rotate-45" style={{ borderRadius: '1px' }} />
-                          <span>Recipient (diamond){layerVisibility.recipients ? '' : ' (hidden)'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => toggleLayer('drivers')}
-                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${layerVisibility.drivers ? '' : 'opacity-60'}`}
-                          title={layerVisibility.drivers ? 'Click to hide Driver pins' : 'Click to show Driver pins'}
-                          aria-pressed={layerVisibility.drivers}
-                          data-testid="toggle-layer-drivers"
-                        >
-                          <LayerToggleCheck checked={layerVisibility.drivers} />
-                          <div className="w-0 h-0 border-l-[6px] border-l-transparent border-r-[6px] border-r-transparent border-b-[10px] border-b-yellow-400" style={{ filter: 'drop-shadow(0 1px 1px rgba(0,0,0,0.2))' }} />
-                          <span>Driver (triangle){layerVisibility.drivers ? '' : ' (hidden)'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowVolunteersSpeakers((v) => !v)}
-                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${showVolunteersSpeakers ? '' : 'opacity-60'}`}
-                          title={showVolunteersSpeakers ? 'Click to hide Volunteer/Speaker pins' : 'Click to show Volunteer/Speaker pins'}
-                          aria-pressed={showVolunteersSpeakers}
-                          data-testid="toggle-layer-volunteers"
-                        >
-                          <LayerToggleCheck checked={showVolunteersSpeakers} />
-                          <svg viewBox="0 0 24 24" className="w-4 h-4 drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" fill="#8b5cf6" stroke="white" strokeWidth="1.5"/>
-                          </svg>
-                          <span>Speakers/Volunteers (star){showVolunteersSpeakers ? '' : ' (hidden)'}</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setShowTeamMembers((v) => !v)}
-                          className={`flex items-center gap-2 w-full hover:bg-gray-50 rounded px-1 py-1 -mx-1 text-left transition-opacity ${showTeamMembers ? '' : 'opacity-60'}`}
-                          title={showTeamMembers ? 'Click to hide Team Member pins' : 'Click to show Team Member pins'}
-                          aria-pressed={showTeamMembers}
-                          data-testid="toggle-layer-team-members"
-                        >
-                          <LayerToggleCheck checked={showTeamMembers} />
-                          <div className="w-3.5 h-3.5 rounded-[4px] bg-red-500 border border-white shadow-sm" />
-                          <span>Team Members (rounded square){showTeamMembers ? '' : ' (hidden)'}</span>
-                        </button>
-                        <div className="flex items-center gap-2">
-                          <svg viewBox="0 0 26 26" className="w-4 h-4" xmlns="http://www.w3.org/2000/svg">
-                            <circle cx="13" cy="13" r="11" fill="#2ecc71" stroke="white" strokeWidth="2"/>
-                            <path d="M13 6L19 18H7L13 6Z" fill="#f1c40f" stroke="white" strokeWidth="1.5"/>
-                          </svg>
-                          <span>Host+Driver</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
-                          <span>Selected item = orange</span>
-                        </div>
-                      </>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full bg-orange-500 border border-white shadow-sm" />
+                      <span>Selected item = orange</span>
                     </div>
-                  </div>
+                  </>
                 )}
+                </div>
               </div>
+            )}
+          </div>
+
+          </div>
+
+          {(fullTripRoute && selectedDriver && selectedDestination) ||
+          (((selectedDriver && !selectedDestination) || (!selectedDriver && selectedDestination)) && !fullTripRoute) ||
+          (drivingRoute && !fullTripRoute && !selectedDriver && !selectedDestination) ? (
+          <div className="border-t bg-white px-4 py-2 overflow-x-auto flex-shrink-0">
+            <div className="flex flex-nowrap items-start gap-3 min-w-max">
 
               {fullTripRoute && selectedDriver && selectedDestination && (
                 <div className="bg-white rounded-xl shadow-sm border p-4 min-w-[280px] flex-shrink-0">
@@ -4403,8 +4317,8 @@ export default function DriverPlanningDashboard() {
                     </div>
                   )}
 
-                  {/* Select button for previewed item (not for speakers) */}
-                  {focusedItem && focusedItem.type !== 'speaker' && (
+                  {/* Select button for previewed item */}
+                  {focusedItem && (
                     <button
                       onClick={() => {
                         if (focusedItem.type === 'driver') {
@@ -4446,6 +4360,7 @@ export default function DriverPlanningDashboard() {
               )}
             </div>
           </div>
+          ) : null}
         </div>
         </ResizablePanel>
 
@@ -4885,78 +4800,6 @@ export default function DriverPlanningDashboard() {
                   )}
                 </div>
 
-                {/* Nearby Speakers */}
-                <div data-testid="driver-planning-nearby-speakers">
-                  <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
-                      <Megaphone className="w-4 h-4 text-indigo-600" />
-                      Nearby Speakers
-                    </h3>
-                    <span className="text-[9px] text-gray-400 italic" title="Click to preview driving route">click for driving distance</span>
-                  </div>
-                  {nearbySpeakers.length > 0 ? (
-                    <div className="space-y-2">
-                      {(showAllSpeakers ? nearbySpeakers : nearbySpeakers.slice(0, 3)).map((speaker) => (
-                        <div
-                          key={`speaker-${speaker.id}`}
-                          className={`flex items-stretch text-xs border rounded transition-colors ${
-                            focusedItem?.type === 'speaker' && focusedItem?.id === speaker.id
-                              ? 'bg-indigo-100 border-indigo-400'
-                              : speaker.isAssigned
-                                ? 'bg-indigo-100 border-indigo-300 hover:bg-indigo-200'
-                                : 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100'
-                          }`}
-                        >
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleItemClick({
-                                type: 'speaker',
-                                id: speaker.id,
-                                latitude: speaker.latitude,
-                                longitude: speaker.longitude,
-                                name: speaker.name
-                              });
-                            }}
-                            className="flex-1 text-left p-2"
-                          >
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Megaphone className="w-3.5 h-3.5 text-indigo-600" />
-                                <span className="font-medium">{speaker.name}</span>
-                                {speaker.isAssigned && (
-                                  <span className="text-[9px] bg-indigo-200 text-indigo-700 px-1.5 py-0.5 rounded-full font-medium">
-                                    Assigned
-                                  </span>
-                                )}
-                              </div>
-                              <span className="text-indigo-700">{speaker.distance.toFixed(1)} mi</span>
-                            </div>
-                            {speaker.phone && (
-                              <div className="text-gray-500 pl-5 mt-0.5 text-[10px] flex items-center gap-1">
-                                <Phone className="w-3 h-3" />
-                                {speaker.phone}
-                              </div>
-                            )}
-                          </button>
-                        </div>
-                      ))}
-                      {nearbySpeakers.length > 3 && (
-                        <button
-                          onClick={() => setShowAllSpeakers(!showAllSpeakers)}
-                          className="w-full text-xs text-indigo-700 hover:text-indigo-900 font-medium py-1"
-                        >
-                          {showAllSpeakers ? 'Show less' : `View ${nearbySpeakers.length - 3} more speakers`}
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="text-xs p-3 bg-gray-100 rounded text-gray-500 text-center">
-                      No speakers with map coordinates nearby.
-                    </div>
-                  )}
-                </div>
-
                 {/* Driver Search */}
                 <div className="space-y-1">
                   <div className="text-xs font-semibold text-gray-700 uppercase tracking-wide">Find a driver</div>
@@ -5064,7 +4907,7 @@ export default function DriverPlanningDashboard() {
 
                 {/* Suggested Drivers - Other nearby options */}
                 {((driverSearchResults && driverSearchResults.length > 0) || nearbyDrivers.length > 0) && (
-                  <div className="space-y-2">
+                  <div className="space-y-2" data-testid="driver-planning-suggested-drivers">
                     <h3 className="text-xs font-semibold text-gray-700 uppercase tracking-wide flex items-center gap-2">
                       {driverSearchResults
                         ? `Search results (${driverSearchResults.length})`
@@ -5719,7 +5562,6 @@ export default function DriverPlanningDashboard() {
                     <h3 className="font-semibold text-purple-700 text-sm flex items-center gap-1">
                       <Megaphone className="w-3 h-3" />
                       {volunteer.name}
-                      {volunteer.isSpeaker && <span className="text-purple-400 text-[11px]">(Speaker)</span>}
                     </h3>
                     {volunteer.homeAddress && (
                       <p className="text-xs text-gray-600">{volunteer.homeAddress}</p>
@@ -5736,7 +5578,7 @@ export default function DriverPlanningDashboard() {
                         <ul className="text-xs text-gray-600 mt-1">
                           {volunteer.assignedEvents.map((evt, i) => (
                             <li key={i} className="flex items-center gap-1">
-                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: evt.role === 'speaker' ? colors.volunteer : '#a78bfa' }} />
+                              <span className="w-2 h-2 rounded-full" style={{ backgroundColor: '#a78bfa' }} />
                               {evt.eventName} ({evt.role})
                             </li>
                           ))}
@@ -6245,7 +6087,7 @@ export default function DriverPlanningDashboard() {
                       <svg viewBox="0 0 24 24" className="w-3 h-3 drop-shadow-sm" xmlns="http://www.w3.org/2000/svg">
                         <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" fill="#8b5cf6" stroke="white" strokeWidth="1.5"/>
                       </svg>
-                      <span>Speaker/Volunteer{showVolunteersSpeakers ? '' : ' (hidden)'}</span>
+                      <span>Volunteer{showVolunteersSpeakers ? '' : ' (hidden)'}</span>
                     </button>
                     <button
                       type="button"
@@ -6493,7 +6335,6 @@ export default function DriverPlanningDashboard() {
                       <div className="text-xs text-gray-600">
                         <span className="font-medium">Staffing:</span>{' '}
                         Drivers {getTotalDriverCount(selectedEvent)}/{selectedEvent.driversNeeded || 0}
-                        {(selectedEvent.speakersNeeded || 0) > 0 && ` • Speakers ${getSpeakerCount(selectedEvent)}/${selectedEvent.speakersNeeded || 0}`}
                         {(selectedEvent.volunteersNeeded || 0) > 0 && ` • Volunteers ${getVolunteerCount(selectedEvent)}/${selectedEvent.volunteersNeeded || 0}`}
                       </div>
                       {getTspContactLabel(selectedEvent) && (
@@ -6518,12 +6359,6 @@ export default function DriverPlanningDashboard() {
                             };
                             return getAssignedDriversLabel(vanDriverEvent);
                           })()}
-                        </div>
-                      )}
-                      {getAssignedSpeakersLabel(selectedEvent) && (
-                        <div className="text-sm text-gray-700 break-words">
-                          <span className="font-medium">Speakers:</span>{' '}
-                          {getAssignedSpeakersLabel(selectedEvent)}
                         </div>
                       )}
                       {getAssignedVolunteersLabel(selectedEvent) && (
@@ -6807,17 +6642,6 @@ export default function DriverPlanningDashboard() {
                                   No driver requirement
                                 </Badge>
                               )}
-                              {/* Speakers - only show if needed > 0 */}
-                              {speakersNeeded > 0 && (
-                                <Badge
-                                  variant={speakersAssigned < speakersNeeded ? 'destructive' : 'default'}
-                                  className="text-xs px-2 py-0.5"
-                                  title={getAssignedSpeakersLabel(event) ? `Speakers: ${getAssignedSpeakersLabel(event)}` : undefined}
-                                >
-                                  <Megaphone className="w-3.5 h-3.5 mr-1" />
-                                  {`${speakersAssigned}/${speakersNeeded} spk`}
-                                </Badge>
-                              )}
                               {/* Volunteers - only show if needed > 0 */}
                               {volunteersNeeded > 0 && (
                                 <Badge
@@ -6944,7 +6768,6 @@ export default function DriverPlanningDashboard() {
                   <div className="text-xs text-gray-600">
                     <span className="font-medium">Staffing:</span>{' '}
                     Drivers {getTotalDriverCount(selectedEvent)}/{selectedEvent.driversNeeded || 0}
-                    {(selectedEvent.speakersNeeded || 0) > 0 && ` • Speakers ${getSpeakerCount(selectedEvent)}/${selectedEvent.speakersNeeded || 0}`}
                     {(selectedEvent.volunteersNeeded || 0) > 0 && ` • Volunteers ${getVolunteerCount(selectedEvent)}/${selectedEvent.volunteersNeeded || 0}`}
                   </div>
                   {getTspContactLabel(selectedEvent) && (
@@ -6969,12 +6792,6 @@ export default function DriverPlanningDashboard() {
                         };
                         return getAssignedDriversLabel(vanDriverEvent);
                       })()}
-                    </div>
-                  )}
-                  {getAssignedSpeakersLabel(selectedEvent) && (
-                    <div className="text-sm text-gray-700">
-                      <span className="font-medium">Speakers:</span>{' '}
-                      {getAssignedSpeakersLabel(selectedEvent)}
                     </div>
                   )}
                   {getAssignedVolunteersLabel(selectedEvent) && (

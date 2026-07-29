@@ -21,8 +21,6 @@ import {
   Star,
   Pause,
   BarChart3,
-  ClipboardList,
-  Truck,
   LayoutList,
   Hourglass,
   AlertCircle,
@@ -31,6 +29,49 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { Info } from 'lucide-react';
+
+/**
+ * Per-tab guidance tip — shown as an inline banner under the active status tab
+ * so new team members can see at a glance what action is expected at that stage.
+ * Wording mirrors STATUS_DEFINITIONS.guidance in shared/event-status-workflow.ts
+ * but condensed for an at-a-glance read.
+ */
+const STATUS_TAB_TIPS: Record<string, string> = {
+  new: 'Review the details and make first contact. Move to In Process once you’ve sent the toolkit, or Non-Event if it isn’t a real event request.',
+  in_process: 'Work with the contact to finalize event details. Move to Scheduled once a date is locked in, or Standby/Stalled if you’re waiting on them.',
+  scheduled: 'Assign drivers and volunteers. Confirm logistics. Move to Completed after the event date, or Cancelled/Rescheduled if plans change.',
+  rescheduled: 'Treat like a Scheduled event. Re-confirm assignments for the new date.',
+  completed: 'Finish 1-day and 1-month follow-ups, and request a social media post if applicable.',
+  declined: 'Record the reason. Can be reactivated if they come back later.',
+  cancelled: 'Make sure the cancellation reason is documented in the notes.',
+  non_event: 'Terminal status — applies to requests that turned out not to be real events.',
+  standby: 'Follow up closely. Move back to In Process or Scheduled once they’re ready, or to Stalled/Declined if they don’t respond.',
+  stalled: 'Continue periodic outreach. Move back to In Process if they respond, or Declined if they confirm they’re no longer interested.',
+  all: 'All events across every status — useful for searching or auditing.',
+};
+
+/**
+ * Per-status brand color for the filter tabs. Mirrors the colors used by
+ * the card-level badges (statusBorderColors in constants.ts) so the tab
+ * row and the card content read as one consistent visual system.
+ *
+ * Tab values that aren't workflow statuses (e.g. 'all', 'my_assignments')
+ * get a neutral teal so they read as "view filters" rather than statuses.
+ */
+const STATUS_TAB_COLOR: Record<string, string> = {
+  all: '#236383',
+  new: '#007E8C',
+  in_process: '#FBAD3F',
+  scheduled: '#236383',
+  rescheduled: '#236383',
+  completed: '#47B3CB',
+  declined: '#A31C41',
+  non_event: '#78716C',
+  standby: '#9333EA',
+  stalled: '#6B7280',
+  my_assignments: '#236383',
+};
 
 interface RequestFiltersProps {
   // Search and filter states
@@ -67,6 +108,8 @@ interface RequestFiltersProps {
     my_assignments: number;
   };
   statusCountsLoading?: boolean;
+  /** Unopened new requests for this user (tab dot only). */
+  unviewedNewCount?: number;
 
   // Content for each tab
   children: {
@@ -106,6 +149,7 @@ export default function RequestFilters({
   onItemsPerPageChange,
   statusCounts,
   statusCountsLoading,
+  unviewedNewCount = 0,
   children,
   totalItems,
   totalPages,
@@ -135,24 +179,10 @@ export default function RequestFilters({
     });
   }
 
-  if (hasAdminOverviewPermission && children.planning) {
-    navTabs.push({
-      value: 'planning',
-      label: 'Planning',
-      shortLabel: 'Planning',
-      icon: ClipboardList,
-    });
-  }
-
-  // Add sandwich destination overview tab if user has permission
-  if (hasAdminOverviewPermission && children.sandwich_overview) {
-    navTabs.push({
-      value: 'sandwich_overview',
-      label: 'Sandwich Destinations',
-      shortLabel: 'Destinations',
-      icon: Truck,
-    });
-  }
+  // Planning and Sandwich Destinations live in the sidebar nav (deep-links
+  // to ?tab=planning and ?tab=sandwich_overview) so they don't crowd the
+  // tab bar — but if a user navigates directly to one of those tabs, the
+  // tab still renders. We just don't surface a tab button for it here.
 
   navTabs.push({
     value: 'my_assignments',
@@ -178,7 +208,7 @@ export default function RequestFilters({
       shortLabel: 'New',
       icon: Star,
       count: statusCounts.new,
-      hasNotification: statusCounts.new > 0,
+      hasNotification: unviewedNewCount > 0,
     },
     {
       value: 'in_process',
@@ -357,30 +387,82 @@ export default function RequestFilters({
           </div>
         )}
 
-        {/* Status filter tabs — the primary filter mechanism */}
+        {/* Status filter tabs — the primary filter mechanism.
+            Each tab is color-coded by workflow stage so the eye can
+            distinguish "Scheduled" from "In Process" at a glance even
+            in the inactive state, and the active state strongly fills
+            with the matching brand color. Inactive: tinted icon + tinted
+            border, transparent bg. Active: filled bg, white text, hard
+            border. Card-level badges already use these same colors so
+            the tab strip and the card content now read as one system. */}
         <Tabs value={activeTab} onValueChange={onActiveTabChange} className="space-y-4">
           <div className="w-full overflow-x-auto pb-1">
-            <TabsList className="inline-flex w-auto min-w-full gap-1">
-              {tabConfig.filter(tab => !navTabs.some(nt => nt.value === tab.value)).map((tab) => (
+            <TabsList className="inline-flex w-auto min-w-full gap-1 bg-transparent">
+              {tabConfig.filter(tab => !navTabs.some(nt => nt.value === tab.value)).map((tab) => {
+                const color = STATUS_TAB_COLOR[tab.value] || STATUS_TAB_COLOR.all;
+                const isActive = activeTab === tab.value;
+                return (
                   <TabsTrigger
                     key={tab.value}
                     value={tab.value}
-                    className="relative text-xs lg:text-sm whitespace-nowrap px-2 lg:px-4"
+                    data-state={isActive ? 'active' : 'inactive'}
+                    className="relative text-xs lg:text-sm whitespace-nowrap px-2 lg:px-4 border-2 transition-colors data-[state=active]:shadow-sm"
+                    style={
+                      isActive
+                        ? {
+                            // Active: filled brand color, white text +
+                            // icon, matching darker border.
+                            backgroundColor: color,
+                            borderColor: color,
+                            color: '#ffffff',
+                          }
+                        : {
+                            // Inactive: transparent fill, brand-tinted
+                            // text + border so the workflow stage is
+                            // still recognizable without selection.
+                            backgroundColor: 'transparent',
+                            borderColor: `${color}55`,
+                            color: color,
+                          }
+                    }
                   >
                     <div className="flex items-center justify-center space-x-1">
                       <tab.icon className="w-3 h-3 flex-shrink-0" />
                       <span className="hidden lg:inline">{tab.label}</span>
                       <span className="lg:hidden">{tab.shortLabel}</span>
-                      {tab.count !== undefined && <span className="text-xs opacity-70">({formatCount(tab.count)})</span>}
+                      {tab.count !== undefined && (
+                        <span
+                          className="text-xs"
+                          style={{ opacity: isActive ? 0.85 : 0.7 }}
+                        >
+                          ({formatCount(tab.count)})
+                        </span>
+                      )}
                     </div>
                     {tab.hasNotification && !statusCountsLoading && (
                       <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse" />
                     )}
                   </TabsTrigger>
-              ))}
+                );
+              })}
             </TabsList>
           </div>
         </Tabs>
+
+        {/* Per-tab guidance banner — actionable tip for what to do at each
+            stage. Hidden when the user is on a non-status filter (e.g.,
+            navTabs like Planning) since those don't map to a workflow stage. */}
+        {STATUS_TAB_TIPS[activeTab] && (
+          <div className="flex items-start gap-2 px-3 py-2 rounded-md bg-[#007E8C]/8 border border-[#007E8C]/20 text-[13px] text-[#236383] leading-snug">
+            <Info className="w-4 h-4 mt-0.5 shrink-0 text-[#007E8C]" aria-hidden="true" />
+            <p>
+              <span className="font-semibold">
+                {tabConfig.find((t) => t.value === activeTab)?.label}:
+              </span>{' '}
+              {STATUS_TAB_TIPS[activeTab]}
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Top Pagination - Shown on all screen sizes when there are multiple pages */}

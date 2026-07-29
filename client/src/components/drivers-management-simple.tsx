@@ -268,13 +268,25 @@ export default function DriversManagement() {
       });
     }
 
-    // Apply agreement filter (signed, signed + located, no agreement)
+    // Apply agreement filter (signed, signed + located, no agreement,
+    // or "missing requirements" — drivers who fail any compliance check
+    // among: agreement signed, agreement in DB, DL# on file. Limited
+    // to active drivers since inactive drivers don't need pre-event
+    // compliance.
     if (agreementFilter === 'signed') {
       filtered = filtered.filter((driver) => driver.emailAgreementSent === true);
     } else if (agreementFilter === 'signed_and_located') {
       filtered = filtered.filter((driver) => driver.emailAgreementSent === true && driver.agreementInDatabase === true);
     } else if (agreementFilter === 'no_agreement') {
       filtered = filtered.filter((driver) => !driver.emailAgreementSent);
+    } else if (agreementFilter === 'missing_requirements') {
+      filtered = filtered.filter((driver) => {
+        if (!driver.isActive) return false;
+        const noAgreement = !driver.emailAgreementSent;
+        const agreementNotInDb = driver.emailAgreementSent && !driver.agreementInDatabase;
+        const noDl = !driver.licenseNumber || driver.licenseNumber.trim().length === 0;
+        return noAgreement || agreementNotInDb || noDl;
+      });
     }
 
     // Apply van filter (approved, approved + willing, interested)
@@ -1339,6 +1351,10 @@ export default function DriversManagement() {
                     <SelectItem value="signed">Agreement Signed</SelectItem>
                     <SelectItem value="signed_and_located">Signed + Located</SelectItem>
                     <SelectItem value="no_agreement">No Agreement Signed</SelectItem>
+                    {/* Pre-event audit shortcut: surfaces every active
+                        driver who fails any compliance check (missing
+                        agreement / agreement not in DB / missing DL#). */}
+                    <SelectItem value="missing_requirements">Missing requirements</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -1418,7 +1434,7 @@ export default function DriversManagement() {
             Showing {filteredDrivers.length} of {drivers.length} drivers
             {searchTerm && <span> • Search: "{searchTerm}"</span>}
             {statusFilter !== 'all' && <span> • {statusFilter === 'temp_unavailable' ? 'Temporarily Unavailable' : statusFilter === 'active' ? 'Active' : statusFilter === 'needs_checkin' ? 'Needs Check-in' : 'Inactive'}</span>}
-            {agreementFilter !== 'all' && <span> • {agreementFilter === 'signed' ? 'Agreement Signed' : agreementFilter === 'signed_and_located' ? 'Signed + Located' : 'No Agreement'}</span>}
+            {agreementFilter !== 'all' && <span> • {agreementFilter === 'signed' ? 'Agreement Signed' : agreementFilter === 'signed_and_located' ? 'Signed + Located' : agreementFilter === 'missing_requirements' ? 'Missing requirements' : 'No Agreement'}</span>}
             {vanFilter !== 'all' && <span> • {vanFilter === 'approved' ? 'Van Approved' : vanFilter === 'approved_and_willing' ? 'Approved + Willing' : 'Van Interest'}</span>}
             {driverTypeFilter !== 'all' && <span> • {driverTypeFilter === 'weekly' ? 'Weekly Driver' : 'Event Driver'}</span>}
             {surveyFilter !== 'all' && <span> • {surveyFilter === 'submitted' ? 'Survey Submitted' : 'Survey Not Submitted'}</span>}
@@ -2150,24 +2166,56 @@ export default function DriversManagement() {
                                 Missing Agreement
                               </Badge>
                             )}
-                            {driver.agreementInDatabase && (
+                            {/* Compliance state for "agreement saved in
+                                DB" — render both states so a driver who
+                                hasn't had theirs filed is visibly flagged
+                                in red instead of just missing a green
+                                badge. Skip the missing-state pill when
+                                the driver hasn't signed at all (the
+                                Missing Agreement badge above already
+                                covers that case). */}
+                            {driver.agreementInDatabase ? (
                               <Badge className={`text-xs ${driver.isActive ? 'bg-emerald-100 text-emerald-800 border-emerald-200' : 'border-emerald-200 text-emerald-600 bg-emerald-50'}`} variant={driver.isActive ? 'default' : 'outline'}>
                                 <Database className="w-3 h-3 mr-1" />
                                 Agreement in DB
                               </Badge>
-                            )}
+                            ) : driver.emailAgreementSent ? (
+                              <Badge
+                                variant="outline"
+                                className={`text-xs ${driver.isActive ? 'border-red-300 text-red-700 bg-red-50' : 'border-red-200 text-red-600 bg-red-50'}`}
+                                data-testid={`badge-agreement-not-in-db-${driver.id}`}
+                              >
+                                <AlertTriangle className="w-3 h-3 mr-1" />
+                                Agreement not in DB
+                              </Badge>
+                            ) : null}
                             {driver.vanApproved && driver.isActive && (
                               <Badge className="bg-brand-primary-light text-brand-primary-dark border-brand-primary text-xs">
                                 <CheckCircle className="w-3 h-3 mr-1" />
                                 Van Approved
                               </Badge>
                             )}
-                            {driver.licenseNumber && driver.licenseNumber.trim().length > 0 && (
+                            {/* Driver's-license-on-file compliance state
+                                — render both. Active drivers without a
+                                DL# get an amber warning so they show up
+                                during pre-event audits instead of being
+                                silently absent from the row of green
+                                pills. */}
+                            {driver.licenseNumber && driver.licenseNumber.trim().length > 0 ? (
                               <Badge variant={driver.isActive ? 'secondary' : 'outline'} className={`text-xs ${driver.isActive ? 'bg-slate-100 text-slate-700' : 'border-slate-200 text-slate-600 bg-slate-50'}`} data-testid={`badge-dl-on-file-${driver.id}`}>
                                 <FileCheck className="w-3 h-3 mr-1" />
                                 DL# on file
                               </Badge>
-                            )}
+                            ) : driver.isActive ? (
+                              <Badge
+                                variant="outline"
+                                className="text-xs border-amber-300 text-amber-700 bg-amber-50"
+                                data-testid={`badge-dl-missing-${driver.id}`}
+                              >
+                                <AlertTriangle className="w-3 h-3 mr-1" />
+                                DL# missing
+                              </Badge>
+                            ) : null}
                             {driver.wantsTextAlerts && (
                               <Badge variant="outline" className={`text-xs ${driver.isActive ? 'border-cyan-300 text-cyan-700 bg-cyan-50' : 'border-cyan-200 text-cyan-600 bg-cyan-50'}`}>
                                 <Smartphone className="w-3 h-3 mr-1" />

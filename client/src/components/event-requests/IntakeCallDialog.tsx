@@ -72,7 +72,6 @@ interface IntakeCallDialogProps {
   isOpen: boolean;
   onClose: () => void;
   eventRequest: EventRequest | null;
-  onCallComplete?: () => void;
 }
 
 interface ChecklistItem {
@@ -329,7 +328,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   isOpen,
   onClose,
   eventRequest,
-  onCallComplete,
 }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -436,9 +434,9 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
     });
   }, [eventDateUndecided]);
 
-  // Corporate-event answer. Drives whether speaker/volunteer questions are
-  // required (corporate events must have one of them) and the dynamic
-  // guidance text shown next to each.
+  // Corporate-event answer. Drives whether the corporate follow-up questions
+  // (participant count, additional volunteers) are shown and the dynamic
+  // guidance text next to each.
   const isCorporateEvent = itemAnswers.is_corporate_event === 'yes';
 
   // Sandwich-count gating: the form's later sections behave differently
@@ -496,7 +494,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
 
   // Consult-Christine-&-Marcy flag: World Cup match, or any high-volume
   // day/week warning from the conflict endpoint. Anything else (regular van
-  // / driver / speaker conflicts) is shown as a warning but doesn't trigger
+  // / driver conflicts) is shown as a warning but doesn't trigger
   // the consult prompt — that's reserved for capacity/scheduling sanity.
   const highVolumeWarnings = (conflicts?.warnings || []).filter(
     (w) => w.type === 'high_volume_day' || w.type === 'high_volume_week'
@@ -684,7 +682,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
 
       if (itemId === 'is_corporate_event' && answer !== 'yes') {
         next.participant_count = '';
-        next.speaker_needed = '';
         next.additional_volunteers = '';
       }
 
@@ -727,10 +724,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         title: 'Moved to Non-Event',
         description: 'The request was marked as Non-Event. Directed the organizer to the host finder.',
       });
-      // NOTE: deliberately do NOT call onCallComplete() here. The parent's
-      // onCallComplete patches status to 'in_process', which would immediately
-      // undo the Non-Event move. "Move to Non-Event" must always leave the
-      // event in non_event status.
+      // NOTE: do not set status to in_process here — this path must stay non_event.
       onClose();
     } catch (error: any) {
       toast({
@@ -750,22 +744,9 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       return;
     }
 
-    // Corporate-event requirement: at least one of speaker / volunteer must
-    // be filled in before the operator marks the call complete. A plain
-    // save-and-close can still preserve partial notes while intake is ongoing.
-    if (markCallComplete && isCorporateEvent) {
-      const speakerAnswered = !!itemAnswers.speaker_needed?.trim();
-      const volunteersAnswered = !!itemAnswers.additional_volunteers?.trim();
-      if (!speakerAnswered && !volunteersAnswered) {
-        toast({
-          title: 'Speaker or volunteer required',
-          description:
-            'Corporate events require either a speaker or volunteers from TSP. Fill in one of those before completing the call.',
-          variant: 'destructive',
-        });
-        return;
-      }
-    }
+    // (Speaker role retired: the former corporate-event requirement — that a
+    // speaker or volunteer be filled in before completing the call — has been
+    // dropped entirely. Corporate events can now be completed without it.)
 
     setIsSaving(true);
 
@@ -1000,6 +981,11 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
           : newActionBlock;
       }
 
+      // Completing intake moves new requests into the normal workflow.
+      if (markCallComplete && eventRequest.status === 'new') {
+        updates.status = 'in_process';
+      }
+
       const updated = await apiRequest('PATCH', `/api/event-requests/${eventRequest?.id}`, updates);
 
       await applyPatchResponseToCache(queryClient, updated, {
@@ -1067,9 +1053,6 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       setContactPhone('');
       setContactEmail('');
       setHasUserInteracted(false);
-      if (markCallComplete) {
-        onCallComplete?.();
-      }
       onClose();
     } catch (error: any) {
       toast({
@@ -1172,16 +1155,11 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       category: 'Sandwich Logistics',
       required: true,
       notes:
-        'A corporate event is one hosted by or at a company. Corporate events require a speaker or volunteer from TSP.',
+        'A corporate event is one hosted by or at a company.',
     },
     {
       id: 'participant_count',
       label: 'Approximate number of people',
-      category: 'Sandwich Logistics',
-    },
-    {
-      id: 'speaker_needed',
-      label: 'Do they want a speaker?',
       category: 'Sandwich Logistics',
     },
     {
@@ -1194,7 +1172,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
       label: 'Event Times',
       category: 'Sandwich Logistics',
       required: true,
-      notes: 'Start and End Times Are Ideal (Required if Speakers/Volunteers are desired), Pickup Time required if they need a driver',
+      notes: 'Start and End Times Are Ideal (Required if Volunteers are desired), Pickup Time required if they need a driver',
     },
 
     // Food Safety & Assembly
@@ -1501,7 +1479,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                     if (item.id === 'refrigeration_status' && !hasNonPbjType) return null;
                     if (item.id === 'young_children_pbj' && !isPbjOnly) return null;
                     if (item.id === 'pbj_spatulas_mentioned' && !selectedTypes.has('pbj')) return null;
-                    if (['participant_count', 'speaker_needed', 'additional_volunteers'].includes(item.id) && !isCorporateEvent) return null;
+                    if (['participant_count', 'additional_volunteers'].includes(item.id) && !isCorporateEvent) return null;
 
                     // Gate everything past the low-count decision when the
                     // count is under 200 and the override note isn't
@@ -1843,27 +1821,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                               </Select>
                               {itemAnswers[item.id] === 'yes' && (
                                 <p className="text-xs text-[#A31C41] italic">
-                                  Corporate follow-ups will appear below: participant count, speaker, and volunteer needs.
-                                </p>
-                              )}
-                            </div>
-                          ) : item.id === 'speaker_needed' ? (
-                            <div className="space-y-2">
-                              <Input
-                                type="text"
-                                placeholder="Record notes here"
-                                value={itemAnswers[item.id] || ''}
-                                onChange={(e) => handleAnswerChange(item.id, e.target.value)}
-                                className="text-sm h-8"
-                                onClick={(e) => e.stopPropagation()}
-                              />
-                              {isCorporateEvent ? (
-                                <p className="text-xs text-[#A31C41] italic">
-                                  Corporate event — a speaker or volunteer is required.
-                                </p>
-                              ) : (
-                                <p className="text-xs text-gray-600 italic">
-                                  Our speaker roster is limited, so we generally prioritize larger and corporate events. Only offer a speaker if it really fits the event.
+                                  Corporate follow-ups will appear below: participant count and volunteer needs.
                                 </p>
                               )}
                             </div>
@@ -1877,15 +1835,9 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                                 className="text-sm h-8"
                                 onClick={(e) => e.stopPropagation()}
                               />
-                              {isCorporateEvent ? (
-                                <p className="text-xs text-[#A31C41] italic">
-                                  Corporate event — a speaker or volunteer is required.
-                                </p>
-                              ) : (
-                                <p className="text-xs text-gray-600 italic">
-                                  Our volunteer roster is limited, so we generally prioritize larger and corporate events. Only offer volunteers if it really fits the event.
-                                </p>
-                              )}
+                              <p className="text-xs text-gray-600 italic">
+                                Our volunteer roster is limited, so we generally prioritize larger and corporate events. Only offer volunteers if it really fits the event.
+                              </p>
                             </div>
                           ) : item.id === 'outside_operating_area' ? (
                             <p className="text-xs text-gray-500 italic">

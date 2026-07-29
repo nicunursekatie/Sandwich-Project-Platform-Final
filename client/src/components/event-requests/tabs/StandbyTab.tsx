@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
@@ -7,18 +7,19 @@ import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { StandbyCard } from '../cards/StandbyCard';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { exportEventRequestsToExcel } from '@/lib/excel-export';
+import { DuplicateEventDialog } from '../dialogs/DuplicateEventDialog';
 import { EventListSkeleton } from '../EventCardSkeleton';
 import { EventListBatchProviders } from '../EventListBatchProviders';
+import type { EventRequest } from '@shared/schema';
 
 export const StandbyTab: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { filterRequestsByStatus } = useEventFilters();
-  const { deleteEventRequestMutation } = useEventMutations();
+  const { deleteEventRequestMutation, createEventRequestMutation } = useEventMutations();
   const { handleStatusChange, resolveUserName } = useEventAssignments();
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateSourceRequest, setDuplicateSourceRequest] = useState<EventRequest | null>(null);
 
   const {
     isLoading,
@@ -27,38 +28,12 @@ export const StandbyTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
-    setShowContactOrganizerDialog,
     setContactEventRequest,
-    setShowLogContactDialog,
     setLogContactEventRequest,
+    openDialog,
   } = useEventDialogState();
 
   const standbyRequests = filterRequestsByStatus('standby');
-
-  const handleExport = async () => {
-    if (standbyRequests.length === 0) {
-      toast({
-        title: 'No data to export',
-        description: 'There are no standby events to export.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    try {
-      await exportEventRequestsToExcel(standbyRequests, 'standby');
-      toast({
-        title: 'Export complete',
-        description: `Exported ${standbyRequests.length} standby event${standbyRequests.length !== 1 ? 's' : ''} to Excel.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Export failed',
-        description: 'Failed to export events. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
 
   const handleCall = (request: any) => {
     const phoneNumber = request.phone;
@@ -83,21 +58,11 @@ export const StandbyTab: React.FC = () => {
 
   return (
     <>
-      {/* Header with count and export button */}
+      {/* Header with count. Export lives in the page-level top action bar. */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
           {isLoading ? 'Loading...' : `${standbyRequests.length} standby event${standbyRequests.length !== 1 ? 's' : ''}`}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          disabled={standbyRequests.length === 0}
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Export to Excel
-        </Button>
       </div>
 
       {/* Info banner explaining standby status */}
@@ -125,12 +90,12 @@ export const StandbyTab: React.FC = () => {
             onView={() => {
               setSelectedEventRequest(request);
               setIsEditing(false);
-              setShowEventDetails(true);
+              openDialog('eventDetails');
             }}
             onEdit={() => {
               setSelectedEventRequest(request);
               setIsEditing(true);
-              setShowEventDetails(true);
+              openDialog('eventDetails');
             }}
             onDelete={() => {
               if (window.confirm('Are you sure you want to permanently delete this standby event?')) {
@@ -139,7 +104,7 @@ export const StandbyTab: React.FC = () => {
             }}
             onContact={() => {
               setContactEventRequest(request);
-              setShowContactOrganizerDialog(true);
+              openDialog('contactOrganizer');
             }}
             onCall={() => handleCall(request)}
             onReactivate={() => {
@@ -153,7 +118,7 @@ export const StandbyTab: React.FC = () => {
             }}
             onLogContact={() => {
               setLogContactEventRequest(request);
-              setShowLogContactDialog(true);
+              openDialog('logContact');
             }}
             onMoveToStalled={() => {
               if (window.confirm('Move this event to Stalled? This is for events where you have not received any response after multiple attempts.')) {
@@ -164,11 +129,28 @@ export const StandbyTab: React.FC = () => {
                 });
               }
             }}
+            onDuplicate={() => {
+              setDuplicateSourceRequest(request);
+              setShowDuplicateDialog(true);
+            }}
           />
           ))}
           </EventListBatchProviders>
         )}
       </div>
+      <DuplicateEventDialog
+        isOpen={showDuplicateDialog}
+        onClose={() => {
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+        request={duplicateSourceRequest}
+        onConfirm={async (newEventData) => {
+          await createEventRequestMutation.mutateAsync(newEventData);
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+      />
     </>
   );
 };

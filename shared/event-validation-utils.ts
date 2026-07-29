@@ -3,6 +3,7 @@
  * Used by both client and server for consistent validation logic
  */
 import type { EventRequest } from './schema';
+import { parseDateOnly, getTodayString } from './date-utils';
 
 // ============================================================================
 // EVENT DATE RESOLUTION
@@ -165,6 +166,38 @@ export function getRefrigerationMessage(
 }
 
 /**
+ * True when we lack enough sandwich-plan data to conclude the event is
+ * PBJ-only (no perishables). Used for fail-closed food-safety gates —
+ * missing data must not skip refrigeration confirmation.
+ */
+export function cannotRuleOutPerishableSandwiches(
+  sandwichTypes: SandwichType[] | null | undefined
+): boolean {
+  if (sandwichTypes == null) return true;
+  if (!Array.isArray(sandwichTypes) || sandwichTypes.length === 0) return true;
+  return false;
+}
+
+/**
+ * Whether scheduling should be blocked/warned until refrigeration is
+ * confirmed. Warns when refrigeration is unanswered AND either (a) the
+ * plan includes perishables, or (b) the sandwich plan is missing/empty
+ * so we cannot rule perishables out.
+ */
+export function shouldConfirmRefrigerationBeforeSchedule(
+  hasRefrigeration: boolean | null | undefined,
+  sandwichTypes: SandwichType[] | null | undefined
+): boolean {
+  if (!needsRefrigerationConfirmation(hasRefrigeration)) {
+    return false;
+  }
+  return (
+    hasPerishableSandwiches(sandwichTypes) ||
+    cannotRuleOutPerishableSandwiches(sandwichTypes)
+  );
+}
+
+/**
  * Get list of perishable sandwich types from an array
  */
 export function getPerishableSandwichTypes(sandwichTypes: SandwichType[] | null | undefined): string[] {
@@ -222,14 +255,108 @@ export function getMissingIntakeInfo(request: EventRequest): string[] {
     }
   }
 
-  // Conditional field validation: If speakers needed, check for event start time
-  if (request.speakersNeeded && request.speakersNeeded > 0) {
-    if (!request.eventStartTime) {
-      missing.push('Event Start Time');
-    }
-  }
+  // (Speaker role retired: the former "speakers needed ⇒ event start time
+  // required" rule was removed. Start time is no longer gated on speakers.)
 
   return missing;
+}
+
+// ============================================================================
+// MY ASSIGNMENTS DASHBOARD WARNINGS
+// ============================================================================
+
+/** Calendar-day difference: end minus start (can be negative). */
+export function calendarDaysBetween(start: Date, end: Date): number {
+  const msPerDay = 86400000;
+  const startNorm = new Date(start.getFullYear(), start.getMonth(), start.getDate());
+  const endNorm = new Date(end.getFullYear(), end.getMonth(), end.getDate());
+  return Math.round((endNorm.getTime() - startNorm.getTime()) / msPerDay);
+}
+
+/** Whole days elapsed since the request was submitted (Eastern calendar days). */
+export function daysSinceSubmitted(
+  createdAt: Date | string | null | undefined,
+  today = parseDateOnly(getTodayString()),
+): number | null {
+  if (!createdAt || !today) return null;
+  const created =
+    createdAt instanceof Date ? createdAt : new Date(createdAt);
+  if (Number.isNaN(created.getTime())) return null;
+  const createdDay =
+    parseDateOnly(created.toISOString().slice(0, 10)) ??
+    new Date(created.getFullYear(), created.getMonth(), created.getDate());
+  return Math.max(0, calendarDaysBetween(createdDay, today));
+}
+
+/** Whole days until the effective event date (negative if in the past). */
+export function daysUntilEventDate(
+  eventDateInput: string | Date | null | undefined,
+  today = parseDateOnly(getTodayString()),
+): number | null {
+  if (!eventDateInput || !today) return null;
+  const eventDate =
+    eventDateInput instanceof Date
+      ? parseDateOnly(eventDateInput.toISOString().slice(0, 10))
+      : parseDateOnly(eventDateInput);
+  if (!eventDate) return null;
+  return calendarDaysBetween(today, eventDate);
+}
+
+/**
+ * Gaps that need attention for in-process / scheduled events happening within
+ * the next N days — missing time, location, or sandwich info.
+ */
+export function getAssignmentUrgentGaps(
+  event: EventRequest,
+  withinDays = 7,
+  today = parseDateOnly(getTodayString()),
+): string[] {
+  const status = event.status;
+  if (
+    status !== 'in_process' &&
+    status !== 'scheduled' &&
+    status !== 'rescheduled'
+  ) {
+    return [];
+  }
+
+  const eventDateStr = getEffectiveEventDate(event);
+  const daysUntil = daysUntilEventDate(eventDateStr, today);
+  if (daysUntil === null || daysUntil > withinDays || daysUntil < 0) {
+    return [];
+  }
+
+  const gaps: string[] = [];
+
+  const hasEventTimes = !!(event.eventStartTime && event.eventEndTime);
+  const hasPickupTime = !!(event.pickupTime || event.pickupDateTime);
+  if (!hasEventTimes && !hasPickupTime) {
+    gaps.push('Missing time');
+  }
+
+  const hasLocation =
+    !!(event.eventAddress && event.eventAddress.trim()) ||
+    !!(event.deliveryDestination && event.deliveryDestination.trim()) ||
+    !!(event.overnightHoldingLocation && event.overnightHoldingLocation.trim());
+  if (!hasLocation) {
+    gaps.push('Missing location');
+  }
+
+  const hasSandwichCount =
+    (typeof event.estimatedSandwichCount === 'number' &&
+      event.estimatedSandwichCount > 0) ||
+    (typeof event.estimatedSandwichCountMin === 'number' &&
+      event.estimatedSandwichCountMin > 0) ||
+    (typeof event.estimatedSandwichCountMax === 'number' &&
+      event.estimatedSandwichCountMax > 0);
+  const sandwichTypes = event.sandwichTypes as unknown[] | null;
+  const hasSandwichTypes =
+    Array.isArray(sandwichTypes) && sandwichTypes.length > 0;
+  if (!hasSandwichCount && !hasSandwichTypes) {
+    gaps.push('Missing sandwich info');
+  }
+
+  return gaps;
 }
 
 // ============================================================================
@@ -280,7 +407,7 @@ export function getPrimaryContextualAction(request: EventRequest): ContextualAct
     };
   }
 
-  // Priority 4: Event Start Time (if speakers needed)
+  // Priority 4: Event Start Time
   if (missingInfo.includes('Event Start Time')) {
     return {
       label: 'Edit Event',
@@ -300,10 +427,11 @@ export function getPrimaryContextualAction(request: EventRequest): ContextualAct
     };
   }
 
-  // Priority 6: Refrigeration confirmation (if perishable sandwiches)
+  // Priority 6: Refrigeration confirmation (only when perishable sandwiches
+  // are on the plan — PBJ-only events don't need refrigeration, so asking
+  // is noise).
   const needsRefrigeration = needsRefrigerationConfirmation(request.hasRefrigeration);
-  const hasSandwichTypes = request.sandwichTypes && Array.isArray(request.sandwichTypes) && request.sandwichTypes.length > 0;
-  if (needsRefrigeration && hasSandwichTypes) {
+  if (needsRefrigeration && hasPerishableSandwiches(request.sandwichTypes as SandwichType[] | null | undefined)) {
     return {
       label: 'Confirm Refrigeration',
       field: 'hasRefrigeration',
@@ -380,8 +508,7 @@ export function getAllContextualActions(request: EventRequest): ContextualAction
   }
 
   const needsRefrigeration = needsRefrigerationConfirmation(request.hasRefrigeration);
-  const hasSandwichTypes = request.sandwichTypes && Array.isArray(request.sandwichTypes) && request.sandwichTypes.length > 0;
-  if (needsRefrigeration && hasSandwichTypes) {
+  if (needsRefrigeration && hasPerishableSandwiches(request.sandwichTypes as SandwichType[] | null | undefined)) {
     actions.push({
       label: 'Confirm Refrigeration',
       field: 'hasRefrigeration',
@@ -414,7 +541,7 @@ export function getContextualTooltip(request: EventRequest): string {
     contact: 'Add email or phone number to contact the organization',
     address: 'Add event address or delivery location',
     sandwiches: 'Specify how many sandwiches are needed',
-    eventStartTime: 'Set the event start time for speaker scheduling',
+    eventStartTime: 'Set the event start time',
     desiredEventDate: 'Set the desired event date',
     hasRefrigeration: 'Confirm if refrigeration is available for perishable sandwiches',
     status: 'All required info is complete - ready to schedule this event',

@@ -39,7 +39,7 @@ import { getEffectiveEventDate } from '@shared/event-validation-utils';
 interface ComprehensivePersonSelectorProps {
   selectedPeople: string[];
   onSelectionChange: (selected: string[]) => void;
-  assignmentType: 'driver' | 'speaker' | 'volunteer' | null;
+  assignmentType: 'driver' | 'volunteer' | null;
   availabilitySlots: AvailabilitySlot[];
   isLoadingAvailability: boolean;
   vanDriverNeeded?: boolean;
@@ -444,7 +444,7 @@ function ComprehensivePersonSelector({
 interface AssignmentDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  assignmentType: 'driver' | 'speaker' | 'volunteer' | null;
+  assignmentType: 'driver' | 'volunteer' | null;
   selectedAssignees: string[];
   setSelectedAssignees: (assignees: string[]) => void;
   onAssign: (assignees: string[], isTentative: boolean) => void;

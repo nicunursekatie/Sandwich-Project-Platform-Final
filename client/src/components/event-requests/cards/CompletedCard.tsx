@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { CardActionRow, ActionRowSpacer } from './card-ui';
 import {
   Calendar,
   Clock,
@@ -38,6 +39,7 @@ import {
 import { formatTime12Hour, formatEventDate } from '@/components/event-requests/utils';
 import { useEventQueries } from '../hooks/useEventQueries';
 import { formatSandwichTypesDisplay, parseSandwichTypes } from '@/lib/sandwich-utils';
+import { hasActiveSandwichRange } from '@shared/sandwich-count-utils';
 import { getDisplayName } from '@/lib/userHelpers';
 import { extractNameFromCustomId } from '@/lib/utils';
 import { ConfirmationDialog } from '@/components/ui/confirmation-dialog';
@@ -131,12 +133,12 @@ interface CompletedCardProps {
   onCompleteNextAction?: () => void;
   resolveUserName: (id: string) => string;
   canDelete?: boolean;
-  openAssignmentDialog?: (type: 'driver' | 'speaker' | 'volunteer') => void;
-  openEditAssignmentDialog?: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
-  handleRemoveAssignment?: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
-  handleSelfSignup?: (type: 'driver' | 'speaker' | 'volunteer') => void;
-  canSelfSignup?: (request: EventRequest, type: 'driver' | 'speaker' | 'volunteer') => boolean;
-  isUserSignedUp?: (request: EventRequest, type: 'driver' | 'speaker' | 'volunteer') => boolean;
+  openAssignmentDialog?: (type: 'driver' | 'volunteer') => void;
+  openEditAssignmentDialog?: (type: 'driver' | 'volunteer', personId: string) => void;
+  handleRemoveAssignment?: (type: 'driver' | 'volunteer', personId: string) => void;
+  handleSelfSignup?: (type: 'driver' | 'volunteer') => void;
+  canSelfSignup?: (request: EventRequest, type: 'driver' | 'volunteer') => boolean;
+  isUserSignedUp?: (request: EventRequest, type: 'driver' | 'volunteer') => boolean;
 }
 
 // CardHeader component - copied from shared
@@ -495,7 +497,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             {request.selfTransport && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge className="bg-[#FBAD3F] text-white border border-[#FBAD3F] text-xs sm:text-sm font-medium inline-flex items-center gap-1 cursor-help">
+                  <Badge className="bg-amber-50 text-amber-800 border border-amber-400 text-xs sm:text-sm font-medium inline-flex items-center gap-1 cursor-help">
                     <Car className="w-3 h-3" />
                     <span className="hidden sm:inline">Self-Transport</span>
                     <span className="sm:hidden">Self</span>
@@ -776,12 +778,12 @@ interface CardAssignmentsProps {
   request: EventRequest;
   resolveUserName: (id: string) => string;
   canEdit?: boolean;
-  canSelfSignup?: (request: EventRequest, type: 'driver' | 'speaker' | 'volunteer') => boolean;
-  isUserSignedUp?: (request: EventRequest, type: 'driver' | 'speaker' | 'volunteer') => boolean;
-  onAssign?: (type: 'driver' | 'speaker' | 'volunteer') => void;
-  onEditAssignment?: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
-  onRemoveAssignment?: (type: 'driver' | 'speaker' | 'volunteer', personId: string) => void;
-  onSelfSignup?: (type: 'driver' | 'speaker' | 'volunteer') => void;
+  canSelfSignup?: (request: EventRequest, type: 'driver' | 'volunteer') => boolean;
+  isUserSignedUp?: (request: EventRequest, type: 'driver' | 'volunteer') => boolean;
+  onAssign?: (type: 'driver' | 'volunteer') => void;
+  onEditAssignment?: (type: 'driver' | 'volunteer', personId: string) => void;
+  onRemoveAssignment?: (type: 'driver' | 'volunteer', personId: string) => void;
+  onSelfSignup?: (type: 'driver' | 'volunteer') => void;
 }
 
 const CardAssignments: React.FC<CardAssignmentsProps> = ({
@@ -1011,62 +1013,44 @@ const CardAssignments: React.FC<CardAssignmentsProps> = ({
             )}
           </div>
 
-          <span className="text-gray-300">|</span>
-
-          {/* Speakers */}
-          <div className="flex items-center gap-2">
-            <Megaphone className="w-4 h-4 text-[#236383]" />
-            <span className="font-medium text-[#236383]">Speakers:</span>
-            {speakers.length > 0 ? (
-              <div className="flex flex-wrap gap-1">
-                {speakers.map((speaker, index) => (
-                  <React.Fragment key={speaker.id}>
-                    <Badge
-                      variant="secondary"
-                      className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5 group relative"
-                      data-testid={`badge-speaker-${speaker.id}`}
-                    >
-                      <span className="flex items-center gap-1">
-                        {speaker.name}
-                        <SendKudosButton
-                          recipientId={speaker.id}
-                          recipientName={speaker.name}
-                          contextType="project"
-                          contextId={request.id.toString()}
-                          contextTitle={`${request.organizationName} event`}
-                          size="sm"
-                          variant="outline"
-                          iconOnly
-                          className="h-3 w-3 p-0"
-                        />
-                        {canEdit && onRemoveAssignment && (
-                          <button
-                            onClick={() => onRemoveAssignment('speaker', speaker.id)}
-                            className="inline-flex items-center justify-center w-3 h-3 rounded-full text-gray-400 hover:text-red-600 hover:bg-red-100 focus:text-red-600 focus:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 transition-all"
-                            title="Remove speaker"
-                            data-testid={`button-remove-speaker-${speaker.id}`}
-                          >
-                            <X className="w-2.5 h-2.5" />
-                          </button>
-                        )}
-                      </span>
-                    </Badge>
-                    {index < speakers.length - 1 && <span className="text-gray-400">•</span>}
-                  </React.Fragment>
-                ))}
+          {/* Speakers (retired role — read-only historical display, only shown
+              for completed events that actually had speakers assigned) */}
+          {speakers.length > 0 && (
+            <>
+              <span className="text-gray-300">|</span>
+              <div className="flex items-center gap-2">
+                <Megaphone className="w-4 h-4 text-[#236383]" />
+                <span className="font-medium text-[#236383]">Speakers:</span>
+                <div className="flex flex-wrap gap-1">
+                  {speakers.map((speaker, index) => (
+                    <React.Fragment key={speaker.id}>
+                      <Badge
+                        variant="secondary"
+                        className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5 group relative"
+                        data-testid={`badge-speaker-${speaker.id}`}
+                      >
+                        <span className="flex items-center gap-1">
+                          {speaker.name}
+                          <SendKudosButton
+                            recipientId={speaker.id}
+                            recipientName={speaker.name}
+                            contextType="project"
+                            contextId={request.id.toString()}
+                            contextTitle={`${request.organizationName} event`}
+                            size="sm"
+                            variant="outline"
+                            iconOnly
+                            className="h-3 w-3 p-0"
+                          />
+                        </span>
+                      </Badge>
+                      {index < speakers.length - 1 && <span className="text-gray-400">•</span>}
+                    </React.Fragment>
+                  ))}
+                </div>
               </div>
-            ) : (
-              <Badge
-                variant="outline"
-                className={`text-gray-400 border-gray-300 text-xs px-2 py-0.5 ${canEdit && onAssign ? 'cursor-pointer hover:bg-gray-100 hover:text-gray-600 hover:border-gray-400 transition-colors' : ''}`}
-                title={canEdit && onAssign ? "Click to assign a speaker" : "No speaker was assigned"}
-                onClick={() => { if (canEdit && onAssign) onAssign('speaker'); }}
-              >
-                <UserX className="w-3 h-3 mr-1" />
-                None
-              </Badge>
-            )}
-          </div>
+            </>
+          )}
 
           <span className="text-gray-300">|</span>
 
@@ -2532,7 +2516,11 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 <span className="text-gray-700">
                   Planned <strong className="font-semibold">
                     {(() => {
-                      const hasRange = request.estimatedSandwichCountMin && request.estimatedSandwichCountMax;
+                      const hasRange = hasActiveSandwichRange(
+                        request.estimatedSandwichCountMin,
+                        request.estimatedSandwichCountMax,
+                        request.estimatedSandwichCount,
+                      );
                       if (hasRange) {
                         const rangeType = (request as any).estimatedSandwichRangeType;
                         const typeLabel = rangeType ? SANDWICH_TYPES.find(t => t.value === rangeType)?.label : null;
@@ -2843,47 +2831,28 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
                 <span className="text-gray-300">|</span>
 
-                {/* Speakers */}
-                <div className="flex items-center gap-1">
-                  <Megaphone className="w-4 h-4 text-[#236383]" />
-                  <span className="font-medium text-[#236383]">Speakers:</span>
-                  {canEditAssignments && openAssignmentDialog && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => openAssignmentDialog('speaker')}
-                      className="h-5 w-5 p-0 hover:bg-[#236383]/10"
-                      title="Add speaker"
-                    >
-                      <UserPlus className="w-3 h-3 text-[#236383]" />
-                    </Button>
-                  )}
-                  {speakers.length > 0 ? (
-                    <div className="flex flex-wrap gap-1">
-                      {speakers.map((speaker) => (
-                        <Badge
-                          key={speaker.id}
-                          variant="secondary"
-                          className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5"
-                        >
-                          {speaker.name}
-                          {canEditAssignments && handleRemoveAssignment && (
-                            <button
-                              onClick={() => handleRemoveAssignment('speaker', speaker.id)}
-                              className="ml-1 text-gray-400 hover:text-red-600"
-                            >
-                              <X className="w-2.5 h-2.5" />
-                            </button>
-                          )}
-                        </Badge>
-                      ))}
+                {/* Speakers (retired role — read-only historical display) */}
+                {speakers.length > 0 && (
+                  <>
+                    <div className="flex items-center gap-1">
+                      <Megaphone className="w-4 h-4 text-[#236383]" />
+                      <span className="font-medium text-[#236383]">Speakers:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {speakers.map((speaker) => (
+                          <Badge
+                            key={speaker.id}
+                            variant="secondary"
+                            className="bg-[#236383]/10 text-[#236383] text-xs px-2 py-0.5"
+                          >
+                            {speaker.name}
+                          </Badge>
+                        ))}
+                      </div>
                     </div>
-                  ) : (
-                    <span className="text-gray-500 italic text-xs">(none)</span>
-                  )}
-                </div>
 
-                <span className="text-gray-300">|</span>
+                    <span className="text-gray-300">|</span>
+                  </>
+                )}
 
                 {/* Volunteers */}
                 <div className="flex items-center gap-1">
@@ -3000,7 +2969,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
 
         {/* Action Buttons */}
         <TooltipProvider>
-          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t">
+          <CardActionRow>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button size="sm" variant="outline" onClick={onView}>
@@ -3126,7 +3095,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
               </Tooltip>
             )}
 
-            <div className="flex-1" />
+            <ActionRowSpacer />
 
             <Tooltip>
               <TooltipTrigger asChild>
@@ -3208,7 +3177,7 @@ export const CompletedCard: React.FC<CompletedCardProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-          </div>
+          </CardActionRow>
         </TooltipProvider>
 
         {/* Audit Log Section */}

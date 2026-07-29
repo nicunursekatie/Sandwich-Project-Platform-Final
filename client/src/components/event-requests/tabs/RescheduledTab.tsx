@@ -8,10 +8,9 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, RefreshCw, Eye, Trash2, Calendar, Building, Phone } from 'lucide-react';
+import { RefreshCw, Eye, Trash2, Calendar, Building, Phone } from 'lucide-react';
 import { formatEventDate } from '@/components/event-requests/utils';
 import { statusColors, statusBorderColors, statusBgColors } from '@/components/event-requests/constants';
-import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 
@@ -28,54 +27,21 @@ export const RescheduledTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
+    openDialog,
   } = useEventDialogState();
 
   const rescheduledRequests = filterRequestsByStatus('rescheduled');
-
-  const handleExport = async () => {
-    if (rescheduledRequests.length === 0) {
-      toast({
-        title: 'No data to export',
-        description: 'There are no rescheduled events to export.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    try {
-      await exportEventRequestsToExcel(rescheduledRequests, 'rescheduled');
-      toast({
-        title: 'Export complete',
-        description: `Exported ${rescheduledRequests.length} rescheduled event${rescheduledRequests.length !== 1 ? 's' : ''} to Excel.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Export failed',
-        description: 'Failed to export events. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
 
   const borderColor = statusBorderColors['rescheduled'] || '#236383';
   const bgColor = statusBgColors['rescheduled'] || 'bg-[#E4EFF6]';
 
   return (
     <>
+      {/* Header with count. Export lives in the page-level top action bar. */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
           {isLoading ? 'Loading...' : `${rescheduledRequests.length} rescheduled event${rescheduledRequests.length !== 1 ? 's' : ''}`}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          disabled={rescheduledRequests.length === 0}
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Export to Excel
-        </Button>
       </div>
 
       <div className="space-y-4">
@@ -98,7 +64,7 @@ export const RescheduledTab: React.FC = () => {
                 onClick={() => {
                   setSelectedEventRequest(request);
                   setIsEditing(false);
-                  setShowEventDetails(true);
+                  openDialog('eventDetails');
                 }}
               >
                 <CardContent className="p-4">
@@ -132,7 +98,7 @@ export const RescheduledTab: React.FC = () => {
                         onClick={() => {
                           setSelectedEventRequest(request);
                           setIsEditing(true);
-                          setShowEventDetails(true);
+                          openDialog('eventDetails');
                         }}
                         className="h-8"
                         title="Edit details"

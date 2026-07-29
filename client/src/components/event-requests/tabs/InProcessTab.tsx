@@ -8,21 +8,25 @@ import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useConfirmation } from '@/components/ui/confirmation-dialog';
 import { InProcessCard } from '../cards/InProcessCard';
+import { DuplicateEventDialog } from '../dialogs/DuplicateEventDialog';
 import { Button } from '@/components/ui/button';
-import { EyeOff, Eye, CalendarX, Download } from 'lucide-react';
+import { EyeOff, Eye, CalendarX } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListSkeleton } from '../EventCardSkeleton';
 import { EventListBatchProviders } from '../EventListBatchProviders';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import type { EventRequest } from '@shared/schema';
 
 export const InProcessTab: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { confirm, ConfirmationDialogComponent } = useConfirmation();
   const { filterRequestsByStatus } = useEventFilters();
-  const { deleteEventRequestMutation, updateEventRequestMutation } = useEventMutations();
+  const { deleteEventRequestMutation, updateEventRequestMutation, createEventRequestMutation } = useEventMutations();
   const { handleStatusChange, resolveUserName } = useEventAssignments();
+
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateSourceRequest, setDuplicateSourceRequest] = useState<EventRequest | null>(null);
 
   // Inline editing state
   const [editingInProcessId, setEditingInProcessId] = useState<number | null>(null);
@@ -40,30 +44,19 @@ export const InProcessTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
     setSchedulingEventRequest,
-    setShowSchedulingDialog,
-    setShowScheduleCallDialog,
     setToolkitEventRequest,
-    setShowToolkitSentDialog,
-    setShowContactOrganizerDialog,
     setContactEventRequest,
     setTspContactEventRequest,
-    setShowTspContactAssignmentDialog,
-    setShowLogContactDialog,
     setLogContactEventRequest,
-    setShowEditContactDialog,
     setEditContactEventRequest,
     setEditContactAttemptData,
-    setShowAiDateSuggestionDialog,
     setAiSuggestionEventRequest,
-    setShowAiIntakeAssistantDialog,
     setAiIntakeAssistantEventRequest,
-    setShowNextActionDialog,
     setNextActionEventRequest,
     setNextActionMode,
-    setShowIntakeCallDialog,
     setIntakeCallEventRequest,
+    openDialog,
   } = useEventDialogState();
 
   const inProcessRequests = filterRequestsByStatus('in_process');
@@ -192,7 +185,7 @@ export const InProcessTab: React.FC = () => {
           if (editingField.startsWith('partnerOrg_')) {
             // Editing a single partner organization (name + optional department)
             const index = parseInt(editingField.split('_')[1]);
-            const currentEvent = eventRequests.find(r => r.id === editingInProcessId);
+            const currentEvent = inProcessRequests.find(r => r.id === editingInProcessId);
             const currentPartners = Array.isArray(currentEvent?.partnerOrganizations) 
               ? (currentEvent.partnerOrganizations as any[]) 
               : [];
@@ -298,47 +291,13 @@ export const InProcessTab: React.FC = () => {
     setEditingValue('');
   };
 
-  const handleExport = async () => {
-    if (inProcessRequests.length === 0) {
-      toast({
-        title: 'No data to export',
-        description: 'There are no events in process to export.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    try {
-      await exportEventRequestsToExcel(inProcessRequests, 'in_process');
-      toast({
-        title: 'Export complete',
-        description: `Exported ${inProcessRequests.length} event${inProcessRequests.length !== 1 ? 's' : ''} in process to Excel.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Export failed',
-        description: 'Failed to export events. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   return (
     <>
-      {/* Header with count and export button */}
+      {/* Header with count. Export lives in the page-level top action bar. */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
           {isLoading ? 'Loading...' : `${inProcessRequests.length} event${inProcessRequests.length !== 1 ? 's' : ''} in process`}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          disabled={inProcessRequests.length === 0}
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Export to Excel
-        </Button>
       </div>
 
       {/* Toggle button for hiding past-date events */}
@@ -396,46 +355,49 @@ export const InProcessTab: React.FC = () => {
               request={request}
               resolveUserName={resolveUserName}
               isStale={isStale(request)}
-              followUpStatus={getFollowUpStatus(request)}
               onEdit={() => {
                 setSelectedEventRequest(request);
                 setIsEditing(true);
-                setShowEventDetails(true);
+                openDialog('eventDetails');
               }}
               onDelete={() => deleteEventRequestMutation.mutate(request.id)}
               onSchedule={() => {
                 setSchedulingEventRequest(request);
-                setShowSchedulingDialog(true);
+                openDialog('scheduling');
               }}
               onCall={() => handleCall(request)}
               onIntakeCall={() => {
                 setIntakeCallEventRequest(request);
-                setShowIntakeCallDialog(true);
+                openDialog('intakeCall');
               }}
               onContact={() => {
                 setContactEventRequest(request);
-                setShowContactOrganizerDialog(true);
+                openDialog('contactOrganizer');
               }}
               onScheduleCall={() => {
                 setSelectedEventRequest(request);
-                setShowScheduleCallDialog(true);
+                openDialog('scheduleCall');
               }}
               onResendToolkit={() => {
                 setSelectedEventRequest(request);
                 setToolkitEventRequest(request);
-                setShowToolkitSentDialog(true);
+                openDialog('toolkitSent');
               }}
               onAssignTspContact={() => {
                 setTspContactEventRequest(request);
-                setShowTspContactAssignmentDialog(true);
+                openDialog('tspContactAssignment');
               }}
               onEditTspContact={() => {
                 setTspContactEventRequest(request);
-                setShowTspContactAssignmentDialog(true);
+                openDialog('tspContactAssignment');
               }}
               onLogContact={() => {
                 setLogContactEventRequest(request);
-                setShowLogContactDialog(true);
+                openDialog('logContact');
+              }}
+              onDuplicate={() => {
+                setDuplicateSourceRequest(request);
+                setShowDuplicateDialog(true);
               }}
               onEditContactAttempt={(attemptNumber) => {
                 // Find the contact attempt to edit
@@ -445,7 +407,7 @@ export const InProcessTab: React.FC = () => {
                 if (attempt) {
                   setEditContactEventRequest(request);
                   setEditContactAttemptData(attempt);
-                  setShowEditContactDialog(true);
+                  openDialog('editContact');
                 }
               }}
               onDeleteContactAttempt={async (attemptNumber) => {
@@ -481,26 +443,26 @@ export const InProcessTab: React.FC = () => {
               }}
               onAiSuggest={() => {
                 setAiSuggestionEventRequest(request);
-                setShowAiDateSuggestionDialog(true);
+                openDialog('aiDateSuggestion');
               }}
               onAiIntakeAssist={() => {
                 setAiIntakeAssistantEventRequest(request);
-                setShowAiIntakeAssistantDialog(true);
+                openDialog('aiIntakeAssistant');
               }}
               onAddNextAction={() => {
                 setNextActionEventRequest(request);
                 setNextActionMode('add');
-                setShowNextActionDialog(true);
+                openDialog('nextAction');
               }}
               onEditNextAction={() => {
                 setNextActionEventRequest(request);
                 setNextActionMode('edit');
-                setShowNextActionDialog(true);
+                openDialog('nextAction');
               }}
               onCompleteNextAction={() => {
                 setNextActionEventRequest(request);
                 setNextActionMode('complete');
-                setShowNextActionDialog(true);
+                openDialog('nextAction');
               }}
               // Inline editing props
               startEditing={(field, value) => startEditing(request.id, field, value)}
@@ -517,6 +479,19 @@ export const InProcessTab: React.FC = () => {
         </EventListBatchProviders>
       )}
       {ConfirmationDialogComponent}
+      <DuplicateEventDialog
+        isOpen={showDuplicateDialog}
+        onClose={() => {
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+        request={duplicateSourceRequest}
+        onConfirm={async (newEventData) => {
+          await createEventRequestMutation.mutateAsync(newEventData);
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+      />
     </>
   );
 };

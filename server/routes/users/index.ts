@@ -6,6 +6,7 @@ import { storage } from '../../storage';
 import { db } from '../../db';
 import { userActivityLogs } from '@shared/schema';
 import { sql, gte } from 'drizzle-orm';
+import { recordHeartbeat, getDevicesByUserId } from '../../services/device-presence';
 
 const usersRouter = Router();
 
@@ -126,11 +127,11 @@ usersRouter.patch(
   async (req, res, next) => {
     try {
       const { id } = req.params;
-      const { email, firstName, lastName, phoneNumber, preferredEmail, address, vanApproved, role, isActive } = req.body;
+      const { email, firstName, lastName, phoneNumber, preferredEmail, address, vanApproved, speakerApproved, driverApproved, role, isActive } = req.body;
 
       const updatedUser = await userService.updateUserProfile(
         id,
-        { email, firstName, lastName, phoneNumber, preferredEmail, address, vanApproved, role, isActive },
+        { email, firstName, lastName, phoneNumber, preferredEmail, address, vanApproved, speakerApproved, driverApproved, role, isActive },
         req.user?.id
       );
 
@@ -224,6 +225,17 @@ usersRouter.get('/online', async (req, res, next) => {
       userMap.set(hbUser.id, hbUser);
     }
 
+    // Attach device list (sniffed from the User-Agent on each heartbeat).
+    // `devices` is an array because the same person can be active on phone +
+    // laptop at once. Empty array when we haven't seen a heartbeat from that
+    // user within the device-presence TTL — e.g., right after a server restart
+    // before they've sent their next heartbeat. In that case the client falls
+    // back to the original "online" treatment with no device icon.
+    const devicesByUser = getDevicesByUserId(sinceMinutes);
+    for (const [userId, userObj] of userMap) {
+      userObj.devices = devicesByUser.get(userId) || [];
+    }
+
     res.json(Array.from(userMap.values()));
   } catch (error) {
     next(error);
@@ -231,13 +243,17 @@ usersRouter.get('/online', async (req, res, next) => {
 });
 
 // Heartbeat endpoint to update user's last active timestamp
-// Called periodically by the client to mark the user as still online
+// Called periodically by the client to mark the user as still online.
+// Also records device-type (mobile vs desktop, sniffed from User-Agent) into
+// the in-memory device presence map so /online can show both icons when
+// someone has the app open on phone AND laptop simultaneously.
 usersRouter.post('/heartbeat', async (req, res, next) => {
   try {
     const user = (req as any).user;
     if (user?.id) {
       await storage.updateUserLastActive(user.id);
-      res.json({ success: true });
+      const device = recordHeartbeat(user.id, req.get('User-Agent'));
+      res.json({ success: true, device });
     } else {
       res.status(401).json({ error: 'Not authenticated' });
     }

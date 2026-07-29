@@ -62,7 +62,7 @@ export const NAV_ITEMS: NavItem[] = [
   },
 
   // ========================================
-  // COLLECTIONS LOG (standalone gold item)
+  // COLLECTIONS (data & reports — was QUICK LINKS)
   // ========================================
   {
     id: 'collections',
@@ -70,38 +70,20 @@ export const NAV_ITEMS: NavItem[] = [
     customIcon: sandwich_logo,
     href: 'collections',
     permission: PERMISSIONS.NAV_COLLECTIONS_LOG,
-    group: 'quick-links',
+    group: 'data',
     highlighted: true,
-    navigateAndExpand: true,
   },
-  {
-    id: 'weekly-collections-report',
-    label: 'Weekly Collections Report',
-    icon: FileSpreadsheet,
-    href: 'weekly-collections-report',
-    permission: PERMISSIONS.NAV_WEEKLY_COLLECTIONS_REPORT,
-    group: 'quick-links',
-    parentId: 'collections',
-    isSubItem: true,
-  },
-  {
-    id: 'group-collections',
-    label: 'Group Collections Viewer',
-    icon: Users,
-    href: 'group-collections',
-    permission: PERMISSIONS.NAV_GROUP_COLLECTIONS,
-    group: 'quick-links',
-    parentId: 'collections',
-    isSubItem: true,
-  },
+
+  // ========================================
+  // CALENDARS (events & volunteers)
+  // ========================================
   {
     id: 'calendars',
     label: 'Calendars',
     icon: Calendar,
     href: 'calendars',
     permission: PERMISSIONS.NAV_YEARLY_CALENDAR,
-    group: 'quick-links',
-    highlighted: true,
+    group: 'events',
     navigateAndExpand: true,
   },
   {
@@ -110,7 +92,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Calendar,
     href: 'yearly-calendar',
     permission: PERMISSIONS.NAV_YEARLY_CALENDAR,
-    group: 'quick-links',
+    group: 'events',
     parentId: 'calendars',
     isSubItem: true,
   },
@@ -120,7 +102,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Calendar,
     href: 'my-availability',
     permission: PERMISSIONS.NAV_MY_AVAILABILITY,
-    group: 'quick-links',
+    group: 'events',
     parentId: 'calendars',
     isSubItem: true,
   },
@@ -130,7 +112,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Users,
     href: 'team-availability',
     permission: PERMISSIONS.NAV_TEAM_AVAILABILITY,
-    group: 'quick-links',
+    group: 'events',
     parentId: 'calendars',
     isSubItem: true,
   },
@@ -140,7 +122,7 @@ export const NAV_ITEMS: NavItem[] = [
     icon: Calendar,
     href: 'google-calendar-availability',
     permission: PERMISSIONS.NAV_VOLUNTEER_CALENDAR,
-    group: 'quick-links',
+    group: 'events',
     parentId: 'calendars',
     isSubItem: true,
   },
@@ -209,6 +191,16 @@ export const NAV_ITEMS: NavItem[] = [
   // EVENTS & VOLUNTEERS
   // ========================================
   {
+    id: 'event-ops-dashboard',
+    label: 'Ops Dashboard',
+    icon: Gauge,
+    href: 'event-ops-dashboard',
+    permission: PERMISSIONS.NAV_EVENT_PLANNING,
+    group: 'events',
+    highlighted: true,
+    accentColor: '#007E8C',
+  },
+  {
     id: 'event-requests',
     label: 'Event Requests',
     icon: Calendar,
@@ -216,27 +208,14 @@ export const NAV_ITEMS: NavItem[] = [
     permission: PERMISSIONS.NAV_EVENT_PLANNING,
     group: 'events',
     highlighted: true,
-    navigateAndExpand: true,
   },
   {
-    id: 'event-ops-dashboard',
-    label: 'Ops Dashboard',
-    icon: Gauge,
-    href: 'event-ops-dashboard',
-    permission: PERMISSIONS.NAV_EVENT_PLANNING,
-    group: 'events',
-    parentId: 'event-requests',
-    isSubItem: true,
-  },
-  {
-    id: 'admin-overview',
-    label: 'Admin Overview',
-    icon: BarChart3,
-    href: 'event-requests?tab=admin_overview',
+    id: 'event-planning',
+    label: 'Planning',
+    icon: ClipboardList,
+    href: 'event-requests?tab=planning',
     permission: PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW,
     group: 'events',
-    parentId: 'event-requests',
-    isSubItem: true,
   },
   {
     id: 'volunteer-hub',
@@ -319,6 +298,16 @@ export const NAV_ITEMS: NavItem[] = [
     isSubItem: true,
   },
   {
+    id: 'recipients',
+    label: 'Recipients',
+    icon: Users,
+    href: 'recipients',
+    permission: PERMISSIONS.NAV_RECIPIENTS,
+    group: 'network',
+    parentId: 'directory',
+    isSubItem: true,
+  },
+  {
     id: 'partners',
     label: 'Partners',
     icon: Building,
@@ -326,16 +315,6 @@ export const NAV_ITEMS: NavItem[] = [
     // No permission - parent shows for everyone, children control their own visibility
     group: 'network',
     highlighted: true,
-  },
-  {
-    id: 'recipients',
-    label: 'Recipients',
-    icon: Users,
-    href: 'recipients',
-    permission: PERMISSIONS.NAV_RECIPIENTS,
-    group: 'network',
-    parentId: 'partners',
-    isSubItem: true,
   },
   {
     id: 'groups-catalog',
@@ -374,6 +353,10 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'event-map',
     permission: PERMISSIONS.NAV_MAPS,
     group: 'network',
+    // Maps has its own page (event-map) and a child (route-map / Locations Map),
+    // so clicking it should navigate to the Event Map *and* expand to reveal the
+    // child — without this it would only toggle expansion and never navigate.
+    navigateAndExpand: true,
   },
   {
     id: 'route-map',
@@ -405,6 +388,7 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'important-links',
     // No permission - Toolkit & Apps is available to everyone
     group: 'resources',
+    highlighted: true,
     accentColor: '#007E8C',
   },
   {
@@ -474,6 +458,22 @@ export const NAV_ITEMS: NavItem[] = [
     highlighted: true,
   },
   {
+    id: 'admin-overview',
+    label: 'Admin Overview',
+    icon: BarChart3,
+    href: 'event-requests?tab=admin_overview',
+    permission: PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW,
+    group: 'data',
+  },
+  {
+    id: 'sandwich-destinations',
+    label: 'Sandwich Destinations',
+    icon: Truck,
+    href: 'event-requests?tab=sandwich_overview',
+    permission: PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW,
+    group: 'data',
+  },
+  {
     id: 'grant-metrics',
     label: 'Grant Metrics',
     icon: Trophy,
@@ -483,14 +483,28 @@ export const NAV_ITEMS: NavItem[] = [
     highlighted: true,
   },
   {
+    id: 'weekly-collections-report',
+    label: 'Weekly Collections Report',
+    icon: FileSpreadsheet,
+    href: 'weekly-collections-report',
+    permission: PERMISSIONS.NAV_WEEKLY_COLLECTIONS_REPORT,
+    group: 'data',
+  },
+  {
+    id: 'group-collections',
+    label: 'Group Collections Viewer',
+    icon: Users,
+    href: 'group-collections',
+    permission: PERMISSIONS.NAV_GROUP_COLLECTIONS,
+    group: 'data',
+  },
+  {
     id: 'weekly-monitoring',
     label: 'Weekly Monitoring',
     icon: Clock,
     href: 'weekly-monitoring',
     permission: PERMISSIONS.NAV_WEEKLY_MONITORING,
     group: 'data',
-    parentId: 'analytics-section',
-    isSubItem: true,
   },
   {
     id: 'event-impact-reports',
@@ -499,8 +513,6 @@ export const NAV_ITEMS: NavItem[] = [
     href: 'event-impact-reports',
     permission: PERMISSIONS.NAV_EVENT_IMPACT_REPORTS,
     group: 'data',
-    parentId: 'analytics-section',
-    isSubItem: true,
   },
   {
     id: 'cooler-tracking',
@@ -609,17 +621,7 @@ export const NAV_ITEMS: NavItem[] = [
     isSubItem: true,
   },
 
-  // Items moved out of sidebar but kept for reference/other uses
-  {
-    id: 'my-actions',
-    label: 'My Actions',
-    icon: ListTodo,
-    href: 'my-actions',
-    permission: PERMISSIONS.NAV_MY_ACTIONS,
-    group: 'settings',
-    parentId: 'tools',
-    isSubItem: true,
-  },
+  // Items moved out of sidebar
   {
     id: 'donation-tracking',
     label: 'Distribution Tracking',

@@ -1410,6 +1410,21 @@ export class DatabaseStorage implements IStorage {
     return result[0] || null;
   }
 
+  async getSandwichCollectionsByEventRequestId(
+    eventRequestId: number
+  ): Promise<SandwichCollection[]> {
+    return await db
+      .select()
+      .from(sandwichCollections)
+      .where(
+        and(
+          eq(sandwichCollections.eventRequestId, eventRequestId),
+          isNull(sandwichCollections.deletedAt) // Exclude soft-deleted records
+        )
+      )
+      .orderBy(desc(sandwichCollections.collectionDate));
+  }
+
   async getSandwichCollectionsCount(): Promise<number> {
     const result = await db
       .select({ count: sql<number>`count(*)::int` })
@@ -4272,30 +4287,48 @@ export class DatabaseStorage implements IStorage {
       logger.info(`[DB updateEventRequest] Event ${id} - Filtered speakerDetails: ${JSON.stringify(filteredData.speakerDetails)}`);
     }
 
-    // CRITICAL: Neon serverless .returning() is unreliable on UPDATE operations
-    // It may return undefined/empty even when the UPDATE succeeds
-    // Use explicit fetch pattern instead for reliable data retrieval
-    await db
+    // PRIMARY PATH: UPDATE ... RETURNING. On the neon-http driver every statement
+    // is its own request to the PRIMARY, so the returned row is the authoritative
+    // post-write state: it reflects any DB-side triggers/defaults/coercions and is
+    // immune to the read-replica lag that a separate verify-SELECT can hit.
+    // (createEventRequest relies on .returning() the same way.)
+    //
+    // An empty result is NOT assumed to be success — it means the driver gave us no
+    // row back (either nothing matched, or a rare flake), so we fall through to the
+    // verify-and-heal path rather than fabricating a saved record.
+    const updatedRows = await db
       .update(eventRequests)
       .set({
         ...filteredData,
         updatedAt: new Date(),
       })
-      .where(eq(eventRequests.id, id));
+      .where(eq(eventRequests.id, id))
+      .returning();
 
-    // Explicit fetch to get the updated data reliably
+    if (updatedRows.length > 0) {
+      const updated = updatedRows[0] as EventRequest;
+      logger.info(`[DB updateEventRequest] Event ${id} - persisted via RETURNING (authoritative). speakerDetails: ${JSON.stringify(updated.speakerDetails)}`);
+      return updated;
+    }
+
+    // FALLBACK: RETURNING came back empty. Rare. Re-read to find out what actually
+    // happened — and never report success for a row we can't confirm.
+    logger.warn(`[DB updateEventRequest] Event ${id} - UPDATE returned no rows; falling back to a verify-read.`);
     let result = await this.getEventRequest(id);
 
     if (!result) {
-      logger.error(`[DB updateEventRequest] ⚠️ Event ${id} not found after update!`);
-      return result;
+      // No RETURNING row AND no readable row: the record is gone (e.g. concurrently
+      // deleted) or the write never landed. Report failure honestly instead of
+      // synthesizing a "saved" object from the intended values.
+      logger.error(`[DB updateEventRequest] ⚠️ Event ${id} — no RETURNING row and not found on read; treating as a failed write.`);
+      return undefined;
     }
 
-    // Verify EVERY field we just wrote. On Neon serverless the write may not be
-    // visible to the immediate verify-fetch yet (replica lag / connection routing).
-    // Strategy: detect mismatches, retry the fetch once after a small delay, and
-    // if the read is still stale, trust the write — merge filteredData onto the
-    // result so the client sees the values we actually persisted.
+    // The row demonstrably exists. Verify the fields we intended to write actually
+    // landed; on a stale replica read, retry once, then — only because the row is
+    // confirmed to exist — trust the write and merge the intended values so the
+    // client doesn't see a ghost revert from replica lag. This residual merge now
+    // only runs in the rare empty-RETURNING case.
     const findMismatches = (current: any) =>
       Object.entries(filteredData).filter(([key, expected]) => {
         // Drizzle stores Date objects as timestamptz; compare by .getTime() for those.
@@ -4323,17 +4356,10 @@ export class DatabaseStorage implements IStorage {
         logger.error(
           `[DB updateEventRequest] ⚠️ Event ${id} — read still stale after retry. Trusting the write and merging filteredData. Stale fields: ${mismatches.map(([k]) => k).join(', ')}`
         );
-        // The UPDATE statement returned without error, which means it ran on the
-        // primary. The stale read is a replication artifact, not a failed write.
-        // Return what we know we wrote so the client doesn't see ghost reverts.
         result = { ...result, ...(filteredData as Partial<EventRequest>) } as EventRequest;
       } else if (result) {
         logger.info(`[DB updateEventRequest] ✅ Event ${id} — retry succeeded, fields verified`);
       }
-    }
-
-    if (result) {
-      logger.info(`[DB updateEventRequest] Event ${id} - After save, speakerDetails: ${JSON.stringify(result.speakerDetails)}`);
     }
 
     return result;

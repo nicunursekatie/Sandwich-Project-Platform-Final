@@ -10,6 +10,7 @@ import {
   HelpCircle,
   CalendarDays,
   List,
+  Grid3x3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -40,9 +41,11 @@ import {
   RecipientTable,
   RecipientDetailDrawer,
   RecipientWeeklyCalendar,
+  RecipientScheduleMatrix,
 } from './recipients';
 import {
   WEEK_DAYS,
+  DELIVERY_CADENCE_OPTIONS,
   getRecipientCollectionDays,
   getRecipientFeedingDays,
   sortRecipients,
@@ -85,10 +88,12 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
   const [focusAreaFilter, setFocusAreaFilter] = useState<string>('all');
   const [collectionDayFilter, setCollectionDayFilter] = useState<string>('all');
   const [feedingDayFilter, setFeedingDayFilter] = useState<string>('all');
+  const [cadenceFilter, setCadenceFilter] = useState<string>('all');
+  const [servingFrequencyFilter, setServingFrequencyFilter] = useState<string>('all');
   const [sortColumn, setSortColumn] = useState<SortColumn>('name');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'table' | 'calendar'>('table');
+  const [viewMode, setViewMode] = useState<'table' | 'calendar' | 'matrix'>('table');
   const [inlineSavingId, setInlineSavingId] = useState<number | null>(null);
   const [selectedRecipient, setSelectedRecipient] = useState<Recipient | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -115,6 +120,8 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
       setFocusAreaFilter('all');
       setCollectionDayFilter('all');
       setFeedingDayFilter('all');
+      setCadenceFilter('all');
+      setServingFrequencyFilter('all');
     }
   }, [highlightRecipientId]);
 
@@ -220,8 +227,25 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
       );
     }
 
+    if (cadenceFilter !== 'all') {
+      filtered = filtered.filter((recipient) => {
+        const c = (recipient as Recipient & { deliveryCadence?: string | null }).deliveryCadence;
+        if (cadenceFilter === 'none') return !c;
+        return c === cadenceFilter;
+      });
+    }
+
+    if (servingFrequencyFilter !== 'all') {
+      filtered = filtered.filter((recipient) => {
+        const f = (recipient as Recipient & { peopleServedFrequency?: string | null })
+          .peopleServedFrequency;
+        if (servingFrequencyFilter === 'none') return !f;
+        return f === servingFrequencyFilter;
+      });
+    }
+
     return sortRecipients(filtered, sortColumn, sortDirection);
-  }, [recipients, searchTerm, statusFilter, showInactive, contractFilter, regionFilter, tspContactFilter, sandwichTypeFilter, focusAreaFilter, collectionDayFilter, feedingDayFilter, sortColumn, sortDirection]);
+  }, [recipients, searchTerm, statusFilter, showInactive, contractFilter, regionFilter, tspContactFilter, sandwichTypeFilter, focusAreaFilter, collectionDayFilter, feedingDayFilter, cadenceFilter, servingFrequencyFilter, sortColumn, sortDirection]);
 
   // Scroll to highlighted card once data is loaded and rendered
   useEffect(() => {
@@ -702,6 +726,38 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
                     </SelectContent>
                   </Select>
                 </div>
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="filter-cadence" className="text-xs font-medium text-slate-600">Cadence</Label>
+                  <Select value={cadenceFilter} onValueChange={setCadenceFilter}>
+                    <SelectTrigger id="filter-cadence" className="w-[180px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any cadence</SelectItem>
+                      {DELIVERY_CADENCE_OPTIONS.map((opt) => (
+                        <SelectItem key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </SelectItem>
+                      ))}
+                      <SelectItem value="none">— Not categorized</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex flex-col space-y-2">
+                  <Label htmlFor="filter-serving-frequency" className="text-xs font-medium text-slate-600">
+                    Serving frequency
+                  </Label>
+                  <Select value={servingFrequencyFilter} onValueChange={setServingFrequencyFilter}>
+                    <SelectTrigger id="filter-serving-frequency" className="w-[160px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Any frequency</SelectItem>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="none">— Not set</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           )}
@@ -747,6 +803,16 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
               >
                 <CalendarDays className="w-4 h-4" />
               </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('matrix')}
+                aria-pressed={viewMode === 'matrix'}
+                aria-label="Schedule matrix view"
+                title="Schedule matrix — orgs as rows, days as columns"
+                className={`px-2 py-1 rounded ${viewMode === 'matrix' ? 'bg-slate-200 text-slate-900' : 'text-slate-600 hover:bg-slate-100'}`}
+              >
+                <Grid3x3 className="w-4 h-4" />
+              </button>
             </div>
           </div>
         </div>
@@ -776,6 +842,11 @@ export default function RecipientsManagement({ highlightRecipientId }: { highlig
               />
             )}
           </>
+        ) : viewMode === 'matrix' ? (
+          <RecipientScheduleMatrix
+            recipients={filteredRecipients}
+            onRecipientClick={handleOpenDrawer}
+          />
         ) : (
           <RecipientWeeklyCalendar
             recipients={filteredRecipients}

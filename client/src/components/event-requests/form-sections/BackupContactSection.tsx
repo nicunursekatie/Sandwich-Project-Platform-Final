@@ -63,10 +63,12 @@ export const BackupContactSection: React.FC<BackupContactSectionProps> = ({
             <Label htmlFor="backupEmail" className="text-sm">Email</Label>
             <Input
               id="backupEmail"
-              type="email"
+              type="text"
+              inputMode="email"
+              autoComplete="email"
               value={formData.backupContactEmail || ''}
               onChange={(e) => setFormData(prev => ({ ...prev, backupContactEmail: e.target.value }))}
-              placeholder="Enter email address"
+              placeholder="Enter email address (optional)"
             />
           </div>
           <div>

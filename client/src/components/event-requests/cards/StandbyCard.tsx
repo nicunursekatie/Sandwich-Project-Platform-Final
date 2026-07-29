@@ -16,6 +16,7 @@ import {
   MessageSquare,
   FileText,
   Clock,
+  Copy,
 
 } from 'lucide-react';
 import { formatEventDate } from '@/components/event-requests/utils';
@@ -43,6 +44,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { CardActionRow, ActionRowSpacer } from './card-ui';
 
 interface StandbyCardProps {
   request: EventRequest;
@@ -54,6 +56,7 @@ interface StandbyCardProps {
   onReactivate: () => void;
   onLogContact: () => void;
   onMoveToStalled: () => void;
+  onDuplicate?: () => void;
   canDelete?: boolean;
   resolveUserName?: (id: string) => string;
 }
@@ -152,6 +155,7 @@ export const StandbyCard: React.FC<StandbyCardProps> = ({
   onReactivate,
   onLogContact,
   onMoveToStalled,
+  onDuplicate,
   canDelete = true,
   resolveUserName,
 }) => {
@@ -293,7 +297,7 @@ export const StandbyCard: React.FC<StandbyCardProps> = ({
 
         {/* Action Buttons */}
         <TooltipProvider>
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t items-center">
+          <CardActionRow>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -353,6 +357,20 @@ export const StandbyCard: React.FC<StandbyCardProps> = ({
               </TooltipContent>
             </Tooltip>
 
+            {onDuplicate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button size="sm" variant="outline" onClick={onDuplicate} data-testid="button-duplicate" className="h-8">
+                    <Copy className="w-4 h-4 mr-1" />
+                    Duplicate
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create another event from this one</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+
             {request.phone && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -397,7 +415,7 @@ export const StandbyCard: React.FC<StandbyCardProps> = ({
               </TooltipContent>
             </Tooltip>
 
-            <div className="flex-1" />
+            <ActionRowSpacer />
 
             <Tooltip>
               <TooltipTrigger asChild>
@@ -445,7 +463,7 @@ export const StandbyCard: React.FC<StandbyCardProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-          </div>
+          </CardActionRow>
         </TooltipProvider>
       </CardContent>
 

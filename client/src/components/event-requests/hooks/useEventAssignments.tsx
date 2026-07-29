@@ -11,6 +11,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import { hasPermission } from '@shared/unified-auth-utils';
 import { isValidTransition, getTransitionError, requiresReason, STATUS_DEFINITIONS } from '../constants';
 import { isScheduledOrRescheduled, type EventStatus } from '@shared/event-status-workflow';
+import { extractNameFromAssignmentId } from '@/lib/assignment-utils';
 
 export const useEventAssignments = () => {
   const { toast } = useToast();
@@ -24,13 +25,13 @@ export const useEventAssignments = () => {
     eventRequests,
   } = useEventRequestContext();
   const {
-    setShowAssignmentDialog,
     setAssignmentType,
     setAssignmentEventId,
     setIsEditingAssignment,
     setEditingAssignmentPersonId,
     setSelectedAssignees,
     setIsVanDriverAssignment,
+    openDialog,
   } = useEventDialogState();
 
   // Helper function to safely parse PostgreSQL arrays
@@ -69,15 +70,9 @@ export const useEventAssignments = () => {
     try {
       // Handle custom- prefixed IDs FIRST (format: custom-timestamp-Name)
       // Example: custom-1763183106406-Chef-Hank => Chef Hank
-      if (userIdOrName.startsWith('custom-')) {
-        // Extract the name part after the second dash
-        const parts = userIdOrName.split('-');
-        if (parts.length >= 3) {
-          // Join all parts after the timestamp, replacing dashes with spaces
-          const name = parts.slice(2).join(' ');
-          return name;
-        }
-        // Fallback if format is unexpected
+      if (userIdOrName.startsWith('custom-') || userIdOrName.startsWith('custom:')) {
+        const extracted = extractNameFromAssignmentId(userIdOrName);
+        if (extracted) return extracted;
         return userIdOrName.replace('custom-', '').replace(/-/g, ' ');
       }
 
@@ -183,6 +178,9 @@ export const useEventAssignments = () => {
         return `Person #${userIdOrName}`;
       }
 
+      const legacyName = extractNameFromAssignmentId(userIdOrName);
+      if (legacyName) return legacyName;
+
       return userIdOrName;
     } catch (error) {
       logger.error('Error in resolveUserName:', error, 'Input:', userIdOrName);
@@ -242,7 +240,7 @@ export const useEventAssignments = () => {
   // Open assignment dialog
   const openAssignmentDialog = (
     eventId: number,
-    type: 'driver' | 'speaker' | 'volunteer' | 'recipient',
+    type: 'driver' | 'volunteer' | 'recipient',
     isVanDriver: boolean = false
   ) => {
     setAssignmentEventId(eventId);
@@ -251,13 +249,13 @@ export const useEventAssignments = () => {
     setEditingAssignmentPersonId(null);
     setSelectedAssignees([]);
     setIsVanDriverAssignment(isVanDriver);
-    setShowAssignmentDialog(true);
+    openDialog('assignment');
   };
 
   // Open assignment dialog in edit mode
   const openEditAssignmentDialog = (
     eventId: number,
-    type: 'driver' | 'speaker' | 'volunteer' | 'recipient',
+    type: 'driver' | 'volunteer' | 'recipient',
     personId: string
   ) => {
     setAssignmentEventId(eventId);
@@ -265,13 +263,13 @@ export const useEventAssignments = () => {
     setIsEditingAssignment(true);
     setEditingAssignmentPersonId(personId);
     setSelectedAssignees([personId]);
-    setShowAssignmentDialog(true);
+    openDialog('assignment');
   };
 
   // Handle removing assignment with undo capability
   const handleRemoveAssignment = async (
     personId: string,
-    type: 'driver' | 'speaker' | 'volunteer',
+    type: 'driver' | 'volunteer',
     eventId: number
   ) => {
     try {
@@ -305,26 +303,6 @@ export const useEventAssignments = () => {
             const newDriverDetails = { ...currentDriverDetails };
             delete newDriverDetails[personId];
             updateData.driverDetails = newDriverDetails;
-          }
-        }
-      } else if (type === 'speaker') {
-        // Check if it's a tentative speaker
-        const currentTentativeSpeakers = eventRequest.tentativeSpeakerIds || [];
-        if (currentTentativeSpeakers.includes(personId)) {
-          originalData.tentativeSpeakerIds = [...currentTentativeSpeakers];
-          updateData.tentativeSpeakerIds = currentTentativeSpeakers.filter(id => id !== personId);
-        } else {
-          const currentSpeakerDetails = eventRequest.speakerDetails || {};
-          originalData.speakerDetails = { ...currentSpeakerDetails };
-          const newSpeakerDetails = { ...currentSpeakerDetails };
-          delete newSpeakerDetails[personId];
-          updateData.speakerDetails = newSpeakerDetails;
-
-          const currentSpeakerAssignments = eventRequest.speakerAssignments || [];
-          originalData.speakerAssignments = [...currentSpeakerAssignments];
-          const speakerName = currentSpeakerDetails[personId]?.name;
-          if (speakerName) {
-            updateData.speakerAssignments = currentSpeakerAssignments.filter(name => name !== speakerName);
           }
         }
       } else if (type === 'volunteer') {
@@ -401,7 +379,7 @@ export const useEventAssignments = () => {
   };
 
   // Handle self-signup
-  const handleSelfSignup = async (eventId: number, type: 'driver' | 'speaker' | 'volunteer') => {
+  const handleSelfSignup = async (eventId: number, type: 'driver' | 'volunteer') => {
     if (!user) {
       toast({
         title: 'Authentication required',
@@ -450,42 +428,6 @@ export const useEventAssignments = () => {
             selfAssigned: true,
           },
         };
-      } else if (type === 'speaker') {
-        const currentSpeakerDetails = eventRequest.speakerDetails || {};
-        if (currentSpeakerDetails[user.id]) {
-          toast({
-            title: 'Already signed up',
-            description: 'You are already assigned as a speaker for this event',
-          });
-          return;
-        }
-
-        const speakersNeeded = eventRequest.speakersNeeded;
-        const currentSpeakersCount = Object.keys(currentSpeakerDetails).length;
-        if (typeof speakersNeeded === 'number' && currentSpeakersCount >= speakersNeeded) {
-          toast({
-            title: 'No spots available',
-            description: 'All speaker spots are filled for this event',
-            variant: 'destructive',
-          });
-          return;
-        }
-
-        updateData.speakerDetails = {
-          ...currentSpeakerDetails,
-          [user.id]: {
-            name: `${user.firstName} ${user.lastName}`.trim(),
-            assignedAt: new Date().toISOString(),
-            assignedBy: user.id,
-            selfAssigned: true,
-          },
-        };
-
-        const currentSpeakerAssignments = eventRequest.speakerAssignments || [];
-        const userName = `${user.firstName} ${user.lastName}`.trim();
-        if (!currentSpeakerAssignments.includes(userName)) {
-          updateData.speakerAssignments = [...currentSpeakerAssignments, userName];
-        }
       } else if (type === 'volunteer') {
         if (!eventRequest.volunteersNeeded || eventRequest.volunteersNeeded <= 0) {
           if (!isScheduledOrRescheduled(eventRequest.status)) {
@@ -559,9 +501,9 @@ export const useEventAssignments = () => {
   };
 
   // Check if user can sign up
-  const canSelfSignup = (eventRequest: EventRequest, type: 'driver' | 'speaker' | 'volunteer'): boolean => {
+  const canSelfSignup = (eventRequest: EventRequest, type: 'driver' | 'volunteer'): boolean => {
     if (!user) return false;
-    
+
     // Check if user has the self-signup permission
     if (!hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP)) {
       return false;
@@ -572,12 +514,6 @@ export const useEventAssignments = () => {
       const driversNeeded = eventRequest.driversNeeded;
       return !currentDrivers.includes(user.id) &&
         (typeof driversNeeded !== 'number' || currentDrivers.length < driversNeeded);
-    } else if (type === 'speaker') {
-      const currentSpeakerDetails = eventRequest.speakerDetails || {};
-      const speakersNeeded = eventRequest.speakersNeeded;
-      const currentSpeakersCount = Object.keys(currentSpeakerDetails).length;
-      return !currentSpeakerDetails[user.id] &&
-        (typeof speakersNeeded !== 'number' || currentSpeakersCount < speakersNeeded);
     } else if (type === 'volunteer') {
       if (isScheduledOrRescheduled(eventRequest.status)) {
         const currentVolunteers = parsePostgresArray(eventRequest.assignedVolunteerIds);
@@ -597,15 +533,12 @@ export const useEventAssignments = () => {
   };
 
   // Check if user is signed up
-  const isUserSignedUp = (eventRequest: EventRequest, type: 'driver' | 'speaker' | 'volunteer'): boolean => {
+  const isUserSignedUp = (eventRequest: EventRequest, type: 'driver' | 'volunteer'): boolean => {
     if (!user) return false;
 
     if (type === 'driver') {
       const currentDrivers = parsePostgresArray(eventRequest.assignedDriverIds);
       return currentDrivers.includes(user.id);
-    } else if (type === 'speaker') {
-      const currentSpeakerDetails = eventRequest.speakerDetails || {};
-      return !!currentSpeakerDetails[user.id];
     } else if (type === 'volunteer') {
       const currentVolunteers = parsePostgresArray(eventRequest.assignedVolunteerIds);
       return currentVolunteers.includes(user.id);

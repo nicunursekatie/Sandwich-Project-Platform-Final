@@ -31,8 +31,16 @@ export function RefrigerationWarningBadge({
   showTooltip = true,
 }: RefrigerationWarningBadgeProps) {
   const hasCriticalIssue = hasCriticalRefrigerationIssue(sandwichTypes, hasRefrigeration);
-  const needsConfirmation = needsRefrigerationConfirmation(hasRefrigeration);
   const hasPerishable = hasPerishableSandwiches(sandwichTypes);
+  // The "Refrigeration needed?" ask is only meaningful when the event
+  // has perishable sandwiches on the plan (turkey, ham, deli, cheese).
+  // A PBJ-only event doesn't require refrigeration regardless of what
+  // `hasRefrigeration` says, so the confirmation question is irrelevant
+  // and the badge should not show. `needsRefrigerationConfirmation`
+  // alone only reflects whether the field is unanswered — pair it with
+  // `hasPerishable` so we don't nag on PBJ events.
+  const needsConfirmation =
+    hasPerishable && needsRefrigerationConfirmation(hasRefrigeration);
   const showConfirmed = hasRefrigeration === true && hasPerishable;
   const message = getRefrigerationMessage(sandwichTypes, hasRefrigeration);
 
@@ -53,19 +61,23 @@ export function RefrigerationWarningBadge({
       )}
 
       {!hasCriticalIssue && needsConfirmation && (
+        // ACTION: refrigeration status is unknown — escalate to a real
+        // warning treatment (solid amber + ⚠️) so the chip clearly asks
+        // for an answer instead of reading as decorative info.
         <Badge
-          variant="secondary"
-          className={`gap-1 bg-amber-100 dark:bg-amber-900 text-amber-900 dark:text-amber-100 border-amber-300 dark:border-amber-700 ${className}`}
+          className={`gap-1 bg-amber-500 text-white border border-amber-600 hover:bg-amber-600 ${className}`}
         >
-          <HelpCircle className="h-3 w-3" />
-          <span>Refrigeration?</span>
+          <AlertTriangle className="h-3 w-3" />
+          <span>Confirm refrigeration</span>
         </Badge>
       )}
 
       {!hasCriticalIssue && !needsConfirmation && showConfirmed && (
+        // STATUS: refrigeration is confirmed — mute it. Informational,
+        // no action required.
         <Badge
           variant="secondary"
-          className={`gap-1 bg-blue-100 dark:bg-blue-900 text-blue-900 dark:text-blue-100 border-blue-300 dark:border-blue-700 ${className}`}
+          className={`gap-1 bg-gray-100 text-gray-700 border border-gray-300 ${className}`}
         >
           <Snowflake className="h-3 w-3" />
           <span>Refrigeration confirmed</span>

@@ -379,13 +379,25 @@ export class PlanningSheetSyncService {
     const speakerNames = await this.getAssignedNames(e.assignedSpeakerIds || []);
     const volunteerNames = await this.getAssignedNames(e.assignedVolunteerIds || []);
 
-    // Resolve TSP contact - either customTspContact (free text) or tspContact (user ID)
+    // Resolve TSP contact - either customTspContact (free text) or
+    // tspContact (user ID). The planning sheet TSP Contact column only
+    // holds first names by convention (the team recognizes Katie/Kim/
+    // Christine etc.), so strip everything after the first whitespace.
+    // This is intentionally simple: "Kim Long" → "Kim", "Katie" → "Katie",
+    // "Kim L." → "Kim". If someone has a two-word first name we'd lose
+    // the second word, but that hasn't come up and the sheet convention
+    // is single token.
+    const toFirstName = (raw: string): string => {
+      const trimmed = (raw || '').trim();
+      if (!trimmed) return '';
+      return trimmed.split(/\s+/)[0];
+    };
     let tspContactName = '';
     if (e.customTspContact) {
-      tspContactName = e.customTspContact;
+      tspContactName = toFirstName(e.customTspContact);
     } else if (e.tspContact) {
       const names = await this.getAssignedNames([e.tspContact]);
-      tspContactName = names[0] || e.tspContact; // Fall back to ID if not found
+      tspContactName = toFirstName(names[0] || e.tspContact);
     }
 
     // Build staffing string
@@ -438,16 +450,43 @@ export class PlanningSheetSyncService {
       return `${hours}:${minutes} ${ampm}`;
     };
 
-    // Format sandwich types with proper capitalization (e.g., "deli" -> "Deli", "pbj" -> "PBJ")
+    // Format sandwich types for the planning sheet using the canonical
+    // user-facing label from constants.ts SANDWICH_TYPES. The raw stored
+    // values include "deli_turkey" and "deli_ham" (because turkey/ham
+    // are deli sub-types in our taxonomy), but the planning sheet
+    // column has conditional formatting that expects the bare label —
+    // "Turkey", "Ham", "Deli", "PBJ" — not "Deli_turkey" or "Deli,
+    // Turkey". Map raw → label explicitly.
     const sandwichTypes = e.sandwichTypes as Array<{ type: string; quantity?: number }> | null;
+    const SANDWICH_TYPE_LABELS: Record<string, string> = {
+      pbj: 'PBJ',
+      'pb&j': 'PBJ',
+      deli: 'Deli',
+      deli_turkey: 'Turkey',
+      turkey: 'Turkey',
+      deli_ham: 'Ham',
+      ham: 'Ham',
+      chicken: 'Chicken',
+      unknown: '',
+    };
     const formatSandwichType = (type: string): string => {
-      const lower = type.toLowerCase();
-      if (lower === 'pbj' || lower === 'pb&j') return 'PBJ';
-      if (lower === 'deli') return 'Deli';
-      // Capitalize first letter for any other type
+      const lower = (type || '').toLowerCase();
+      if (lower in SANDWICH_TYPE_LABELS) return SANDWICH_TYPE_LABELS[lower];
+      // Fallback for any unknown future type: capitalize first letter.
       return type.charAt(0).toUpperCase() + type.slice(1).toLowerCase();
     };
-    const deliOrPbj = sandwichTypes?.map(st => formatSandwichType(st.type)).join(', ') || '';
+    // Dedupe so an event tagged with both "deli" and "deli_turkey"
+    // doesn't render "Deli, Turkey" — pick the more specific label and
+    // drop the empties.
+    const deliOrPbj = sandwichTypes
+      ? Array.from(
+          new Set(
+            sandwichTypes
+              .map((st) => formatSandwichType(st.type))
+              .filter((label) => label.length > 0),
+          ),
+        ).join(', ')
+      : '';
 
     // Build the row array matching column order
     const row: string[] = new Array(27).fill('');
@@ -463,10 +502,17 @@ export class PlanningSheetSyncService {
     row[PLANNING_SHEET_COLUMNS.STAFFING] = formatStaffingColumn(staffing);
     row[PLANNING_SHEET_COLUMNS.ESTIMATE_SANDWICHES] = e.estimatedSandwichCount?.toString() || '';
     row[PLANNING_SHEET_COLUMNS.DELI_OR_PBJ] = deliOrPbj;
-    // Only show final sandwich count if it's a positive number (not 0 or null)
+    // Final sandwich count written to the sheet is intentionally the event's
+    // own actualSandwichCount reference field — NOT a total derived from the
+    // sandwich_collections log. In this org's workflow that field is a manual,
+    // for-reference-only number that does NOT feed the official sandwich count;
+    // official totals live solely in sandwich_collections. Whatever number is
+    // in the app here is meant to overrule the sheet on push. Do not "fix" this
+    // to compute from sandwich_collections — that would risk corrupting the
+    // official count records. Only show it if it's a positive number.
     row[PLANNING_SHEET_COLUMNS.FINAL_SANDWICHES] = (e.actualSandwichCount && e.actualSandwichCount > 0) ? e.actualSandwichCount.toString() : '';
     row[PLANNING_SHEET_COLUMNS.SOCIAL_POST] = e.socialMediaPostCompleted ? 'Yes' : '';
-    row[PLANNING_SHEET_COLUMNS.SENT_TOOLKIT] = e.toolkitSent ? 'yes' : '';
+    row[PLANNING_SHEET_COLUMNS.SENT_TOOLKIT] = e.toolkitSent ? 'Yes' : '';
     row[PLANNING_SHEET_COLUMNS.CONTACT_NAME] = `${e.firstName || ''} ${e.lastName || ''}`.trim();
     row[PLANNING_SHEET_COLUMNS.EMAIL] = e.email || '';
     row[PLANNING_SHEET_COLUMNS.PHONE] = e.phone || '';
@@ -998,10 +1044,14 @@ export class PlanningSheetSyncService {
           const existingRaw = this.planningSheetRowToRawArray(existingRow);
           finalRow = [...rowData];
 
-          for (let i = 0; i < 26; i++) {
+          // Iterate every mapped column (0..26 inclusive — the sheet has 27
+          // columns through AA/"Waiting On"). A hard-coded 26 here previously
+          // skipped the last column, so a keep_sheet/append decision on
+          // "Waiting On" was silently ignored and always overwritten.
+          for (let i = 0; i < finalRow.length; i++) {
             const decision = mergeDecisions[String(i)];
             if (decision === 'keep_sheet') {
-              finalRow[i] = existingRaw[i];
+              finalRow[i] = existingRaw[i] ?? '';
             } else if (decision === 'append') {
               const existingVal = (existingRaw[i] || '').trim();
               const appVal = (rowData[i] || '').trim();
@@ -1173,29 +1223,49 @@ export class PlanningSheetSyncService {
       year: 'numeric'
     }) : '';
 
-    for (const row of sheetRows) {
-      // Match by organization name (case-insensitive) and date
-      const orgMatch = row.groupName.toLowerCase().trim() === (e.organizationName || '').toLowerCase().trim();
-      // Match date in either format (2-digit or 4-digit year) for robustness
-      const dateMatch = row.date === eventDateStr2Digit || row.date === eventDateStr4Digit;
-
-      if (orgMatch && dateMatch) {
-        return row;
+    // Match by organization name (case-insensitive) + date. Match the date in
+    // either format (2-digit or 4-digit year), with a parsed-date fallback.
+    const matchesOrgAndDate = (row: PlanningSheetRow): boolean => {
+      const orgMatch =
+        row.groupName.toLowerCase().trim() ===
+        (e.organizationName || '').toLowerCase().trim();
+      if (!orgMatch) return false;
+      if (row.date === eventDateStr2Digit || row.date === eventDateStr4Digit) {
+        return true;
       }
-
-      // Fallback: parse both dates and compare by actual date values
-      if (orgMatch && eventDateObj) {
+      if (eventDateObj) {
         const rowDate = this.parseSheetDate(row.date);
-        if (rowDate &&
-            rowDate.getFullYear() === eventDateObj.getFullYear() &&
-            rowDate.getMonth() === eventDateObj.getMonth() &&
-            rowDate.getDate() === eventDateObj.getDate()) {
-          return row;
+        if (
+          rowDate &&
+          rowDate.getFullYear() === eventDateObj.getFullYear() &&
+          rowDate.getMonth() === eventDateObj.getMonth() &&
+          rowDate.getDate() === eventDateObj.getDate()
+        ) {
+          return true;
         }
       }
-    }
+      return false;
+    };
 
-    return null;
+    // Normally exactly one row matches an org on a given date. But a group can
+    // (in principle) have more than one event on the same day. If we blindly
+    // returned the first match, pushEventDirectly would overwrite that first
+    // event's row with the second event's data. So only treat it as "the same
+    // event" when the match is unambiguous.
+    const sameOrgDate = sheetRows.filter(matchesOrgAndDate);
+    if (sameOrgDate.length === 0) return null;
+    if (sameOrgDate.length === 1) return sameOrgDate[0];
+
+    // Multiple rows for this org on this date: disambiguate by event start time
+    // (the sheet is also ordered by time within a date). If the start time
+    // can't single out exactly one row, return null so the caller inserts a
+    // NEW row instead of overwriting the wrong event.
+    const eventStartMinutes = this.parseTimeToMinutes(String(e.eventStartTime || ''));
+    if (eventStartMinutes === null) return null;
+    const timeMatches = sameOrgDate.filter(
+      (row) => this.parseTimeToMinutes(row.eventStartTime) === eventStartMinutes
+    );
+    return timeMatches.length === 1 ? timeMatches[0] : null;
   }
 }
 

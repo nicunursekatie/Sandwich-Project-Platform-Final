@@ -40,7 +40,9 @@ import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 interface EventCalendarViewProps {
   onEventClick?: (event: EventRequest) => void;
   events?: EventRequest[]; // Optional: pre-filtered events (e.g., only volunteer opportunities)
-  filterByNeeds?: boolean; // If true, only show events that need speakers or volunteers
+  filterByNeeds?: boolean; // If true, only show events that need volunteers or drivers
+  /** Hide org self-transport events (default true — they don't need TSP logistics on the calendar). */
+  hideSelfTransport?: boolean;
 }
 
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -84,10 +86,8 @@ const getUnfilledNeeds = (event: EventRequest) => {
   const driversSuppressed = !!event.selfTransport;
 
   return {
-    needsSpeaker: counts.speakersUnfilled > 0,
     needsVolunteer: counts.volunteersUnfilled > 0,
     needsDriver: !driversSuppressed && counts.driversUnfilled > 0,
-    speakersUnfilled: counts.speakersUnfilled,
     volunteersUnfilled: counts.volunteersUnfilled,
     driversUnfilled: driversSuppressed ? 0 : counts.driversUnfilled,
   };
@@ -115,16 +115,6 @@ const getAssignedStaffNames = (event: EventRequest, resolveUserName: (id: string
       const name = resolveUserName(id);
       if (name && name !== 'Not assigned') {
         assigned.push({ type: 'driver', name, icon: '🚗' });
-      }
-    });
-  }
-
-  // Speakers
-  if (event.assignedSpeakerIds && Array.isArray(event.assignedSpeakerIds) && event.assignedSpeakerIds.length > 0) {
-    event.assignedSpeakerIds.forEach((id) => {
-      const name = resolveUserName(id);
-      if (name && name !== 'Not assigned') {
-        assigned.push({ type: 'speaker', name, icon: '🎤' });
       }
     });
   }
@@ -344,7 +334,12 @@ const detectDayConflicts = (dayEvents: EventRequest[]): DayConflicts => {
   };
 };
 
-export function EventCalendarView({ onEventClick, events: providedEvents, filterByNeeds = false }: EventCalendarViewProps) {
+export function EventCalendarView({
+  onEventClick,
+  events: providedEvents,
+  filterByNeeds = false,
+  hideSelfTransport = true,
+}: EventCalendarViewProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [expandedDates, setExpandedDates] = useState<Set<string>>(new Set());
   const [statusFilters, setStatusFilters] = useState<string[]>([
@@ -374,28 +369,33 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
   // Use provided events or fetched events
   const events = providedEvents || fetchedEvents;
 
-  // Filter events by selected statuses and optionally by speaker/volunteer needs
+  // Filter events by selected statuses and optionally by volunteer/driver needs
   const filteredEvents = useMemo(() => {
     let filtered = events.filter((event) => statusFilters.includes(event.status));
+
+    // Self-transport groups handle their own sandwich delivery — omit from logistics calendar
+    if (hideSelfTransport) {
+      filtered = filtered.filter((event) => !event.selfTransport);
+    }
 
     // Hide cancelled events when the toggle is active
     if (hideCancelled) {
       filtered = filtered.filter((event) => event.status !== 'cancelled');
     }
 
-    // If filterByNeeds is true, only show events that need speakers or volunteers
+    // If filterByNeeds is true, only show events that still need drivers or
+    // volunteers (speaker role retired). Reuses getUnfilledNeeds so the filter
+    // matches the staffing badges shown on the calendar and stays self-transport
+    // aware.
     if (filterByNeeds) {
       filtered = filtered.filter((event) => {
-        const needsSpeaker = !event.speakerId || event.speakerId === null || event.speakerId === '' ||
-          (event.speakersNeeded && event.speakersNeeded > 0);
-        const needsVolunteer = !event.volunteerId || event.volunteerId === null || event.volunteerId === '' ||
-          (event.volunteersNeeded && event.volunteersNeeded > 0);
-        return needsSpeaker || needsVolunteer;
+        const needs = getUnfilledNeeds(event);
+        return needs.needsVolunteer || needs.needsDriver;
       });
     }
 
     return filtered;
-  }, [events, statusFilters, filterByNeeds, hideCancelled]);
+  }, [events, statusFilters, filterByNeeds, hideCancelled, hideSelfTransport]);
 
   const ALL_STATUSES = ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'cancelled'];
 
@@ -574,7 +574,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
 
   return (
     <TooltipProvider>
-    <Card className="w-full">
+    <Card className="w-full" data-tour="calendar-view">
       <CardHeader className="pb-2 sm:pb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
           <CardTitle className="flex items-center gap-2 sm:gap-3 text-lg sm:text-2xl">
@@ -718,9 +718,6 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
             <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-white" style={{ backgroundColor: '#1e40af' }}>
               Need Driver
             </span>
-            <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-white" style={{ backgroundColor: '#7e22ce' }}>
-              Need Speaker
-            </span>
             <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-bold uppercase text-white" style={{ backgroundColor: '#15803d' }}>
               Need Volunteer
             </span>
@@ -812,7 +809,7 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
             const dayHasUnfilledNeeds = dayEvents.some((evt) => {
               if (evt.status === 'cancelled' || evt.status === 'completed') return false;
               const needs = getUnfilledNeeds(evt);
-              return needs.needsSpeaker || needs.needsVolunteer || needs.needsDriver;
+              return needs.needsVolunteer || needs.needsDriver;
             });
             // Calculate Saturday weekly sandwich totals
             const saturdaySandwichTotal = isSaturday ? (() => {
@@ -988,16 +985,11 @@ export function EventCalendarView({ onEventClick, events: providedEvents, filter
                         </div>
 
                         {/* Unfilled needs text badges */}
-                        {(unfilledNeeds.needsSpeaker || unfilledNeeds.needsVolunteer || unfilledNeeds.needsDriver) && (
+                        {(unfilledNeeds.needsVolunteer || unfilledNeeds.needsDriver) && (
                           <div className="flex flex-wrap gap-0.5 sm:gap-1 mt-0.5 sm:mt-1 mb-0.5 sm:mb-1">
                             {unfilledNeeds.needsDriver && (
                               <span className="inline-block px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-bold uppercase text-white" style={{ backgroundColor: '#1e40af' }}>
                                 Need Driver
-                              </span>
-                            )}
-                            {unfilledNeeds.needsSpeaker && (
-                              <span className="inline-block px-1 sm:px-1.5 py-0.5 rounded text-[8px] sm:text-[10px] font-bold uppercase text-white" style={{ backgroundColor: '#7e22ce' }}>
-                                Need Speaker
                               </span>
                             )}
                             {unfilledNeeds.needsVolunteer && (

@@ -821,7 +821,7 @@ export class WeeklyImpactReportGenerator {
         50
       );
       doc.text('Next Report: Next Thursday', 50);
-      doc.text('Contact: reports@sandwichproject.org', 50);
+      doc.text('Contact: katie@thesandwichproject.org', 50);
 
       doc.end();
     });

@@ -76,6 +76,11 @@ const CustomMessage = () => {
   const { channel } = useChannelStateContext();
   const { user } = useAuth();
 
+  // Hide deleted messages entirely — no "This message was deleted" placeholder.
+  if (message?.type === 'deleted' || message?.deleted_at) {
+    return null;
+  }
+
   // Check if this is the current user's message
   const isOwnMessage = message?.user?.id === `user_${user?.id}`;
   const currentUserId = user?.id ? `user_${user.id}` : null;
@@ -184,6 +189,14 @@ const CustomMessage = () => {
 
 // Custom CSS for Stream Chat with brand colors
 const customChatStyles = `
+  /* Fill dashboard content area instead of a fixed viewport calc */
+  .str-chat {
+    height: 100%;
+    width: 100%;
+    min-height: 0;
+    display: flex;
+  }
+
   /* Multi-line textarea */
   .str-chat__textarea textarea {
     min-height: 60px !important;
@@ -327,6 +340,71 @@ const customChatStyles = `
     gap: 8px !important;
     margin-bottom: 4px !important;
   }
+
+  /* ── #1: Alignment & ownership model ──────────────────────────────
+     Standard chat UI: my messages on the right, others on the left.
+     Stream Chat ships them all left-aligned by default; here we flip
+     the user's own messages so spatial position alone communicates
+     ownership before the user reads anything. */
+  .str-chat__list .str-chat__message--me,
+  .str-chat__list .str-chat__message-simple--me {
+    flex-direction: row-reverse !important;
+    justify-content: flex-end !important;
+    text-align: right !important;
+  }
+
+  /* The inner wrapper that holds the bubble + metadata stack should
+     also align right so the metadata sits flush with the bubble's
+     right edge. */
+  .str-chat__list .str-chat__message--me .str-chat__message-inner,
+  .str-chat__list .str-chat__message-simple--me .str-chat__message-inner {
+    align-items: flex-end !important;
+  }
+
+  /* Push avatar to the right side of own messages too — Stream's
+     default leaves it on the left even when the bubble flips. */
+  .str-chat__list .str-chat__message--me .str-chat__avatar,
+  .str-chat__list .str-chat__message-simple--me .str-chat__avatar {
+    margin-left: 8px !important;
+    margin-right: 0 !important;
+  }
+
+  /* ── #2: Metadata hierarchy ───────────────────────────────────────
+     Sender name should appear ABOVE the bubble, not below it. The
+     timestamp can sit next to the name in a smaller/lighter font.
+     Stream renders metadata in a single .str-chat__message-data
+     row; we hoist it above the bubble via flex order. */
+  .str-chat__list .str-chat__message-inner,
+  .str-chat__list .str-chat__message-simple .str-chat__message-inner {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .str-chat__list .str-chat__message-data {
+    order: -1 !important;        /* before the bubble */
+    margin-top: 0 !important;
+    margin-bottom: 4px !important;
+    font-size: 12px !important;
+  }
+
+  /* Lighter timestamp so the eye lands on the name first. */
+  .str-chat__list .str-chat__message-data time,
+  .str-chat__list .str-chat__message-timestamp {
+    color: #6b7280 !important;
+    font-weight: 400 !important;
+    font-size: 11px !important;
+  }
+
+  /* ── #4: Hide deleted messages entirely ───────────────────────────
+     Stream's default UI shows a "This message was deleted" placeholder.
+     We suppress that in CustomMessage; this CSS is a safety net for any
+     deleted row that still mounts (e.g. thread previews). */
+  .str-chat__list .str-chat__message--deleted,
+  .str-chat__list .str-chat__message-simple--deleted,
+  .str-chat__thread .str-chat__message--deleted,
+  .str-chat__thread .str-chat__message-simple--deleted {
+    display: none !important;
+  }
 `;
 
 // Room definitions matching your Socket.io setup
@@ -371,6 +449,14 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
   const initialSection = (defaultTab === 'dms' || defaultTab === 'groups') ? defaultTab : 'rooms';
   const [activeSection, setActiveSection] = useState<'rooms' | 'dms' | 'groups'>(initialSection);
   const [unreadCounts, setUnreadCounts] = useState<{ rooms: number; dms: number; groups: number }>({ rooms: 0, dms: 0, groups: 0 });
+  // Tick counter bumped on every Stream Chat message event. Per-row unread
+  // badges read `channel.countUnread()` directly during render — Stream Chat
+  // updates that count internally on its channel objects but doesn't expose it
+  // through React state, so without a tick the rows never re-render and the
+  // per-room badges stay frozen at their initial value. Bumping this on
+  // message.new / message.read / notification.mark_read forces the list to
+  // re-evaluate every channel's unread count.
+  const [messageTick, setMessageTick] = useState(0);
 
   // Sync activeSection when defaultTab prop changes (e.g., navigating via sidebar)
   useEffect(() => {
@@ -881,6 +967,10 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
       const groupsUnread = groupChats.reduce((sum, ch) => sum + (ch.countUnread() || 0), 0);
       const roomsUnread = Array.from(teamRoomChannels.values()).reduce((sum, r) => sum + (r.channel?.countUnread() || 0), 0);
       setUnreadCounts({ rooms: roomsUnread, dms: dmsUnread, groups: groupsUnread });
+      // Force per-row badges (rooms, DMs, groups) to re-evaluate countUnread().
+      // Without this, only the aggregate `unreadCounts` updates and individual
+      // room badges stay frozen at their initial render value.
+      setMessageTick((t) => t + 1);
     };
 
     // Listen for message events to update unread counts
@@ -947,13 +1037,25 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
   return (
     <>
       <style>{customChatStyles}</style>
-      <div className="flex h-[calc(100vh-200px)] bg-white rounded-lg border overflow-hidden">
+      <div className="flex h-full min-h-0 bg-white rounded-lg border overflow-hidden">
         <Chat client={client}>
         {/* Sidebar - hidden on mobile when viewing chat */}
         <div className={`w-full md:w-72 border-r border-[#47B3CB]/30 bg-gradient-to-b from-[#236383]/5 to-white flex flex-col ${!mobileShowSidebar ? 'hidden md:flex' : 'flex'}`}>
           {/* Header with section tabs */}
           <div className="p-3 border-b border-[#47B3CB]/30 bg-[#236383] text-white">
-            <h2 className="text-lg font-semibold mb-2">Messages</h2>
+            <h2 className="text-lg font-semibold mb-1">Messages</h2>
+            {/* Clarifier line: states that Team Chat is for real-time
+                messaging and links to Project Threads for users who want an
+                email-style thread instead. */}
+            <p className="text-xs text-white/80 mb-2 leading-snug">
+              For quick back-and-forth with the team — messages are real-time.{' '}
+              <a
+                href="/dashboard?section=gmail-inbox"
+                className="font-medium underline hover:text-white whitespace-nowrap"
+              >
+                📁 Start a Thread instead
+              </a>
+            </p>
             <div className="flex gap-1">
               <button
                 onClick={() => setActiveSection('rooms')}
@@ -1007,19 +1109,27 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
             {/* Team Rooms Section */}
             {activeSection === 'rooms' && (
               <div>
+                {/* messageTick is referenced so the linter sees the dependency
+                    (the actual re-render is driven by the parent component
+                    re-rendering when the tick state changes — calling
+                    countUnread() inline picks up the fresh value). */}
+                {void messageTick}
                 {userRooms.map((room) => {
                   const Icon = room.icon;
                   const isActive = activeChannel?.id === room.id && activeChannel?.type === 'team';
                   const roomData = teamRoomChannels.get(room.id);
                   const memberCount = roomData?.memberCount || 0;
                   const unreadCount = roomData?.channel?.countUnread() || 0;
+                  const hasUnread = unreadCount > 0 && !isActive;
                   return (
                     <div
                       key={room.id}
                       className={`p-3 border-b border-[#47B3CB]/20 cursor-pointer transition-all ${
                         isActive
                           ? 'bg-[#47B3CB]/20 border-l-4 border-l-[#236383] text-[#236383] font-medium'
-                          : 'hover:bg-[#47B3CB]/10 hover:border-l-4 hover:border-l-[#FBAD3F]/50 text-gray-700'
+                          : hasUnread
+                            ? 'hover:bg-[#47B3CB]/10 border-l-4 border-l-[#A31C41] bg-[#A31C41]/[0.03] text-gray-800'
+                            : 'hover:bg-[#47B3CB]/10 hover:border-l-4 hover:border-l-[#FBAD3F]/50 text-gray-700'
                       }`}
                       onClick={async () => {
                         try {
@@ -1033,16 +1143,27 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
                       }}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                        <div className={`relative flex items-center justify-center w-8 h-8 rounded-full ${
                           isActive
                             ? 'bg-[#236383] text-white'
                             : 'bg-[#47B3CB]/20 text-[#007E8C]'
                         }`}>
                           <Icon className="w-4 h-4" />
+                          {/* Slack-style unread dot on the icon — small but unmissable */}
+                          {hasUnread && (
+                            <span
+                              aria-label={`${unreadCount} unread`}
+                              className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#A31C41] ring-2 ring-white"
+                            />
+                          )}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-sm font-medium truncate block">
+                            <span
+                              className={`text-sm truncate block ${
+                                hasUnread ? 'font-bold text-[#236383]' : 'font-medium'
+                              }`}
+                            >
                               {room.name}
                             </span>
                             {unreadCount > 0 && (
@@ -1084,13 +1205,16 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
                   directMessages.map((channel) => {
                     const isActive = activeChannel?.cid === channel.cid;
                     const unreadCount = channel.countUnread();
+                    const hasUnread = unreadCount > 0 && !isActive;
                     return (
                       <div
                         key={channel.cid}
                         className={`p-3 border-b border-[#47B3CB]/20 cursor-pointer transition-all ${
                           isActive
                             ? 'bg-[#47B3CB]/20 border-l-4 border-l-[#236383] text-[#236383] font-medium'
-                            : 'hover:bg-[#47B3CB]/10 hover:border-l-4 hover:border-l-[#FBAD3F]/50 text-gray-700'
+                            : hasUnread
+                              ? 'hover:bg-[#47B3CB]/10 border-l-4 border-l-[#A31C41] bg-[#A31C41]/[0.03] text-gray-800'
+                              : 'hover:bg-[#47B3CB]/10 hover:border-l-4 hover:border-l-[#FBAD3F]/50 text-gray-700'
                         }`}
                         onClick={async () => {
                           await channel.watch();
@@ -1099,13 +1223,25 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
                         }}
                       >
                         <div className="flex items-center gap-3">
-                          <Avatar className="w-8 h-8">
-                            <AvatarFallback className={isActive ? 'bg-[#236383] text-white' : 'bg-[#47B3CB]/20 text-[#007E8C]'}>
-                              {getDMInitials(channel)}
-                            </AvatarFallback>
-                          </Avatar>
+                          <div className="relative">
+                            <Avatar className="w-8 h-8">
+                              <AvatarFallback className={isActive ? 'bg-[#236383] text-white' : 'bg-[#47B3CB]/20 text-[#007E8C]'}>
+                                {getDMInitials(channel)}
+                              </AvatarFallback>
+                            </Avatar>
+                            {hasUnread && (
+                              <span
+                                aria-label={`${unreadCount} unread`}
+                                className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#A31C41] ring-2 ring-white"
+                              />
+                            )}
+                          </div>
                           <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium truncate block">
+                            <span
+                              className={`text-sm truncate block ${
+                                hasUnread ? 'font-bold text-[#236383]' : 'font-medium'
+                              }`}
+                            >
                               {getDMDisplayName(channel)}
                             </span>
                             {channel.state?.messages?.length > 0 && (
@@ -1162,6 +1298,7 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
                   groupChats.map((channel) => {
                     const isActive = activeChannel?.cid === channel.cid;
                     const unreadCount = channel.countUnread();
+                    const hasUnread = unreadCount > 0 && !isActive;
                     const members = Object.values(channel.state?.members || {});
                     const memberCount = members.length;
                     // Get member names (excluding current user, limit to first 3)
@@ -1184,7 +1321,9 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
                         className={`p-3 border-b border-[#47B3CB]/20 cursor-pointer transition-all ${
                           isActive
                             ? 'bg-[#47B3CB]/20 border-l-4 border-l-[#236383] text-[#236383] font-medium'
-                            : 'hover:bg-[#47B3CB]/10 hover:border-l-4 hover:border-l-[#FBAD3F]/50 text-gray-700'
+                            : hasUnread
+                              ? 'hover:bg-[#47B3CB]/10 border-l-4 border-l-[#A31C41] bg-[#A31C41]/[0.03] text-gray-800'
+                              : 'hover:bg-[#47B3CB]/10 hover:border-l-4 hover:border-l-[#FBAD3F]/50 text-gray-700'
                         }`}
                         onClick={async () => {
                           await channel.watch();
@@ -1193,13 +1332,23 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
                         }}
                       >
                         <div className="flex items-center gap-3">
-                          <div className={`flex items-center justify-center w-8 h-8 rounded-full ${
+                          <div className={`relative flex items-center justify-center w-8 h-8 rounded-full ${
                             isActive ? 'bg-[#236383] text-white' : 'bg-[#47B3CB]/20 text-[#007E8C]'
                           }`}>
                             <Users className="w-4 h-4" />
+                            {hasUnread && (
+                              <span
+                                aria-label={`${unreadCount} unread`}
+                                className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#A31C41] ring-2 ring-white"
+                              />
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <span className="text-sm font-medium truncate block">
+                            <span
+                              className={`text-sm truncate block ${
+                                hasUnread ? 'font-bold text-[#236383]' : 'font-medium'
+                              }`}
+                            >
                               {(channel.data as any)?.name || `Group (${memberCount})`}
                             </span>
                             <span className="text-xs text-gray-500 truncate block" title={memberDisplay}>
@@ -1291,7 +1440,7 @@ export default function StreamChatRooms({ defaultTab }: { defaultTab?: string | 
                 <MessageList Message={CustomMessage} />
                 <MessageInput />
               </Window>
-              <Thread />
+              <Thread Message={CustomMessage} />
             </Channel>
           ) : (
             <div className="flex-1 flex items-center justify-center">

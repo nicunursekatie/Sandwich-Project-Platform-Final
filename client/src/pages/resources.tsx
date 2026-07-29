@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../hooks/useAuth';
 import { ResourceAdminModal } from '../components/resource-admin-modal';
-import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import {
   Search,
@@ -32,8 +31,10 @@ import {
   Download,
   Share2,
   Upload,
+  MoreHorizontal,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { encodeAssetPath } from '@/lib/asset-path';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +46,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Category definitions with icons and colors (using brand color scheme)
@@ -146,14 +163,6 @@ const STATIC_RESOURCE_URLS: Record<string, string> = {
     '/attached_assets/Sandwich Project - Sign In Sheet correct qrs.pdf',
 };
 
-function encodeAssetPath(path: string): string {
-  if (!path.startsWith('/')) return path;
-  return path
-    .split('/')
-    .map((segment, index) => (index === 0 || !segment ? segment : encodeURIComponent(segment)))
-    .join('/');
-}
-
 function getResourceOpenUrl(item: Resource): string | null {
   const { type, documentId, url, title } = item.resource;
   const normalizedTitle = title?.trim() ?? '';
@@ -201,6 +210,43 @@ function openUrlInNewTab(openUrl: string): boolean {
   return true;
 }
 
+function ResourceDeleteMenu({
+  onDelete,
+  triggerClassName,
+  deleteTestId,
+}: {
+  onDelete: () => void;
+  triggerClassName?: string;
+  deleteTestId?: string;
+}) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={
+            triggerClassName ??
+            'flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-md hover:bg-gray-50 transition-colors'
+          }
+          aria-label="More actions"
+        >
+          <MoreHorizontal className="w-4 h-4" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onClick={onDelete}
+          className="text-red-600 focus:text-red-600"
+          data-testid={deleteTestId}
+        >
+          <Trash2 className="w-4 h-4 mr-2" />
+          Delete resource
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
+
 // Sandwich Assembly Guides Component — backed by /api/host-resources.
 // Public users see + download/share. Admins (admin or super_admin) can upload
 // new guides, edit titles/descriptions, and delete them via inline controls.
@@ -223,6 +269,7 @@ function SandwichAssemblyGuides() {
   const queryClient = useQueryClient();
   const [uploadOpen, setUploadOpen] = useState(false);
   const [editing, setEditing] = useState<HostResource | null>(null);
+  const [guideToDelete, setGuideToDelete] = useState<{ id: number; title: string } | null>(null);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
@@ -250,10 +297,11 @@ function SandwichAssemblyGuides() {
     },
   });
 
-  const handleDelete = (id: number, title: string) => {
-    if (window.confirm(`Delete "${title}"? This cannot be undone.`)) {
-      deleteMutation.mutate(id);
-    }
+  const confirmDeleteGuide = () => {
+    if (!guideToDelete) return;
+    deleteMutation.mutate(guideToDelete.id, {
+      onSettled: () => setGuideToDelete(null),
+    });
   };
 
   const handleDownload = async (imageUrl: string, fileName: string) => {
@@ -398,13 +446,9 @@ function SandwichAssemblyGuides() {
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button
-                        onClick={() => handleDelete(guide.id, guide.title)}
-                        className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-sm border border-gray-200 rounded-md hover:bg-red-50 transition-colors text-red-600"
-                        title="Delete guide"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <ResourceDeleteMenu
+                        onDelete={() => setGuideToDelete({ id: guide.id, title: guide.title })}
+                      />
                     </>
                   )}
                 </div>
@@ -424,6 +468,37 @@ function SandwichAssemblyGuides() {
           onOpenChange={(open) => { if (!open) setEditing(null); }}
         />
       )}
+
+      <AlertDialog
+        open={!!guideToDelete}
+        onOpenChange={(open) => {
+          if (!open) setGuideToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete assembly guide?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {guideToDelete
+                ? `"${guideToDelete.title}" will be permanently removed. This cannot be undone.`
+                : 'This guide will be permanently removed.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmDeleteGuide();
+              }}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
@@ -687,6 +762,8 @@ export function Resources() {
   const [showFilters, setShowFilters] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingResource, setEditingResource] = useState<Resource | null>(null);
+  const [resourceToDelete, setResourceToDelete] = useState<Resource | null>(null);
+  const [deletingResource, setDeletingResource] = useState(false);
 
   // Track onboarding challenge on page load
   useEffect(() => {
@@ -770,18 +847,14 @@ export function Resources() {
     }
   };
 
-  // Delete (soft-delete) a resource — admin only
-  const handleDeleteResource = async (resource: Resource) => {
-    const title = resource.resource.title;
-    if (
-      !window.confirm(
-        `Delete "${title}"? It will be hidden from this page for everyone. This can be undone by an admin.`,
-      )
-    ) {
-      return;
-    }
+  // Delete (soft-delete) a resource — admin only (server enforces same check)
+  const confirmDeleteResource = async () => {
+    if (!resourceToDelete) return;
+
+    const title = resourceToDelete.resource.title;
+    setDeletingResource(true);
     try {
-      const res = await fetch(`/api/resources/${resource.resource.id}`, {
+      const res = await fetch(`/api/resources/${resourceToDelete.resource.id}`, {
         method: 'DELETE',
         credentials: 'include',
       });
@@ -793,6 +866,7 @@ export function Resources() {
         title: 'Resource deleted',
         description: `"${title}" has been removed.`,
       });
+      setResourceToDelete(null);
       await loadResources();
     } catch (err) {
       toast({
@@ -800,6 +874,8 @@ export function Resources() {
         description: err instanceof Error ? err.message : 'Could not delete resource',
         variant: 'destructive',
       });
+    } finally {
+      setDeletingResource(false);
     }
   };
 
@@ -1086,14 +1162,11 @@ export function Resources() {
                 >
                   <Edit className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={() => handleDeleteResource(item)}
-                  className="px-3 py-2 rounded-lg text-sm bg-gray-100 text-red-600 hover:bg-red-50 transition-colors"
-                  title="Delete resource"
-                  data-testid={`resource-delete-${item.resource.id}`}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                <ResourceDeleteMenu
+                  onDelete={() => setResourceToDelete(item)}
+                  triggerClassName="px-3 py-2 rounded-lg text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                  deleteTestId={`resource-delete-${item.resource.id}`}
+                />
               </>
             )}
           </div>
@@ -1167,12 +1240,38 @@ export function Resources() {
         existingResource={editingResource ?? undefined}
       />
 
-      <div className="max-w-7xl mx-auto">
-        <PageBreadcrumbs segments={[
-          { label: 'Documentation' },
-          { label: 'Resources' }
-        ]} />
+      <AlertDialog
+        open={!!resourceToDelete}
+        onOpenChange={(open) => {
+          if (!open && !deletingResource) setResourceToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete resource?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {resourceToDelete
+                ? `"${resourceToDelete.resource.title}" will be hidden from this page for everyone. An admin can restore it later if needed.`
+                : 'This resource will be hidden from this page for everyone.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingResource}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmDeleteResource();
+              }}
+              disabled={deletingResource}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {deletingResource ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
@@ -1225,6 +1324,7 @@ export function Resources() {
               {/* Filters Toggle */}
               <button
                 onClick={() => setShowFilters(!showFilters)}
+                data-tour="resources-filters-toggle"
                 className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center gap-2"
               >
                 <Filter className="w-5 h-5" />
@@ -1261,6 +1361,7 @@ export function Resources() {
                       return (
                         <button
                           key={cat.id}
+                          data-tour={`category-${cat.id}`}
                           onClick={() => setSelectedCategory(cat.id)}
                           className={`px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-1.5 ${
                             selectedCategory === cat.id

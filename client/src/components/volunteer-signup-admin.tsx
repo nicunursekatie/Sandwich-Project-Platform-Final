@@ -17,7 +17,6 @@ import {
   Phone,
   MapPin,
   Calendar,
-  Mic,
   Car,
   HandHeart,
   Loader2,
@@ -49,7 +48,6 @@ type SignupWithEvent = {
 
 function getRoleIcon(role: string) {
   switch (role) {
-    case 'speaker': return <Mic className="w-3.5 h-3.5" />;
     case 'driver': return <Car className="w-3.5 h-3.5" />;
     default: return <HandHeart className="w-3.5 h-3.5" />;
   }
@@ -57,7 +55,6 @@ function getRoleIcon(role: string) {
 
 function getRoleColor(role: string) {
   switch (role) {
-    case 'speaker': return 'bg-[#a31c41] text-white';
     case 'driver': return 'bg-[#236383] text-white';
     default: return 'bg-[#007e8c] text-white';
   }
@@ -65,9 +62,12 @@ function getRoleColor(role: string) {
 
 function getRoleLabel(role: string) {
   switch (role) {
-    case 'speaker': return 'Speaker';
     case 'driver': return 'Driver';
     case 'general': return 'Volunteer';
+    // Speaker role is retired for new signups, but legacy signups may still
+    // carry role 'speaker' — keep a friendly label so historical records read
+    // cleanly instead of showing the raw string.
+    case 'speaker': return 'Speaker';
     default: return role;
   }
 }

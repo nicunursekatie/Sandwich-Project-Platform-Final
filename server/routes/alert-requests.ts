@@ -268,7 +268,7 @@ export function createAIAlertRouter(deps: { isAuthenticated: any }) {
       });
 
       const completion = await openai.chat.completions.create({
-        model: 'gpt-4o-mini',
+        model: 'gpt-5-mini',
         messages: [
           {
             role: 'system',
@@ -297,8 +297,7 @@ Be concise and practical. Frame the response as a well-written alert request tha
             content: `Help me create an alert for the following: ${prompt}`,
           },
         ],
-        max_tokens: 500,
-        temperature: 0.7,
+        max_completion_tokens: 500,
       });
 
       const generatedAlert = completion.choices[0]?.message?.content || 'Unable to generate suggestion';

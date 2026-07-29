@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
@@ -6,16 +6,17 @@ import { useEventMutations } from '../hooks/useEventMutations';
 import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { NonEventCard } from '../cards/NonEventCard';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { exportEventRequestsToExcel } from '@/lib/excel-export';
+import { DuplicateEventDialog } from '../dialogs/DuplicateEventDialog';
 import { EventListSkeleton } from '../EventCardSkeleton';
+import type { EventRequest } from '@shared/schema';
 
 export const NonEventTab: React.FC = () => {
   const { toast } = useToast();
   const { filterRequestsByStatus } = useEventFilters();
-  const { deleteEventRequestMutation } = useEventMutations();
+  const { deleteEventRequestMutation, createEventRequestMutation } = useEventMutations();
   const { resolveUserName } = useEventAssignments();
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateSourceRequest, setDuplicateSourceRequest] = useState<EventRequest | null>(null);
 
   const {
     isLoading,
@@ -24,51 +25,18 @@ export const NonEventTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
+    openDialog,
   } = useEventDialogState();
 
   const nonEventRequests = filterRequestsByStatus('non_event');
 
-  const handleExport = async () => {
-    if (nonEventRequests.length === 0) {
-      toast({
-        title: 'No data to export',
-        description: 'There are no non-event requests to export.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    try {
-      await exportEventRequestsToExcel(nonEventRequests, 'non_event');
-      toast({
-        title: 'Export complete',
-        description: `Exported ${nonEventRequests.length} non-event request${nonEventRequests.length !== 1 ? 's' : ''} to Excel.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Export failed',
-        description: 'Failed to export. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   return (
     <>
+      {/* Header with count. Export lives in the page-level top action bar. */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
           {isLoading ? 'Loading...' : `${nonEventRequests.length} non-event request${nonEventRequests.length !== 1 ? 's' : ''}`}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          disabled={nonEventRequests.length === 0}
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Export to Excel
-        </Button>
       </div>
 
       <div className="space-y-4">
@@ -87,22 +55,39 @@ export const NonEventTab: React.FC = () => {
               onView={() => {
                 setSelectedEventRequest(request);
                 setIsEditing(false);
-                setShowEventDetails(true);
+                openDialog('eventDetails');
               }}
               onEdit={() => {
                 setSelectedEventRequest(request);
                 setIsEditing(true);
-                setShowEventDetails(true);
+                openDialog('eventDetails');
               }}
               onDelete={() => {
                 if (window.confirm('Are you sure you want to permanently delete this non-event?')) {
                   deleteEventRequestMutation.mutate(request.id);
                 }
               }}
+              onDuplicate={() => {
+                setDuplicateSourceRequest(request);
+                setShowDuplicateDialog(true);
+              }}
             />
           ))
         )}
       </div>
+      <DuplicateEventDialog
+        isOpen={showDuplicateDialog}
+        onClose={() => {
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+        request={duplicateSourceRequest}
+        onConfirm={async (newEventData) => {
+          await createEventRequestMutation.mutateAsync(newEventData);
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+      />
     </>
   );
 };

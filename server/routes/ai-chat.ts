@@ -650,10 +650,8 @@ function getEventMissingInfo(event: any): string[] {
     }
   }
 
-  // If speakers needed, check for event start time
-  if (event.speakersNeeded && event.speakersNeeded > 0 && !event.eventStartTime) {
-    missing.push('Event Start Time');
-  }
+  // (Speaker role retired: the former "speakers needed ⇒ event start time"
+  // requirement was removed.)
 
   return missing;
 }
@@ -2184,10 +2182,10 @@ aiChatRouter.post('/', async (req: AuthenticatedRequest, res: Response) => {
 
     const client = getOpenAIClient();
     const completion = await client.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-5',
       messages,
-      temperature: 0.7,
-      max_tokens: 1500,
+      max_completion_tokens: 4000,
+      reasoning_effort: 'minimal',
     });
 
     const aiResponse = completion.choices[0].message.content || 'I apologize, but I was unable to generate a response.';

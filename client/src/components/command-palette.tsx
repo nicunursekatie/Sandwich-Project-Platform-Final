@@ -32,6 +32,7 @@ import {
   MapPin,
   HelpCircle,
   ArrowRight,
+  Gauge,
 } from 'lucide-react';
 import { NAV_ITEMS } from '@/nav.config';
 
@@ -44,6 +45,7 @@ interface CommandPaletteProps {
 // Routes must match App.tsx - most pages are dashboard sections accessed via /dashboard?section=X
 const QUICK_NAV_SHORTCUTS: Record<string, { label: string; href: string; icon: React.ElementType }> = {
   d: { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  o: { label: 'Ops Dashboard', href: '/dashboard?section=event-ops-dashboard', icon: Gauge },
   e: { label: 'Event Requests', href: '/event-requests', icon: Calendar },
   v: { label: 'Volunteers', href: '/dashboard?section=volunteers', icon: Users },
   r: { label: 'Drivers', href: '/dashboard?section=drivers', icon: Car },
@@ -55,7 +57,7 @@ const QUICK_NAV_SHORTCUTS: Record<string, { label: string; href: string; icon: R
   s: { label: 'Settings', href: '/dashboard?section=admin', icon: Settings },
   c: { label: 'Team Chat', href: '/dashboard?section=chat', icon: MessageCircle },
   k: { label: 'Kudos', href: '/dashboard?section=kudos', icon: Trophy },
-  o: { label: 'Cooler Tracking', href: '/cooler-tracking', icon: Package },
+  u: { label: 'Cooler Tracking', href: '/cooler-tracking', icon: Package },
   l: { label: 'Event Map', href: '/event-map', icon: MapPin },
 };
 
@@ -66,6 +68,7 @@ const NAV_CATEGORIES = [
     label: 'Quick Access',
     items: [
       { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, shortcut: 'D' },
+      { label: 'Ops Dashboard', href: '/dashboard?section=event-ops-dashboard', icon: Gauge, shortcut: 'O' },
       { label: 'Event Requests', href: '/event-requests', icon: Calendar, shortcut: 'E' },
       { label: 'Driver Planning', href: '/driver-planning', icon: Truck, shortcut: 'T' },
       { label: 'Meetings', href: '/meetings', icon: ClipboardList, shortcut: 'M' },
@@ -90,7 +93,7 @@ const NAV_CATEGORIES = [
   {
     label: 'Operations',
     items: [
-      { label: 'Cooler Tracking', href: '/cooler-tracking', icon: Package, shortcut: 'O' },
+      { label: 'Cooler Tracking', href: '/cooler-tracking', icon: Package, shortcut: 'U' },
       { label: 'Event Map', href: '/event-map', icon: MapPin, shortcut: 'L' },
       { label: 'Analytics', href: '/dashboard?section=analytics', icon: BarChart3, shortcut: 'A' },
     ],
@@ -228,7 +231,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               <span>Close</span>
             </div>
             <div>
-              <kbd className="px-1.5 py-0.5 text-[10px] font-semibold bg-muted rounded border">⌘K</kbd>
+              <kbd className="px-1.5 py-0.5 text-[10px] font-semibold bg-muted rounded border">⌘⇧K</kbd>
               <span className="ml-1">to open</span>
             </div>
           </div>
@@ -245,8 +248,11 @@ export function useCommandPalette() {
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Cmd+K or Ctrl+K to open command palette
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      // Cmd+Shift+K or Ctrl+Shift+K to open the command palette.
+      // Plain Cmd/Ctrl+K is owned by the sidebar SmartSearch (the global
+      // AI search), which has a visible trigger advertising that shortcut —
+      // so the palette uses the Shift variant to avoid both opening at once.
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'k') {
         e.preventDefault();
         setOpen((prev) => !prev);
       }

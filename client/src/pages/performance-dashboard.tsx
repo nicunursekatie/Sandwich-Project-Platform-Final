@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import tspLogo from '@assets/CMYK_PRINT_TSP-01_1749585167435.png';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import {
   Card,
@@ -105,11 +106,7 @@ export default function PerformanceDashboard() {
 
   const optimizeMutation = useMutation({
     mutationFn: (action: string) =>
-      apiRequest(`/api/performance/optimize`, {
-        method: 'POST',
-        body: JSON.stringify({ action }),
-        headers: { 'Content-Type': 'application/json' },
-      }),
+      apiRequest('POST', '/api/performance/optimize', { action }),
     onSuccess: (data) => {
       toast({
         title: 'Optimization Complete',
@@ -183,8 +180,8 @@ export default function PerformanceDashboard() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <img
-                src="/api/placeholder/32/32"
-                alt="Logo"
+                src={tspLogo}
+                alt="The Sandwich Project logo"
                 className="w-8 h-8"
               />
               <span className="text-xl font-semibold text-slate-900">
@@ -231,7 +228,7 @@ export default function PerformanceDashboard() {
       <div className="bg-white border-b border-slate-200 px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <img src="/api/placeholder/32/32" alt="Logo" className="w-8 h-8" />
+            <img src={tspLogo} alt="The Sandwich Project logo" className="w-8 h-8" />
             <span className="text-xl font-semibold text-slate-900">
               The Sandwich Project
             </span>

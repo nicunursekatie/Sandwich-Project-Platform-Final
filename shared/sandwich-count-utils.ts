@@ -69,6 +69,30 @@ export function getRangeMidpoint(minValue: number | string | null | undefined, m
   return min ?? max;
 }
 
+/**
+ * True when min/max should drive UI as a complete active range.
+ *
+ * Requires BOTH bounds so call sites can safely render `${min}-${max}` without
+ * producing strings like "490-null". Also returns false when an exact
+ * estimatedSandwichCount is present AND disagrees with the range midpoint —
+ * that signature is the "500 saves as 498" bug (a leftover range whose
+ * midpoint overrides the exact count the user entered). Legitimate imports
+ * store count === midpoint and stay treated as a range.
+ */
+export function hasActiveSandwichRange(
+  estimatedSandwichCountMin: number | string | null | undefined,
+  estimatedSandwichCountMax: number | string | null | undefined,
+  estimatedSandwichCount?: number | string | null,
+): boolean {
+  const min = toFiniteCount(estimatedSandwichCountMin);
+  const max = toFiniteCount(estimatedSandwichCountMax);
+  if (min === null || max === null) return false;
+
+  const midpoint = Math.round((Math.min(min, max) + Math.max(min, max)) / 2);
+  const exact = toFiniteCount(estimatedSandwichCount);
+  return exact === null || exact === midpoint;
+}
+
 export function getReportableSandwichCount(
   event: SandwichCountFields,
   options: ReportableSandwichCountOptions = {},
@@ -76,18 +100,23 @@ export function getReportableSandwichCount(
   const actualCount = toFiniteCount(event.actualSandwichCount);
   if (actualCount !== null) return actualCount;
 
+  // Prefer an explicit exact count over a range midpoint. Clean range-mode
+  // saves null estimatedSandwichCount, so they still fall through to the
+  // midpoint. Corrupted rows that keep BOTH (exact 500 + stale 490-506 →
+  // midpoint 498) must show what the user typed, not the leftover range.
+  const estimatedCount = toFiniteCount(event.estimatedSandwichCount);
+  if (estimatedCount !== null) {
+    if (
+      options.ignoreSuspiciousEstimatedCounts &&
+      estimatedCount >= (options.suspiciousEstimatedThreshold ?? 50000)
+    ) {
+      return 0;
+    }
+    return estimatedCount;
+  }
+
   const rangeMidpoint = getRangeMidpoint(event.estimatedSandwichCountMin, event.estimatedSandwichCountMax);
   if (rangeMidpoint !== null) return rangeMidpoint;
 
-  const estimatedCount = toFiniteCount(event.estimatedSandwichCount);
-  if (estimatedCount === null) return 0;
-
-  if (
-    options.ignoreSuspiciousEstimatedCounts &&
-    estimatedCount >= (options.suspiciousEstimatedThreshold ?? 50000)
-  ) {
-    return 0;
-  }
-
-  return estimatedCount;
+  return 0;
 }

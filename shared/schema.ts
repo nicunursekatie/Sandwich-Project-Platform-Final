@@ -63,6 +63,19 @@ export const users = pgTable('users', {
   permissionsModifiedBy: varchar('permissions_modified_by'),
   address: text('address'), // Home address for map display in driver planning tool
   vanApproved: boolean('van_approved').default(false), // Whether this user is approved to drive the van
+  // Event-role capabilities. Two axes per role (see shared/event-role-eligibility.ts):
+  //  - "willing*" = self-declared by the user in their profile (what they want to do)
+  //  - "*Approved" = coordinator-granted vetting for roles that carry responsibility
+  // A user is offered a role on the Volunteer Hub when they're willing AND
+  // (where the role requires it) approved. General volunteering is the baseline
+  // everyone can do, so willingToVolunteer defaults to true.
+  willingToVolunteer: boolean('willing_to_volunteer').default(true), // Willing to help as a general volunteer
+  willingToSpeak: boolean('willing_to_speak').default(false), // Willing to speak at events
+  willingToDrive: boolean('willing_to_drive').default(false), // Willing to drive for events
+  speakerApproved: boolean('speaker_approved').default(false), // Coordinator-approved to speak on behalf of the org
+  driverApproved: boolean('driver_approved').default(false), // Coordinator-approved to drive for events
+  eventRolesModifiedAt: timestamp('event_roles_modified_at'), // When approval flags were last changed
+  eventRolesModifiedBy: varchar('event_roles_modified_by'), // Who changed the approval flags
   latitude: varchar('latitude'), // Geocoded latitude for map display
   longitude: varchar('longitude'), // Geocoded longitude for map display
   geocodedAt: timestamp('geocoded_at'), // When coordinates were last geocoded
@@ -1099,7 +1112,13 @@ export const volunteers = pgTable('volunteers', {
   inactiveReason: text('inactive_reason'),
   volunteerType: text('volunteer_type').notNull().default('general'), // 'general', 'former_driver', 'driver_candidate', etc.
   isDriver: boolean('is_driver').notNull().default(false), // Whether this volunteer can drive
-  isSpeaker: boolean('is_speaker').notNull().default(false), // Whether this volunteer can speak at events
+  isSpeaker: boolean('is_speaker').notNull().default(false), // Whether this volunteer can speak at events (legacy: speaker role is being retired)
+  // Volunteer readiness. 'new' volunteers are not yet cleared to attend an event
+  // on their own and must be paired with an 'experienced' volunteer; 'experienced'
+  // volunteers can attend any event solo. Kept independent of trainingCompleted so
+  // finishing training can be recorded separately from being cleared to solo.
+  experienceLevel: text('experience_level').notNull().default('new'), // 'new' | 'experienced'
+  trainingCompleted: boolean('training_completed').notNull().default(false), // Whether the volunteer has completed the onboarding training
   latitude: decimal('latitude'),
   longitude: decimal('longitude'),
   geocodedAt: timestamp('geocoded_at'),
@@ -1172,7 +1191,10 @@ export const recipients = pgTable('recipients', {
   website: text('website'), // Organization website URL
   instagramHandle: text('instagram_handle'), // Instagram handle for social media tracking
   ein: text('ein'), // Employer Identification Number (tax ID) for the organization
-  address: text('address'), // Actual street address
+  address: text('address'), // Actual street address (primary — also drives map + region detection)
+  // Optional extra addresses (e.g., second site, warehouse, summer location). Each entry is a free-form labeled address.
+  // The primary `address` field above stays authoritative for geocoding and map pins.
+  addresses: jsonb('addresses').$type<Array<{ label: string; address: string }>>().default([]),
   region: text('region'), // Geographic region/area (e.g., "Downtown", "Sandy Springs")
   preferences: text('preferences'), // Legacy field - keeping for backward compatibility
   weeklyEstimate: integer('weekly_estimate'), // Estimated weekly sandwich count
@@ -1191,7 +1213,21 @@ export const recipients = pgTable('recipients', {
   secondContactPersonRole: text('second_contact_person_role'), // Second contact person's role/title
   // Enhanced fields for operational tracking
   reportingGroup: text('reporting_group'), // Corresponds to host locations for operational grouping
-  estimatedSandwiches: integer('estimated_sandwiches'), // Estimated number of sandwiches needed
+  estimatedSandwiches: integer('estimated_sandwiches'), // Estimated sandwiches — used as the MIN of the range (or the single value when min === max)
+  estimatedSandwichesMax: integer('estimated_sandwiches_max'), // Upper bound of the range. NULL means the field is treated as a single number equal to estimatedSandwiches.
+  // Planned breakdown by sandwich type. Each row = { type, min, max }.
+  // Use min === max for a single number (no range). Sum of all min/max is what we plan to give.
+  // This is the PLANNED distribution; actual logged counts live in sandwich_collections.
+  plannedSandwichBreakdown: jsonb('planned_sandwich_breakdown')
+    .$type<Array<{ type: string; min: number; max: number }>>()
+    .default([]),
+  // How often we serve this org — NOT tied to the sandwich count itself.
+  // 'weekly_priority' = regular committed orgs.
+  // 'when_extras'     = leftover-driven; only served when we have surplus.
+  // 'as_needed'       = irregular / special-circumstance orgs.
+  // Free-text deliveryCadenceNote captures nuance not in the tier.
+  deliveryCadence: text('delivery_cadence'), // 'weekly_priority' | 'when_extras' | 'as_needed' | null
+  deliveryCadenceNote: text('delivery_cadence_note'),
   sandwichType: text('sandwich_type'), // Type of sandwiches preferred (replaces old "preferences" field)
   tspContact: text('tsp_contact'), // TSP contact person (may be a user within our app)
   tspContactUserId: varchar('tsp_contact_user_id'), // Link to users table if TSP contact is an app user
@@ -1470,6 +1506,34 @@ export const userResourceFavorites = pgTable(
   })
 );
 
+// User's personal "notable" collections — per-user bookmark on a
+// sandwich collection log entry. Used for the star icon on the
+// collection log (distinct from the kudos / send-recognition icon
+// which targets the SUBMITTER, not the entry).
+export const userCollectionFavorites = pgTable(
+  'user_collection_favorites',
+  {
+    id: serial('id').primaryKey(),
+    userId: varchar('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    collectionId: integer('collection_id')
+      .notNull()
+      .references(() => sandwichCollections.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => ({
+    userIdx: index('idx_user_collection_favorites_user').on(table.userId),
+    collectionIdx: index('idx_user_collection_favorites_collection').on(
+      table.collectionId
+    ),
+    uniqueFavorite: unique('unique_user_collection_favorite').on(
+      table.userId,
+      table.collectionId
+    ),
+  })
+);
+
 // Tag definitions for categorizing resources
 export const resourceTags = pgTable(
   'resource_tags',
@@ -1613,11 +1677,17 @@ export const insertDriverVehicleSchema = createInsertSchema(driverVehicles).omit
   createdAt: true,
   updatedAt: true,
 });
+/** Volunteer readiness levels. Single source of truth for client + server. */
+export const VOLUNTEER_EXPERIENCE_LEVELS = ['new', 'experienced'] as const;
+export type VolunteerExperienceLevel = (typeof VOLUNTEER_EXPERIENCE_LEVELS)[number];
+
 export const insertVolunteerSchema = createInsertSchema(volunteers)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({
     // Convert all timestamp fields from string to Date or null
     geocodedAt: nullableTimestampField,
+    // Constrain readiness to the known values on the create path.
+    experienceLevel: z.enum(VOLUNTEER_EXPERIENCE_LEVELS).optional(),
   });
 export const insertHostSchema = createInsertSchema(hosts)
   .omit({ id: true, createdAt: true, updatedAt: true })
@@ -2459,6 +2529,17 @@ export const eventRequests = pgTable(
     toolkitSentDate: timestamp('toolkit_sent_date'), // When toolkit was sent
     toolkitStatus: varchar('toolkit_status').default('not_sent'), // 'not_sent', 'sent', 'received_confirmed', 'not_needed'
     toolkitSentBy: varchar('toolkit_sent_by'), // User ID of who sent the toolkit
+
+    // TSP-shopped events: TSP purchases the supplies for the group for a fee + admin/donation
+    // (instead of the group shopping). Designation + tracking checklist + shopping plan.
+    isTspShopped: boolean('is_tsp_shopped').default(false), // Marks this as a TSP-shopped event
+    tspShopFeeAgreed: boolean('tsp_shop_fee_agreed').default(false), // Group notified of the fee and agreed
+    tspShopEstimateProvided: boolean('tsp_shop_estimate_provided').default(false), // Group given a budget/estimate
+    tspShopEstimateAmount: decimal('tsp_shop_estimate_amount', { precision: 10, scale: 2 }), // Estimated supplies + fee total
+    tspShopPaid: boolean('tsp_shop_paid').default(false), // Group has paid TSP (supplies + fee)
+    tspShopAmountPaid: decimal('tsp_shop_amount_paid', { precision: 10, scale: 2 }), // Amount the group actually paid
+    tspShopPlanReady: boolean('tsp_shop_plan_ready').default(false), // TSP has a plan to shop the supplies
+    tspShoppingPlan: text('tsp_shopping_plan'), // The shopping plan; shows on the card and flows to the planning sheet "All Details" column
     eventStartTime: varchar('event_start_time'), // Event start time (stored as string for flexibility)
     eventEndTime: varchar('event_end_time'), // Event end time
     pickupTime: varchar('pickup_time'), // Driver pickup time for sandwiches
@@ -3047,8 +3128,46 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     firstName: z.string().nullable().optional(),
     lastName: z.string().nullable().optional(),
     email: z
-      .union([z.string().email(), z.literal(''), z.null(), z.undefined()])
-      .transform((val) => val || undefined)
+      .union([z.string(), z.null(), z.undefined()])
+      // Trim first: a pasted address with leading/trailing whitespace (or a
+      // stray newline) is the most common reason a manual event silently fails
+      // to save. Empty/whitespace-only becomes undefined so the field is simply
+      // omitted, matching the previous behavior.
+      .transform((val) => {
+        const trimmed = typeof val === 'string' ? val.trim() : '';
+        return trimmed.length > 0 ? trimmed : undefined;
+      })
+      // Only enforce email format when a value is actually present, with a clear
+      // message (the create endpoint surfaces this to the user).
+      .refine(
+        (val) => val === undefined || z.string().email().safeParse(val).success,
+        { message: 'Please enter a valid email address (e.g., name@example.com).' }
+      )
+      .optional(),
+    phone: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((val) => {
+        const trimmed = typeof val === 'string' ? val.trim() : '';
+        return trimmed.length > 0 ? trimmed : undefined;
+      })
+      .optional(),
+    backupContactEmail: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((val) => {
+        const trimmed = typeof val === 'string' ? val.trim() : '';
+        return trimmed.length > 0 ? trimmed : undefined;
+      })
+      .refine(
+        (val) => val === undefined || z.string().email().safeParse(val).success,
+        { message: 'Please enter a valid backup contact email address.' }
+      )
+      .optional(),
+    backupContactPhone: z
+      .union([z.string(), z.null(), z.undefined()])
+      .transform((val) => {
+        const trimmed = typeof val === 'string' ? val.trim() : '';
+        return trimmed.length > 0 ? trimmed : undefined;
+      })
       .optional(),
     organizationName: z.string().nullable().optional(),
     manualEntrySource: z.string().nullable().optional(),
@@ -3145,6 +3264,37 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
       ])
       .nullable()
       .optional(),
+    // Optional next-follow-up date (suppresses follow-up nagging for long-lead events)
+    nextFollowUpDate: z
+      .union([
+        z.date(),
+        z
+          .string()
+          .trim()
+          .transform((str) => {
+            if (!str) return null;
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(str)) {
+              throw new Error('Invalid date format, expected YYYY-MM-DD');
+            }
+            // Parse at local noon (NOT bare `new Date(str)`, which is midnight UTC
+            // and renders/compares a day early in America/New_York). Mirrors the
+            // toolkitSentDate coercion above.
+            const date = new Date(str + 'T12:00:00');
+            return isNaN(date.getTime()) ? null : date;
+          }),
+        z.null(),
+      ])
+      .nullable()
+      .optional(),
+    // TSP-shopped event fields
+    isTspShopped: z.boolean().nullable().optional(),
+    tspShopFeeAgreed: z.boolean().nullable().optional(),
+    tspShopEstimateProvided: z.boolean().nullable().optional(),
+    tspShopEstimateAmount: z.union([z.string(), z.number(), z.null()]).optional(),
+    tspShopPaid: z.boolean().nullable().optional(),
+    tspShopAmountPaid: z.union([z.string(), z.number(), z.null()]).optional(),
+    tspShopPlanReady: z.boolean().nullable().optional(),
+    tspShoppingPlan: z.string().nullable().optional(),
     followUpOneDayCompleted: z.boolean().nullable().optional(),
     followUpOneDayDate: z
       .union([
@@ -3244,24 +3394,11 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
         z.null(),
       ])
       .optional(),
-  })
-  .refine(
-    (data) => {
-      // Require at least organization name OR some contact information
-      const hasOrgName =
-        data.organizationName && data.organizationName.trim().length > 0;
-      const hasContactInfo =
-        (data.firstName && data.firstName.trim().length > 0) ||
-        (data.lastName && data.lastName.trim().length > 0) ||
-        (data.email && data.email.trim().length > 0);
-      return hasOrgName || hasContactInfo;
-    },
-    {
-      message:
-        'Either organization name or contact information (name/email) is required',
-      path: ['organizationName'],
-    }
-  );
+  });
+// NOTE: No "must have at least one identifier" refine. Manual entries are
+// intentionally allowed to be created fully blank (no org name, contact name,
+// email, or phone) and filled in later as intake details come in. Email format
+// is still validated when an email IS provided (see the `email` field above).
 
 export const insertEventReminderSchema = createInsertSchema(eventReminders)
   .omit({

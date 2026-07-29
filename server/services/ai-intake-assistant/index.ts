@@ -480,67 +480,8 @@ const VALIDATION_RULES: ValidationRule[] = [
     }
   },
 
-  // CRITICAL: Speaker Needs Assessment (for scheduled events)
-  {
-    id: 'speaker_needs_assessment',
-    category: 'logistics',
-    severity: 'critical',
-    check: (event) => {
-      // Only check for scheduled events
-      if (!isScheduledOrRescheduled(event.status)) return null;
-      
-      if (event.speakersNeeded === null || event.speakersNeeded === undefined) {
-        return {
-          category: 'logistics',
-          severity: 'critical',
-          field: 'speakersNeeded',
-          title: 'Speaker Needs Not Assessed',
-          message: 'For scheduled events, we need to know if speakers are required.',
-          suggestion: 'Determine if the organization wants a speaker for their event.',
-          action: 'Assess speaker needs and update the event'
-        };
-      }
-      return null;
-    }
-  },
-
-  // WARNING: Speakers Needed But Not Assigned
-  {
-    id: 'speakers_needed_not_assigned',
-    category: 'logistics',
-    severity: 'warning',
-    check: (event) => {
-      // Only check for scheduled events
-      if (!isScheduledOrRescheduled(event.status)) return null;
-      
-      const speakersNeeded = event.speakersNeeded || 0;
-      const assignedSpeakers = event.assignedSpeakerIds?.length || 0;
-      
-      if (speakersNeeded > 0 && assignedSpeakers === 0) {
-        return {
-          category: 'logistics',
-          severity: 'warning',
-          field: 'assignedSpeakerIds',
-          title: `${speakersNeeded} Speaker${speakersNeeded > 1 ? 's' : ''} Needed - None Assigned`,
-          message: `This event needs ${speakersNeeded} speaker${speakersNeeded > 1 ? 's' : ''} but none have been assigned yet.`,
-          suggestion: 'Assign speakers to this event.',
-          action: `Assign ${speakersNeeded} speaker${speakersNeeded > 1 ? 's' : ''} to this event`
-        };
-      } else if (speakersNeeded > assignedSpeakers) {
-        return {
-          category: 'logistics',
-          severity: 'warning',
-          field: 'assignedSpeakerIds',
-          title: `More Speakers Needed`,
-          message: `This event needs ${speakersNeeded} speakers but only ${assignedSpeakers} assigned.`,
-          suggestion: 'Assign additional speakers to meet the requirement.',
-          action: `Assign ${speakersNeeded - assignedSpeakers} more speaker${speakersNeeded - assignedSpeakers > 1 ? 's' : ''}`
-        };
-      }
-      
-      return null;
-    }
-  },
+  // (Speaker role retired: the 'speaker_needs_assessment' and
+  // 'speakers_needed_not_assigned' intake rules were removed.)
 
   // SUGGESTION: Volunteer Needs Assessment
   {
@@ -723,7 +664,7 @@ async function generateAiRecommendations(
   const prompt = buildAiPrompt(eventRequest, critical, warnings, suggestions);
 
   const completion = await openai.chat.completions.create({
-    model: 'gpt-4o-mini',
+    model: 'gpt-5-mini',
     messages: [
       {
         role: 'system',
@@ -742,8 +683,7 @@ Provide 2-3 specific, actionable recommendations based on the current state of t
         content: prompt
       }
     ],
-    temperature: 0.7,
-    max_tokens: 300,
+    max_completion_tokens: 300,
   });
 
   return completion.choices[0].message.content || '';

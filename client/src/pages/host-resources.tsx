@@ -47,6 +47,8 @@ import {
   Trash2,
   Upload,
   Plus,
+  MoreHorizontal,
+  ArrowRight,
 } from 'lucide-react';
 import {
   Dialog,
@@ -54,6 +56,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -68,6 +86,37 @@ import { useToast } from '@/hooks/use-toast';
 import type { HostResource } from '@shared/schema';
 
 // Brand colors: #236383 (dark teal), #47b3cb (light teal), #007e8c (primary teal), #a31c41 (burgundy), #fbad3f (gold)
+
+// Admin-only overflow menu — delete is server-restricted to admin/super_admin as well
+function ResourceAdminMenu({ onDelete }: { onDelete: () => void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5 px-2"
+          onClick={(e) => e.stopPropagation()}
+          aria-label="More actions"
+        >
+          <MoreHorizontal className="w-4 h-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+        <DropdownMenuItem
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="text-red-600 focus:text-red-600"
+        >
+          <Trash2 className="w-4 h-4 mr-2" />
+          Delete resource
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 // Resource card component
 function ResourceCard({
@@ -233,19 +282,7 @@ function ImageGuideCard({
           >
             <Share2 className="w-4 h-4" />
           </Button>
-          {onDelete && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-red-600 hover:text-red-700 hover:bg-red-50"
-              onClick={(e) => {
-                e.preventDefault();
-                onDelete();
-              }}
-            >
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          )}
+          {onDelete && <ResourceAdminMenu onDelete={onDelete} />}
         </div>
       </CardContent>
     </Card>
@@ -428,20 +465,7 @@ function DocumentCard({
                   <Share2 className="w-4 h-4" />
                   <span className="hidden sm:inline">Share</span>
                 </Button>
-                {onDelete && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 flex-1 sm:flex-none text-red-600 hover:text-red-700 hover:bg-red-50"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete();
-                    }}
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    <span className="hidden sm:inline">Delete</span>
-                  </Button>
-                )}
+                {onDelete && <ResourceAdminMenu onDelete={onDelete} />}
               </div>
             </div>
           </div>
@@ -645,6 +669,7 @@ export default function HostResources() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [uploadOpen, setUploadOpen] = React.useState(false);
+  const [resourceToDelete, setResourceToDelete] = React.useState<{ id: number; title: string } | null>(null);
 
   const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
@@ -683,10 +708,15 @@ export default function HostResources() {
     },
   });
 
-  const handleDelete = (id: number, title: string) => {
-    if (window.confirm(`Are you sure you want to delete "${title}"? This cannot be undone.`)) {
-      deleteMutation.mutate(id);
-    }
+  const requestDelete = (id: number, title: string) => {
+    setResourceToDelete({ id, title });
+  };
+
+  const confirmDelete = () => {
+    if (!resourceToDelete) return;
+    deleteMutation.mutate(resourceToDelete.id, {
+      onSettled: () => setResourceToDelete(null),
+    });
   };
 
   // Admins can delete any resource (all resources now have real DB IDs)
@@ -717,6 +747,32 @@ export default function HostResources() {
         )}
       </div>
 
+      {/* Primary action — weekly collection logging, separate from reference tools */}
+      <section>
+        <Link href="/collections" className="block group">
+          <Card className="bg-gradient-to-r from-[#fbad3f]/25 via-[#fbad3f]/10 to-white border-2 border-[#fbad3f]/60 hover:border-[#fbad3f] hover:shadow-md transition-all cursor-pointer">
+            <CardContent className="flex flex-col sm:flex-row items-center gap-4 p-5 sm:p-6">
+              <div className="p-3.5 bg-[#fbad3f] rounded-xl shadow-sm flex-shrink-0">
+                <ClipboardList className="w-7 h-7 text-[#3d2800]" aria-hidden="true" />
+              </div>
+              <div className="flex-1 min-w-0 text-center sm:text-left">
+                <p className="text-xs font-bold uppercase tracking-wide text-[#fbad3f] mb-1">
+                  Weekly action
+                </p>
+                <h2 className="text-lg sm:text-xl font-bold text-[#236383]">Log Your Collections</h2>
+                <p className="text-sm text-gray-600 mt-1">
+                  Record sandwich collections from your site — the task hosts do every week.
+                </p>
+              </div>
+              <span className="inline-flex items-center gap-1.5 font-semibold text-[#236383] bg-white border border-[#fbad3f]/40 rounded-lg px-4 py-2.5 shrink-0 group-hover:bg-[#fbad3f]/10 transition-colors">
+                Open collection form
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </span>
+            </CardContent>
+          </Card>
+        </Link>
+      </section>
+
       {/* Upload Dialog */}
       {isAdmin && <UploadResourceDialog open={uploadOpen} onOpenChange={setUploadOpen} />}
 
@@ -745,20 +801,16 @@ export default function HostResources() {
         </a>
       </section>
 
-      {/* Quick Links Section */}
+      {/* Reference — passive lookup tools (not weekly actions) */}
       <section>
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Sandwich className="w-5 h-5 text-[#fbad3f]" />
-          Collection Tools
+        <h2 className="text-lg font-semibold mb-1 flex items-center gap-2">
+          <Sandwich className="w-5 h-5 text-[#236383]" />
+          Collection Reference
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <ResourceCard
-            title="Log Your Collections"
-            description="Record sandwich collections from your site with the easy-to-use collection form."
-            icon={ClipboardList}
-            href="collections"
-            variant="primary"
-          />
+        <p className="text-sm text-muted-foreground mb-4">
+          Look up past entries and recipient organizations when you need them.
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <ResourceCard
             title="Collection History"
             description="View your past collection entries and see your site's impact over time."
@@ -823,7 +875,7 @@ export default function HostResources() {
                 description={doc.description}
                 fileType={doc.fileType}
                 downloadUrl={doc.fileUrl}
-                onDelete={canDelete ? () => handleDelete(doc.id, doc.title) : undefined}
+                onDelete={canDelete ? () => requestDelete(doc.id, doc.title) : undefined}
               />
             ))
           )}
@@ -856,7 +908,7 @@ export default function HostResources() {
                 description={img.description}
                 imageUrl={img.fileUrl}
                 fileName={img.fileName}
-                onDelete={canDelete ? () => handleDelete(img.id, img.title) : undefined}
+                onDelete={canDelete ? () => requestDelete(img.id, img.title) : undefined}
               />
             ))
           )}
@@ -940,6 +992,37 @@ export default function HostResources() {
           </CardContent>
         </Card>
       </section>
+
+      <AlertDialog
+        open={!!resourceToDelete}
+        onOpenChange={(open) => {
+          if (!open) setResourceToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete resource?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {resourceToDelete
+                ? `"${resourceToDelete.title}" will be permanently removed. This cannot be undone.`
+                : 'This resource will be permanently removed.'}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                confirmDelete();
+              }}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

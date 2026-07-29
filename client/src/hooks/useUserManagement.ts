@@ -119,6 +119,7 @@ export function useUserManagement() {
       preferredEmail?: string;
       address?: string;
       vanApproved?: boolean;
+      driverApproved?: boolean;
       role: string;
       isActive: boolean;
     }) => {
@@ -130,6 +131,7 @@ export function useUserManagement() {
         preferredEmail: data.preferredEmail,
         address: data.address,
         vanApproved: data.vanApproved,
+        driverApproved: data.driverApproved,
         role: data.role,
         isActive: data.isActive,
       });

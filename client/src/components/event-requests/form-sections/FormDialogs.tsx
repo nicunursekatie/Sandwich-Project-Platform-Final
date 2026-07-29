@@ -45,35 +45,6 @@ export const DateChangeDialog: React.FC<{
   </AlertDialog>
 );
 
-/** Speaker Warning Dialog */
-export const SpeakerWarningDialog: React.FC<{
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onCancel: () => void;
-  onContinue: () => void;
-}> = ({ open, onOpenChange, onCancel, onContinue }) => (
-  <AlertDialog open={open} onOpenChange={onOpenChange}>
-    <AlertDialogContent className="max-w-md">
-      <AlertDialogHeader>
-        <AlertDialogTitle className="flex items-center gap-2 text-amber-600">
-          Speaker Recommendation
-        </AlertDialogTitle>
-        <AlertDialogDescription className="space-y-3">
-          <p>
-            We usually send a speaker to events making more than 500 sandwiches. Are you sure this event doesn't need one?
-          </p>
-        </AlertDialogDescription>
-      </AlertDialogHeader>
-      <AlertDialogFooter>
-        <AlertDialogCancel onClick={onCancel}>Cancel</AlertDialogCancel>
-        <AlertDialogAction onClick={onContinue} className="bg-amber-600 hover:bg-amber-700">
-          Continue Without Speaker
-        </AlertDialogAction>
-      </AlertDialogFooter>
-    </AlertDialogContent>
-  </AlertDialog>
-);
-
 /** Van Conflict Warning Dialog */
 export const VanConflictDialog: React.FC<{
   open: boolean;
@@ -124,8 +95,8 @@ export const StandbyFollowUpDialog: React.FC<{
   onOpenChange: (open: boolean) => void;
   followUpDate: string;
   setFollowUpDate: (date: string) => void;
-  followUpMode: 'specific' | 'one_week';
-  setFollowUpMode: (mode: 'specific' | 'one_week') => void;
+  followUpMode: 'specific' | 'one_week' | 'none';
+  setFollowUpMode: (mode: 'specific' | 'one_week' | 'none') => void;
   onSave: () => void;
 }> = ({ open, onOpenChange, followUpDate, setFollowUpDate, followUpMode, setFollowUpMode, onSave }) => (
   <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -140,7 +111,7 @@ export const StandbyFollowUpDialog: React.FC<{
             You're moving this event to <span className="font-semibold text-amber-600">Standby</span>.
           </p>
           <p>
-            Did the contact request to be contacted on a specific date, or should we send a reminder in one week?
+            Want an email reminder to check back in with them? Setting a reminder is optional.
           </p>
 
           <div className="space-y-3 mt-4">
@@ -186,6 +157,21 @@ export const StandbyFollowUpDialog: React.FC<{
                 />
               </div>
             </label>
+
+            <label className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+              <input
+                type="radio"
+                name="standbyFollowUpMode"
+                value="none"
+                checked={followUpMode === 'none'}
+                onChange={() => setFollowUpMode('none')}
+                className="h-4 w-4 text-amber-600"
+              />
+              <div>
+                <span className="font-medium">No reminder</span>
+                <p className="text-sm text-gray-500">I'll check back with them on my own</p>
+              </div>
+            </label>
           </div>
         </AlertDialogDescription>
       </AlertDialogHeader>
@@ -194,9 +180,9 @@ export const StandbyFollowUpDialog: React.FC<{
         <AlertDialogAction
           onClick={onSave}
           className="bg-amber-600 hover:bg-amber-700"
-          disabled={!followUpDate}
+          disabled={followUpMode !== 'none' && !followUpDate}
         >
-          Set Reminder & Save
+          {followUpMode === 'none' ? 'Save Without Reminder' : 'Set Reminder & Save'}
         </AlertDialogAction>
       </AlertDialogFooter>
     </AlertDialogContent>

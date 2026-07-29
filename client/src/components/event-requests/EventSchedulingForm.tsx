@@ -27,12 +27,15 @@ import { apiRequest, invalidateEventRequestQueries, applyEventRequestSaveToCache
 import type { EventRequest } from '@shared/schema';
 import { STATUS_DEFINITIONS } from './constants';
 import type { EventStatus } from '@shared/event-status-workflow';
+import { requiresReason, getReasonSatisfyingFields } from '@shared/event-status-workflow';
 import { getPickupDateTimeForInput, parsePostgresArray } from './utils';
 import { logger } from '@/lib/logger';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventCollaboration } from '@/hooks/use-event-collaboration';
+import { getEventRequestSourceIndicator } from '@/lib/event-request-source';
 import { PresenceAvatars } from '@/components/collaboration';
 import { RefrigerationWarningAlert } from './RefrigerationWarningBadge';
+import { StatusReasonDialog } from './dialogs/StatusReasonDialog';
 import {
   ContactInfoSection,
   BackupContactSection,
@@ -47,7 +50,6 @@ import {
   StatusToolkitSection,
   TspContactSection,
   DateChangeDialog,
-  SpeakerWarningDialog,
   VanConflictDialog,
   StandbyFollowUpDialog,
   DeleteConfirmDialog,
@@ -58,8 +60,8 @@ import {
   findMismatchedSavedFields,
   getDroppedServerFields,
   determineSandwichMode,
+  determineBaselineSandwichMode,
   determineActualSandwichMode,
-  calculateRelevantSandwichCount,
 } from './form-utils';
 
 // ────────────────────────────────────────────────────────────────────────
@@ -172,7 +174,6 @@ function buildFormDataFromEventRequest(
     selfTransport: eventRequest?.selfTransport || false,
     vanDriverNeeded: eventRequest?.vanDriverNeeded || false,
     vanNeededLikely: (eventRequest as any)?.vanNeededLikely || false,
-    speakersNeeded: eventRequest?.speakersNeeded || 0,
     volunteersNeeded: eventRequest?.volunteersNeeded || 0,
     tspContact: eventRequest?.tspContact || '',
     customTspContact: (eventRequest as any)?.customTspContact || '',
@@ -182,7 +183,6 @@ function buildFormDataFromEventRequest(
     nextAction: (eventRequest as any)?.nextAction || '',
     driverInstructions: (eventRequest as any)?.driverInstructions || '',
     volunteerInstructions: (eventRequest as any)?.volunteerInstructions || '',
-    speakerInstructions: (eventRequest as any)?.speakerInstructions || '',
     totalSandwichCount: totalCount,
     estimatedSandwichCountMin: (eventRequest as any)?.estimatedSandwichCountMin || 0,
     estimatedSandwichCountMax: (eventRequest as any)?.estimatedSandwichCountMax || 0,
@@ -206,8 +206,6 @@ function buildFormDataFromEventRequest(
     backupContactPhone: (eventRequest as any)?.backupContactPhone || '',
     backupContactRole: (eventRequest as any)?.backupContactRole || '',
     previouslyHosted: (eventRequest as any)?.previouslyHosted || 'i_dont_know',
-    speakerAudienceType: (eventRequest as any)?.speakerAudienceType || '',
-    speakerDuration: (eventRequest as any)?.speakerDuration || '',
     deliveryTimeWindow: (eventRequest as any)?.deliveryTimeWindow || '',
     deliveryParkingAccess: (eventRequest as any)?.deliveryParkingAccess || '',
     assignedVanDriverId: eventRequest?.assignedVanDriverId || '',
@@ -233,6 +231,10 @@ function buildFormDataFromEventRequest(
     followUpOneMonthDate: (eventRequest as any)?.followUpOneMonthDate ? formatDateForInput((eventRequest as any).followUpOneMonthDate) : '',
     followUpNotes: (eventRequest as any)?.followUpNotes || '',
     assignedRecipientIds: parsePostgresArrayFn((eventRequest as any)?.assignedRecipientIds),
+    cancelledReason: (eventRequest as any)?.cancelledReason || '',
+    cancelledNotes: (eventRequest as any)?.cancelledNotes || '',
+    declinedReason: (eventRequest as any)?.declinedReason || '',
+    declinedNotes: (eventRequest as any)?.declinedNotes || '',
   };
 }
 
@@ -275,23 +277,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const dialogOpen = isVisible || isOpen || false;
   const onSuccessCallback = onScheduled || onEventScheduled || (() => {});
 
-  // Hydrate partial records before the form uses them. Most sources (the list)
-  // already pass a full record, so this fetch is skipped. The event map passes a
-  // PARTIAL record (subset of columns); we fetch the full record by id and use
-  // it everywhere below. A full-form save is blocked (in performSubmit) until the
-  // full record loads, so a partial record can never blank the omitted columns.
-  const recordIsPartial = !!rawEventRequest?.id && !isFullEventRecord(rawEventRequest);
-  const { data: hydratedEventRequest, isError: hydrationFailed, isFetching: hydrationFetching, refetch: refetchHydration } = useQuery<EventRequest>({
-    queryKey: ['/api/event-requests', rawEventRequest?.id, 'full'],
-    queryFn: () => apiRequest('GET', `/api/event-requests/${rawEventRequest!.id}`),
-    enabled: dialogOpen && recordIsPartial,
-    // Always refetch fresh on open: surgical saves no longer write this 'full'
-    // cache key, so a cached copy could be stale when reopening from the map.
-    staleTime: 0,
-    refetchOnMount: 'always',
-  });
-  const eventRequest = recordIsPartial ? (hydratedEventRequest ?? rawEventRequest) : rawEventRequest;
-
+  const eventRequest = rawEventRequest;
   // Event requests now use a single full-record shape from the list query.
   // Do not refetch a second "full" copy here; the form initializes from eventRequest.
 
@@ -304,10 +290,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     overnightHoldingLocation: '', overnightPickupTime: '',
     sandwichTypes: [] as Array<{type: string, quantity: number}>,
     hasRefrigeration: '', driversNeeded: 0, selfTransport: false, vanDriverNeeded: false, vanNeededLikely: false,
-    assignedVanDriverId: '', isDhlVan: false, speakersNeeded: 0, volunteersNeeded: 0,
+    assignedVanDriverId: '', isDhlVan: false, volunteersNeeded: 0,
     tspContact: '', customTspContact: '', message: '', schedulingNotes: '',
     planningNotes: '', nextAction: '', driverInstructions: '', volunteerInstructions: '',
-    speakerInstructions: '', totalSandwichCount: 0, estimatedSandwichCountMin: 0,
+    totalSandwichCount: 0, estimatedSandwichCountMin: 0,
     estimatedSandwichCountMax: 0, rangeSandwichType: '', volunteerCount: 0,
     estimatedAttendance: 0, adultCount: 0, childrenCount: 0, kidsAgeRange: '',
     status: 'new', toolkitSent: false, toolkitSentDate: '', toolkitStatus: 'not_sent',
@@ -323,8 +309,9 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     department: '', organizationCategory: '', schoolClassification: '',
     backupContactFirstName: '', backupContactLastName: '', backupContactEmail: '',
     backupContactPhone: '', backupContactRole: '', previouslyHosted: 'i_dont_know',
-    speakerAudienceType: '', speakerDuration: '', deliveryTimeWindow: '',
+    deliveryTimeWindow: '',
     deliveryParkingAccess: '', isCorporatePriority: false, standbyExpectedDate: '',
+    cancelledReason: '', cancelledNotes: '', declinedReason: '', declinedNotes: '',
     dateFlexible: null as boolean | null,
   });
 
@@ -352,12 +339,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     conflictingEvents: Array<{ id: number; name: string; time?: string }>;
     acknowledged: boolean;
   } | null>(null);
-  const [showSpeakerWarningDialog, setShowSpeakerWarningDialog] = useState(false);
   const [vanConflictChecked, setVanConflictChecked] = useState(false);
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [showStandbyFollowUpDialog, setShowStandbyFollowUpDialog] = useState(false);
+  const [showStatusReasonDialog, setShowStatusReasonDialog] = useState(false);
+  const [pendingReasonStatus, setPendingReasonStatus] = useState<'cancelled' | 'declined' | null>(null);
   const [standbyFollowUpDate, setStandbyFollowUpDate] = useState('');
-  const [standbyFollowUpMode, setStandbyFollowUpMode] = useState<'specific' | 'one_week'>('one_week');
+  const [standbyFollowUpMode, setStandbyFollowUpMode] = useState<'specific' | 'one_week' | 'none'>('one_week');
   const standbySaveClickedRef = useRef(false);
   const [hasRecoveredData, setHasRecoveredData] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -372,7 +360,31 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
 
   const isCreateMode = mode === 'create' || !eventRequest;
 
+  // Manual creates/edits should treat the initial message like any other notes
+  // field (always editable). Website/Google Form submissions keep click-to-edit
+  // so the original form text isn't overwritten by accident.
+  const alwaysEditableMessage = useMemo(() => {
+    if (isCreateMode) return true;
+    const source = getEventRequestSourceIndicator({
+      externalId: (eventRequest as any)?.externalId,
+      manualEntrySource:
+        formData.manualEntrySource || (eventRequest as any)?.manualEntrySource,
+      googleSheetRowId: (eventRequest as any)?.googleSheetRowId,
+      createdBy: (eventRequest as any)?.createdBy,
+      lastSyncedAt: (eventRequest as any)?.lastSyncedAt,
+    });
+    return source?.kind === 'manual';
+  }, [
+    isCreateMode,
+    eventRequest,
+    formData.manualEntrySource,
+  ]);
 
+  // Explicit loading state for the UI. When editing an existing event the form
+  // populates from `eventRequest` in an init effect; until that has run the form
+  // fields are empty, so Save must be disabled (saving now would write blanks).
+  // Create mode has no record to load, so it is never "loading".
+  const isFormLoading = !!eventRequest && !formInitialized;
 
 
   const canRemoveCorporatePriority = useMemo(() => {
@@ -445,7 +457,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     setSandwichMode(determineSandwichMode(
       sourceEvent.sandwichTypes,
       (sourceEvent as any)?.estimatedSandwichCountMin,
-      (sourceEvent as any)?.estimatedSandwichCountMax
+      (sourceEvent as any)?.estimatedSandwichCountMax,
+      sourceEvent.estimatedSandwichCount,
     ));
     setActualSandwichMode(determineActualSandwichMode(sourceEvent?.actualSandwichTypes));
     const hasAttendeeBreakdown = ((sourceEvent as any)?.adultCount || 0) > 0 || ((sourceEvent as any)?.childrenCount || 0) > 0;
@@ -548,9 +561,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       // The list endpoint now returns full event records, so the form has one
       // authoritative data source and no partial→full upgrade path.
       const currentEventId = eventRequest?.id || 'new';
-      // Include hydration readiness so the form re-initializes once a partial
-      // record (e.g. from the map) is hydrated into the full record.
-      const sessionKey = `${currentEventId}-${recordIsPartial && !hydratedEventRequest ? 'partial' : 'full'}`;
+      const sessionKey = String(currentEventId);
 
       if (formInitSessionRef.current === sessionKey && formInitialized) return;
 
@@ -602,7 +613,12 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
               }
 
               setFormData(mergedData as any);
-              if (savedData.sandwichMode) setSandwichMode(savedData.sandwichMode);
+              setSandwichMode(determineSandwichMode(
+                eventRequest?.sandwichTypes,
+                (eventRequest as any)?.estimatedSandwichCountMin,
+                (eventRequest as any)?.estimatedSandwichCountMax,
+                mergedData.totalSandwichCount ?? eventRequest?.estimatedSandwichCount,
+              ));
               if (savedData.actualSandwichMode) setActualSandwichMode(savedData.actualSandwichMode);
               if (savedData.attendeeMode) setAttendeeMode(savedData.attendeeMode);
               setHasRecoveredData(true);
@@ -644,7 +660,8 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         setSandwichMode(determineSandwichMode(
           eventRequest?.sandwichTypes,
           (eventRequest as any)?.estimatedSandwichCountMin,
-          (eventRequest as any)?.estimatedSandwichCountMax
+          (eventRequest as any)?.estimatedSandwichCountMax,
+          eventRequest?.estimatedSandwichCount,
         ));
         setActualSandwichMode(determineActualSandwichMode(eventRequest?.actualSandwichTypes));
         const hasBreakdown = ((eventRequest as any)?.adultCount || 0) > 0 || ((eventRequest as any)?.childrenCount || 0) > 0;
@@ -691,6 +708,39 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     onSuccess: async (updatedEvent: any, variables) => {
       setIsSubmitting(false);
       const orgName = eventRequest?.organizationName || formData.organizationName || 'Event';
+
+      // Status-transition diagnostic on the response side. If the server
+      // accepted the save but didn't actually persist the status change, that
+      // shows up here as a mismatch between what we sent and what came back.
+      const requestedStatus = variables.data?.status;
+      if (requestedStatus && updatedEvent?.status !== requestedStatus) {
+        logger.error('⚠️ STATUS MISMATCH after save', {
+          eventId: eventRequest?.id,
+          requested: requestedStatus,
+          actualOnResponse: updatedEvent?.status,
+          originalStatus: eventRequest?.status,
+        });
+        // Surface this to the user so it's not a silent revert.
+        errorToast({
+          title: 'Status change did not save',
+          description: `You tried to move "${orgName}" to ${requestedStatus}, but the server reports the status is still ${updatedEvent?.status || 'unchanged'}. Try again, and if it keeps failing, the event may be locked by another process — refresh and reopen the card to see the latest state.`,
+          duration: Number.POSITIVE_INFINITY,
+          report: {
+            whatDoing: `Move event to ${requestedStatus}`,
+            expectedOutcome: `Event status updates to ${requestedStatus}.`,
+            actualOutcome: `Save returned with status still ${updatedEvent?.status || 'unchanged'}.`,
+            ...(eventRequest?.id
+              ? {
+                  recordType: 'event_request',
+                  recordId: String(eventRequest.id),
+                  recordLabel: eventRequest.organizationName || formData.organizationName,
+                }
+              : {}),
+          },
+        });
+        // Keep the form open so the user can see the failure and retry.
+        return;
+      }
 
       // Only the server-reported dropped fields are authoritative enough to block
       // save completion. The heuristic round-trip comparison below is logged for
@@ -756,6 +806,20 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       const isNetworkError = error?.message?.includes('Failed to fetch') || error?.message?.includes('Request timeout');
       const orgName = eventRequest?.organizationName || formData.organizationName || 'this event';
 
+      // Capture the server's structured DB detail (see server pg-error-utils) so
+      // the auto-filed error report pinpoints the real cause — the raw DB
+      // message / SQLSTATE code / column — instead of just "Save Failed".
+      const dbDetail = [
+        error?.data?.dbError,
+        error?.data?.dbCode ? `code=${error.data.dbCode}` : null,
+        error?.data?.dbColumn || error?.data?.column
+          ? `column=${error.data.dbColumn || error.data.column}`
+          : null,
+        error?.status ? `http=${error.status}` : null,
+      ]
+        .filter(Boolean)
+        .join(' | ');
+
       let errorTitle = 'Save Failed';
       let errorDescription = mode === 'edit' ? 'Failed to update event.' : 'Failed to schedule event.';
 
@@ -780,6 +844,10 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         duration: 10000,
         report: {
           whatDoing: mode === 'edit' ? 'Save event edits in scheduling form' : 'Schedule an event in the scheduling form',
+          expectedOutcome: 'The event request should save successfully.',
+          actualOutcome: dbDetail
+            ? `${errorTitle}: ${errorDescription} [${dbDetail}]`
+            : `${errorTitle}: ${errorDescription}`,
           ...(eventRequest?.id
             ? {
                 recordType: 'event_request',
@@ -807,9 +875,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       setIsSubmitting(false);
       saveToLocalStorage();
       const serverMessage = error?.data?.message || error?.message;
+      const validationDetail = Array.isArray(error?.data?.details)
+        ? error.data.details[0]?.message
+        : undefined;
       const isNetworkError = error?.message?.includes('Failed to fetch') || error?.message?.includes('Request timeout');
       let errorTitle = 'Creation Failed';
-      let errorDescription = serverMessage || 'Failed to create event. Please try again.';
+      let errorDescription =
+        validationDetail || serverMessage || 'Failed to create event. Please try again.';
       if (isNetworkError) {
         errorTitle = 'Connection Error';
         errorDescription = 'Could not create event. Check your connection.';
@@ -904,41 +976,28 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       return;
     }
 
-    // Block saving a partial record (e.g. opened from the map) until the FULL
-    // record is freshly hydrated. Also block while a hydration fetch is in flight
-    // or has errored: refetchOnMount serves the stale cached copy during the
-    // background refetch, and saving then would build the payload from stale
-    // values. A full-form save from a partial/stale record would overwrite the
-    // columns the partial source omitted (notes, backup contacts, toolkit, etc.).
-    if (recordIsPartial && (!hydratedEventRequest || hydrationFetching || hydrationFailed)) {
+    // Block saving a partial record (e.g. opened from the map). A full-form save
+    // from a partial record would overwrite columns the partial source omitted
+    // (notes, backup contacts, toolkit, etc.) with empty/default values.
+    if (eventRequest && !isFullEventRecord(eventRequest)) {
       setIsSubmitting(false);
-      if (hydrationFailed && !hydrationFetching) {
-        // The full-record fetch failed and isn't already retrying. Don't leave
-        // the user stuck behind a "loading" message — retry and tell them plainly.
-        // Saving stays blocked so a partial/stale payload can't overwrite data.
-        logger.log('⛔ Save blocked: full event failed to load; retrying');
-        refetchHydration();
-        toast({
-          title: "Couldn't load this event",
-          description: "We couldn't load the full event details, so saving is paused to avoid overwriting data. Retrying now — try again in a moment, or reopen it from the list.",
-          variant: 'destructive',
-          duration: Number.POSITIVE_INFINITY,
-        });
-      } else {
-        logger.log('⛔ Save blocked: full record not freshly hydrated yet');
-        toast({ title: 'Loading full event…', description: 'Please wait a moment for the full event to finish loading before saving.', variant: 'destructive' });
-      }
+      logger.log('⛔ Save blocked: partial event record detected (missing fields)');
+      toast({
+        title: "Can't save from map view",
+        description: "This event was opened from the map and doesn't have all fields loaded. Please close this and reopen the event from the list to edit it.",
+        variant: 'destructive',
+        duration: 10000,
+      });
       return;
     }
 
-    // Speaker warning check
-    const totalRelevantSandwiches = calculateRelevantSandwichCount(formData as EventFormData, sandwichMode);
-    if (!skipSpeakerWarning && totalRelevantSandwiches > 500 && formData.speakersNeeded < 1) {
-      setIsSubmitting(false);
-      logger.log('⚠️ Save paused: speaker warning dialog shown');
-      setShowSpeakerWarningDialog(true);
-      return;
-    }
+    // Speaker recommendation check used to block saves on events with
+    // 500+ sandwiches if no speaker was assigned. Removed because (a) it
+    // was framed as a "recommendation" but enforced as a hard block, and
+    // (b) the nested warning dialog was implicated in silent save
+    // failures when other dialogs (e.g. standby reminder) were also in
+    // flight. Speaker staffing is now purely advisory — coordinators
+    // see open speaker slots in the dashboards instead.
 
     // Manual entry source is strongly recommended, but should not block saves.
     // Intake often captures details over multiple touchpoints/calls.
@@ -964,7 +1023,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         fieldOverrides,
       });
     } catch (constructionError) {
-      console.error('❌ [PROD DEBUG] ERROR constructing eventData:', constructionError);
+      logger.error('Failed to construct eventData for save:', constructionError);
       setIsSubmitting(false);
       toast({ title: 'Error', description: 'Failed to prepare form data. Please try again.', variant: 'destructive' });
       return;
@@ -985,10 +1044,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         return;
       }
 
-      // FULL-FORM SAVE (B5): send the entire built payload, not a change-detected
-      // subset. The event list now provides the full record shape, so the form has
-      // one authoritative server baseline instead of a partial→full upgrade path.
-
       // The single date box maps to BOTH desiredEventDate and scheduledEventDate.
       // In edit mode, if the user didn't change the date box, omit both date
       // columns so a non-date save can't overwrite a scheduled event's CONFIRMED
@@ -1000,23 +1055,178 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         delete eventData.desiredEventDate;
       }
 
-      logger.log('🔄 Updating event (full-form save):', eventRequest.id, 'field count:', Object.keys(eventData).length, 'van:', eventData.vanDriverNeeded);
-      updateEventRequestMutation.mutate({ id: eventRequest.id, data: eventData });
+      // DIFF-BASED SAVE: send only the fields the user actually changed in this
+      // form session, not the entire record. Re-serialize the ORIGINAL form
+      // snapshot through the same builder and drop every key whose value is
+      // unchanged. This closes the lost-update / clobber vector: a field left
+      // untouched here can no longer overwrite a value that changed elsewhere
+      // (an inline card edit, a background Sheets/toolkit write, another editor)
+      // between when this dialog loaded and when it saves — untouched fields
+      // simply aren't in the payload, so the server preserves them.
+      //
+      // Both sides go through buildEventDataForServer, so the comparison is in
+      // server-field space and immune to form→server key renames/transforms.
+      // A key is dropped only when the baseline ALSO produced it and the values
+      // match, so genuinely new keys (e.g. scheduledEventDate that appears only
+      // once status becomes 'scheduled') are always kept. The baseline is built
+      // WITHOUT fieldOverrides so a value just entered this session (e.g. the
+      // standby follow-up date) correctly registers as a change.
+      if (originalFormDataRef.current) {
+        // The baseline MUST be serialized from what is PHYSICALLY stored, not
+        // the preferred UI mode. determineBaselineSandwichMode treats any
+        // persisted min/max as 'range' even when a disagreeing exact count means
+        // the UI opens in Exact Count — otherwise the diff sees null === null
+        // for the companion clears and silently drops them. The stale range then
+        // survives in the DB alongside the exact count (the "500 saves as 498"
+        // bug — midpoint of a leftover 490-506 range).
+        const baselineSandwichMode = determineBaselineSandwichMode(
+          originalFormDataRef.current.sandwichTypes,
+          originalFormDataRef.current.estimatedSandwichCountMin,
+          originalFormDataRef.current.estimatedSandwichCountMax,
+          originalFormDataRef.current.totalSandwichCount,
+        );
+        const baselineActualSandwichMode = determineActualSandwichMode(
+          originalFormDataRef.current.actualSandwichTypes,
+        );
+        const baselineData = buildEventDataForServer(originalFormDataRef.current as any, {
+          mode,
+          hasEventRequest: !!eventRequest,
+          eventRequestStatus: eventRequest?.status,
+          sandwichMode: baselineSandwichMode,
+          actualSandwichMode: baselineActualSandwichMode,
+        });
+        const omittedFields: string[] = [];
+        for (const key of Object.keys(eventData)) {
+          // Never drop a key the caller explicitly overrode this save — an
+          // override is a deliberate write even when it equals the baseline.
+          // (e.g. "No reminder" sends standbyExpectedDate: null; the baseline
+          // also computes null because its status isn't 'standby' yet, so a
+          // plain diff would silently drop the clear and a stale follow-up
+          // date from a previous standby episode would survive.)
+          if (fieldOverrides && Object.prototype.hasOwnProperty.call(fieldOverrides, key)) {
+            continue;
+          }
+          if (
+            Object.prototype.hasOwnProperty.call(baselineData, key) &&
+            JSON.stringify(eventData[key]) === JSON.stringify(baselineData[key])
+          ) {
+            delete eventData[key];
+            omittedFields.push(key);
+          }
+        }
+        if (omittedFields.length > 0) {
+          logger.log(`🧮 Diff-based save: omitted ${omittedFields.length} unchanged field(s):`, omittedFields.join(', '));
+        }
+      }
+
+      // No-op guard: if nothing changed, skip the round-trip entirely (matches
+      // EventEditDialog's behavior) so an accidental Save on an untouched form
+      // doesn't bump updatedAt or fire activity/audit logs for a non-change.
+      if (Object.keys(eventData).length === 0) {
+        logger.log('🟰 Diff-based save: no changes detected, closing without a write');
+        setIsSubmitting(false);
+        toast({ description: 'No changes to save.' });
+        onClose();
+        return;
+      }
+
+      // Reason-required statuses (cancelled / declined / non_event) need a note
+      // or structured reason. Catch this client-side so users get a clear message
+      // instead of a generic MISSING_REASON failure from the server.
+      const targetStatus = eventData.status as EventStatus | undefined;
+      if (
+        targetStatus &&
+        targetStatus !== eventRequest.status &&
+        requiresReason(targetStatus)
+      ) {
+        const reasonFields = getReasonSatisfyingFields(targetStatus);
+        const hasReason = reasonFields.some((field) => {
+          const incoming = (eventData as any)[field];
+          const existing = (eventRequest as any)[field];
+          const formValue = (formData as any)[field];
+          const effective =
+            incoming !== undefined
+              ? incoming
+              : formValue !== undefined && formValue !== ''
+                ? formValue
+                : existing;
+          return typeof effective === 'string' && effective.trim() !== '';
+        });
+        if (!hasReason) {
+          logger.log('⛔ Save blocked: missing reason for', targetStatus);
+          setIsSubmitting(false);
+          // If they somehow picked cancelled/declined without going through the
+          // reason dialog (e.g. recovered draft), open it now instead of a toast.
+          if (
+            (targetStatus === 'cancelled' || targetStatus === 'declined') &&
+            eventRequest
+          ) {
+            setPendingReasonStatus(targetStatus);
+            setTimeout(() => setShowStatusReasonDialog(true), 0);
+            return;
+          }
+          toast({
+            title: 'Reason required',
+            description: `Add a brief reason before marking this event as ${STATUS_DEFINITIONS[targetStatus]?.label || targetStatus}.`,
+            variant: 'destructive',
+            duration: 10000,
+          });
+          return;
+        }
+      }
+
+      logger.log('🔄 Updating event (diff-based save):', eventRequest.id, 'changed field count:', Object.keys(eventData).length, 'van:', eventData.vanDriverNeeded);
+      // Extra status-transition diagnostic: any standby-related save logs the
+      // exact status payload being sent. Helps debug the "save closes but
+      // status reverts" symptom when it shows up in production.
+      if (eventData.status && eventData.status !== eventRequest.status) {
+        logger.log('🔁 STATUS TRANSITION in payload:', {
+          from: eventRequest.status,
+          to: eventData.status,
+          standbyExpectedDate: eventData.standbyExpectedDate,
+          eventId: eventRequest.id,
+        });
+      }
+      // Use mutateAsync so performSubmit's caller can await completion
+      // and detect failures. The mutation's own onError handler still
+      // toasts (no duplicate notifications) — awaiting here just lets
+      // wrapper flows like the standby dialog keep their UI in sync
+      // with whether the save actually landed.
+      await updateEventRequestMutation.mutateAsync({ id: eventRequest.id, data: eventData });
     } else {
       logger.log('➕ Creating new event');
-      createEventRequestMutation.mutate(eventData);
+      await createEventRequestMutation.mutateAsync(eventData);
     }
   };
 
   // ── Status Change Handler ──────────────────────────────────────────
 
   const handleStatusChange = (newStatus: EventStatus) => {
-    if (newStatus === 'cancelled' || newStatus === 'declined' || newStatus === 'non_event' || newStatus === 'rescheduled') {
+    // Cancelled / Declined require a structured reason (server MISSING_REASON).
+    // Open the reason dialog first; only apply the status once the user confirms.
+    // Defer open so the parent non-modal Dialog doesn't tear down on focus churn
+    // (same pattern as the standby follow-up dialog).
+    if (newStatus === 'cancelled' || newStatus === 'declined') {
+      if (!eventRequest) {
+        toast({
+          title: 'Reason required',
+          description: `Add a brief reason in Planning Notes or Scheduling Notes before marking this as ${STATUS_DEFINITIONS[newStatus]?.label || newStatus}.`,
+          duration: 8000,
+        });
+        setFormData(prev => ({ ...prev, status: newStatus }));
+        return;
+      }
+      setPendingReasonStatus(newStatus);
+      setTimeout(() => setShowStatusReasonDialog(true), 0);
+      return;
+    }
+
+    if (newStatus === 'non_event' || newStatus === 'rescheduled') {
       const statusLabel = STATUS_DEFINITIONS[newStatus]?.label || newStatus;
       toast({
         title: 'Status Change Requires Documentation',
         description: `When saving, please ensure you've documented the reason for changing to ${statusLabel} in the notes field.`,
-        duration: 6000,
+        duration: 8000,
       });
     }
     setFormData(prev => ({ ...prev, status: newStatus }));
@@ -1034,14 +1244,47 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         .catch(() => { setVanConflictChecked(true); });
     }
 
-    // Standby follow-up date prompt
+    // Standby follow-up date prompt — fires for EVERY transition into standby
+    // from another status, regardless of whether standbyExpectedDate already has
+    // a value. Previously this check skipped the dialog when standbyExpectedDate
+    // was truthy, which broke the flow when an event had a leftover date from a
+    // prior standby episode: the dialog never appeared, but the save sometimes
+    // landed in a state where the status reverted to scheduled without warning.
+    // Always confirming the follow-up date with the user keeps intent explicit
+    // for the current standby episode.
     const originalStatus = eventRequest?.status || 'new';
-    if (formData.status === 'standby' && originalStatus !== 'standby' && !formData.standbyExpectedDate) {
-      const oneWeekFromNow = new Date();
-      oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
-      setStandbyFollowUpDate(oneWeekFromNow.toISOString().split('T')[0]);
-      setStandbyFollowUpMode('one_week');
-      setShowStandbyFollowUpDialog(true);
+    if (formData.status === 'standby' && originalStatus !== 'standby') {
+      // Pre-fill: use the existing standbyExpectedDate if present (so users
+      // don't have to retype a date they already set), otherwise default to
+      // one week from today.
+      const existingDate = formData.standbyExpectedDate;
+      if (existingDate) {
+        setStandbyFollowUpDate(existingDate);
+        setStandbyFollowUpMode('specific');
+      } else {
+        const oneWeekFromNow = new Date();
+        oneWeekFromNow.setDate(oneWeekFromNow.getDate() + 7);
+        setStandbyFollowUpDate(oneWeekFromNow.toISOString().split('T')[0]);
+        setStandbyFollowUpMode('one_week');
+      }
+      logger.log('🟡 Standby transition detected: opening follow-up dialog', {
+        originalStatus,
+        targetStatus: formData.status,
+        existingDate,
+      });
+      // Defer opening to a settled tick instead of opening synchronously inside
+      // this click handler. The form lives in a non-modal parent Dialog
+      // (<Dialog modal={false} onOpenChange={onClose}>), whose dismissable layer
+      // watches for focus/pointer leaving its content. When the modal reminder
+      // AlertDialog mounted during the SAME click that opened it, the in-flight
+      // focus churn from that click could trip the parent's outside-interaction
+      // detection, firing the parent's onClose — which unmounts the whole form.
+      // That is the "popup flashes then disappears and the edit form refreshes"
+      // bug: the parent closed and re-rendered from server data, reverting the
+      // status. The van/speaker dialogs never hit this because they open after
+      // an awaited fetch (a later, settled tick). Matching that timing here lets
+      // the originating click fully resolve before the AlertDialog mounts.
+      setTimeout(() => setShowStandbyFollowUpDialog(true), 0);
       return;
     }
 
@@ -1063,16 +1306,42 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     schedule: !!formData.eventDate,
     delivery: !!(formData.eventAddress || (formData.assignedRecipientIds?.length > 0)),
     sandwiches: !!(formData.totalSandwichCount > 0 || formData.sandwichTypes?.length > 0 || formData.estimatedSandwichCountMin > 0),
-    resources: !!(formData.driversNeeded > 0 || formData.speakersNeeded > 0 || formData.volunteersNeeded > 0 || formData.selfTransport),
+    resources: !!(formData.driversNeeded > 0 || formData.volunteersNeeded > 0 || formData.selfTransport),
     notes: !!(formData.schedulingNotes || formData.planningNotes || formData.nextAction),
   };
   const completedSections = Object.values(sectionStatus).filter(Boolean).length;
   const totalSections = Object.keys(sectionStatus).length;
 
+  // True whenever ANY nested confirmation/reminder dialog is mounted. The parent
+  // form lives in a non-modal <Dialog modal={false}>, whose dismissable layer
+  // treats focus/pointer churn from a child dialog mounting as an "interaction
+  // outside" and fires the parent's onClose — unmounting the form and reverting
+  // it from server data. (That's the "popup flashes then the edit form refreshes
+  // and my change is gone" bug.) Suppressing onClose while any child is open
+  // covers every nested dialog, not just the standby reminder that was patched
+  // case-by-case before. Each child owns its own close + cleanup, so none of
+  // them rely on the parent closing.
+  const anyNestedDialogOpen =
+    showDateConfirmation ||
+    showVanConflictDialog ||
+    showStandbyFollowUpDialog ||
+    showStatusReasonDialog ||
+    showDeleteConfirmation;
+
   // ── Render ─────────────────────────────────────────────────────────
 
   return (
-    <Dialog open={dialogOpen} onOpenChange={onClose} modal={false}>
+    <Dialog
+      open={dialogOpen}
+      // Don't let the form be dismissed out from under any nested dialog. While
+      // a child confirmation/reminder is open it owns the interaction; a close
+      // request to the parent here (e.g. a stray focus/pointer-outside from the
+      // non-modal layer, including the focus churn of a child mounting) must be
+      // ignored so the flow isn't torn down mid-decision. The user closes each
+      // child via its own Cancel/Save. See anyNestedDialogOpen above.
+      onOpenChange={(open) => { if (!open && !anyNestedDialogOpen) onClose(); }}
+      modal={false}
+    >
       <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col p-0">
         <DialogHeader className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-3">
           <div className="flex items-center justify-between">
@@ -1184,7 +1453,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4" id="event-scheduling-form">
+          <form onSubmit={handleSubmit} className="space-y-4" id="event-scheduling-form" noValidate>
 
             {/* Lifecycle & Core Scheduling */}
             <div className="bg-white border rounded-lg p-4 space-y-4">
@@ -1371,6 +1640,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
                 isComplete={sectionStatus.notes}
                 isMessageEditable={isMessageEditable}
                 setIsMessageEditable={setIsMessageEditable}
+                alwaysEditableMessage={alwaysEditableMessage}
                 isCollaborationEnabled={isCollaborationEnabled}
                 isFieldLockedByOther={isFieldLockedByOther}
                 getFieldLock={getFieldLock}
@@ -1423,12 +1693,14 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
             */}
             <Button type="submit" form="event-scheduling-form" className="text-white"
               style={{ backgroundColor: '#236383' }}
-              disabled={isSubmitting || updateEventRequestMutation.isPending || createEventRequestMutation.isPending}
+              disabled={isFormLoading || isSubmitting || updateEventRequestMutation.isPending || createEventRequestMutation.isPending}
               onClick={(e) => { e.preventDefault(); handleSubmit(e); }}
               data-testid="button-submit">
-              {(updateEventRequestMutation.isPending || createEventRequestMutation.isPending)
-                ? (mode === 'edit' ? 'Saving...' : 'Scheduling...')
-                : (mode === 'edit' ? 'Save Changes' : 'Schedule Event')}
+              {isFormLoading
+                ? 'Loading…'
+                : (updateEventRequestMutation.isPending || createEventRequestMutation.isPending)
+                ? (isCreateMode ? 'Creating...' : mode === 'edit' ? 'Saving...' : 'Scheduling...')
+                : (isCreateMode ? 'Create Event' : mode === 'edit' ? 'Save Changes' : 'Schedule Event')}
             </Button>
           </div>
         </div>
@@ -1441,13 +1713,6 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         onOpenChange={setShowDateConfirmation}
         onConfirm={handleDateChangeConfirmation}
         onCancel={() => setShowDateConfirmation(false)}
-      />
-
-      <SpeakerWarningDialog
-        open={showSpeakerWarningDialog}
-        onOpenChange={(open) => { if (!open) { setShowSpeakerWarningDialog(false); setIsSubmitting(false); } }}
-        onCancel={() => { setShowSpeakerWarningDialog(false); setIsSubmitting(false); }}
-        onContinue={async () => { setShowSpeakerWarningDialog(false); await performSubmit(true); }}
       />
 
       <VanConflictDialog
@@ -1472,16 +1737,58 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
         followUpMode={standbyFollowUpMode}
         setFollowUpMode={setStandbyFollowUpMode}
         onSave={async () => {
+          // Keep the dialog OPEN while the save is in flight so it never
+          // visually disappears mid-flight. We close it only after the
+          // submit resolves; if the save throws/toasts an error, leaving
+          // the dialog open lets the user correct and retry instead of
+          // seeing the form silently refresh with no feedback.
           standbySaveClickedRef.current = true;
-          setFormData(prev => ({ ...prev, standbyExpectedDate: standbyFollowUpDate }));
-          setShowStandbyFollowUpDialog(false);
+          // "No reminder" clears the follow-up date — the reminder is optional.
+          const dateToSave = standbyFollowUpMode === 'none' ? '' : standbyFollowUpDate;
+          setFormData(prev => ({ ...prev, standbyExpectedDate: dateToSave }));
           try {
-            await performSubmit(false, { standbyExpectedDate: standbyFollowUpDate });
+            await performSubmit(false, { standbyExpectedDate: dateToSave || null });
+            setShowStandbyFollowUpDialog(false);
+          } catch (err) {
+            // performSubmit's mutation onError already toasts. We leave
+            // the dialog open so the user can adjust and try again.
+            logger.error('Standby save failed; keeping dialog open', err);
           } finally {
             standbySaveClickedRef.current = false;
           }
         }}
       />
+
+      {eventRequest && pendingReasonStatus && (
+        <StatusReasonDialog
+          isOpen={showStatusReasonDialog}
+          onClose={() => {
+            setShowStatusReasonDialog(false);
+            setPendingReasonStatus(null);
+          }}
+          request={eventRequest}
+          type={pendingReasonStatus}
+          onConfirm={async (_eventId, data) => {
+            // Stash status + structured reason on the form; Save will send them
+            // together and satisfy the server MISSING_REASON check (Susan's bug).
+            setFormData((prev) => ({
+              ...prev,
+              status: data.status,
+              cancelledReason: data.cancelledReason || '',
+              cancelledNotes: data.cancelledNotes || '',
+              declinedReason: data.declinedReason || '',
+              declinedNotes: data.declinedNotes || '',
+            }));
+            setShowStatusReasonDialog(false);
+            setPendingReasonStatus(null);
+            toast({
+              title: `${STATUS_DEFINITIONS[data.status as EventStatus]?.label || data.status} reason recorded`,
+              description: 'Click Save to apply the status change.',
+              duration: 6000,
+            });
+          }}
+        />
+      )}
 
       <DeleteConfirmDialog
         open={showDeleteConfirmation}

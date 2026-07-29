@@ -2,6 +2,8 @@ import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
 import { createHash } from 'crypto';
 import { logger } from './utils/production-safe-logger';
+import { repairPrivateKey } from './google-sheets-key-repair';
+import { assertSheetWriteAllowed } from './sheets-write-guard';
 
 export interface GoogleSheetsConfig {
   spreadsheetId: string;
@@ -50,28 +52,6 @@ export class GoogleSheetsService {
     try {
       logger.log('🔧 Initializing Google Sheets authentication...');
 
-      // Run diagnostics if authentication fails repeatedly
-      if (process.env.NODE_ENV === 'development') {
-        logger.log('🔍 Running authentication diagnostics...');
-        const { googleSheetsDiagnostics } = await import(
-          './google-sheets-diagnostics'
-        );
-        const diagnosticResults =
-          await googleSheetsDiagnostics.runFullDiagnostics();
-        const criticalIssues = diagnosticResults.filter(
-          (r) => r.severity === 'critical'
-        );
-
-        if (criticalIssues.length > 0) {
-          logger.log('❌ Critical authentication issues detected:');
-          criticalIssues.forEach((issue) => {
-            logger.log(`   - ${issue.issue}: ${issue.description}`);
-            logger.log(`     Solution: ${issue.solution}`);
-          });
-          googleSheetsDiagnostics.printDiagnosticReport(diagnosticResults);
-        }
-      }
-
       // Check for required environment variables - use consistent naming
       const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL;
       const privateKey = process.env.GOOGLE_PRIVATE_KEY;
@@ -84,106 +64,15 @@ export class GoogleSheetsService {
       }
 
       // Handle private key format more robustly - Node.js v20 compatibility fix
-      let cleanPrivateKey = privateKey;
-
       logger.log('🔧 Original private key format check:', {
-        hasBackslashN: cleanPrivateKey.includes('\\n'),
-        hasRealNewlines: cleanPrivateKey.includes('\n'),
-        hasBeginHeader: cleanPrivateKey.includes('-----BEGIN'),
-        length: cleanPrivateKey.length,
+        hasBackslashN: privateKey.includes('\\n'),
+        hasRealNewlines: privateKey.includes('\n'),
+        hasBeginHeader: privateKey.includes('-----BEGIN'),
+        length: privateKey.length,
       });
 
-      // **NODE.JS v20 COMPATIBILITY FIX** - Handle all newline format issues
-      // Replit often stores literal \n characters instead of actual newlines
-      if (cleanPrivateKey.includes('\\n')) {
-        cleanPrivateKey = cleanPrivateKey.replace(/\\n/g, '\n');
-        logger.log('🔧 Converted \\n to actual newlines (Node.js v20 fix)');
-      }
-
-      // Additional newline handling for different platforms
-      cleanPrivateKey = cleanPrivateKey
-        .replace(/\\r\\n/g, '\n') // Handle Windows-style escaped newlines
-        .replace(/\\r/g, '\n') // Handle Mac-style escaped newlines
-        .replace(/\r\n/g, '\n') // Normalize Windows newlines
-        .replace(/\r/g, '\n'); // Normalize Mac newlines
-
-      // **CRITICAL NODE.JS v20 FIX** - Handle single-line key format from Replit
-      if (
-        !cleanPrivateKey.includes('\n') &&
-        cleanPrivateKey.includes('-----BEGIN PRIVATE KEY-----')
-      ) {
-        logger.log(
-          '🔧 Detected single-line private key - fixing for Node.js v20...'
-        );
-
-        // Extract the actual key content between headers
-        const beginMarker = '-----BEGIN PRIVATE KEY-----';
-        const endMarker = '-----END PRIVATE KEY-----';
-        const beginIndex = cleanPrivateKey.indexOf(beginMarker);
-        const endIndex = cleanPrivateKey.indexOf(endMarker);
-
-        if (beginIndex !== -1 && endIndex !== -1) {
-          const keyContent = cleanPrivateKey
-            .substring(beginIndex + beginMarker.length, endIndex)
-            .trim();
-
-          // Rebuild key with proper line breaks every 64 characters
-          const lines = [beginMarker];
-          for (let i = 0; i < keyContent.length; i += 64) {
-            lines.push(keyContent.substring(i, i + 64));
-          }
-          lines.push(endMarker);
-
-          cleanPrivateKey = lines.join('\n');
-          logger.log(
-            '🔧 Rebuilt private key with proper line breaks for Node.js v20'
-          );
-        }
-      }
-
-      // Remove any quotes if the entire key is wrapped in quotes
-      if (
-        (cleanPrivateKey.startsWith('"') && cleanPrivateKey.endsWith('"')) ||
-        (cleanPrivateKey.startsWith("'") && cleanPrivateKey.endsWith("'"))
-      ) {
-        cleanPrivateKey = cleanPrivateKey.slice(1, -1);
-        logger.log('🔧 Removed surrounding quotes from private key');
-      }
-
-      // Ensure proper PEM format
-      if (!cleanPrivateKey.includes('-----BEGIN PRIVATE KEY-----')) {
-        // If it's just the key content without headers, add them
-        cleanPrivateKey = `-----BEGIN PRIVATE KEY-----\n${cleanPrivateKey}\n-----END PRIVATE KEY-----`;
-        logger.log('🔧 Added PEM headers to private key');
-      }
-
-      // Clean up any extra whitespace and normalize line endings
-      cleanPrivateKey = cleanPrivateKey.trim().replace(/\r\n/g, '\n');
-
-      // Ensure proper line breaks in PEM format
-      const lines = cleanPrivateKey.split('\n');
-      const properLines = [];
-
-      for (let line of lines) {
-        line = line.trim();
-        if (
-          line === '-----BEGIN PRIVATE KEY-----' ||
-          line === '-----END PRIVATE KEY-----'
-        ) {
-          properLines.push(line);
-        } else if (line.length > 0) {
-          // Break long lines into 64-character chunks (standard PEM format)
-          while (line.length > 64) {
-            properLines.push(line.substring(0, 64));
-            line = line.substring(64);
-          }
-          if (line.length > 0) {
-            properLines.push(line);
-          }
-        }
-      }
-
-      cleanPrivateKey = properLines.join('\n');
+      // Shared repair logic (also used by diagnostics)
+      const cleanPrivateKey = repairPrivateKey(privateKey);
 
       logger.log('🔧 Final private key format:', {
         lineCount: cleanPrivateKey.split('\n').length,
@@ -251,29 +140,13 @@ export class GoogleSheetsService {
         );
       }
 
-      // Fallback to file-based authentication if JWT fails
-      const fs = await import('fs');
-      const path = await import('path');
-
-      // Use minimal service account content - avoid empty private_key_id
-      const serviceAccountContent = JSON.stringify(
-        {
+      // Fallback to GoogleAuth with in-memory credentials if direct JWT fails
+      // (never write the service-account key to disk)
+      const auth = new google.auth.GoogleAuth({
+        credentials: {
           client_email: clientEmail,
           private_key: cleanPrivateKey,
         },
-        null,
-        2
-      );
-
-      const tempFilePath = path.join(
-        process.cwd(),
-        'google-service-account.json'
-      );
-      fs.writeFileSync(tempFilePath, serviceAccountContent);
-      logger.log('🔧 Created temporary service account file');
-
-      const auth = new google.auth.GoogleAuth({
-        keyFile: tempFilePath,
         scopes: ['https://www.googleapis.com/auth/spreadsheets'],
       });
 
@@ -281,14 +154,14 @@ export class GoogleSheetsService {
       this.auth = authClient as JWT;
       this.sheets = google.sheets({ version: 'v4', auth: authClient as any });
 
-      // Test file-based authentication with real API call
-      logger.log('🔧 Testing file-based authentication with real API call...');
+      // Test fallback authentication with real API call
+      logger.log('🔧 Testing fallback authentication with real API call...');
 
       try {
         // **REAL AUTH TEST** - Test against user's ACTUAL spreadsheet
         if (!this.config.spreadsheetId) {
           throw new Error(
-            'No spreadsheetId provided for file-based authentication test'
+            'No spreadsheetId provided for fallback authentication test'
           );
         }
 
@@ -298,7 +171,7 @@ export class GoogleSheetsService {
         });
 
         logger.log(
-          "✅ File-based authentication test successful against USER'S spreadsheet:",
+          "✅ Fallback authentication test successful against USER'S spreadsheet:",
           {
             spreadsheetId: testResponse.data.spreadsheetId,
             title: testResponse.data.properties?.title || 'Unknown',
@@ -307,22 +180,38 @@ export class GoogleSheetsService {
       } catch (testError) {
         const error = testError as Error;
         logger.error(
-          "❌ File-based authentication test failed against user's spreadsheet:",
+          "❌ Fallback authentication test failed against user's spreadsheet:",
           error.message
         );
         throw new Error(
-          `File-based JWT authentication test failed: ${error.message}`
+          `Fallback authentication test failed: ${error.message}`
         );
       }
 
-      logger.log('✅ Google Sheets file-based authentication fully verified');
-
-      // Clean up temp file
-      fs.unlinkSync(tempFilePath);
-      logger.log('🔧 Cleaned up temporary service account file');
+      logger.log('✅ Google Sheets fallback authentication fully verified');
     } catch (error) {
       const err = error as Error;
       logger.error('❌ Google Sheets authentication failed:', err.message);
+
+      // Run the full diagnostic report only when authentication actually
+      // failed — a successful startup should never print a CRITICAL report.
+      if (process.env.NODE_ENV === 'development') {
+        try {
+          logger.log('🔍 Running authentication diagnostics...');
+          const { googleSheetsDiagnostics } = await import(
+            './google-sheets-diagnostics'
+          );
+          const diagnosticResults =
+            await googleSheetsDiagnostics.runFullDiagnostics();
+          googleSheetsDiagnostics.printDiagnosticReport(diagnosticResults);
+        } catch (diagError) {
+          logger.error(
+            '⚠️ Failed to run Sheets auth diagnostics:',
+            (diagError as Error).message
+          );
+        }
+      }
+
       if (
         err.message.includes('DECODER') ||
         err.message.includes('OSSL_UNSUPPORTED')
@@ -333,21 +222,6 @@ export class GoogleSheetsService {
         logger.error(
           '💡 The private key from your Google Cloud Console may need to be regenerated for Node.js v20+'
         );
-      }
-
-      // Clean up temp file on error
-      try {
-        const fs = await import('fs');
-        const path = await import('path');
-        const tempFilePath = path.join(
-          process.cwd(),
-          'google-service-account.json'
-        );
-        if (fs.existsSync(tempFilePath)) {
-          fs.unlinkSync(tempFilePath);
-        }
-      } catch (cleanupError) {
-        // Ignore cleanup errors
       }
 
       throw new Error('Failed to initialize Google Sheets service');
@@ -454,6 +328,11 @@ export class GoogleSheetsService {
 
       // Batch update existing rows (preserves formatting)
       if (updates.length > 0) {
+        assertSheetWriteAllowed({
+          spreadsheetId: this.config.spreadsheetId,
+          service: 'projects-sync',
+          operation: 'values.batchUpdate updateSheet',
+        });
         await this.sheets.spreadsheets.values.batchUpdate({
           spreadsheetId: this.config.spreadsheetId,
           resource: {
@@ -477,6 +356,11 @@ export class GoogleSheetsService {
         const insertRowEnd = insertRowStart + newRows.length - 1;
 
         // Insert directly at specific row range in A:N columns
+        assertSheetWriteAllowed({
+          spreadsheetId: this.config.spreadsheetId,
+          service: 'projects-sync',
+          operation: 'values.update updateSheet insert',
+        });
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.config.spreadsheetId,
           range: `${this.config.worksheetName}!A${insertRowStart}:N${insertRowEnd}`,
@@ -546,6 +430,11 @@ export class GoogleSheetsService {
         const insertRowEnd = insertRowStart + newRows.length - 1;
 
         // Insert directly at specific row range in A:N columns
+        assertSheetWriteAllowed({
+          spreadsheetId: this.config.spreadsheetId,
+          service: 'projects-sync',
+          operation: 'values.update appendOnlySync',
+        });
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.config.spreadsheetId,
           range: `${this.config.worksheetName}!A${insertRowStart}:N${insertRowEnd}`, // FIXED: was A:M, now A:N to match column count
@@ -592,6 +481,11 @@ export class GoogleSheetsService {
         'Last Discussed Date', // Column N - FIXED: was missing entirely
       ];
 
+      assertSheetWriteAllowed({
+        spreadsheetId: this.config.spreadsheetId,
+        service: 'projects-sync',
+        operation: 'values.update ensureHeaders',
+      });
       await this.sheets.spreadsheets.values.update({
         spreadsheetId: this.config.spreadsheetId,
         range: `${this.config.worksheetName}!A1:N1`, // FIXED: was A1:L1, now A1:N1 to match read/write operations
@@ -772,6 +666,57 @@ export class GoogleSheetsService {
     updatedRow.dataHash = this.calculateRowHash(row);
     
     return updatedRow;
+  }
+
+  /**
+   * Lightweight credential/auth verification for health checks.
+   * Performs a read-only spreadsheets.get against the configured spreadsheet.
+   * If a cached client fails (e.g. credentials rotated since init), it
+   * re-initializes auth once and retries, so the result reflects the
+   * CURRENT credentials rather than a stale cached client.
+   */
+  public async verifyAuth(): Promise<{
+    ok: boolean;
+    message: string;
+    spreadsheetTitle?: string;
+    latencyMs: number;
+  }> {
+    const start = Date.now();
+
+    const attempt = async () => {
+      await this.ensureInitialized();
+      const response = await this.sheets.spreadsheets.get({
+        spreadsheetId: this.config.spreadsheetId,
+        fields: 'spreadsheetId,properties.title',
+      });
+      return response.data.properties?.title as string | undefined;
+    };
+
+    try {
+      let title: string | undefined;
+      try {
+        title = await attempt();
+      } catch (firstError) {
+        // Cached client may be stale after a credential rotation — force
+        // a fresh auth initialization and try once more.
+        this.sheets = undefined;
+        title = await attempt();
+      }
+
+      return {
+        ok: true,
+        message: `Authenticated; spreadsheet reachable${title ? ` ("${title}")` : ''}`,
+        spreadsheetTitle: title,
+        latencyMs: Date.now() - start,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      return {
+        ok: false,
+        message: `Google Sheets auth/access failed: ${message}`,
+        latencyMs: Date.now() - start,
+      };
+    }
   }
 
   /**

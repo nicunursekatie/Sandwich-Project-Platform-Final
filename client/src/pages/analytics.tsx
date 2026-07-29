@@ -75,14 +75,14 @@ export default function AnalyticsPage() {
             </div>
             <Tabs defaultValue="pace" className="space-y-4">
               <TabsList>
-                <TabsTrigger value="pace">Pace &amp; Comparison</TabsTrigger>
-                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="pace" data-tour="analytics-pace-tab">Pace &amp; Comparison</TabsTrigger>
+                <TabsTrigger value="overview" data-tour="analytics-overview-tab">Overview</TabsTrigger>
                 <TabsTrigger value="low-high-weeks">Low / High Weeks</TabsTrigger>
               </TabsList>
               <TabsContent value="pace">
                 <PaceComparisonAnalytics />
               </TabsContent>
-              <TabsContent value="overview">
+              <TabsContent value="overview" data-tour="analytics-content">
                 <AnalyticsDashboard />
               </TabsContent>
               <TabsContent value="low-high-weeks">

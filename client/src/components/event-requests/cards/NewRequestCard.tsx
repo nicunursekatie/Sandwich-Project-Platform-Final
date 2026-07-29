@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEventQueries } from '../hooks/useEventQueries';
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
+import { getEventRequestSourceIndicator } from '@/lib/event-request-source';
 import EventEmailLogDisplay from '@/components/event-email-log-display';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,9 @@ import {
   Lock,
   Unlock,
   Ban,
+  Globe,
+  FileText,
+  Copy,
 } from 'lucide-react';
 import { statusIcons, statusOptions, statusBorderColors, indicatorTooltips } from '@/components/event-requests/constants';
 import { formatEventDate } from '@/components/event-requests/utils';
@@ -70,6 +74,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { InfoBadge, CardActionRow, ActionRowSpacer } from './card-ui';
 
 interface NewRequestCardProps {
   request: EventRequest;
@@ -78,13 +83,20 @@ interface NewRequestCardProps {
   onCall?: () => void;
   onIntakeCall?: () => void;
   onContact: () => void;
+  /** Opens the LOGGING dialog — record that the toolkit was already
+   *  sent (date/time + optional call notes) and move event to In Process. */
   onToolkit: () => void;
+  /** Opens the email composer directly to ACTUALLY send the toolkit
+   *  right now. Send-time becomes the toolkit-sent timestamp and the
+   *  event moves to In Process automatically. */
+  onSendToolkit?: () => void;
   onScheduleCall: () => void;
   onAssignTspContact: () => void;
   onEditTspContact: () => void;
   onApprove: () => void;
   onDecline: () => void;
   onNonEvent?: () => void;
+  onDuplicate?: () => void;
   onLogContact: () => void;
   onAiSuggest?: () => void;
   onAiIntakeAssist?: () => void;
@@ -223,6 +235,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   datePopulationInfo,
   returningOrgData,
 }) => {
+  const { setViewMode } = useEventRequestContext();
   const StatusIcon = statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
   
   // Get the proper status label from constants instead of just replacing underscores
@@ -563,13 +576,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   {datePopulationInfo && datePopulationInfo.isOpen && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge
-                          className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-help"
-                          style={{ backgroundColor: '#47B3CB' }}
-                        >
-                          <CalendarCheck className="w-3 h-3" />
+                        <InfoBadge tone="info" icon={CalendarCheck} className="text-xs cursor-help">
                           Open date
-                        </Badge>
+                        </InfoBadge>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>{indicatorTooltips.openDate}</p>
@@ -579,14 +588,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   {datePopulationInfo && datePopulationInfo.scheduledCount > 0 && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge
-                          className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-pointer hover:opacity-80"
-                          style={{ backgroundColor: '#FBAD3F' }}
+                        <InfoBadge
+                          tone="attention"
+                          icon={AlertTriangle}
+                          className="text-xs cursor-pointer hover:opacity-80"
                           onClick={(e) => { e.stopPropagation(); setViewMode('calendar'); }}
                         >
-                          <AlertTriangle className="w-3 h-3" />
                           {datePopulationInfo.scheduledCount} scheduled
-                        </Badge>
+                        </InfoBadge>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>{indicatorTooltips.scheduledConflict}</p>
@@ -598,14 +607,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
                   {datePopulationInfo && datePopulationInfo.inProcessCount > 0 && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Badge
-                          className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-pointer hover:opacity-80"
-                          style={{ backgroundColor: '#007E8C' }}
+                        <InfoBadge
+                          tone="info"
+                          icon={Calendar}
+                          className="text-xs cursor-pointer hover:opacity-80"
                           onClick={(e) => { e.stopPropagation(); setViewMode('calendar'); }}
                         >
-                          <Calendar className="w-3 h-3" />
                           {datePopulationInfo.inProcessCount} in process
-                        </Badge>
+                        </InfoBadge>
                       </TooltipTrigger>
                       <TooltipContent>
                         <p>{indicatorTooltips.inProcessConflict}</p>
@@ -674,7 +683,10 @@ interface CardContactInfoProps {
   onCall?: () => void;
   onIntakeCall?: () => void;
   onContact?: () => void;
+  /** "Mark as sent" — opens the LOGGING dialog for previously-sent toolkits. */
   onToolkit?: () => void;
+  /** "Send now" — opens the email composer to actually send the toolkit. */
+  onSendToolkit?: () => void;
 }
 
 const CardContactInfo: React.FC<CardContactInfoProps> = ({
@@ -683,6 +695,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
   onIntakeCall,
   onContact,
   onToolkit,
+  onSendToolkit,
 }) => {
   const hasBackupContact = (request as any).backupContactFirstName || (request as any).backupContactLastName || (request as any).backupContactEmail || (request as any).backupContactPhone;
 
@@ -774,15 +787,40 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               Email
             </Button>
           )}
-          {onToolkit && (
+          {/* Two distinct toolkit actions, intentionally separated:
+                - "Send Toolkit": opens the email composer to actually
+                   send the toolkit right now. Send-time auto-becomes
+                   the toolkit-sent timestamp + status moves to In
+                   Process when the email leaves the composer.
+                - "Mark Toolkit Sent": opens the logging dialog for
+                   cases where the toolkit was sent OUTSIDE the app
+                   (forwarded from a personal inbox, hand-delivered,
+                   etc.) and the user just needs to record the date.
+              Bundling these behind one button forced users to discover
+              a sub-action inside a dialog, which masked one path from
+              the other. Two buttons = two clear intents. */}
+          {onSendToolkit && (
             <Button
               size="sm"
               variant="default"
-              onClick={onToolkit}
+              onClick={onSendToolkit}
               className="text-sm h-8 bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
+              data-testid="button-send-toolkit"
+            >
+              <Mail className="w-4 h-4 mr-1" />
+              Send Toolkit
+            </Button>
+          )}
+          {onToolkit && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={onToolkit}
+              className="text-sm h-8 border-[#FBAD3F]/40 text-[#92400E] hover:bg-[#FBAD3F]/10"
+              data-testid="button-mark-toolkit-sent"
             >
               <Package className="w-4 h-4 mr-1" />
-              Send Toolkit
+              Mark Toolkit Sent
             </Button>
           )}
         </div>
@@ -841,12 +879,14 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   onIntakeCall,
   onContact,
   onToolkit,
+  onSendToolkit,
   onScheduleCall,
   onAssignTspContact,
   onEditTspContact,
   onApprove,
   onDecline,
   onNonEvent,
+  onDuplicate,
   onLogContact,
   onAiSuggest,
   onAiIntakeAssist,
@@ -1168,6 +1208,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               onIntakeCall={onIntakeCall}
               onContact={onContact}
               onToolkit={onToolkit}
+              onSendToolkit={onSendToolkit}
             />
 
             {/* TSP Contact Assignment Status */}
@@ -1252,10 +1293,21 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
           </div>
         )}
 
-        {/* Action Buttons */}
+        {/* Action Buttons
+            Tiered layout:
+              - PRIMARY (left): the 1-2 most likely "next" actions — Assign TSP
+                Contact (when missing) and Edit (always). These keep their full
+                size and labels so they're impossible to miss.
+              - SECONDARY (right of primaries): supporting intake actions.
+                Visually lighter (ghost, muted) than the primaries but each
+                carries a text label so the action is clear without hovering —
+                the two AI buttons in particular share the same Sparkles icon
+                and are indistinguishable icon-only. Tooltips keep the longer
+                descriptions.
+            Order matches the typical intake flow left → right. */}
         <TooltipProvider>
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
-            {/* TSP Contact Assignment - only show if not already assigned and user has permission */}
+          <CardActionRow>
+            {/* PRIMARY: Assign TSP Contact when missing — high-priority intake step */}
             {!(request.tspContact || request.customTspContact) && canEditTspContact && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1275,111 +1327,118 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
               </Tooltip>
             )}
 
-            {/* AI Date Suggestion - show if there are dates to analyze */}
-            {(request.desiredEventDate || request.backupDates?.length) && onAiSuggest && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={onAiSuggest}
-                    className="border-[#236383] text-[#236383] hover:bg-[#236383]/10"
-                    data-testid="button-ai-suggest-date"
-                  >
-                    <Sparkles className="w-4 h-4 mr-1" />
-                    AI Date Suggest
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Get AI suggestions for the best event date</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
+            {/* SECONDARY actions — labeled, visually de-emphasized (ghost) */}
+            <div className="flex flex-wrap items-center gap-1">
+              {/* AI Date Suggestion */}
+              {(request.desiredEventDate || request.backupDates?.length) && onAiSuggest && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={onAiSuggest}
+                      className="h-8 text-[#236383] hover:bg-[#236383]/10"
+                      data-testid="button-ai-suggest-date"
+                    >
+                      <Sparkles className="w-4 h-4 mr-1.5" />
+                      AI Dates
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>AI date suggestions</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
 
-            {/* AI Intake Assistant - always available */}
-            {onAiIntakeAssist && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={onAiIntakeAssist}
-                    className="border-[#47B3CB] text-[#47B3CB] hover:bg-[#47B3CB]/10"
-                    data-testid="button-ai-intake-assist"
-                  >
-                    <Sparkles className="w-4 h-4 mr-1" />
-                    AI Intake Check
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Use AI to check intake information</p>
-                </TooltipContent>
-              </Tooltip>
-            )}
+              {/* AI Intake Assistant */}
+              {onAiIntakeAssist && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={onAiIntakeAssist}
+                      className="h-8 text-[#47B3CB] hover:bg-[#47B3CB]/10"
+                      data-testid="button-ai-intake-assist"
+                    >
+                      <Sparkles className="w-4 h-4 mr-1.5" />
+                      AI Intake
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>AI intake check</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
 
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onScheduleCall}
-                 
-                >
-                  <Phone className="w-4 h-4 mr-1" />
-                  Schedule Call
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Schedule a call with the organizer</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={onLogContact}
-                  className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
-                >
-                  <MessageSquare className="w-4 h-4 mr-1" />
-                  Log Contact
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                <p>Log a contact attempt or conversation</p>
-              </TooltipContent>
-            </Tooltip>
-
-            <ReminderRulesManager
-              eventRequestId={request.id}
-              tspContactUserId={request.tspContact || request.tspContactAssigned}
-              eventStatus={request.status}
-            />
-
-            {onNonEvent && (
+              {/* Schedule Call */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={onNonEvent}
-                    className="text-stone-500 hover:text-stone-700 hover:bg-stone-100"
-                    data-testid="button-non-event"
+                    onClick={onScheduleCall}
+                    className="h-8 text-slate-600 hover:bg-slate-100"
                   >
-                    <Ban className="w-4 h-4 mr-1" />
-                    Non-Event
+                    <Phone className="w-4 h-4 mr-1.5" />
+                    Schedule Call
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
-                  <p>Mark as non-event (not a real event request)</p>
+                  <p>Schedule a call with the organizer</p>
                 </TooltipContent>
               </Tooltip>
-            )}
 
-            <div className="flex-1" />
+              {/* Log Contact */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={onLogContact}
+                    className="h-8 text-[#007E8C] hover:bg-[#007E8C]/10"
+                  >
+                    <MessageSquare className="w-4 h-4 mr-1.5" />
+                    Log Contact
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Log a contact attempt or conversation</p>
+                </TooltipContent>
+              </Tooltip>
 
-            {/* Edit Button - Always show for new requests */}
+              {/* Reminders (component renders its own button) */}
+              <ReminderRulesManager
+                eventRequestId={request.id}
+                tspContactUserId={request.tspContact || request.tspContactAssigned}
+                eventStatus={request.status}
+              />
+
+              {/* Non-Event */}
+              {onNonEvent && (
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={onNonEvent}
+                      className="h-8 text-stone-500 hover:bg-stone-100"
+                      data-testid="button-non-event"
+                    >
+                      <Ban className="w-4 h-4 mr-1.5" />
+                      Non-Event
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Mark as non-event (not a real event request)</p>
+                  </TooltipContent>
+                </Tooltip>
+              )}
+            </div>
+
+            <ActionRowSpacer />
+
+            {/* PRIMARY: Edit Button — always-visible "next action" anchor */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -1398,6 +1457,25 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 <p>{getContextualTooltip(request)}</p>
               </TooltipContent>
             </Tooltip>
+            {onDuplicate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onDuplicate}
+                    data-testid="button-duplicate"
+                    aria-label="Duplicate event"
+                  >
+                    <Copy className="w-4 h-4 mr-1.5" />
+                    <span className="hidden sm:inline">Duplicate</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create another event from this one</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             {canDelete && (
               <ConfirmationDialog
                 trigger={
@@ -1419,7 +1497,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                 variant="destructive"
               />
             )}
-          </div>
+          </CardActionRow>
         </TooltipProvider>
 
         {/* Audit Log Section */}
@@ -1459,6 +1537,33 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
 
         {/* Email Log - shows if any template emails have been sent */}
         <EventEmailLogDisplay eventId={request.id} compact />
+
+        {/* Request-source indicator — mutually exclusive: website submission
+            (Google Sheets sync) vs manual entry by an app user. */}
+        {(() => {
+          const source = getEventRequestSourceIndicator(request as any);
+          if (!source) return null;
+
+          if (source.kind === 'website') {
+            return (
+              <div className="mt-3 flex items-center gap-1.5 text-[11px] text-gray-500 italic">
+                <Globe className="w-3 h-3 text-gray-400" aria-hidden="true" />
+                <span>Submitted via website</span>
+              </div>
+            );
+          }
+
+          return (
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] text-gray-500 italic">
+              <FileText className="w-3 h-3 text-gray-400" aria-hidden="true" />
+              <span>
+                {source.channelLabel
+                  ? `Manually entered (${source.channelLabel})`
+                  : 'Manually entered in app'}
+              </span>
+            </div>
+          );
+        })()}
 
         {/* Confirmation Toggle Dialog */}
         <ConfirmationDialog

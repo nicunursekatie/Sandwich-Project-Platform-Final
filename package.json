@@ -8,6 +8,7 @@
     "build": "vite build && esbuild server/index.ts --platform=node --external:./vite.js --external:vite --external:@google-cloud/storage --packages=external --bundle --format=esm --outdir=dist && esbuild server/meeting-agenda-pdf-generator.ts --platform=node --external:date-fns --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc",
+    "check:undefined-refs": "node scripts/check-undefined-refs.mjs",
     "type-check": "tsc",
     "check:routes": "node scripts/check-legacy-routes.js",
     "db:push": "drizzle-kit push",
@@ -29,7 +30,9 @@
     "test:coverage": "jest --coverage --config jest.config.js && jest --coverage --config jest.config.client.js",
     "test:coverage:client": "jest --coverage --config jest.config.client.js",
     "test:coverage:server": "jest --coverage --config jest.config.js",
-    "test:ci": "npm run test:unit && npm run test:integration"
+    "test:ci": "npm run test:unit && npm run test:integration",
+    "inventory:routes": "node scripts/route-inventory.js",
+    "inventory:routes:check": "node scripts/route-inventory.js --check"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.71.2",

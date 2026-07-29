@@ -11,12 +11,12 @@ import { ScheduledCardEnhanced } from '../cards/ScheduledCardEnhanced';
 import { RescheduleDialog } from '../dialogs/RescheduleDialog';
 import { DuplicateEventDialog } from '../dialogs/DuplicateEventDialog';
 import { parseSandwichTypes, stringifySandwichTypes } from '@/lib/sandwich-utils';
+import { hasActiveSandwichRange } from '@shared/sandwich-count-utils';
 import { useConfirmation } from '@/components/ui/confirmation-dialog';
 import type { EventRequest } from '@shared/schema';
 import { ScheduledSpreadsheetView } from '../views/ScheduledSpreadsheetView';
 import { Button } from '@/components/ui/button';
 import { LayoutGrid, Table2, Download } from 'lucide-react';
-import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { EventListBatchProviders } from '../EventListBatchProviders';
 import { EventListSkeleton } from '../EventCardSkeleton';
 
@@ -95,27 +95,15 @@ export const ScheduledTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
     setSchedulingEventRequest,
-    setShowSchedulingDialog,
-    setShowCollectionLog,
     setCollectionLogEventRequest,
-    setShowContactOrganizerDialog,
     setContactEventRequest,
-    setShowOneDayFollowUpDialog,
-    setShowOneMonthFollowUpDialog,
     setTspContactEventRequest,
-    setShowTspContactAssignmentDialog,
-    setShowLogContactDialog,
     setLogContactEventRequest,
-    setShowAiIntakeAssistantDialog,
     setAiIntakeAssistantEventRequest,
-    // Next Action dialog state
-    setShowNextActionDialog,
     setNextActionEventRequest,
     setNextActionMode,
-
-    // Inline editing states - IMPORTANT for scheduled tab
+    setReasonDialogEventRequest,
     editingScheduledId,
     setEditingScheduledId,
     editingField,
@@ -134,12 +122,21 @@ export const ScheduledTab: React.FC = () => {
     setInlineRangeMax,
     inlineRangeType,
     setInlineRangeType,
+    openDialog,
   } = useEventDialogState();
 
-  // Include both 'scheduled' and 'rescheduled' events on the Scheduled tab
-  const scheduledOnly = filterRequestsByStatus('scheduled');
-  const rescheduledOnly = filterRequestsByStatus('rescheduled');
-  const scheduledRequests = [...scheduledOnly, ...rescheduledOnly];
+  // filterRequestsByStatus('scheduled') already includes 'rescheduled'
+  // events internally (see useEventFilters.ts:541) AND applies the
+  // active sortBy across the combined list. Calling it a second time
+  // for 'rescheduled' and concatenating the two arrays broke the sort
+  // (all scheduled events would come first, then all rescheduled),
+  // duplicated the rescheduled events (they'd already been returned in
+  // the first call), and multiplied the pagination window.
+  //
+  // Historically this list sorts by event date ascending, then by
+  // event start time ascending within each date. That's baked into
+  // the 'event_date_asc' branch of the sort in useEventFilters.
+  const scheduledRequests = filterRequestsByStatus('scheduled');
 
   // Inline editing functions - SPECIFIC to scheduled tab
   const startEditing = (id: number, field: string, currentValue: string) => {
@@ -161,7 +158,11 @@ export const ScheduledTab: React.FC = () => {
       if (eventRequest) {
         const existingSandwichTypes = parseSandwichTypes(eventRequest.sandwichTypes) || [];
         const hasTypesData = existingSandwichTypes.length > 0;
-        const hasRangeData = (eventRequest as any).estimatedSandwichCountMin && (eventRequest as any).estimatedSandwichCountMax;
+        const hasRangeData = hasActiveSandwichRange(
+          (eventRequest as any).estimatedSandwichCountMin,
+          (eventRequest as any).estimatedSandwichCountMax,
+          eventRequest.estimatedSandwichCount,
+        );
         const totalCount = eventRequest.estimatedSandwichCount || 0;
 
         setInlineSandwichMode(hasTypesData ? 'types' : hasRangeData ? 'range' : 'total');
@@ -341,7 +342,7 @@ export const ScheduledTab: React.FC = () => {
         });
       } else {
         // Regular field update
-        const numericFields = ['driversNeeded', 'speakersNeeded', 'volunteersNeeded'];
+        const numericFields = ['driversNeeded', 'volunteersNeeded'];
         const valueToSend = numericFields.includes(editingField)
           ? (editingValue === '' ? null : Number(editingValue))
           : editingValue;
@@ -463,30 +464,6 @@ export const ScheduledTab: React.FC = () => {
     setDuplicateSourceRequest(null);
   };
 
-  const handleExport = async () => {
-    if (scheduledRequests.length === 0) {
-      toast({
-        title: 'No data to export',
-        description: 'There are no scheduled events to export.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    try {
-      await exportEventRequestsToExcel(scheduledRequests, 'scheduled');
-      toast({
-        title: 'Export complete',
-        description: `Exported ${scheduledRequests.length} scheduled event${scheduledRequests.length !== 1 ? 's' : ''} to Excel.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Export failed',
-        description: 'Failed to export events. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
-
   return (
     <>
       {/* Event count */}
@@ -551,20 +528,27 @@ export const ScheduledTab: React.FC = () => {
                 onEdit={() => {
                   setSelectedEventRequest(request);
                   setIsEditing(true);
-                  setShowEventDetails(true);
+                  openDialog('eventDetails');
                 }}
                 onDelete={() => deleteEventRequestMutation.mutate(request.id)}
                 onContact={() => {
                   setContactEventRequest(request);
-                  setShowContactOrganizerDialog(true);
+                  openDialog('contactOrganizer');
                 }}
                 onLogContact={() => {
                   setLogContactEventRequest(request);
-                  setShowLogContactDialog(true);
+                  openDialog('logContact');
                 }}
                 onReschedule={() => {
                   setRescheduleRequest(request);
                   setShowRescheduleDialog(true);
+                }}
+                onCancelEvent={async () => {
+                  const result = await handleStatusChange(request.id, 'cancelled');
+                  if (result === 'needs_reason') {
+                    setReasonDialogEventRequest(request);
+                    openDialog('cancel');
+                  }
                 }}
                 onDuplicate={() => {
                   setDuplicateSourceRequest(request);
@@ -572,15 +556,15 @@ export const ScheduledTab: React.FC = () => {
                 }}
                 onAssignTspContact={() => {
                   setTspContactEventRequest(request);
-                  setShowTspContactAssignmentDialog(true);
+                  openDialog('tspContactAssignment');
                 }}
                 onEditTspContact={() => {
                   setTspContactEventRequest(request);
-                  setShowTspContactAssignmentDialog(true);
+                  openDialog('tspContactAssignment');
                 }}
                 onAiIntakeAssist={() => {
                   setAiIntakeAssistantEventRequest(request);
-                  setShowAiIntakeAssistantDialog(true);
+                  openDialog('aiIntakeAssistant');
                 }}
                 startEditing={(field, value) => startEditing(request.id, field, value)}
                 saveEdit={saveEdit}
@@ -613,17 +597,17 @@ export const ScheduledTab: React.FC = () => {
                 onAddNextAction={() => {
                   setNextActionEventRequest(request);
                   setNextActionMode('add');
-                  setShowNextActionDialog(true);
+                  openDialog('nextAction');
                 }}
                 onEditNextAction={() => {
                   setNextActionEventRequest(request);
                   setNextActionMode('edit');
-                  setShowNextActionDialog(true);
+                  openDialog('nextAction');
                 }}
                 onCompleteNextAction={() => {
                   setNextActionEventRequest(request);
                   setNextActionMode('complete');
-                  setShowNextActionDialog(true);
+                  openDialog('nextAction');
                 }}
               />
               </div>

@@ -53,19 +53,20 @@ const COLUMN_LABELS: Record<number, string> = {
   10: 'Estimate # Sandwiches',
   11: 'Deli or PBJ?',
   12: 'Final # Sandwiches',
-  13: 'Social Post',
-  14: 'Sent Toolkit?',
-  15: 'Contact Name',
-  16: 'Email',
-  17: 'Phone',
-  18: 'TSP Contact',
-  19: 'Address',
-  20: 'Recipient/Host',
-  21: 'After Event Notes',
-  22: 'Cancelled',
-  23: 'Notes',
-  24: "Add'l Notes",
-  25: 'Waiting On',
+  13: 'Total in App?',
+  14: 'Social Post',
+  15: 'Sent Toolkit?',
+  16: 'Contact Name',
+  17: 'Email',
+  18: 'Phone',
+  19: 'TSP Contact',
+  20: 'Address',
+  21: 'Recipient/Host',
+  22: 'After Event Notes',
+  23: 'Cancelled',
+  24: 'Notes',
+  25: "Add'l Notes",
+  26: 'Waiting On',
 };
 
 // Keep ProposeToSheetButton as an alias for backward compatibility
@@ -106,7 +107,8 @@ export function PushToSheetButton({
     if (!previewData?.rawData || !previewData?.existingRawData) return [];
 
     const result: ColumnConflict[] = [];
-    for (let i = 0; i < 26; i++) {
+    // 27 columns (0..26) — the sheet runs through AA/"Waiting On" at index 26.
+    for (let i = 0; i < 27; i++) {
       const appValue = (previewData.rawData[i] || '').trim();
       const sheetValue = (previewData.existingRawData[i] || '').trim();
       if (appValue !== sheetValue) {
@@ -200,14 +202,14 @@ export function PushToSheetButton({
     { label: 'Group', value: rawData[2] },
     { label: 'Staffing', value: rawData[9] },
     { label: 'Est. Sandwiches', value: rawData[10] },
-    { label: 'Contact', value: rawData[15] },
+    { label: 'Contact', value: rawData[16] },
   ].filter(f => f.value);
 
   const setDecision = (columnIndex: number, decision: MergeDecision) => {
     setMergeDecisions(prev => ({ ...prev, [columnIndex]: decision }));
   };
 
-  const unchangedCount = hasExistingRawData ? 26 - conflicts.length : 0;
+  const unchangedCount = hasExistingRawData ? 27 - conflicts.length : 0;
   const allMatch = hasExistingRow && hasExistingRawData && conflicts.length === 0;
 
   return (
@@ -435,7 +437,7 @@ export function PushToSheetButton({
                                 <div className="px-3 py-2 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
                                   Unchanged columns
                                 </div>
-                                {Array.from({ length: 26 }, (_, i) => i)
+                                {Array.from({ length: 27 }, (_, i) => i)
                                   .filter(i => {
                                     const appVal = (previewData.rawData[i] || '').trim();
                                     const sheetVal = (previewData.existingRawData[i] || '').trim();

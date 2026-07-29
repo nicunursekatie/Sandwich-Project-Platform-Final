@@ -264,6 +264,16 @@ export const adminDocuments: AdminDocument[] = [
     type: 'pdf',
     importance: 'high',
   },
+  {
+    id: 'volunteer-handbook',
+    name: 'TSP Volunteer Handbook',
+    description:
+      'The all-encompassing handbook for every volunteer role — policies, procedures, and reference material',
+    category: 'Handbook',
+    path: '/documents/tsp-host-handbook.pdf',
+    type: 'pdf',
+    importance: 'critical',
+  },
   
   // Tools
   {

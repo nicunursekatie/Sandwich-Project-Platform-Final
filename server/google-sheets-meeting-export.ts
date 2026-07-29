@@ -2,6 +2,7 @@ import { google } from 'googleapis';
 import type { DatabaseStorage } from './database-storage';
 import { MeetingAgendaCompiler } from './meeting-agenda-compiler';
 import { logger } from './utils/production-safe-logger';
+import { assertSheetWriteAllowed } from './sheets-write-guard';
 
 export class GoogleSheetsMeetingExporter {
   private auth: any;
@@ -372,6 +373,11 @@ export class GoogleSheetsMeetingExporter {
     const mergedData = this.mergeSheetData(data, existingData);
 
     // Clear existing content
+    assertSheetWriteAllowed({
+      spreadsheetId: sheetId,
+      service: 'meeting-export',
+      operation: 'values.clear + values.update clearAndWriteSheetData',
+    });
     await this.sheets.spreadsheets.values.clear({
       spreadsheetId: sheetId,
       range: 'A:N',
@@ -526,6 +532,11 @@ export class GoogleSheetsMeetingExporter {
       },
     ];
 
+    assertSheetWriteAllowed({
+      spreadsheetId: sheetId,
+      service: 'meeting-export',
+      operation: 'spreadsheets.batchUpdate formatMeetingAgendaSheet',
+    });
     await this.sheets.spreadsheets.batchUpdate({
       spreadsheetId: sheetId,
       resource: { requests },

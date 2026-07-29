@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { useEventDialogState } from '../context/EventDialogContext';
 import { useEventFilters } from '../hooks/useEventFilters';
@@ -7,18 +7,19 @@ import { useEventAssignments } from '../hooks/useEventAssignments';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DeclinedCard } from '../cards/DeclinedCard';
-import { Button } from '@/components/ui/button';
-import { Download } from 'lucide-react';
-import { exportEventRequestsToExcel } from '@/lib/excel-export';
+import { DuplicateEventDialog } from '../dialogs/DuplicateEventDialog';
 import { EventListSkeleton } from '../EventCardSkeleton';
 import { EventListBatchProviders } from '../EventListBatchProviders';
+import type { EventRequest } from '@shared/schema';
 
 export const DeclinedTab: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const { filterRequestsByStatus } = useEventFilters();
-  const { deleteEventRequestMutation } = useEventMutations();
+  const { deleteEventRequestMutation, createEventRequestMutation } = useEventMutations();
   const { handleStatusChange, resolveUserName } = useEventAssignments();
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [duplicateSourceRequest, setDuplicateSourceRequest] = useState<EventRequest | null>(null);
 
   const {
     isLoading,
@@ -27,40 +28,14 @@ export const DeclinedTab: React.FC = () => {
   const {
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
-    setShowContactOrganizerDialog,
     setContactEventRequest,
-    setShowLogContactDialog,
     setLogContactEventRequest,
+    openDialog,
   } = useEventDialogState();
 
   const declinedRequests = filterRequestsByStatus('declined');
   const cancelledRequests = filterRequestsByStatus('cancelled');
   const allDeclinedOrCancelled = [...declinedRequests, ...cancelledRequests];
-
-  const handleExport = async () => {
-    if (allDeclinedOrCancelled.length === 0) {
-      toast({
-        title: 'No data to export',
-        description: 'There are no declined or cancelled events to export.',
-        variant: 'destructive',
-      });
-      return;
-    }
-    try {
-      await exportEventRequestsToExcel(allDeclinedOrCancelled, 'declined');
-      toast({
-        title: 'Export complete',
-        description: `Exported ${allDeclinedOrCancelled.length} declined/cancelled event${allDeclinedOrCancelled.length !== 1 ? 's' : ''} to Excel.`,
-      });
-    } catch (error) {
-      toast({
-        title: 'Export failed',
-        description: 'Failed to export events. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  };
 
   const handleCall = (request: any) => {
     const phoneNumber = request.phone;
@@ -85,21 +60,11 @@ export const DeclinedTab: React.FC = () => {
 
   return (
     <>
-      {/* Header with count and export button */}
+      {/* Header with count. Export lives in the page-level top action bar. */}
       <div className="flex items-center justify-between mb-4 px-4">
         <div className="text-sm text-gray-600">
           {isLoading ? 'Loading...' : `${allDeclinedOrCancelled.length} declined/cancelled event${allDeclinedOrCancelled.length !== 1 ? 's' : ''}`}
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleExport}
-          disabled={allDeclinedOrCancelled.length === 0}
-          className="flex items-center gap-2"
-        >
-          <Download className="h-4 w-4" />
-          Export to Excel
-        </Button>
       </div>
 
       <div className="space-y-6">
@@ -127,12 +92,12 @@ export const DeclinedTab: React.FC = () => {
                   onView={() => {
                     setSelectedEventRequest(request);
                     setIsEditing(false);
-                    setShowEventDetails(true);
+                    openDialog('eventDetails');
                   }}
                   onEdit={() => {
                     setSelectedEventRequest(request);
                     setIsEditing(true);
-                    setShowEventDetails(true);
+                    openDialog('eventDetails');
                   }}
                   onDelete={() => {
                     if (window.confirm('Are you sure you want to permanently delete this declined event?')) {
@@ -141,7 +106,7 @@ export const DeclinedTab: React.FC = () => {
                   }}
                   onContact={() => {
                     setContactEventRequest(request);
-                    setShowContactOrganizerDialog(true);
+                    openDialog('contactOrganizer');
                   }}
                   onCall={() => handleCall(request)}
                   onReactivate={() => {
@@ -155,7 +120,11 @@ export const DeclinedTab: React.FC = () => {
                   }}
                   onLogContact={() => {
                     setLogContactEventRequest(request);
-                    setShowLogContactDialog(true);
+                    openDialog('logContact');
+                  }}
+                  onDuplicate={() => {
+                    setDuplicateSourceRequest(request);
+                    setShowDuplicateDialog(true);
                   }}
                 />
               ))}
@@ -177,12 +146,12 @@ export const DeclinedTab: React.FC = () => {
                   onView={() => {
                     setSelectedEventRequest(request);
                     setIsEditing(false);
-                    setShowEventDetails(true);
+                    openDialog('eventDetails');
                   }}
                   onEdit={() => {
                     setSelectedEventRequest(request);
                     setIsEditing(true);
-                    setShowEventDetails(true);
+                    openDialog('eventDetails');
                   }}
                   onDelete={() => {
                     if (window.confirm('Are you sure you want to permanently delete this cancelled event?')) {
@@ -191,7 +160,7 @@ export const DeclinedTab: React.FC = () => {
                   }}
                   onContact={() => {
                     setContactEventRequest(request);
-                    setShowContactOrganizerDialog(true);
+                    openDialog('contactOrganizer');
                   }}
                   onCall={() => handleCall(request)}
                   onReactivate={() => {
@@ -205,7 +174,11 @@ export const DeclinedTab: React.FC = () => {
                   }}
                   onLogContact={() => {
                     setLogContactEventRequest(request);
-                    setShowLogContactDialog(true);
+                    openDialog('logContact');
+                  }}
+                  onDuplicate={() => {
+                    setDuplicateSourceRequest(request);
+                    setShowDuplicateDialog(true);
                   }}
                 />
               ))}
@@ -215,6 +188,19 @@ export const DeclinedTab: React.FC = () => {
         </EventListBatchProviders>
         )}
       </div>
+      <DuplicateEventDialog
+        isOpen={showDuplicateDialog}
+        onClose={() => {
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+        request={duplicateSourceRequest}
+        onConfirm={async (newEventData) => {
+          await createEventRequestMutation.mutateAsync(newEventData);
+          setShowDuplicateDialog(false);
+          setDuplicateSourceRequest(null);
+        }}
+      />
     </>
   );
 };

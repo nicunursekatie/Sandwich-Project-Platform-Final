@@ -38,6 +38,7 @@ import {
   MessageCircle,
   Lock,
   Unlock,
+  Copy,
 } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -84,17 +85,18 @@ import { useReturningOrganization } from '@/hooks/use-returning-organization';
 import { RefreshCw } from 'lucide-react';
 import { useEventRequestContext } from '../context/EventRequestContext';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { InfoBadge, CardActionRow, ActionRowSpacer } from './card-ui';
 
 interface InProcessCardProps {
   request: EventRequest;
   resolveUserName?: (id: string) => string;
   isStale?: boolean;
-  followUpStatus?: 'toolkit' | 'contact' | null;
   onEdit: () => void;
   onDelete: () => void;
   onSchedule: () => void;
   onCall: () => void;
   onIntakeCall?: () => void;
+  onDuplicate?: () => void;
   onContact: () => void;
   onScheduleCall: () => void;
   onResendToolkit?: () => void;
@@ -172,6 +174,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   returningOrgData,
   onAddNextAction,
 }) => {
+  const { setViewMode } = useEventRequestContext();
   const isMobile = useIsMobile();
   const StatusIcon =
     statusIcons[request.status as keyof typeof statusIcons] || statusIcons.new;
@@ -517,7 +520,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               <TooltipTrigger asChild>
                 <Badge
                   variant="outline"
-                  className="bg-amber-50 text-amber-700 border-amber-300 whitespace-nowrap cursor-help"
+                  className="bg-[#FBAD3F]/15 text-[#236383] border-[#FBAD3F] whitespace-nowrap cursor-help"
                 >
                   <AlertTriangle className="w-3 h-3 mr-1" />
                   Needs follow-up
@@ -690,13 +693,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             {datePopulationInfo && datePopulationInfo.isOpen && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge
-                    className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-help"
-                    style={{ backgroundColor: '#47B3CB' }}
-                  >
-                    <CalendarCheck className="w-3 h-3" />
+                  <InfoBadge tone="info" icon={CalendarCheck} className="text-xs cursor-help">
                     Open date
-                  </Badge>
+                  </InfoBadge>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{indicatorTooltips.openDate}</p>
@@ -706,14 +705,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             {datePopulationInfo && datePopulationInfo.scheduledCount > 0 && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge
-                    className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-pointer hover:opacity-80"
-                    style={{ backgroundColor: '#FBAD3F' }}
+                  <InfoBadge
+                    tone="attention"
+                    icon={AlertTriangle}
+                    className="text-xs cursor-pointer hover:opacity-80"
                     onClick={(e) => { e.stopPropagation(); setViewMode('calendar'); }}
                   >
-                    <AlertTriangle className="w-3 h-3" />
                     {datePopulationInfo.scheduledCount} scheduled
-                  </Badge>
+                  </InfoBadge>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{indicatorTooltips.scheduledConflict}</p>
@@ -725,14 +724,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             {datePopulationInfo && datePopulationInfo.inProcessCount > 0 && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge
-                    className="flex items-center gap-1 text-white text-xs px-2 py-0.5 cursor-pointer hover:opacity-80"
-                    style={{ backgroundColor: '#007E8C' }}
+                  <InfoBadge
+                    tone="info"
+                    icon={Calendar}
+                    className="text-xs cursor-pointer hover:opacity-80"
                     onClick={(e) => { e.stopPropagation(); setViewMode('calendar'); }}
                   >
-                    <Calendar className="w-3 h-3" />
                     {datePopulationInfo.inProcessCount} in process
-                  </Badge>
+                  </InfoBadge>
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{indicatorTooltips.inProcessConflict}</p>
@@ -940,12 +939,12 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   request,
   resolveUserName,
   isStale = false,
-  followUpStatus = null,
   onEdit,
   onDelete,
   onSchedule,
   onCall,
   onIntakeCall,
+  onDuplicate,
   onContact,
   onScheduleCall,
   onResendToolkit,
@@ -1057,36 +1056,6 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                   </span>
                 )}
               </div>
-              {followUpStatus === 'toolkit' && (
-                <div className="mt-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge className="bg-red-500 text-white border-red-400 px-3 py-1 cursor-help">
-                        <AlertTriangle className="w-4 h-4 mr-1" />
-                        Follow-up needed - Over 1 week since toolkit sent
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{indicatorTooltips.toolkitFollowUp}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              )}
-              {followUpStatus === 'contact' && (
-                <div className="mt-2">
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Badge className="bg-orange-500 text-white border-orange-400 px-3 py-1 cursor-help">
-                        <AlertTriangle className="w-4 h-4 mr-1" />
-                        Follow-up needed - Over 1 week since last contact
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{indicatorTooltips.contactFollowUp}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
-              )}
             </div>
           );
         })()}
@@ -1502,82 +1471,115 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               </div>
             )}
 
-            {/* Event Times - Start, End, and Pickup */}
-            {(request.eventStartTime || request.eventEndTime || request.pickupTime || request.pickupDateTime) && (
-              <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-                <p className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-2">
-                  Event Times
-                </p>
-                {request.eventStartTime && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="w-4 h-4 text-[#007E8C]" />
-                    <span className="font-medium text-gray-700">Start:</span>
-                    <span className="text-gray-900">{formatTime12Hour(request.eventStartTime)}</span>
-                  </div>
-                )}
-                {request.eventEndTime && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Clock className="w-4 h-4 text-[#007E8C]" />
-                    <span className="font-medium text-gray-700">End:</span>
-                    <span className="text-gray-900">{formatTime12Hour(request.eventEndTime)}</span>
-                  </div>
-                )}
-                {(request.pickupTime || request.pickupDateTime) && (
-                  <div className="flex items-center gap-2 text-sm">
-                    <Package className="w-4 h-4 text-[#007E8C]" />
-                    <span className="font-medium text-gray-700">Pickup:</span>
-                    <span className="text-gray-900">
-                      {request.pickupDateTime 
-                        ? formatTime12Hour(new Date(request.pickupDateTime).toTimeString().slice(0, 5))
-                        : request.pickupTime 
-                        ? formatTime12Hour(request.pickupTime)
-                        : ''}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Event Times + Sandwich Info — side-by-side to avoid wasted vertical space */}
+            {(() => {
+              const hasEventTimes =
+                request.eventStartTime ||
+                request.eventEndTime ||
+                request.pickupTime ||
+                request.pickupDateTime;
+              const hasSandwichInfo =
+                request.actualSandwichCount ||
+                request.actualSandwichTypes ||
+                request.estimatedSandwichCount ||
+                request.sandwichTypes;
 
-            {/* Sandwich Info - Show actual if available, otherwise estimated */}
-            {((request.actualSandwichCount || request.actualSandwichTypes) || (request.estimatedSandwichCount || request.sandwichTypes)) && (
-              <div className="bg-amber-50 rounded-lg p-3">
-                <div className="flex items-center gap-2 mb-2">
-                  <Package className="w-4 h-4 text-amber-600" />
-                  <span className="text-sm font-semibold text-amber-800 uppercase tracking-wide">
-                    {request.actualSandwichCount || request.actualSandwichTypes ? 'Actual Sandwiches' : 'Estimated Sandwiches'}
-                  </span>
-                </div>
-                <div className="text-sm">
-                  {request.actualSandwichCount || request.actualSandwichTypes ? (
-                    <div>
-                      {request.actualSandwichTypes && Array.isArray(request.actualSandwichTypes) && request.actualSandwichTypes.length > 0 ? (
-                        <div className="space-y-1">
-                          <div className="font-medium text-amber-900">
-                            {formatSandwichTypesDisplay(request.actualSandwichTypes, request.actualSandwichCount ?? undefined)}
+              if (!hasEventTimes && !hasSandwichInfo) return null;
+
+              return (
+                <div
+                  className={`grid gap-3 ${
+                    hasEventTimes && hasSandwichInfo ? 'grid-cols-1 sm:grid-cols-2' : 'grid-cols-1'
+                  }`}
+                >
+                  {hasEventTimes && (
+                    <div className="bg-gray-50 rounded-lg p-3">
+                      <p className="text-sm uppercase font-bold tracking-wide text-[#236383] mb-2">
+                        Event Times
+                      </p>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                        {request.eventStartTime && (
+                          <div className="flex items-center gap-1.5 text-sm">
+                            <Clock className="w-4 h-4 text-[#007E8C] shrink-0" />
+                            <span className="font-medium text-gray-700">Start:</span>
+                            <span className="text-gray-900">{formatTime12Hour(request.eventStartTime)}</span>
                           </div>
-                          {request.actualSandwichCount && (
-                            <div className="text-xs text-amber-700">
-                              Total: {request.actualSandwichCount} sandwiches
-                            </div>
-                          )}
-                        </div>
-                      ) : request.actualSandwichCount ? (
-                        <div className="font-medium text-amber-900">
-                          {request.actualSandwichCount} sandwiches
-                        </div>
-                      ) : null}
+                        )}
+                        {request.eventEndTime && (
+                          <div className="flex items-center gap-1.5 text-sm">
+                            <Clock className="w-4 h-4 text-[#007E8C] shrink-0" />
+                            <span className="font-medium text-gray-700">End:</span>
+                            <span className="text-gray-900">{formatTime12Hour(request.eventEndTime)}</span>
+                          </div>
+                        )}
+                        {(request.pickupTime || request.pickupDateTime) && (
+                          <div className="flex items-center gap-1.5 text-sm">
+                            <Package className="w-4 h-4 text-[#007E8C] shrink-0" />
+                            <span className="font-medium text-gray-700">Pickup:</span>
+                            <span className="text-gray-900">
+                              {request.pickupDateTime
+                                ? formatTime12Hour(
+                                    new Date(request.pickupDateTime).toTimeString().slice(0, 5)
+                                  )
+                                : request.pickupTime
+                                  ? formatTime12Hour(request.pickupTime)
+                                  : ''}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  ) : (
-                    <div className="font-medium text-amber-900">
-                      {formatSandwichTypesDisplay(
-                        request.sandwichTypes,
-                        request.estimatedSandwichCount ?? undefined
-                      )}
+                  )}
+
+                  {hasSandwichInfo && (
+                    <div className="bg-amber-50 rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-2">
+                        <Package className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span className="text-sm font-semibold text-amber-800 uppercase tracking-wide">
+                          {request.actualSandwichCount || request.actualSandwichTypes
+                            ? 'Actual Sandwiches'
+                            : 'Estimated Sandwiches'}
+                        </span>
+                      </div>
+                      <div className="text-sm">
+                        {request.actualSandwichCount || request.actualSandwichTypes ? (
+                          <div>
+                            {request.actualSandwichTypes &&
+                            Array.isArray(request.actualSandwichTypes) &&
+                            request.actualSandwichTypes.length > 0 ? (
+                              <div className="space-y-1">
+                                <div className="font-medium text-amber-900">
+                                  {formatSandwichTypesDisplay(
+                                    request.actualSandwichTypes,
+                                    request.actualSandwichCount ?? undefined
+                                  )}
+                                </div>
+                                {request.actualSandwichCount && (
+                                  <div className="text-xs text-amber-700">
+                                    Total: {request.actualSandwichCount} sandwiches
+                                  </div>
+                                )}
+                              </div>
+                            ) : request.actualSandwichCount ? (
+                              <div className="font-medium text-amber-900">
+                                {request.actualSandwichCount} sandwiches
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : (
+                          <div className="font-medium text-amber-900">
+                            {formatSandwichTypesDisplay(
+                              request.sandwichTypes,
+                              request.estimatedSandwichCount ?? undefined
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Right Column - Contact Info & TSP Contact */}
@@ -1736,7 +1738,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
 
         {/* Action Buttons */}
         <TooltipProvider>
-          <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t">
+          <CardActionRow>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -1765,6 +1767,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                       eventName={request.organizationName || 'Event'}
                       currentStatus={request.status}
                       scheduledDate={request.desiredEventDate}
+                      hasRefrigeration={request.hasRefrigeration}
+                      sandwichTypes={request.sandwichTypes as Array<{ type: string; quantity: number }> | null}
                       size="sm"
                       variant="outline"
                     />
@@ -1906,7 +1910,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
               </Tooltip>
             )}
 
-            <div className="flex-1" />
+            <ActionRowSpacer />
 
             {/* Card management cluster — visually separated from workflow actions */}
             <div
@@ -1953,6 +1957,25 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 </Tooltip>
               );
             })()}
+            {onDuplicate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onDuplicate}
+                    data-testid="button-duplicate"
+                    aria-label="Duplicate event"
+                  >
+                    <Copy className="w-4 h-4 mr-1.5" />
+                    <span className="hidden sm:inline">Duplicate</span>
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Create another event from this one</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
             {canDelete && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -1982,7 +2005,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 </TooltipContent>
               </Tooltip>
             )}
-          </div>
+          </CardActionRow>
         </TooltipProvider>
 
         {/* Audit Log Section */}

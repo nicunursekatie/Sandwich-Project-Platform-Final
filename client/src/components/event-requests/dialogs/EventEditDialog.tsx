@@ -29,12 +29,12 @@ import {
 import {
   Clock,
   Users,
-  Megaphone,
   Car,
   Truck,
   Save,
   Loader2,
   X,
+  AlertTriangle,
   UserPlus,
   Search,
   Building,
@@ -51,7 +51,7 @@ import {
   formatDraftTimestamp,
 } from '@/hooks/useDraftPersistence';
 import { logger } from '@/lib/logger';
-import { getDriverIds, getSpeakerIds, getVolunteerIds } from '@/lib/assignment-utils';
+import { getDriverIds, getVolunteerIds, extractNameFromAssignmentId, resolveAssignmentDisplayName } from '@/lib/assignment-utils';
 import { getRecipientDisplayRegion } from '@/lib/atlanta-regions';
 import type { EventRequest } from '@shared/schema';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
@@ -65,7 +65,6 @@ interface EventEditDialogProps {
 
 interface EventEditDraftData {
   driversNeeded: string;
-  speakersNeeded: string;
   volunteersNeeded: string;
   pickupTime: string;
   eventStartTime: string;
@@ -76,7 +75,6 @@ interface EventEditDraftData {
   vanDriverNeeded: boolean;
   isCorporatePriority: boolean;
   assignedDriverIds: string[];
-  assignedSpeakerIds: string[];
   assignedVolunteerIds: string[];
   assignedVanDriverId: string | null;
   assignedRecipientIds: string[];
@@ -134,8 +132,93 @@ const parsePostgresArray = (value: any): string[] => {
 interface PersonSelectorProps {
   selectedPeople: string[];
   onSelectionChange: (selected: string[]) => void;
-  assignmentType: 'driver' | 'speaker' | 'volunteer';
+  assignmentType: 'driver' | 'volunteer';
   vanDriverNeeded?: boolean;
+  /** Stored assignment metadata (volunteerDetails, driverDetails, etc.) for name fallback */
+  assignmentDetails?: Record<string, { name?: string }>;
+}
+
+function parseAssignmentDetails(
+  details?: Record<string, { name?: string }> | string | null
+): Record<string, { name?: string }> {
+  if (!details) return {};
+  if (typeof details === 'string') {
+    try {
+      const parsed = JSON.parse(details);
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  return details;
+}
+
+function buildVolunteerNameLookup(volunteers: any[]): Map<string, string> {
+  const map = new Map<string, string>();
+  volunteers.forEach((vol: any) => {
+    const name =
+      `${vol.firstName || ''} ${vol.lastName || ''}`.trim() ||
+      vol.name ||
+      `Volunteer #${vol.id}`;
+    const id = String(vol.id);
+    map.set(id, name);
+    map.set(`volunteer-${id}`, name);
+  });
+  return map;
+}
+
+function buildDriverNameLookup(drivers: any[]): Map<string, string> {
+  const map = new Map<string, string>();
+  drivers.forEach((driver: any) => {
+    const name = driver.name || `Driver #${driver.id}`;
+    const id = String(driver.id);
+    map.set(id, name);
+    map.set(`driver-${id}`, name);
+  });
+  return map;
+}
+
+function resolvePersonDisplayName(
+  personId: string,
+  opts: {
+    assignmentDetails?: Record<string, { name?: string }>;
+    availablePeople: Array<{ id: string; name: string }>;
+    volunteerNameLookup: Map<string, string>;
+    driverNameLookup: Map<string, string>;
+    assignmentType: 'driver' | 'volunteer';
+  }
+): string {
+  const storedName = opts.assignmentDetails?.[personId]?.name;
+  if (storedName?.trim()) {
+    const normalized = resolveAssignmentDisplayName(personId, { storedName });
+    if (normalized !== 'Unknown') return normalized;
+  }
+
+  if (personId.startsWith('custom-') || personId.startsWith('custom:')) {
+    return extractNameFromAssignmentId(personId) || personId;
+  }
+
+  const legacyName = extractNameFromAssignmentId(personId);
+  if (legacyName) return legacyName;
+
+  const person = opts.availablePeople.find((p) => p.id === personId);
+  if (person?.name) return person.name;
+
+  if (opts.assignmentType === 'volunteer') {
+    const volName =
+      opts.volunteerNameLookup.get(personId) ??
+      opts.volunteerNameLookup.get(personId.replace(/^volunteer-/, ''));
+    if (volName) return volName;
+  }
+
+  if (opts.assignmentType === 'driver') {
+    const driverName =
+      opts.driverNameLookup.get(personId) ??
+      opts.driverNameLookup.get(personId.replace(/^driver-/, ''));
+    if (driverName) return driverName;
+  }
+
+  return personId;
 }
 
 function PersonSelector({
@@ -143,6 +226,7 @@ function PersonSelector({
   onSelectionChange,
   assignmentType,
   vanDriverNeeded = false,
+  assignmentDetails,
 }: PersonSelectorProps) {
   const [searchTerm, setSearchTerm] = useState('');
   const [customEntryText, setCustomEntryText] = useState('');
@@ -190,8 +274,8 @@ function PersonSelector({
       });
     }
 
-    // Add volunteers (for volunteer/speaker assignments)
-    if (assignmentType === 'volunteer' || assignmentType === 'speaker') {
+    // Add volunteers (for volunteer assignments)
+    if (assignmentType === 'volunteer') {
       volunteers.forEach((vol: any) => {
         people.push({
           id: `volunteer-${vol.id}`,
@@ -203,6 +287,24 @@ function PersonSelector({
 
     return people;
   }, [users, drivers, volunteers, assignmentType, vanDriverNeeded]);
+
+  const volunteerNameLookup = useMemo(
+    () => buildVolunteerNameLookup(volunteers),
+    [volunteers]
+  );
+  const driverNameLookup = useMemo(() => buildDriverNameLookup(drivers), [drivers]);
+
+  const resolveDisplayName = useCallback(
+    (personId: string) =>
+      resolvePersonDisplayName(personId, {
+        assignmentDetails,
+        availablePeople,
+        volunteerNameLookup,
+        driverNameLookup,
+        assignmentType,
+      }),
+    [assignmentDetails, availablePeople, volunteerNameLookup, driverNameLookup, assignmentType]
+  );
 
   // Filter by search term
   const filteredPeople = useMemo(() => {
@@ -229,14 +331,7 @@ function PersonSelector({
     setShowCustomEntry(false);
   };
 
-  const getDisplayName = (personId: string): string => {
-    if (personId.startsWith('custom-')) {
-      const parts = personId.split('-');
-      return parts.slice(2).join(' ').replace(/-/g, ' ') || personId;
-    }
-    const person = availablePeople.find(p => p.id === personId);
-    return person?.name || personId;
-  };
+  const getDisplayName = (personId: string): string => resolveDisplayName(personId);
 
   const removePerson = (personId: string) => {
     onSelectionChange(selectedPeople.filter(id => id !== personId));
@@ -370,9 +465,21 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     return userEmail && allowedEmails.includes(userEmail);
   }, [user?.email]);
 
+  // Persistent save-error state. Toasts are easy to miss (auto-dismiss,
+  // can be covered by other UI), so when a save attempt is rejected we
+  // ALSO surface a persistent banner inside the dialog that names the
+  // reason. The banner stays until the user either fixes the issue and
+  // retries, edits any field (which is probably an attempt to fix it),
+  // or closes the dialog. The toast still fires too — that's the
+  // notification; this is the durable context.
+  const [saveError, setSaveError] = useState<{
+    title: string;
+    message: string;
+    missingFields?: string[];
+  } | null>(null);
+
   // Form state for logistics
   const [driversNeeded, setDriversNeeded] = useState('');
-  const [speakersNeeded, setSpeakersNeeded] = useState('');
   const [volunteersNeeded, setVolunteersNeeded] = useState('');
   const [pickupTime, setPickupTime] = useState('');
   const [eventStartTime, setEventStartTime] = useState('');
@@ -385,7 +492,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
   // Staffing assignments
   const [assignedDriverIds, setAssignedDriverIds] = useState<string[]>([]);
-  const [assignedSpeakerIds, setAssignedSpeakerIds] = useState<string[]>([]);
   const [assignedVolunteerIds, setAssignedVolunteerIds] = useState<string[]>([]);
   const [assignedVanDriverId, setAssignedVanDriverId] = useState<string | null>(null);
   const [assignedRecipientIds, setAssignedRecipientIds] = useState<string[]>([]);
@@ -423,8 +529,8 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
   const computeEventValues = useCallback((evt: EventRequest): EventEditDraftData => ({
     driversNeeded: (evt.driversNeeded ?? 0).toString(),
-    speakersNeeded: (evt.speakersNeeded ?? 0).toString(),
     volunteersNeeded: (evt.volunteersNeeded ?? 0).toString(),
+    // (speakersNeeded retired)
     pickupTime: formatTimeForInput(evt.pickupTime),
     eventStartTime: formatTimeForInput(evt.eventStartTime),
     eventEndTime: formatTimeForInput(evt.eventEndTime),
@@ -434,7 +540,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     vanDriverNeeded: evt.vanDriverNeeded || false,
     isCorporatePriority: (evt as any).isCorporatePriority || false,
     assignedDriverIds: getDriverIds(evt),
-    assignedSpeakerIds: getSpeakerIds(evt),
     assignedVolunteerIds: getVolunteerIds(evt),
     assignedVanDriverId: evt.assignedVanDriverId || null,
     assignedRecipientIds: parsePostgresArray((evt as any).assignedRecipientIds),
@@ -442,7 +547,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
   const applyDraftValues = useCallback((d: EventEditDraftData) => {
     setDriversNeeded(d.driversNeeded);
-    setSpeakersNeeded(d.speakersNeeded);
     setVolunteersNeeded(d.volunteersNeeded);
     setPickupTime(d.pickupTime);
     setEventStartTime(d.eventStartTime);
@@ -453,7 +557,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     setVanDriverNeeded(d.vanDriverNeeded);
     setIsCorporatePriority(d.isCorporatePriority);
     setAssignedDriverIds(d.assignedDriverIds);
-    setAssignedSpeakerIds(d.assignedSpeakerIds);
     setAssignedVolunteerIds(d.assignedVolunteerIds);
     setAssignedVanDriverId(d.assignedVanDriverId);
     setAssignedRecipientIds(d.assignedRecipientIds);
@@ -494,7 +597,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
 
   const draftData: EventEditDraftData = {
     driversNeeded,
-    speakersNeeded,
     volunteersNeeded,
     pickupTime,
     eventStartTime,
@@ -505,7 +607,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     vanDriverNeeded,
     isCorporatePriority,
     assignedDriverIds,
-    assignedSpeakerIds,
     assignedVolunteerIds,
     assignedVanDriverId,
     assignedRecipientIds,
@@ -547,7 +648,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     // applying — keeps state shapes consistent.
     const safe: EventEditDraftData = {
       driversNeeded: d.driversNeeded ?? '',
-      speakersNeeded: d.speakersNeeded ?? '',
       volunteersNeeded: d.volunteersNeeded ?? '',
       pickupTime: d.pickupTime ?? '',
       eventStartTime: d.eventStartTime ?? '',
@@ -558,7 +658,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       vanDriverNeeded: Boolean(d.vanDriverNeeded),
       isCorporatePriority: Boolean(d.isCorporatePriority),
       assignedDriverIds: Array.isArray(d.assignedDriverIds) ? d.assignedDriverIds : [],
-      assignedSpeakerIds: Array.isArray(d.assignedSpeakerIds) ? d.assignedSpeakerIds : [],
       assignedVolunteerIds: Array.isArray(d.assignedVolunteerIds) ? d.assignedVolunteerIds : [],
       assignedVanDriverId: d.assignedVanDriverId ?? null,
       assignedRecipientIds: Array.isArray(d.assignedRecipientIds) ? d.assignedRecipientIds : [],
@@ -597,8 +696,10 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       return apiRequest('PATCH', `/api/event-requests/${event.id}`, data);
     },
     onSuccess: async (updatedEvent, variables) => {
-      // Save succeeded — clear the autosaved draft for this event.
+      // Save succeeded — clear the autosaved draft for this event AND
+      // clear any leftover save-error banner from a prior attempt.
       if (event) clearDraft(`event-edit:${event.id}`);
+      setSaveError(null);
       await applyPatchResponseToCache(queryClient, updatedEvent, {
         previousStatus: event?.status,
         touchedFields: Object.keys(variables),
@@ -621,6 +722,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       // Check for missing fields info from server
       const missingFields = error?.data?.missingFields;
 
+      let errorTitle = 'Update failed';
       let errorDescription = serverMessage;
 
       // If server provided missing fields, include them in the message
@@ -632,11 +734,16 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
       // guard reports one, but client-side _expectedVersion is no longer sent.
       const isConflict = error?.status === 409 || error?.data?.error === 'CONFLICT';
       if (isConflict) {
+        errorTitle = 'Edit Conflict';
+        errorDescription =
+          'This event was modified by another user. Please close and reopen this dialog to see the latest data.';
         toast({
-          title: 'Edit Conflict',
-          description: 'This event was modified by another user. Please close and reopen this dialog to see the latest data.',
+          title: errorTitle,
+          description: errorDescription,
           variant: 'destructive',
         });
+        // Also surface as a persistent banner so the user can't miss it.
+        setSaveError({ title: errorTitle, message: errorDescription });
         return;
       }
 
@@ -645,19 +752,34 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                              error?.message?.includes('Failed to fetch') ||
                              error?.message?.includes('Request timeout');
       if (isNetworkError) {
+        errorTitle = 'Connection issue';
         errorDescription = 'Could not save changes due to a network issue. Please check your connection and try again.';
       }
 
+      // Both signals: a notification toast (in case the user is looking
+      // elsewhere) and a persistent banner inside the form (so the
+      // reason is still there when they come back to it).
       toast({
-        title: 'Update failed',
+        title: errorTitle,
         description: errorDescription,
         variant: 'destructive',
         duration: 10000,
+      });
+      setSaveError({
+        title: errorTitle,
+        message: errorDescription,
+        missingFields:
+          Array.isArray(missingFields) && missingFields.length > 0
+            ? missingFields
+            : undefined,
       });
     },
   });
 
   const handleSave = () => {
+    // Clear any previous save-error banner; a fresh attempt deserves a
+    // fresh state. If this attempt also fails, onError will repopulate it.
+    setSaveError(null);
     const updates: any = {};
     console.log('[EventEditDialog] handleSave called');
     console.log('[EventEditDialog] Current state - tspContact:', tspContact, ', customTspContact:', customTspContact);
@@ -668,9 +790,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
     // Compare against normalized values (null/undefined treated as 0)
     if (driversNeeded !== (event?.driversNeeded ?? 0).toString()) {
       updates.driversNeeded = driversNeeded ? parseInt(driversNeeded) : 0;
-    }
-    if (speakersNeeded !== (event?.speakersNeeded ?? 0).toString()) {
-      updates.speakersNeeded = speakersNeeded ? parseInt(speakersNeeded) : 0;
     }
     if (volunteersNeeded !== (event?.volunteersNeeded ?? 0).toString()) {
       updates.volunteersNeeded = volunteersNeeded ? parseInt(volunteersNeeded) : 0;
@@ -744,17 +863,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
         newDriverDetails[id] = driverDetailsObj[id] || {};
       });
       updates.driverDetails = newDriverDetails;
-    }
-
-    const speakerDetailsObj = (event?.speakerDetails || {}) as Record<string, { name?: string }>;
-    const originalSpeakerIds = event ? getSpeakerIds(event) : [];
-    if (JSON.stringify(assignedSpeakerIds.sort()) !== JSON.stringify(originalSpeakerIds.sort())) {
-      // Build speakerDetails object
-      const newSpeakerDetails: Record<string, { name?: string }> = {};
-      assignedSpeakerIds.forEach(id => {
-        newSpeakerDetails[id] = speakerDetailsObj[id] || {};
-      });
-      updates.speakerDetails = newSpeakerDetails;
     }
 
     const originalVolunteerIds = event ? getVolunteerIds(event) : [];
@@ -890,19 +998,6 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                     min="0"
                     value={driversNeeded}
                     onChange={e => setDriversNeeded(e.target.value)}
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="speakersNeeded" className="flex items-center gap-1">
-                    <Megaphone className="w-4 h-4" /> Speakers Needed
-                  </Label>
-                  <Input
-                    id="speakersNeeded"
-                    type="number"
-                    min="0"
-                    value={speakersNeeded}
-                    onChange={e => setSpeakersNeeded(e.target.value)}
                     placeholder="0"
                   />
                 </div>
@@ -1176,6 +1271,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                   onSelectionChange={setAssignedDriverIds}
                   assignmentType="driver"
                   vanDriverNeeded={vanDriverNeeded}
+                  assignmentDetails={parseAssignmentDetails(event?.driverDetails)}
                 />
               </div>
 
@@ -1201,31 +1297,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                       onSelectionChange={ids => setAssignedVanDriverId(ids[0] || null)}
                       assignmentType="driver"
                       vanDriverNeeded={true}
-                    />
-                  </div>
-                  <Separator />
-                </>
-              )}
-
-              {/* Speakers */}
-              {(parseInt(speakersNeeded) > 0 || assignedSpeakerIds.length > 0) && (
-                <>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h4 className="font-medium flex items-center gap-2">
-                        <Megaphone className="w-4 h-4" />
-                        Assigned Speakers
-                        {parseInt(speakersNeeded) > 0 && (
-                          <Badge variant={assignedSpeakerIds.length >= parseInt(speakersNeeded) ? 'secondary' : 'destructive'}>
-                            {assignedSpeakerIds.length}/{speakersNeeded}
-                          </Badge>
-                        )}
-                      </h4>
-                    </div>
-                    <PersonSelector
-                      selectedPeople={assignedSpeakerIds}
-                      onSelectionChange={setAssignedSpeakerIds}
-                      assignmentType="speaker"
+                      assignmentDetails={parseAssignmentDetails(event?.driverDetails)}
                     />
                   </div>
                   <Separator />
@@ -1250,6 +1322,7 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
                     selectedPeople={assignedVolunteerIds}
                     onSelectionChange={setAssignedVolunteerIds}
                     assignmentType="volunteer"
+                    assignmentDetails={parseAssignmentDetails(event?.volunteerDetails)}
                   />
                 </div>
               )}
@@ -1264,6 +1337,40 @@ export const EventEditDialog: React.FC<EventEditDialogProps> = ({
             </TabsContent>
           </Tabs>
         </div>
+
+        {/* Persistent save-error banner. Sits directly above the Save
+            button so the reason a save was rejected is impossible to
+            miss — and stays visible until the user retries or closes
+            the dialog. Complements (does not replace) the destructive
+            toast that fires on the same error path. */}
+        {saveError && (
+          <div
+            role="alert"
+            className="mx-6 mb-2 rounded-md border-2 border-[#A31C41] bg-red-50 px-4 py-3 text-sm text-[#A31C41] flex items-start gap-3"
+            data-testid="banner-save-error"
+          >
+            <AlertTriangle className="w-5 h-5 mt-0.5 flex-shrink-0" aria-hidden="true" />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold">{saveError.title}</p>
+              <p className="mt-0.5 text-[#7a1530]">{saveError.message}</p>
+              {saveError.missingFields && saveError.missingFields.length > 0 && (
+                <ul className="mt-1.5 list-disc list-inside text-[#7a1530] space-y-0.5">
+                  {saveError.missingFields.map((f) => (
+                    <li key={f}>{f}</li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSaveError(null)}
+              className="text-[#A31C41]/70 hover:text-[#A31C41] flex-shrink-0"
+              aria-label="Dismiss"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
         <div className="flex items-center justify-between gap-2 pt-4 pb-6 px-6 border-t flex-shrink-0">
           <div className="text-xs text-gray-500 italic min-h-[1rem]">

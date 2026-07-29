@@ -149,23 +149,31 @@ export function createHostsRouter(deps: RouterDependencies) {
     })
   );
 
-// Map endpoint - get host contacts with valid coordinates for map display
-  // Falls back to host-level coordinates when a host has no geocoded contacts
+  // Map endpoint - get host contacts with valid coordinates for map display.
+  //
+  // ONLY returns hosts whose status is exactly 'active'. Inactive hosts are
+  // ineligible for driver planning by definition — coordinators mark a host
+  // inactive precisely to remove it from active operations (collection log
+  // dropdown, driver routes, etc.). Including them here would let a
+  // coordinator accidentally route sandwiches to a location that shouldn't
+  // be receiving them. 'hidden' is also excluded (soft-delete tier).
+  //
+  // Contacts within an active host that carry 'former_host' role also drop
+  // out — they're historical directory entries, not usable route stops.
   router.get(
   '/hosts/map',
   requirePermission(PERMISSIONS.HOSTS_VIEW),
   asyncHandler(async (req, res) => {
     const hostsWithContacts = await storage.getAllHostsWithContacts();
 
-    // Show all hosts visible on the host management page (everything except 'hidden')
     const mapData = hostsWithContacts
-      .filter(host => host.status !== 'hidden')
-      .flatMap(host => {
-        // Get contacts that have valid coordinates
-        const geocodedContacts = host.contacts
+      .filter(host => host.status === 'active')
+      .flatMap(host =>
+        host.contacts
           .filter(contact =>
             contact.latitude !== null &&
-            contact.longitude !== null
+            contact.longitude !== null &&
+            !(contact as any).isFormerHost
           )
           .map(contact => ({
             id: contact.id,
@@ -177,59 +185,32 @@ export function createHostsRouter(deps: RouterDependencies) {
             longitude: contact.longitude,
             email: contact.email,
             phone: contact.phone,
-          }));
-
-        // If no contacts have coordinates, fall back to the host's own coordinates
-        // This ensures newly added hosts show up on the map immediately after geocoding
-        if (geocodedContacts.length === 0 && host.latitude && host.longitude) {
-          return [{
-            id: host.id * -1, // Negative ID to distinguish host-level pins from contact pins
-            contactName: host.name,
-            role: 'Host Location',
-            hostLocationName: host.name,
-            address: host.address,
-            latitude: host.latitude,
-            longitude: host.longitude,
-            email: host.email || null,
-            phone: host.phone || null,
-          }];
-        }
-
-        return geocodedContacts;
-      });
+          }))
+      );
 
     res.json(mapData);
   })
 );
 
-// Bulk geocode all hosts and contacts that have addresses but no coordinates
-  // This backfills existing records that were created before auto-geocoding was added
+// Bulk geocode host contacts that have addresses but no coordinates
+  // Regions are organizational groupings only — addresses belong to individual contacts
   // Pass ?force=true to re-geocode ALL records, even those that already have coordinates
   router.post(
   '/hosts/geocode-all',
   requirePermission(PERMISSIONS.HOSTS_EDIT),
   asyncHandler(async (req, res) => {
     const force = req.query.force === 'true';
-    const allHosts = await storage.getAllHosts();
     const allHostsWithContacts = await storage.getAllHostsWithContacts();
 
-    // Find hosts with address but no coordinates (or all with addresses if force)
-    const hostsToGeocode = allHosts.filter(
-      (h) => h.address && h.address.trim() !== '' && (force || !h.latitude || !h.longitude)
-    );
-
-    // Find contacts with address but no coordinates (or all with addresses if force)
     const contactsToGeocode = allHostsWithContacts.flatMap((host) =>
       host.contacts.filter(
         (c) => c.address && c.address.trim() !== '' && (force || !c.latitude || !c.longitude)
       )
     );
 
-    const totalToProcess = hostsToGeocode.length + contactsToGeocode.length;
-
-    if (totalToProcess === 0) {
+    if (contactsToGeocode.length === 0) {
       res.json({
-        message: 'All hosts and contacts with addresses already have coordinates',
+        message: 'All host contacts with addresses already have coordinates',
         hostsProcessed: 0,
         contactsProcessed: 0,
       });
@@ -238,40 +219,12 @@ export function createHostsRouter(deps: RouterDependencies) {
 
     // Return immediately, geocode in background
     res.json({
-      message: `Geocoding ${hostsToGeocode.length} hosts and ${contactsToGeocode.length} contacts in background`,
-      hostsProcessed: hostsToGeocode.length,
+      message: `Geocoding ${contactsToGeocode.length} host contacts in background`,
+      hostsProcessed: 0,
       contactsProcessed: contactsToGeocode.length,
     });
 
-    // Background geocoding for hosts
     (async () => {
-      let hostsSuccess = 0;
-      let hostsFailed = 0;
-
-      for (const host of hostsToGeocode) {
-        try {
-          const coords = await geocodeAddress(host.address!);
-          if (coords) {
-            await storage.updateHost(host.id, {
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-              geocodedAt: new Date(),
-            });
-            hostsSuccess++;
-            logger.info(`✅ Bulk geocoded host ${host.id}: ${host.address}`);
-          } else {
-            hostsFailed++;
-            logger.warn(`⚠️ Bulk geocode returned no results for host ${host.id}: ${host.address}`);
-          }
-          // Rate limit between requests
-          await new Promise((resolve) => setTimeout(resolve, 1100));
-        } catch (err) {
-          hostsFailed++;
-          logger.error(`Failed to bulk geocode host ${host.id}:`, err);
-        }
-      }
-
-      // Background geocoding for contacts
       let contactsSuccess = 0;
       let contactsFailed = 0;
 
@@ -297,7 +250,7 @@ export function createHostsRouter(deps: RouterDependencies) {
         }
       }
 
-      logger.info(`🗺️ Bulk geocode complete: ${hostsSuccess}/${hostsToGeocode.length} hosts, ${contactsSuccess}/${contactsToGeocode.length} contacts`);
+      logger.info(`🗺️ Bulk geocode complete: ${contactsSuccess}/${contactsToGeocode.length} host contacts`);
     })();
   })
 );
@@ -634,33 +587,6 @@ export function createHostsRouter(deps: RouterDependencies) {
             finalContact = updated;
           }
           logger.info(`✅ Geocoded new host contact ${contact.id}: ${result.data.address}`);
-
-          // Also backfill the parent host's address and coordinates if it doesn't have any.
-          // This happens when hosts are auto-created for new areas (they get no address).
-          if (result.data.hostId) {
-            try {
-              const parentHost = await storage.getHost(result.data.hostId);
-              if (parentHost && !parentHost.address) {
-                await storage.updateHost(parentHost.id, {
-                  address: result.data.address,
-                  latitude: coords.latitude,
-                  longitude: coords.longitude,
-                  geocodedAt: new Date(),
-                });
-                logger.info(`✅ Backfilled host ${parentHost.id} address from contact ${contact.id}`);
-              } else if (parentHost && (!parentHost.latitude || !parentHost.longitude)) {
-                // Host has address but no coordinates — geocode using contact's coords
-                await storage.updateHost(parentHost.id, {
-                  latitude: coords.latitude,
-                  longitude: coords.longitude,
-                  geocodedAt: new Date(),
-                });
-                logger.info(`✅ Backfilled host ${parentHost.id} coordinates from contact ${contact.id}`);
-              }
-            } catch (backfillErr) {
-              logger.error(`Failed to backfill host from contact ${contact.id}:`, backfillErr);
-            }
-          }
         } else {
           logger.warn(`⚠️ Geocoding returned no results for contact ${contact.id}: ${result.data.address}`);
         }

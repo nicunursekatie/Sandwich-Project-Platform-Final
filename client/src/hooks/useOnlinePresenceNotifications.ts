@@ -43,11 +43,26 @@ function getDisplayName(user: OnlineUser): string {
   return 'Someone';
 }
 
+const ONLINE_TOAST_THRESHOLD_MS = 15 * 60 * 1000;
+
+/** True when lastActiveAt is within the online window (currently active). */
+function wasRecentlyActive(lastActiveAt: string | null): boolean {
+  if (!lastActiveAt) return false;
+  return Date.now() - new Date(lastActiveAt).getTime() < ONLINE_TOAST_THRESHOLD_MS;
+}
+
+/** True when lastActiveAt is absent or older than the online window (was away). */
+function wasOfflineLongEnough(lastActiveAt: string | null | undefined): boolean {
+  if (!lastActiveAt) return true;
+  return Date.now() - new Date(lastActiveAt).getTime() >= ONLINE_TOAST_THRESHOLD_MS;
+}
+
 export function useOnlinePresenceNotifications() {
   const { toast } = useToast();
   const { user: currentUser } = useAuth();
   const queryClient = useQueryClient();
   const previousOnlineIdsRef = useRef<Set<string>>(new Set());
+  const previousLastActiveByUserRef = useRef<Map<string, string | null>>(new Map());
   const isFirstLoadRef = useRef(true);
   const [socket, setSocket] = useState<Socket | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
@@ -111,6 +126,7 @@ export function useOnlinePresenceNotifications() {
 
       if (isFirstLoadRef.current) {
         previousOnlineIdsRef.current = new Set(users.map((u) => u.id));
+        isFirstLoadRef.current = false;
       }
     };
 
@@ -127,7 +143,7 @@ export function useOnlinePresenceNotifications() {
         if (!previousOnlineIdsRef.current.has(data.id)) {
           toast({
             title: `${data.userName} is now online`,
-            description: 'A team member just signed in',
+            description: 'A team member is active on the platform',
             duration: 4000,
           });
         }
@@ -194,6 +210,9 @@ export function useOnlinePresenceNotifications() {
       if (isFirstLoadRef.current) {
         isFirstLoadRef.current = false;
         previousOnlineIdsRef.current = new Set(polledOnlineUsers.map((u) => u.id));
+        previousLastActiveByUserRef.current = new Map(
+          polledOnlineUsers.map((u) => [u.id, u.lastActiveAt]),
+        );
       }
       return;
     }
@@ -203,38 +222,57 @@ export function useOnlinePresenceNotifications() {
     if (isFirstLoadRef.current) {
       isFirstLoadRef.current = false;
       previousOnlineIdsRef.current = currentOnlineIds;
+      previousLastActiveByUserRef.current = new Map(
+        polledOnlineUsers.map((u) => [u.id, u.lastActiveAt]),
+      );
       return;
     }
 
-    const newUsers = polledOnlineUsers.filter(
-      (user) =>
-        user.id !== String(currentUser.id) && !previousOnlineIdsRef.current.has(user.id)
-    );
+    const newUsers = polledOnlineUsers.filter((user) => {
+      if (user.id === String(currentUser.id)) return false;
+      if (previousOnlineIdsRef.current.has(user.id)) return false;
+      if (!wasRecentlyActive(user.lastActiveAt)) return false;
+
+      // Match server wasOfflineLongEnough: only toast when they were away before
+      // this appearance (not a stale/partial poll diff). Use last snapshot we have
+      // for this user — from when they dropped off the online list or never seen.
+      const priorLastActive = previousLastActiveByUserRef.current.get(user.id);
+      if (priorLastActive === undefined) {
+        // First time we've tracked this user while polling — require current activity.
+        return true;
+      }
+      return wasOfflineLongEnough(priorLastActive);
+    });
 
     if (newUsers.length > 0) {
       if (newUsers.length === 1) {
         toast({
           title: `${getDisplayName(newUsers[0])} is now online`,
-          description: 'A team member just signed in',
+          description: 'A team member is active on the platform',
           duration: 4000,
         });
       } else if (newUsers.length <= 3) {
         const names = newUsers.map((u) => getDisplayName(u)).join(', ');
         toast({
           title: `${names} are now online`,
-          description: `${newUsers.length} team members just signed in`,
+          description: `${newUsers.length} team members are active on the platform`,
           duration: 4000,
         });
       } else {
         toast({
           title: `${newUsers.length} people came online`,
-          description: `${getDisplayName(newUsers[0])} and ${newUsers.length - 1} others just signed in`,
+          description: `${getDisplayName(newUsers[0])} and ${newUsers.length - 1} others are active on the platform`,
           duration: 4000,
         });
       }
     }
 
     previousOnlineIdsRef.current = currentOnlineIds;
+    const nextLastActive = new Map(previousLastActiveByUserRef.current);
+    for (const user of polledOnlineUsers) {
+      nextLastActive.set(user.id, user.lastActiveAt);
+    }
+    previousLastActiveByUserRef.current = nextLastActive;
   }, [polledOnlineUsers, currentUser, toast, wsConnected]);
 
   return {

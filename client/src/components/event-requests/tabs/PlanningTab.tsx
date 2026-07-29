@@ -215,8 +215,8 @@ export function PlanningTab({
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-lg text-slate-900 mb-1">Sandwich Planning</h3>
-                <p className="text-sm text-slate-600">
-                  Plan sandwich production based on scheduled events
+                <p className="text-sm text-gray-600 mt-0.5 leading-relaxed">
+                  See total sandwich counts and types grouped by week—plan production and ingredients for your distribution cycle.
                 </p>
               </div>
             </div>
@@ -232,8 +232,8 @@ export function PlanningTab({
               </div>
               <div className="flex-1">
                 <h3 className="font-semibold text-lg text-slate-900 mb-1">Staffing Planning</h3>
-                <p className="text-sm text-slate-600">
-                  Coordinate drivers, speakers, and volunteers
+                <p className="text-sm text-gray-600 mt-0.5 leading-relaxed">
+                  See how many drivers, speakers, and volunteers are still needed each week—spot open roles across all events at once.
                 </p>
               </div>
             </div>
@@ -499,10 +499,6 @@ export function PlanningTab({
                   critical
                 </li>
                 <li>
-                  • Speaker assignments should be confirmed 1 week before
-                  events
-                </li>
-                <li>
                   • Van drivers are needed for large events or special
                   delivery requirements
                 </li>
@@ -760,10 +756,10 @@ export function PlanningTab({
                         {event.organizationName}
                       </button>
                       <div className="text-sm text-slate-600 mt-1 space-y-1">
-                        <div className="flex items-center gap-1" style={{ color: '#FBAD3F' }}>
+                        <Badge variant="attention" className="gap-1 font-medium">
                           <XCircle className="w-3 h-3" />
                           Missing: {missing.join(', ')}
-                        </div>
+                        </Badge>
                         {event.desiredEventDate && (() => {
                           try {
                             const dateStr = typeof event.desiredEventDate === 'string' && !event.desiredEventDate.includes('T')

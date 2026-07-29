@@ -25,10 +25,12 @@ import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Plus, Users, Package, HelpCircle, Calendar, List, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download, Filter, ChevronDown } from 'lucide-react';
+import { Plus, Users, Package, HelpCircle, Calendar, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download, Filter, ChevronDown, FileSpreadsheet } from 'lucide-react';
+import { WEEK_SCOPE_LABELS } from './lib/eventRequestsListQuery';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
+import { ButtonTooltip } from '@/components/ui/button-tooltip';
 import { EventCalendarView } from '@/components/event-calendar-view';
 const EventMapView = React.lazy(() => import('./EventMapView'));
 import {
@@ -48,9 +50,11 @@ import {
 // Import existing components that we'll reuse
 import RequestFilters from '@/components/event-requests/RequestFilters';
 import { VanConflictsButton } from '@/components/event-requests/VanConflictsButton';
+import { PlanningSheetImportDialog } from '@/components/event-requests/PlanningSheetImportDialog';
 import EventSchedulingForm from '@/components/event-requests/EventSchedulingForm';
 import EventCollectionLog from '@/components/event-requests/EventCollectionLog';
 import ToolkitSentDialog from '@/components/event-requests/ToolkitSentDialog';
+import SendToolkitDialog from '@/components/event-requests/SendToolkitDialog';
 import FollowUpDialog from '@/components/event-requests/FollowUpDialog';
 import { ScheduleCallDialog } from '@/components/event-requests/ScheduleCallDialog';
 import ContactOrganizerDialog from '@/components/ContactOrganizerDialog';
@@ -61,8 +65,10 @@ import StaffingForecastWidget from '@/components/staffing-forecast-widget';
 
 // Import hooks
 import { useEventMutations } from './hooks/useEventMutations';
+import { useMarkNewEventViewedOnOpen } from './hooks/useMarkNewEventViewedOnOpen';
 import { useEventQueries } from './hooks/useEventQueries';
 import { useEventAssignments } from './hooks/useEventAssignments';
+import { useEventFilters } from './hooks/useEventFilters';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -89,6 +95,10 @@ import { getRoleViewDescription } from '@shared/role-view-defaults';
 import { Info } from 'lucide-react';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
+
+// Tabs that render aggregate dashboards rather than a flat list of event
+// rows — the Export action (a row-level spreadsheet) doesn't apply to them.
+const EXPORT_EXCLUDED_TABS = ['admin_overview', 'planning', 'sandwich_overview'];
 
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
@@ -145,64 +155,18 @@ const EventRequestsManagementContent: React.FC = () => {
     setItemsPerPage,
     statusCounts,
     statusCountsLoading,
+    unviewedNewCount,
     quickFilter,
     setQuickFilter,
+    weekScope,
+    setWeekScope,
   } = useEventRequestContext();
 
   const {
-    // Dialog states
-    showEventDetails,
-    setShowEventDetails,
-    showEventDetailsPreview,
-    setShowEventDetailsPreview,
-    showSchedulingDialog,
-    setShowSchedulingDialog,
-    showToolkitSentDialog,
-    setShowToolkitSentDialog,
-    showScheduleCallDialog,
-    setShowScheduleCallDialog,
-    showOneDayFollowUpDialog,
-    setShowOneDayFollowUpDialog,
-    showOneMonthFollowUpDialog,
-    setShowOneMonthFollowUpDialog,
-    showContactOrganizerDialog,
-    setShowContactOrganizerDialog,
-    showCollectionLog,
-    setShowCollectionLog,
-    showTspContactAssignmentDialog,
-    setShowTspContactAssignmentDialog,
-    showAssignmentDialog,
-    setShowAssignmentDialog,
-    showSandwichPlanningModal,
-    setShowSandwichPlanningModal,
-    showStaffingPlanningModal,
-    setShowStaffingPlanningModal,
-    showLogContactDialog,
-    setShowLogContactDialog,
-    showEditContactDialog,
-    setShowEditContactDialog,
-    showAiDateSuggestionDialog,
-    setShowAiDateSuggestionDialog,
-    showAiIntakeAssistantDialog,
-    setShowAiIntakeAssistantDialog,
-    showIntakeCallDialog,
-    setShowIntakeCallDialog,
-    showDeclineDialog,
-    setShowDeclineDialog,
-    showCancelDialog,
-    setShowCancelDialog,
-    showNonEventDialog,
-    setShowNonEventDialog,
-    showRescheduleDialog,
-    setShowRescheduleDialog,
-    showNextActionDialog,
-    setShowNextActionDialog,
     nextActionEventRequest,
     setNextActionEventRequest,
     nextActionMode,
     setNextActionMode,
-
-    // Assignment dialog state
     assignmentType,
     setAssignmentType,
     assignmentEventId,
@@ -211,8 +175,6 @@ const EventRequestsManagementContent: React.FC = () => {
     setSelectedAssignees,
     isVanDriverAssignment,
     setIsVanDriverAssignment,
-
-    // Selected events
     selectedEventRequest,
     setSelectedEventRequest,
     isEditing,
@@ -245,14 +207,15 @@ const EventRequestsManagementContent: React.FC = () => {
     setNonEventDialogEventRequest,
     rescheduleDialogEventRequest,
     setRescheduleDialogEventRequest,
-
-    // Other states
     scheduleCallDate,
     setScheduleCallDate,
     scheduleCallTime,
     setScheduleCallTime,
     followUpNotes,
     setFollowUpNotes,
+    activeDialog,
+    openDialog,
+    closeDialog,
   } = useEventDialogState();
 
   // Fetch ALL active events (scheduled + in_process + rescheduled) for dashboard cards
@@ -280,6 +243,11 @@ const EventRequestsManagementContent: React.FC = () => {
   } = useEventMutations();
 
   const { resolveUserName, resolveRecipientName } = useEventAssignments();
+
+  // Per-tab row filtering — single source of truth for "what this tab shows".
+  // Used by Export so the spreadsheet matches the visible rows (e.g. My
+  // Assignments exports only the current user's events, not the raw cache).
+  const { filterRequestsByStatus } = useEventFilters();
 
   const queryClient = useQueryClient();
 
@@ -310,22 +278,40 @@ const EventRequestsManagementContent: React.FC = () => {
   const { toast } = useToast();
   const isMobile = useIsMobile();
 
+  const { markViewedIfNew } = useMarkNewEventViewedOnOpen(user?.id);
+
+  useEffect(() => {
+    const event =
+      activeDialog === 'intakeCall' ? intakeCallEventRequest : selectedEventRequest;
+    if (
+      (activeDialog === 'eventDetails' ||
+        activeDialog === 'eventDetailsPreview' ||
+        activeDialog === 'intakeCall') &&
+      event?.status === 'new'
+    ) {
+      markViewedIfNew(event);
+    }
+  }, [
+    activeDialog,
+    selectedEventRequest,
+    intakeCallEventRequest,
+    markViewedIfNew,
+    user?.id,
+  ]);
+
   const openManualEventRequest = useCallback(() => {
-    setShowScheduleCallDialog(false);
-    setShowOneDayFollowUpDialog(false);
-    setShowOneMonthFollowUpDialog(false);
-    setShowToolkitSentDialog(false);
+    closeDialog('scheduleCall');
+    closeDialog('oneDayFollowUp');
+    closeDialog('oneMonthFollowUp');
+    closeDialog('toolkitSent');
     setSelectedEventRequest(null);
     setIsEditing(true);
-    setShowEventDetails(true);
+    openDialog('eventDetails');
   }, [
-    setShowScheduleCallDialog,
-    setShowOneDayFollowUpDialog,
-    setShowOneMonthFollowUpDialog,
-    setShowToolkitSentDialog,
+    closeDialog,
+    openDialog,
     setSelectedEventRequest,
     setIsEditing,
-    setShowEventDetails,
   ]);
 
   useEffect(() => {
@@ -347,6 +333,7 @@ const EventRequestsManagementContent: React.FC = () => {
   const hasLoggedInitialView = useRef(false);
 
   // Check if user has permission to sync event requests from Google Sheets
+  const [planningImportOpen, setPlanningImportOpen] = useState(false);
   const canSyncEvents = user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_SYNC) ||
     user?.role === 'admin' || user?.role === 'super_admin';
 
@@ -624,7 +611,62 @@ const EventRequestsManagementContent: React.FC = () => {
                   {!isMobile && 'Sync'}
                 </button>
               )}
+              {canSyncEvents && (
+                <button
+                  onClick={() => setPlanningImportOpen(true)}
+                  className="premium-btn-outline text-sm"
+                  title="Compare the planning sheet with the app and import missing events (review first — nothing is added until you approve)"
+                  data-testid="button-planning-sheet-import"
+                >
+                  <FileSpreadsheet className="w-4 h-4" />
+                  {!isMobile && 'Import from Planning Sheet'}
+                </button>
+              )}
+              <PlanningSheetImportDialog
+                open={planningImportOpen}
+                onOpenChange={setPlanningImportOpen}
+              />
               <VanConflictsButton isMobile={isMobile} />
+              {/* Export — available on any list-view tab. We export the same
+                  rows the tab displays (via filterRequestsByStatus, skipping
+                  pagination) rather than the raw eventRequests cache, because
+                  "virtual" tabs like My Assignments fetch all active events and
+                  filter client-side — exporting the raw cache would leak every
+                  active request. Hidden on the dashboard tabs (admin overview /
+                  planning / sandwich overview), which aren't flat row lists, and
+                  in Calendar/Map views which render their own data. Lives in the
+                  top-right action group with Add Event because it's a one-off
+                  action that downloads a file, not a view. */}
+              {viewMode === 'list' && !EXPORT_EXCLUDED_TABS.includes(activeTab) && (
+                <button
+                  onClick={async () => {
+                    try {
+                      // The Declined tab shows declined AND cancelled events,
+                      // so its export must include both. Every other tab's
+                      // displayed set maps 1:1 to filterRequestsByStatus
+                      // (scheduled already includes rescheduled).
+                      const rows = activeTab === 'declined'
+                        ? [
+                            ...filterRequestsByStatus('declined', { skipPagination: true }),
+                            ...filterRequestsByStatus('cancelled', { skipPagination: true }),
+                          ]
+                        : filterRequestsByStatus(activeTab, { skipPagination: true });
+                      if (rows.length === 0) {
+                        toast({ title: 'Nothing to export', description: 'No events match the current view.' });
+                        return;
+                      }
+                      await exportEventRequestsToExcel(rows, activeTab);
+                      toast({ title: 'Export complete' });
+                    } catch { toast({ title: 'Export failed', variant: 'destructive' }); }
+                  }}
+                  className="premium-btn-outline text-sm disabled:opacity-50"
+                  data-testid="button-export-events"
+                  title="Download a spreadsheet of the events shown on this tab"
+                >
+                  <Download className="w-4 h-4" />
+                  {!isMobile && 'Export'}
+                </button>
+              )}
               <button
                 onClick={openManualEventRequest}
                 className="premium-btn-outline text-sm"
@@ -671,34 +713,54 @@ const EventRequestsManagementContent: React.FC = () => {
               View as:
             </span>
           <div className="flex items-center gap-1 bg-[#007E8C]/10 border border-[#007E8C]/20 rounded-lg p-0.5">
-            {/* When on Scheduled tab in list view, show Cards/Spreadsheet instead of generic "List" */}
-            {activeTab === 'scheduled' && viewMode === 'list' ? (
-              <>
-                <button
-                  onClick={() => { setViewMode('list'); setScheduledViewMode('card'); localStorage.setItem('scheduledTabViewMode', 'card'); }}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'card' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                  {!isMobile && 'Cards'}
-                </button>
-                <button
-                  onClick={() => { setViewMode('list'); setScheduledViewMode('spreadsheet'); localStorage.setItem('scheduledTabViewMode', 'spreadsheet'); }}
-                  className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'spreadsheet' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
-                >
-                  <Table2 className="w-4 h-4" />
-                  {!isMobile && 'Spreadsheet'}
-                </button>
-              </>
-            ) : (
+            {/* Consistent view switcher on every tab: Cards, Spreadsheet,
+                Calendar, Map always appear in the same order and place so the
+                controls don't reshuffle when you change tabs. The Spreadsheet
+                view only exists for the Scheduled tab, so on other tabs it
+                stays visible but greyed-out (with a tooltip explaining why)
+                rather than silently disappearing. */}
+            <button
+              onClick={() => {
+                setViewMode('list');
+                if (activeTab === 'scheduled') {
+                  setScheduledViewMode('card');
+                  localStorage.setItem('scheduledTabViewMode', 'card');
+                }
+              }}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && (activeTab !== 'scheduled' || scheduledViewMode === 'card') ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+            >
+              <LayoutGrid className="w-4 h-4" />
+              {!isMobile && 'Cards'}
+            </button>
+            {activeTab === 'scheduled' ? (
               <button
-                onClick={() => setViewMode('list')}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+                onClick={() => { setViewMode('list'); setScheduledViewMode('spreadsheet'); localStorage.setItem('scheduledTabViewMode', 'spreadsheet'); }}
+                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'spreadsheet' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
               >
-                <List className="w-4 h-4" />
-                {!isMobile && 'List'}
+                <Table2 className="w-4 h-4" />
+                {!isMobile && 'Spreadsheet'}
               </button>
+            ) : (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <span className="inline-flex">
+                    <button
+                      disabled
+                      aria-disabled="true"
+                      className="px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 text-gray-400 opacity-60 cursor-not-allowed"
+                    >
+                      <Table2 className="w-4 h-4" />
+                      {!isMobile && 'Spreadsheet'}
+                    </button>
+                  </span>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Spreadsheet view is only available on the Scheduled tab</p>
+                </TooltipContent>
+              </Tooltip>
             )}
             <button
+              data-tour="calendar-tab"
               onClick={() => setViewMode('calendar')}
               className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'calendar' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
             >
@@ -715,34 +777,27 @@ const EventRequestsManagementContent: React.FC = () => {
           </div>
           </div>
 
-          {/* Export — shown on scheduled and completed tabs in list view */}
-          {(activeTab === 'scheduled' || activeTab === 'completed') && viewMode === 'list' && (
-            <button
-              onClick={async () => {
-                try {
-                  await exportEventRequestsToExcel(eventRequests, activeTab);
-                  toast({ title: 'Export complete' });
-                } catch { toast({ title: 'Export failed', variant: 'destructive' }); }
-              }}
-              disabled={eventRequests.length === 0}
-              className="px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors text-gray-600 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-50"
-            >
-              <Download className="w-4 h-4" />
-              {!isMobile && 'Export'}
-            </button>
-          )}
+          {/* Export was previously slotted here between Map and Driver Planning,
+              but it's an ACTION (downloads a file), not a view. Moved to the
+              top-right header action group near Add Event so the view toggles
+              read consistently as "ways to view data." */}
 
           {/* Driver Planning Map link */}
-          <Link href="/driver-planning">
-            <Button
-              variant="outline"
-              size="sm"
-              className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
-            >
-              <MapPin className="w-4 h-4 mr-1.5" />
-              {!isMobile && 'Driver Planning Map'}
-            </Button>
-          </Link>
+          <ButtonTooltip
+            explanation="Opens the Driver Planning Map to match upcoming events with volunteer drivers. See events, nearby hosts and recipients, and suggested drivers on one map. Start the full walkthrough anytime from the help button (bottom-right)."
+            size="md"
+          >
+            <Link href="/driver-planning">
+              <Button
+                variant="outline"
+                size="sm"
+                className="bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
+              >
+                <MapPin className="w-4 h-4 mr-1.5" />
+                {!isMobile && 'Driver Planning Map'}
+              </Button>
+            </Link>
+          </ButtonTooltip>
 
           {/* Spacer */}
           <div className="flex-1" />
@@ -753,10 +808,12 @@ const EventRequestsManagementContent: React.FC = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className={quickFilter ? 'border-[#007E8C] text-[#007E8C] bg-[#007E8C]/5' : ''}
+                className={quickFilter || weekScope ? 'border-[#007E8C] text-[#007E8C] bg-[#007E8C]/5' : ''}
               >
                 <Filter className="w-4 h-4 mr-1.5" />
-                {quickFilter
+                {weekScope
+                  ? WEEK_SCOPE_LABELS[weekScope]
+                  : quickFilter
                   ? quickFilter === 'needsDriver' ? 'Needs Driver'
                   : quickFilter === 'needsVan' ? 'Needs Van'
                   : quickFilter === 'week' ? 'This Week'
@@ -770,40 +827,43 @@ const EventRequestsManagementContent: React.FC = () => {
             <PopoverContent className="w-52 p-2" align="end">
               <div className="space-y-1">
                 <button
-                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'needsDriver' ? null : 'needsDriver'); }}
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setWeekScope(null); setQuickFilter(quickFilter === 'needsDriver' ? null : 'needsDriver'); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'needsDriver' ? 'bg-[#236383] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
                 >
                   <Car className="w-4 h-4" /> Needs Driver
                 </button>
                 <button
-                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'needsVan' ? null : 'needsVan'); }}
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setWeekScope(null); setQuickFilter(quickFilter === 'needsVan' ? null : 'needsVan'); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'needsVan' ? 'bg-[#D68319] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
                 >
                   <Truck className="w-4 h-4" /> Needs Van
                 </button>
                 <button
-                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'week' ? null : 'week'); }}
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setWeekScope(null); setQuickFilter(quickFilter === 'week' ? null : 'week'); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'week' ? 'bg-[#007E8C] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
                 >
                   <Calendar className="w-4 h-4" /> This Week
                 </button>
                 <button
-                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setQuickFilter(quickFilter === 'today' ? null : 'today'); }}
+                  onClick={() => { setActiveTab('scheduled'); setSearchQuery(''); setWeekScope(null); setQuickFilter(quickFilter === 'today' ? null : 'today'); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'today' ? 'bg-[#007E8C] text-white' : 'hover:bg-gray-100 text-gray-700'}`}
                 >
                   <Calendar className="w-4 h-4" /> Today
                 </button>
                 <button
-                  onClick={() => { setSearchQuery(''); setQuickFilter(quickFilter === 'corporatePriority' ? null : 'corporatePriority'); }}
+                  onClick={() => { setSearchQuery(''); setWeekScope(null); setQuickFilter(quickFilter === 'corporatePriority' ? null : 'corporatePriority'); }}
                   className={`w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors ${quickFilter === 'corporatePriority' ? 'bg-amber-600 text-white' : 'hover:bg-gray-100 text-amber-700'}`}
                 >
                   <Shield className="w-4 h-4" /> Corporate Priority
                 </button>
-                {quickFilter && (
+                {(quickFilter || weekScope) && (
                   <>
                     <div className="border-t border-gray-200 my-1" />
                     <button
-                      onClick={() => setQuickFilter(null)}
+                      onClick={() => {
+                        setQuickFilter(null);
+                        setWeekScope(null);
+                      }}
                       className="w-full flex items-center gap-2 px-3 py-2 rounded-md text-sm text-gray-500 hover:bg-gray-100"
                     >
                       <X className="w-4 h-4" /> Clear Filter
@@ -828,7 +888,7 @@ const EventRequestsManagementContent: React.FC = () => {
           <EventCalendarView
             onEventClick={(event) => {
               setSelectedEventRequest(event);
-              setShowEventDetailsPreview(true);
+              openDialog('eventDetailsPreview');
             }}
           />
         ) : viewMode === 'map' ? (
@@ -836,7 +896,7 @@ const EventRequestsManagementContent: React.FC = () => {
             <EventMapView
               onEventClick={(event: any) => {
                 setSelectedEventRequest(event);
-                setShowEventDetailsPreview(true);
+                openDialog('eventDetailsPreview');
               }}
             />
           </React.Suspense>
@@ -860,6 +920,7 @@ const EventRequestsManagementContent: React.FC = () => {
             onItemsPerPageChange={setItemsPerPage}
             statusCounts={statusCounts}
             statusCountsLoading={statusCountsLoading}
+            unviewedNewCount={unviewedNewCount}
             totalItems={totalItems}
             totalPages={totalPages}
             children={tabChildren}
@@ -870,14 +931,14 @@ const EventRequestsManagementContent: React.FC = () => {
         {/* Event Details Preview Dialog */}
         <EventDetailsDialog
           event={selectedEventRequest}
-          isOpen={showEventDetailsPreview}
+          isOpen={(activeDialog === 'eventDetailsPreview')}
           onClose={() => {
-            setShowEventDetailsPreview(false);
+            closeDialog('eventDetailsPreview');
             setSelectedEventRequest(null);
           }}
           onEdit={() => {
-            setShowEventDetailsPreview(false);
-            setShowEventDetails(true);
+            closeDialog('eventDetailsPreview');
+            openDialog('eventDetails');
             setIsEditing(false);
           }}
           resolveUserName={resolveUserName}
@@ -885,18 +946,18 @@ const EventRequestsManagementContent: React.FC = () => {
         />
 
         {/* Event Details Edit Modal */}
-        {showEventDetails && (selectedEventRequest || isEditing) && (
+        {(activeDialog === 'eventDetails') && (selectedEventRequest || isEditing) && (
           <EventSchedulingForm
             eventRequest={selectedEventRequest}
-            isOpen={showEventDetails}
+            isOpen={(activeDialog === 'eventDetails')}
             mode={selectedEventRequest ? 'edit' : 'create'}
             onClose={() => {
-              setShowEventDetails(false);
+              closeDialog('eventDetails');
               setSelectedEventRequest(null);
               setIsEditing(false);
             }}
             onEventScheduled={() => {
-              setShowEventDetails(false);
+              closeDialog('eventDetails');
               setSelectedEventRequest(null);
               setIsEditing(false);
             }}
@@ -904,41 +965,43 @@ const EventRequestsManagementContent: React.FC = () => {
         )}
 
         {/* Event Scheduling Dialog */}
-        {showSchedulingDialog && schedulingEventRequest && (
+        {(activeDialog === 'scheduling') && schedulingEventRequest && (
           <EventSchedulingForm
             eventRequest={schedulingEventRequest}
-            isOpen={showSchedulingDialog}
+            isOpen={(activeDialog === 'scheduling')}
             onClose={() => {
-              setShowSchedulingDialog(false);
+              closeDialog('scheduling');
               setSchedulingEventRequest(null);
             }}
             onEventScheduled={() => {
-              setShowSchedulingDialog(false);
+              closeDialog('scheduling');
               setSchedulingEventRequest(null);
             }}
           />
         )}
 
         {/* Collection Log Dialog */}
-        {/* Collection Log Dialog */}
-        {showCollectionLog && collectionLogEventRequest && (
+        {(activeDialog === 'collectionLog') && collectionLogEventRequest && (
           <EventCollectionLog
             eventRequest={collectionLogEventRequest}
-            isVisible={showCollectionLog}
+            isVisible={(activeDialog === 'collectionLog')}
             onClose={() => {
-              setShowCollectionLog(false);
+              closeDialog('collectionLog');
               setCollectionLogEventRequest(null);
             }}
           />
         )}
 
-        {/* Toolkit Sent Dialog */}
-        {showToolkitSentDialog && toolkitEventRequest && (
+        {/* Toolkit Sent Dialog — LOG-ONLY path: record that a toolkit
+            was sent outside the app (forwarded from a personal inbox,
+            hand-delivered, etc.). Sets the date + optional call-log
+            and moves status to In Process. */}
+        {(activeDialog === 'toolkitSent') && toolkitEventRequest && (
           <ToolkitSentDialog
             eventRequest={toolkitEventRequest}
-            isOpen={showToolkitSentDialog}
+            isOpen={(activeDialog === 'toolkitSent')}
             onClose={() => {
-              setShowToolkitSentDialog(false);
+              closeDialog('toolkitSent');
               setToolkitEventRequest(null);
             }}
             onToolkitSent={(toolkitSentDate: string, contactAttempt?: { method: string; outcome: string; notes?: string }) => {
@@ -955,10 +1018,35 @@ const EventRequestsManagementContent: React.FC = () => {
           />
         )}
 
+        {/* Send Toolkit Dialog — SEND-NOW path: opens the email
+            composer pre-loaded with the toolkit. When the email
+            actually leaves, the send-time becomes the toolkit-sent
+            timestamp and the same markToolkitSent mutation fires,
+            flipping the event to In Process automatically. */}
+        {(activeDialog === 'sendToolkit') && toolkitEventRequest && (
+          <SendToolkitDialog
+            eventRequest={toolkitEventRequest}
+            isOpen={(activeDialog === 'sendToolkit')}
+            onClose={() => {
+              closeDialog('sendToolkit');
+              setToolkitEventRequest(null);
+            }}
+            onToolkitEmailSent={(toolkitSentDate: string) => {
+              if (toolkitEventRequest) {
+                trackButtonClick('send_toolkit_email', 'event_requests');
+                markToolkitSentMutation.mutate({
+                  id: toolkitEventRequest.id,
+                  toolkitSentDate,
+                });
+              }
+            }}
+          />
+        )}
+
         {/* Schedule Call Dialog */}
         <ScheduleCallDialog
-          isOpen={showScheduleCallDialog}
-          onClose={() => setShowScheduleCallDialog(false)}
+          isOpen={(activeDialog === 'scheduleCall')}
+          onClose={() => closeDialog('scheduleCall')}
           eventRequest={selectedEventRequest}
           onCallScheduled={handleScheduleCall}
           isLoading={scheduleCallMutation.isPending}
@@ -970,9 +1058,9 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* 1-Day Follow-up Dialog */}
         <FollowUpDialog
-          isOpen={showOneDayFollowUpDialog}
+          isOpen={(activeDialog === 'oneDayFollowUp')}
           onClose={() => {
-            setShowOneDayFollowUpDialog(false);
+            closeDialog('oneDayFollowUp');
             setFollowUpNotes(''); // Clear notes when dialog closes
           }}
           eventRequest={selectedEventRequest}
@@ -993,9 +1081,9 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* 1-Month Follow-up Dialog */}
         <FollowUpDialog
-          isOpen={showOneMonthFollowUpDialog}
+          isOpen={(activeDialog === 'oneMonthFollowUp')}
           onClose={() => {
-            setShowOneMonthFollowUpDialog(false);
+            closeDialog('oneMonthFollowUp');
             setFollowUpNotes(''); // Clear notes when dialog closes
           }}
           eventRequest={selectedEventRequest}
@@ -1016,9 +1104,9 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Contact Organizer Dialog */}
         <ContactOrganizerDialog
-          isOpen={showContactOrganizerDialog}
+          isOpen={(activeDialog === 'contactOrganizer')}
           onClose={() => {
-            setShowContactOrganizerDialog(false);
+            closeDialog('contactOrganizer');
             setContactEventRequest(null);
           }}
           eventRequest={contactEventRequest}
@@ -1026,9 +1114,9 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Log Contact Attempt Dialog */}
         <LogContactAttemptDialog
-          isOpen={showLogContactDialog}
+          isOpen={(activeDialog === 'logContact')}
           onClose={() => {
-            setShowLogContactDialog(false);
+            closeDialog('logContact');
             setLogContactEventRequest(null);
           }}
           eventRequest={logContactEventRequest}
@@ -1043,9 +1131,9 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Edit Contact Attempt Dialog */}
         <EditContactAttemptDialog
-          isOpen={showEditContactDialog}
+          isOpen={(activeDialog === 'editContact')}
           onClose={() => {
-            setShowEditContactDialog(false);
+            closeDialog('editContact');
             setEditContactEventRequest(null);
             setEditContactAttemptData(null);
           }}
@@ -1063,17 +1151,17 @@ const EventRequestsManagementContent: React.FC = () => {
         {/* AI Date Suggestion Dialog */}
         {aiSuggestionEventRequest && (
           <AiDateSuggestionDialog
-            open={showAiDateSuggestionDialog}
+            open={(activeDialog === 'aiDateSuggestion')}
             onClose={() => {
-              setShowAiDateSuggestionDialog(false);
+              closeDialog('aiDateSuggestion');
               setAiSuggestionEventRequest(null);
             }}
             eventRequest={aiSuggestionEventRequest}
             onSelectDate={(date) => {
               // Automatically open scheduling dialog with the recommended date
               setSchedulingEventRequest(aiSuggestionEventRequest);
-              setShowSchedulingDialog(true);
-              setShowAiDateSuggestionDialog(false);
+              openDialog('scheduling');
+              closeDialog('aiDateSuggestion');
               setAiSuggestionEventRequest(null);
             }}
           />
@@ -1082,9 +1170,9 @@ const EventRequestsManagementContent: React.FC = () => {
         {/* AI Intake Assistant Dialog */}
         {aiIntakeAssistantEventRequest && (
           <AiIntakeAssistantDialog
-            open={showAiIntakeAssistantDialog}
+            open={(activeDialog === 'aiIntakeAssistant')}
             onClose={() => {
-              setShowAiIntakeAssistantDialog(false);
+              closeDialog('aiIntakeAssistant');
               setAiIntakeAssistantEventRequest(null);
             }}
             eventRequest={aiIntakeAssistantEventRequest}
@@ -1096,12 +1184,12 @@ const EventRequestsManagementContent: React.FC = () => {
             onLogContact={() => {
               // Open log contact dialog
               setLogContactEventRequest(aiIntakeAssistantEventRequest);
-              setShowLogContactDialog(true);
+              openDialog('logContact');
             }}
             onScheduleCall={() => {
               // Open contact organizer dialog for scheduling a call
               setSelectedEventRequest(aiIntakeAssistantEventRequest);
-              setShowContactOrganizerDialog(true);
+              openDialog('contactOrganizer');
             }}
             onAddNote={() => {
               // Open edit dialog to add notes
@@ -1112,70 +1200,70 @@ const EventRequestsManagementContent: React.FC = () => {
         )}
 
         {/* Decline Reason Dialog */}
-        {reasonDialogEventRequest && showDeclineDialog && (
+        {reasonDialogEventRequest && (activeDialog === 'decline') && (
           <StatusReasonDialog
-            isOpen={showDeclineDialog}
+            isOpen={(activeDialog === 'decline')}
             onClose={() => {
-              setShowDeclineDialog(false);
+              closeDialog('decline');
               setReasonDialogEventRequest(null);
             }}
             request={reasonDialogEventRequest}
             type="declined"
             onConfirm={async (eventId, data) => {
               await updateEventRequestMutation.mutateAsync({ id: eventId, data });
-              setShowDeclineDialog(false);
+              closeDialog('decline');
               setReasonDialogEventRequest(null);
             }}
           />
         )}
 
         {/* Cancel Reason Dialog */}
-        {reasonDialogEventRequest && showCancelDialog && (
+        {reasonDialogEventRequest && (activeDialog === 'cancel') && (
           <StatusReasonDialog
-            isOpen={showCancelDialog}
+            isOpen={(activeDialog === 'cancel')}
             onClose={() => {
-              setShowCancelDialog(false);
+              closeDialog('cancel');
               setReasonDialogEventRequest(null);
             }}
             request={reasonDialogEventRequest}
             type="cancelled"
             onConfirm={async (eventId, data) => {
               await updateEventRequestMutation.mutateAsync({ id: eventId, data });
-              setShowCancelDialog(false);
+              closeDialog('cancel');
               setReasonDialogEventRequest(null);
             }}
           />
         )}
 
         {/* Non-Event Dialog */}
-        {nonEventDialogEventRequest && showNonEventDialog && (
+        {nonEventDialogEventRequest && (activeDialog === 'nonEvent') && (
           <NonEventDialog
-            isOpen={showNonEventDialog}
+            isOpen={(activeDialog === 'nonEvent')}
             onClose={() => {
-              setShowNonEventDialog(false);
+              closeDialog('nonEvent');
               setNonEventDialogEventRequest(null);
             }}
             request={nonEventDialogEventRequest}
             onConfirm={async (eventId, data) => {
               await updateEventRequestMutation.mutateAsync({ id: eventId, data });
-              setShowNonEventDialog(false);
+              closeDialog('nonEvent');
               setNonEventDialogEventRequest(null);
             }}
           />
         )}
 
         {/* Reschedule Dialog */}
-        {rescheduleDialogEventRequest && showRescheduleDialog && (
+        {rescheduleDialogEventRequest && (activeDialog === 'reschedule') && (
           <RescheduleDialog
-            isOpen={showRescheduleDialog}
+            isOpen={(activeDialog === 'reschedule')}
             onClose={() => {
-              setShowRescheduleDialog(false);
+              closeDialog('reschedule');
               setRescheduleDialogEventRequest(null);
             }}
             request={rescheduleDialogEventRequest}
             onConfirm={async (eventId, data) => {
               await updateEventRequestMutation.mutateAsync({ id: eventId, data });
-              setShowRescheduleDialog(false);
+              closeDialog('reschedule');
               setRescheduleDialogEventRequest(null);
             }}
           />
@@ -1184,30 +1272,21 @@ const EventRequestsManagementContent: React.FC = () => {
         {/* Intake Call Dialog */}
         {intakeCallEventRequest && (
           <IntakeCallDialog
-            isOpen={showIntakeCallDialog}
+            isOpen={(activeDialog === 'intakeCall')}
             onClose={() => {
-              setShowIntakeCallDialog(false);
+              closeDialog('intakeCall');
               setIntakeCallEventRequest(null);
             }}
             eventRequest={intakeCallEventRequest}
-            onCallComplete={() => {
-              // Optionally update status to in_process after call
-              if (intakeCallEventRequest) {
-                updateEventRequestMutation.mutate({
-                  id: intakeCallEventRequest.id,
-                  data: { status: 'in_process' },
-                });
-              }
-            }}
           />
         )}
 
         {/* Next Action Dialog */}
         {nextActionEventRequest && (
           <NextActionDialog
-            isOpen={showNextActionDialog}
+            isOpen={(activeDialog === 'nextAction')}
             onClose={() => {
-              setShowNextActionDialog(false);
+              closeDialog('nextAction');
               setNextActionEventRequest(null);
               setNextActionMode('add');
             }}
@@ -1218,9 +1297,9 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* TSP Contact Assignment Dialog */}
         <TspContactAssignmentDialog
-          isOpen={showTspContactAssignmentDialog}
+          isOpen={(activeDialog === 'tspContactAssignment')}
           onClose={() => {
-            setShowTspContactAssignmentDialog(false);
+            closeDialog('tspContactAssignment');
             setTspContactEventRequest(null);
           }}
           eventRequestId={tspContactEventRequest?.id || 0}
@@ -1229,11 +1308,11 @@ const EventRequestsManagementContent: React.FC = () => {
           currentCustomTspContact={tspContactEventRequest?.customTspContact || undefined}
         />
 
-        {/* General Assignment Dialog for Drivers/Speakers/Volunteers */}
+        {/* General Assignment Dialog for Drivers/Volunteers */}
         <AssignmentDialog
-          isOpen={showAssignmentDialog}
+          isOpen={(activeDialog === 'assignment')}
           onClose={() => {
-            setShowAssignmentDialog(false);
+            closeDialog('assignment');
             setAssignmentType(null);
             setAssignmentEventId(null);
             setSelectedAssignees([]);
@@ -1359,81 +1438,6 @@ const EventRequestsManagementContent: React.FC = () => {
                 updateData.driverDetails = driverDetails;
               }
 
-            } else if (assignmentType === 'speaker') {
-              if (isTentative) {
-                // Tentative speaker assignment - add to tentativeSpeakerIds
-                const existingTentativeSpeakers = currentEvent.tentativeSpeakerIds || [];
-                const allTentativeSpeakerIds = [...new Set([...existingTentativeSpeakers, ...assignees])];
-                updateData.tentativeSpeakerIds = allTentativeSpeakerIds;
-              } else {
-              // Get existing speakers and merge with new ones
-              const existingSpeakers = currentEvent.assignedSpeakerIds || [];
-              const existingSpeakerDetails = currentEvent.speakerDetails || {};
-
-              // Merge new speakers with existing ones (avoiding duplicates)
-              const allSpeakerIds = [...new Set([...existingSpeakers, ...assignees])];
-              updateData.assignedSpeakerIds = allSpeakerIds;
-
-              // Build speaker details object, preserving existing details
-              const speakerDetails: any = { ...existingSpeakerDetails };
-              const speakerAssignments: string[] = [];
-
-              // Add details for all speakers (existing + new)
-              allSpeakerIds.forEach(speakerId => {
-                // Only add new details if they don't exist yet
-                if (!speakerDetails[speakerId]) {
-                  let name = speakerId; // Default fallback
-                  
-                  // Handle custom IDs (e.g., "custom-1762134226512-David")
-                  if (speakerId.startsWith('custom-')) {
-                    const parts = speakerId.split('-');
-                    if (parts.length >= 3) {
-                      const nameParts = parts.slice(2);
-                      name = nameParts.join('-').replace(/-/g, ' ').trim() || 'Custom Speaker';
-                    } else {
-                      name = 'Custom Speaker';
-                    }
-                  }
-                  // Handle host-contact IDs (e.g., "host-contact-4")
-                  else if (speakerId.startsWith('host-contact-')) {
-                    const contactId = parseInt(speakerId.replace('host-contact-', ''));
-                    // Try to find in hostsWithContacts
-                    let found = false;
-                    if (hostsWithContacts && hostsWithContacts.length > 0) {
-                      for (const host of hostsWithContacts) {
-                        const contact = host.contacts?.find((c: any) => c.id === contactId);
-                        if (contact) {
-                          name = `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || contact.name || contact.email || `Contact #${contactId}`;
-                          found = true;
-                          break;
-                        }
-                      }
-                    }
-                    if (!found) {
-                      name = `Contact #${contactId}`;
-                    }
-                  }
-                  // Handle regular user IDs
-                  else {
-                    const foundUser = (users ?? []).find((u: any) => u.id === speakerId);
-                    if (foundUser) {
-                      name = `${foundUser.firstName} ${foundUser.lastName}`.trim() || foundUser.displayName || speakerId;
-                    }
-                  }
-
-                  speakerDetails[speakerId] = {
-                    name: name,
-                    assignedAt: new Date().toISOString(),
-                    assignedBy: user?.id || 'system'
-                  };
-                }
-                speakerAssignments.push(speakerDetails[speakerId].name || speakerId);
-              });
-
-              updateData.speakerDetails = speakerDetails;
-              updateData.speakerAssignments = speakerAssignments;
-              }
-
             } else if (assignmentType === 'volunteer') {
               if (isTentative) {
                 // Tentative volunteer assignment - add to tentativeVolunteerIds
@@ -1521,7 +1525,7 @@ const EventRequestsManagementContent: React.FC = () => {
               logger.log('Update result:', result);
 
               // Close the dialog
-              setShowAssignmentDialog(false);
+              closeDialog('assignment');
               setAssignmentType(null);
               setAssignmentEventId(null);
               setSelectedAssignees([]);
@@ -1541,8 +1545,8 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Sandwich Planning Modal */}
         <Dialog
-          open={showSandwichPlanningModal}
-          onOpenChange={setShowSandwichPlanningModal}
+          open={(activeDialog === 'sandwichPlanning')}
+          onOpenChange={(open) => (open ? openDialog('sandwichPlanning') : closeDialog('sandwichPlanning'))}
         >
           <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -1585,7 +1589,7 @@ const EventRequestsManagementContent: React.FC = () => {
 
             <div className="flex justify-end mt-6 pt-4 border-t">
               <Button
-                onClick={() => setShowSandwichPlanningModal(false)}
+                onClick={() => closeDialog('sandwichPlanning')}
                 className="text-white"
                 style={{ backgroundColor: '#236383' }}
               >
@@ -1621,8 +1625,8 @@ const EventRequestsManagementContent: React.FC = () => {
 
         {/* Staffing Planning Modal */}
         <Dialog
-          open={showStaffingPlanningModal}
-          onOpenChange={setShowStaffingPlanningModal}
+          open={(activeDialog === 'staffingPlanning')}
+          onOpenChange={(open) => (open ? openDialog('staffingPlanning') : closeDialog('staffingPlanning'))}
         >
           <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -1631,7 +1635,7 @@ const EventRequestsManagementContent: React.FC = () => {
                 Weekly Staffing Planning
               </DialogTitle>
               <DialogDescription>
-                Coordinate drivers, speakers, and volunteers for scheduled
+                Coordinate drivers and volunteers for scheduled
                 events. Ensure all positions are filled before event dates.
               </DialogDescription>
             </DialogHeader>
@@ -1650,10 +1654,6 @@ const EventRequestsManagementContent: React.FC = () => {
                     critical
                   </li>
                   <li>
-                    • Speaker assignments should be confirmed 1 week before
-                    events
-                  </li>
-                  <li>
                     • Van drivers are needed for large events or special
                     delivery requirements
                   </li>
@@ -1666,7 +1666,7 @@ const EventRequestsManagementContent: React.FC = () => {
 
             <div className="flex justify-end mt-6 pt-4 border-t">
               <Button
-                onClick={() => setShowStaffingPlanningModal(false)}
+                onClick={() => closeDialog('staffingPlanning')}
                 className="text-white"
                 style={{ backgroundColor: '#236383' }}
               >

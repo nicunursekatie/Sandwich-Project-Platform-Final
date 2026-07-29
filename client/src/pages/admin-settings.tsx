@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Settings, Shield, FileText, Trophy, Database, MessageSquare, HandHeart, AlertTriangle } from 'lucide-react';
+import { Settings, Shield, FileText, Trophy, Database, MessageSquare, HandHeart, AlertTriangle, Eye } from 'lucide-react';
 import { EventRequestAuditLog } from '@/components/event-request-audit-log';
 import { ComprehensiveAuditLog } from '@/components/comprehensive-audit-log';
 import { ClientErrorLog } from '@/components/client-error-log';
@@ -21,6 +21,7 @@ import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { useEffect } from 'react';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import { PermissionDenied } from '@/components/permission-denied';
+import { AdminNavUserViewConfig } from '@/components/admin-nav-user-view-config';
 
 export default function AdminSettings() {
   const { user, isLoading } = useAuth();
@@ -88,7 +89,7 @@ export default function AdminSettings() {
         </div>
 
         <Tabs defaultValue="entity-audit-log" className="w-full">
-          <TabsList className="grid w-full grid-cols-7 h-auto p-1 mb-8 border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-lg bg-white">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 h-auto p-1 mb-8 border-0 shadow-[0_2px_8px_rgba(0,0,0,0.08)] rounded-lg bg-white">
             <TabsTrigger
               value="entity-audit-log"
               className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
@@ -152,6 +153,15 @@ export default function AdminSettings() {
               <HandHeart className="h-4 w-4" />
               Volunteer Signups
             </TabsTrigger>
+            <TabsTrigger
+              value="nav-user-view"
+              className="flex items-center gap-2 py-4 px-6 rounded-lg font-medium text-brand-primary hover:bg-brand-primary/5 transition-all duration-200 ease-in-out data-[state=active]:bg-gradient-to-r data-[state=active]:from-brand-primary data-[state=active]:to-brand-primary-dark data-[state=active]:text-white data-[state=active]:shadow-[0_2px_8px_rgba(35,99,131,0.25)]"
+              data-testid="tab-nav-user-view"
+              onClick={() => trackClick('Nav User View Tab', 'Admin', 'Tab Navigation', 'Switched to nav user view tab')}
+            >
+              <Eye className="h-4 w-4" />
+              Nav User View
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="entity-audit-log" className="space-y-6">
@@ -197,6 +207,10 @@ export default function AdminSettings() {
 
           <TabsContent value="volunteer-signups" className="space-y-8">
             <VolunteerSignupAdmin />
+          </TabsContent>
+
+          <TabsContent value="nav-user-view" className="space-y-8">
+            <AdminNavUserViewConfig />
           </TabsContent>
         </Tabs>
       </div>

@@ -1,13 +1,13 @@
 /**
  * Volunteer Event Hub
  *
- * A user-friendly interface for volunteers and speakers to browse and sign up
+ * A user-friendly interface for volunteers to browse and sign up
  * for events based on their calendar availability and location convenience.
  *
  * Features:
  * - Calendar view for date-based browsing
  * - Map view for location-based browsing
- * - Filter by role needed (speaker, volunteer, driver)
+ * - Filter by role needed (volunteer, driver)
  * - Request to join events
  * - View own signups and status
  */
@@ -19,6 +19,11 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO, isAfter, startOfDay } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
+import {
+  isEligibleForRole,
+  getEligibleEventRoles,
+  type UserRoleCapabilities,
+} from '@shared/event-role-eligibility';
 import { apiRequest } from '@/lib/queryClient';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
@@ -82,8 +87,21 @@ import {
   CheckCircle2,
   LocateFixed,
   Ban,
+  PartyPopper,
+  CalendarPlus,
+  Download,
+  ArrowRight,
+  HelpCircle,
+  AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import {
+  buildEventTimes,
+  googleCalendarUrl,
+  buildIcs,
+  downloadIcs,
+} from '@/lib/calendar-links';
 
 // Fix Leaflet default marker icon
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -205,6 +223,38 @@ function getEventDateLabel(
   return parsedDate ? format(parsedDate, pattern) : 'Date TBD';
 }
 
+/** Calendar bucket key — local YYYY-MM-DD, aligned with date-fns format(day). */
+function getCalendarDateKey(
+  event: Pick<AvailableEvent, 'scheduledEventDate' | 'desiredEventDate'>,
+): string | null {
+  const effective = getEffectiveEventDate(event);
+  if (!effective) return null;
+  const parsed = parseEventDate(effective);
+  return parsed ? format(parsed, 'yyyy-MM-dd') : null;
+}
+
+function dedupeEventsById(events: AvailableEvent[]): AvailableEvent[] {
+  const byId = new Map<number, AvailableEvent>();
+  for (const event of events) {
+    if (!byId.has(event.id)) {
+      byId.set(event.id, event);
+    }
+  }
+  return Array.from(byId.values());
+}
+
+/** Today or later — matches the calendar's actionable/upcoming definition. */
+function isUpcomingHubEvent(
+  event: Pick<AvailableEvent, 'scheduledEventDate' | 'desiredEventDate'>,
+): boolean {
+  const dateStr = getEffectiveEventDate(event);
+  if (!dateStr) return true;
+  const eventDate = parseEventDate(dateStr);
+  if (!eventDate) return true;
+  const today = startOfDay(new Date());
+  return isAfter(eventDate, today) || isSameDay(eventDate, today);
+}
+
 interface MySignup {
   id: number;
   eventRequestId: number;
@@ -296,9 +346,9 @@ interface CoverageSummaryEvent {
 }
 
 // Custom marker icons using brand colors
-const createEventIcon = (needsSpeaker: boolean, needsVolunteer: boolean, needsDriver: boolean, isCompleted = false, needsVanDriver = false) => {
+const createEventIcon = (needsVolunteer: boolean, needsDriver: boolean, isCompleted = false, needsVanDriver = false) => {
   // Two-state: needs help (teal) vs filled/completed (gray). Specific role detail lives in the popup.
-  const needsHelp = !isCompleted && (needsSpeaker || needsVolunteer || needsDriver || needsVanDriver);
+  const needsHelp = !isCompleted && (needsVolunteer || needsDriver || needsVanDriver);
   const color = needsHelp ? '#007e8c' : '#9ca3af';
 
   const html = `
@@ -404,7 +454,7 @@ function EventCard({
   existingUnavailable,
 }: {
   event: AvailableEvent;
-  onSignup: (eventId: number) => void;
+  onSignup: (eventId: number, preselectedRole?: 'general' | 'driver') => void;
   onAssign?: (eventId: number) => void;
   onUnavailable: (eventId: number) => void;
   onClearUnavailable: (eventId: number) => void;
@@ -420,7 +470,6 @@ function EventCard({
 
   // Build a simple list of roles needed
   const rolesNeeded: string[] = [];
-  if (event.speakersUnfilled > 0) rolesNeeded.push(`Speaker${event.speakersUnfilled > 1 ? 's' : ''}`);
   if (event.volunteersUnfilled > 0) rolesNeeded.push(`Volunteer${event.volunteersUnfilled > 1 ? 's' : ''}`);
   if (event.driversUnfilled > 0) rolesNeeded.push(`Driver${event.driversUnfilled > 1 ? 's' : ''}`);
   if (event.vanDriverNeeded) rolesNeeded.push('Van Driver');
@@ -464,12 +513,6 @@ function EventCard({
         {rolesNeeded.length > 0 && (
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium text-gray-700">Needed:</span>
-            {event.speakersUnfilled > 0 && (
-              <Badge variant="outline" className="bg-[#a31c41]/10 text-[#a31c41] border-[#a31c41]/30 gap-1">
-                <Mic className="w-3 h-3" />
-                Speaker{event.speakersUnfilled > 1 ? ` (${event.speakersUnfilled})` : ''}
-              </Badge>
-            )}
             {event.volunteersUnfilled > 0 && (
               <Badge variant="outline" className="bg-[#007e8c]/10 text-[#007e8c] border-[#007e8c]/30 gap-1">
                 <UserCheck className="w-3 h-3" />
@@ -508,7 +551,7 @@ function EventCard({
                   <Check className="w-3 h-3 text-white" />
                 </div>
                 <span className="text-sm font-medium text-[#236383]">
-                  Signed up as {existingSignup.role === 'general' ? 'Volunteer' : existingSignup.role === 'speaker' ? 'Speaker' : existingSignup.role === 'driver' ? 'Driver' : existingSignup.role}
+                  Signed up as {existingSignup.role === 'general' ? 'Volunteer' : signupRoleLabel(existingSignup.role)}
                 </span>
               </div>
               <StatusBadge status={existingSignup.status} />
@@ -558,13 +601,59 @@ function EventCard({
           ) : (
             <div className="space-y-2">
               {canSelfSignup ? (
-                <Button
-                  className="w-full bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white h-10 shadow-sm"
-                  onClick={() => onSignup(event.id)}
-                >
-                  <HandHeart className="w-4 h-4 mr-2" />
-                  Sign Up to Volunteer
-                </Button>
+                (() => {
+                  // Show one button per role this event actually needs. Falls back to a
+                  // generic Volunteer button if no specific roles are unfilled (extra help
+                  // is still welcome). Each button pre-selects its role in the dialog.
+                  const signupButtons: Array<{
+                    role: 'general' | 'driver';
+                    label: string;
+                    icon: typeof Mic;
+                    className: string;
+                  }> = [];
+
+                  if (event.volunteersUnfilled > 0) {
+                    signupButtons.push({
+                      role: 'general',
+                      label: `Sign Up to Volunteer${event.volunteersUnfilled > 1 ? ` (${event.volunteersUnfilled} needed)` : ''}`,
+                      icon: HandHeart,
+                      className: 'bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white',
+                    });
+                  }
+                  if (!event.vanDriverNeeded && event.driversUnfilled > 0) {
+                    signupButtons.push({
+                      role: 'driver',
+                      label: `Sign Up to Drive${event.driversUnfilled > 1 ? ` (${event.driversUnfilled} needed)` : ''}`,
+                      icon: Car,
+                      className: 'bg-[#236383] hover:bg-[#1a4b62] text-white',
+                    });
+                  }
+
+                  // Fallback: no specific unfilled roles — still let people volunteer.
+                  if (signupButtons.length === 0) {
+                    signupButtons.push({
+                      role: 'general',
+                      label: 'Sign Up to Volunteer',
+                      icon: HandHeart,
+                      className: 'bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white',
+                    });
+                  }
+
+                  return (
+                    <div className="space-y-2">
+                      {signupButtons.map(({ role, label, icon: Icon, className }) => (
+                        <Button
+                          key={role}
+                          className={`w-full h-10 shadow-sm ${className}`}
+                          onClick={() => onSignup(event.id, role)}
+                        >
+                          <Icon className="w-4 h-4 mr-2" />
+                          {label}
+                        </Button>
+                      ))}
+                    </div>
+                  );
+                })()
               ) : (
                 <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-2 text-xs text-gray-600 text-center">
                   Ask a coordinator to sign you up.
@@ -612,7 +701,7 @@ function MapEventPopupContent({
   existingUnavailable,
 }: {
   event: AvailableEvent;
-  onSignupClick: (eventId: number) => void;
+  onSignupClick: (eventId: number, preselectedRole?: 'general' | 'driver') => void;
   onUnavailableClick: (eventId: number) => void;
   onClearUnavailable: (eventId: number) => void;
   canSelfSignup: boolean;
@@ -641,7 +730,7 @@ function MapEventPopupContent({
       )}
       <EventCard
         event={event}
-        onSignup={(id) => { map.closePopup(); onSignupClick(id); }}
+        onSignup={(id, role) => { map.closePopup(); onSignupClick(id, role); }}
         onUnavailable={(id) => { map.closePopup(); onUnavailableClick(id); }}
         onClearUnavailable={(id) => { map.closePopup(); onClearUnavailable(id); }}
         onAssign={(id) => { map.closePopup(); onAssignClick(id); }}
@@ -661,12 +750,16 @@ function SignupDialog({
   onOpenChange,
   onSubmit,
   isSubmitting,
+  preselectedRole,
+  userCapabilities,
 }: {
   event: AvailableEvent | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSubmit: (roles: string[], notes: string) => void;
   isSubmitting: boolean;
+  preselectedRole?: 'general' | 'driver';
+  userCapabilities?: UserRoleCapabilities | null;
 }) {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
@@ -675,7 +768,7 @@ function SignupDialog({
     if (!event) return [];
 
     const roles: Array<{
-      value: 'speaker' | 'general' | 'driver';
+      value: 'general' | 'driver';
       label: string;
       icon: typeof Mic;
       colorClass: string;
@@ -685,21 +778,6 @@ function SignupDialog({
     }> = [];
 
     const spotsLabel = (count: number) => (count === 1 ? '1 spot open' : `${count} spots open`);
-
-    // Always show speaker role if event has any speaker need or assigned speakers
-    if (event.speakersNeeded > 0 || event.speakersAssigned > 0) {
-      roles.push({
-        value: 'speaker',
-        label: event.speakersUnfilled > 0
-          ? `Speaker — ${spotsLabel(event.speakersUnfilled)}`
-          : 'Speaker — filled, extra help welcome',
-        icon: Mic,
-        colorClass: 'text-[#a31c41]',
-        borderClass: 'border-[#a31c41]/30',
-        bgClass: 'bg-[#a31c41]/5',
-        instructions: event.speakerInstructions,
-      });
-    }
 
     // Always show volunteer role
     roles.push({
@@ -732,16 +810,25 @@ function SignupDialog({
       });
     }
 
-    return roles;
-  }, [event]);
+    // Tailor to what THIS volunteer is willing/approved to do. Driver roles
+    // require coordinator approval; general is the baseline. Roles the event
+    // offers but the user isn't eligible for are dropped here (single source of
+    // truth in shared/event-role-eligibility.ts). The server enforces the same
+    // rule on submit, so this is purely to keep the UI honest.
+    return roles.filter((r) => isEligibleForRole(userCapabilities, r.value));
+  }, [event, userCapabilities]);
 
   useEffect(() => {
     if (open && event) {
-      const defaultRole = availableRoles[0]?.value;
+      // Honor preselected role if it's actually available for this event; otherwise
+      // fall back to the first available role (original behavior).
+      const preselectMatches =
+        preselectedRole && availableRoles.some((r) => r.value === preselectedRole);
+      const defaultRole = preselectMatches ? preselectedRole : availableRoles[0]?.value;
       setSelectedRoles(defaultRole ? [defaultRole] : []);
       setNotes('');
     }
-  }, [open, event, availableRoles]);
+  }, [open, event, availableRoles, preselectedRole]);
 
   if (!event) return null;
 
@@ -768,7 +855,9 @@ function SignupDialog({
             </Label>
             {availableRoles.length === 0 ? (
               <div className="text-sm text-muted-foreground">
-                No roles are currently available for this event.
+                None of this event's roles match what you're set up for. Update the
+                roles you're willing to do in your profile — driver roles
+                also need coordinator approval before they show up here.
               </div>
             ) : (
               <div className="space-y-2">
@@ -865,6 +954,174 @@ function SignupDialog({
                 Submit Signup Request
               </>
             )}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Friendly labels for the roles a volunteer signed up for.
+// 'speaker' is retired for new signups but kept here so legacy/historical
+// speaker signups still render a friendly label instead of the raw string.
+const SIGNUP_ROLE_LABELS: Record<string, string> = {
+  general: 'General Volunteer',
+  driver: 'Driver',
+  speaker: 'Speaker',
+};
+
+function signupRoleLabel(role: string): string {
+  return SIGNUP_ROLE_LABELS[role] || role;
+}
+
+/**
+ * The "You're in!" moment. Shown immediately after a successful signup so the
+ * volunteer gets a clear, enthusiastic confirmation (this is the SignUpGenius
+ * replacement — it needs to feel reassuring, especially for non-tech users) plus
+ * a one-tap way to add the event to their calendar.
+ */
+function SignupSuccessDialog({
+  event,
+  roles,
+  open,
+  onOpenChange,
+}: {
+  event: AvailableEvent | null;
+  roles: string[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  if (!event) return null;
+
+  const eventDate = getEffectiveEventDate(event);
+  const parsedDate = eventDate ? parseEventDate(eventDate) : null;
+  const formattedDate = parsedDate ? format(parsedDate, 'EEEE, MMMM d') : 'a date to be confirmed';
+  const shortDate = parsedDate ? format(parsedDate, 'MMMM d') : 'TBD';
+  const timeText = formatEventTime(event.eventStartTime, event.eventEndTime);
+  const addressText = getAddressText(event);
+
+  const times = buildEventTimes(eventDate, event.eventStartTime, event.eventEndTime);
+  const calTitle = `Sandwich Project — ${event.organizationName}`;
+  const roleLabels = roles.map(signupRoleLabel);
+  const calDetails = [
+    roleLabels.length ? `Role${roleLabels.length > 1 ? 's' : ''}: ${roleLabels.join(', ')}` : null,
+    'Thanks for volunteering with The Sandwich Project!',
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const handleGoogle = () => {
+    if (!times) return;
+    const url = googleCalendarUrl(calTitle, times, addressText || null, calDetails);
+    window.open(url, '_blank', 'noopener,noreferrer');
+  };
+
+  const handleIcs = () => {
+    if (!times) return;
+    const ics = buildIcs(
+      `tsp-volunteer-${event.id}@thesandwichproject.org`,
+      calTitle,
+      times,
+      addressText || null,
+      calDetails,
+    );
+    downloadIcs(`sandwich-project-${event.id}.ics`, ics);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader className="items-center text-center">
+          <div className="mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#007e8c] to-[#47b3cb] text-white shadow-sm">
+            <PartyPopper className="h-7 w-7" />
+          </div>
+          <DialogTitle className="text-xl">You're in! 🎉</DialogTitle>
+          <DialogDescription className="text-base text-[#236383]">
+            Thanks for signing up to volunteer at{' '}
+            <span className="font-semibold">{event.organizationName}</span> on{' '}
+            <span className="font-semibold">{shortDate}</span>.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-2">
+          {/* Event recap */}
+          <div className="rounded-lg border border-[#007e8c]/20 bg-[#007e8c]/5 p-4 space-y-2.5 text-sm">
+            <div className="flex items-center gap-2 text-gray-700">
+              <Building2 className="h-4 w-4 shrink-0 text-[#007e8c]" />
+              <span className="font-medium">{event.organizationName}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-700">
+              <CalendarDays className="h-4 w-4 shrink-0 text-[#007e8c]" />
+              <span>{formattedDate}</span>
+            </div>
+            <div className="flex items-center gap-2 text-gray-700">
+              <Clock className="h-4 w-4 shrink-0 text-[#007e8c]" />
+              <span>{timeText}</span>
+            </div>
+            {addressText && (
+              <div className="flex items-start gap-2 text-gray-700">
+                <MapPin className="h-4 w-4 shrink-0 text-[#007e8c] mt-0.5" />
+                <span>{addressText}</span>
+              </div>
+            )}
+            {roleLabels.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                {roleLabels.map((label) => (
+                  <Badge
+                    key={label}
+                    variant="secondary"
+                    className="bg-[#007e8c]/10 text-[#236383] hover:bg-[#007e8c]/10"
+                  >
+                    {label}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Add to calendar */}
+          {times && (
+            <div className="space-y-2">
+              <p className="text-xs font-medium text-muted-foreground">
+                Add it to your calendar so you don't forget:
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <Button
+                  variant="outline"
+                  onClick={handleGoogle}
+                  className="flex-1 border-[#007e8c]/30 text-[#236383] hover:bg-[#007e8c]/5"
+                >
+                  <CalendarPlus className="h-4 w-4 mr-2" />
+                  Google Calendar
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleIcs}
+                  className="flex-1 border-[#007e8c]/30 text-[#236383] hover:bg-[#007e8c]/5"
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Apple / Outlook
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* What happens next */}
+          <div className="flex items-start gap-2 text-xs text-muted-foreground">
+            <CheckCircle2 className="h-4 w-4 shrink-0 text-[#007e8c] mt-0.5" />
+            <span>
+              A coordinator will confirm your spot, and we've emailed you the details. See you on{' '}
+              {shortDate}!
+            </span>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button
+            onClick={() => onOpenChange(false)}
+            className="w-full bg-gradient-to-r from-[#007e8c] to-[#47b3cb] hover:from-[#236383] hover:to-[#007e8c] text-white"
+          >
+            Done
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -998,20 +1255,8 @@ function AssignOthersDialog({
   }, [assignableUsers, userSearch]);
 
   const availableRoles = useMemo(() => {
-    if (!event) return [] as Array<{ value: 'speaker' | 'general' | 'driver'; label: string; icon: typeof Mic; colorClass: string; borderClass: string; bgClass: string }>;
-    const roles: Array<{ value: 'speaker' | 'general' | 'driver'; label: string; icon: typeof Mic; colorClass: string; borderClass: string; bgClass: string }> = [];
-    if (event.speakersNeeded > 0 || event.speakersAssigned > 0) {
-      roles.push({
-        value: 'speaker',
-        label: event.speakersUnfilled > 0
-          ? `Speaker (${event.speakersUnfilled} needed)`
-          : `Speaker (${event.speakersAssigned}/${event.speakersNeeded} filled)`,
-        icon: Mic,
-        colorClass: 'text-[#a31c41]',
-        borderClass: 'border-[#a31c41]/30',
-        bgClass: 'bg-[#a31c41]/5',
-      });
-    }
+    if (!event) return [] as Array<{ value: 'general' | 'driver'; label: string; icon: typeof Mic; colorClass: string; borderClass: string; bgClass: string }>;
+    const roles: Array<{ value: 'general' | 'driver'; label: string; icon: typeof Mic; colorClass: string; borderClass: string; bgClass: string }> = [];
     roles.push({
       value: 'general',
       label: event.volunteersUnfilled > 0
@@ -1218,9 +1463,17 @@ function ManageSignupDialog({
 
   useEffect(() => {
     if (open && signup) {
-      // Default new role to anything other than current role
-      const fallback = signup.role === 'general' ? 'speaker' : 'general';
-      setNewRole(fallback);
+      // Default to the first role that's actually selectable — i.e. not the
+      // current role, and not the Driver option when it's hidden because the
+      // event needs a van driver (those go through the van-driver flow). This
+      // prevents the Select from showing an unavailable value that Save would
+      // still submit. Empty string when there's no valid alternative, which
+      // keeps the Save button disabled.
+      const vanDriverNeeded = !!signup.event?.vanDriverNeeded;
+      const available: string[] = [];
+      if (signup.role !== 'general') available.push('general');
+      if (signup.role !== 'driver' && !vanDriverNeeded) available.push('driver');
+      setNewRole(available[0] ?? '');
       setReason('');
     }
   }, [open, signup?.id, signup?.role, signup]);
@@ -1255,9 +1508,6 @@ function ManageSignupDialog({
                 <SelectContent>
                   {signup.role !== 'general' && (
                     <SelectItem value="general">General Volunteer</SelectItem>
-                  )}
-                  {signup.role !== 'speaker' && (
-                    <SelectItem value="speaker">Speaker</SelectItem>
                   )}
                   {signup.role !== 'driver' && !vanNeeded && (
                     <SelectItem value="driver">Driver</SelectItem>
@@ -1331,6 +1581,11 @@ export default function VolunteerEventHub() {
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<AvailableEvent | null>(null);
   const [signupDialogOpen, setSignupDialogOpen] = useState(false);
+  // "You're in!" confirmation shown after a successful self-signup.
+  const [signupConfirmation, setSignupConfirmation] = useState<{
+    event: AvailableEvent;
+    roles: string[];
+  } | null>(null);
   const [unavailableDialogOpen, setUnavailableDialogOpen] = useState(false);
   const [assignDialogOpen, setAssignDialogOpen] = useState(false);
   const [manageSignup, setManageSignup] = useState<any | null>(null);
@@ -1354,8 +1609,19 @@ export default function VolunteerEventHub() {
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [mySignupsRoleFilter, setMySignupsRoleFilter] = useState<string>('all');
   const [showOnlyNeeds, setShowOnlyNeeds] = useState(true);
+  // Soft filter (off by default): narrow the list to events with an opening for a
+  // role this volunteer is actually eligible for. Discovery stays open otherwise.
+  const [showOnlyMyRoles, setShowOnlyMyRoles] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const needsOnlyForEventQuery = view === 'calendar' ? false : showOnlyNeeds;
+
+  // Roles this user is willing + (where required) approved for. Drives the
+  // "only opportunities I can do" toggle below. Same helper the signup dialog
+  // and the server use.
+  const myEligibleRoles = useMemo(
+    () => getEligibleEventRoles(user as UserRoleCapabilities | null),
+    [user]
+  );
 
   // User location for distance calculation on map
   const [userAddress, setUserAddress] = useState('');
@@ -1363,13 +1629,35 @@ export default function VolunteerEventHub() {
   const [geocodingLoading, setGeocodingLoading] = useState(false);
   const [browserLocationLoading, setBrowserLocationLoading] = useState(false);
 
+  // For the calendar view, also fetch completed events for the displayed
+  // month (only when the month is in the past — current/future months
+  // already get their data via the upcoming-events branch). Other views
+  // (list, map) don't pass a pastMonth so they keep their old behavior.
+  //
+  // Format: YYYY-MM, e.g. "2026-05". The server validates the format and
+  // ignores anything malformed, so a stale render between state changes
+  // can't break the request.
+  const pastMonthParam = useMemo(() => {
+    if (view !== 'calendar') return null;
+    const today = new Date();
+    const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+    const viewedMonthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+    if (viewedMonthStart >= currentMonthStart) return null; // not a past month
+    const yyyy = viewedMonthStart.getFullYear();
+    const mm = String(viewedMonthStart.getMonth() + 1).padStart(2, '0');
+    return `${yyyy}-${mm}`;
+  }, [view, currentMonth]);
+
   // Fetch available events
   const { data: events = [], isLoading: eventsLoading } = useQuery<AvailableEvent[]>({
-    queryKey: ['/api/volunteer-hub/available-events', needsOnlyForEventQuery],
+    queryKey: ['/api/volunteer-hub/available-events', needsOnlyForEventQuery, pastMonthParam],
     queryFn: async () => {
-      const response = await fetch(`/api/volunteer-hub/available-events?needsOnly=${needsOnlyForEventQuery}`, {
-        credentials: 'include',
-      });
+      const params = new URLSearchParams({ needsOnly: String(needsOnlyForEventQuery) });
+      if (pastMonthParam) params.set('pastMonth', pastMonthParam);
+      const response = await fetch(
+        `/api/volunteer-hub/available-events?${params.toString()}`,
+        { credentials: 'include' },
+      );
       if (!response.ok) throw new Error('Failed to fetch events');
       return response.json();
     },
@@ -1513,7 +1801,7 @@ export default function VolunteerEventHub() {
 
   // Signup mutation
   const signupMutation = useMutation({
-    mutationFn: async ({ eventId, roles, notes }: { eventId: number; roles: string[]; notes: string }) => {
+    mutationFn: async ({ eventId, roles, notes }: { eventId: number; event: AvailableEvent; roles: string[]; notes: string }) => {
       const response = await fetch(`/api/volunteer-hub/signup/${eventId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1526,13 +1814,13 @@ export default function VolunteerEventHub() {
       }
       return response.json();
     },
-    onSuccess: (data) => {
-      toast({
-        title: 'Signup Submitted!',
-        description: data.message || 'Your volunteer request has been submitted.',
-      });
+    onSuccess: (_data, variables) => {
+      // Hand off to the celebratory "You're in!" dialog. Use the event captured
+      // in the mutation variables — not selectedEvent, which may have changed if
+      // the user clicked a different event while this request was in flight.
       setSignupDialogOpen(false);
       setSelectedEvent(null);
+      setSignupConfirmation({ event: variables.event, roles: variables.roles });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/my-signups'] });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/available-events'] });
       queryClient.invalidateQueries({ queryKey: ['/api/volunteer-hub/coverage-summary'] });
@@ -1691,7 +1979,7 @@ export default function VolunteerEventHub() {
   const filteredEvents = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
 
-    return events
+    return dedupeEventsById(events)
       .filter(event => {
         if (normalizedSearch) {
           const searchableText = [
@@ -1707,12 +1995,26 @@ export default function VolunteerEventHub() {
           if (!searchableText.includes(normalizedSearch)) return false;
         }
 
-        if (roleFilter === 'speaker' && event.speakersUnfilled === 0) return false;
         if (roleFilter === 'volunteer' && event.volunteersUnfilled === 0) return false;
         if (roleFilter === 'driver') {
           if (event.driversUnfilled === 0) return false;
           // Group is providing their own transport — no driver opportunity here.
           if (event.selfTransport) return false;
+        }
+
+        // "Only opportunities I can do": keep events that have an opening for a
+        // role this volunteer is eligible for. Mirrors getEligibleEventRoles.
+        if (showOnlyMyRoles) {
+          const matchesMyRole =
+            (myEligibleRoles.includes('general') && event.volunteersUnfilled > 0) ||
+            (myEligibleRoles.includes('driver') &&
+              event.driversUnfilled > 0 &&
+              !event.selfTransport &&
+              !event.vanDriverNeeded) ||
+            // Van is its own opening (vanDriverNeeded), separate from regular
+            // driver slots — a van-approved volunteer should still see these.
+            (myEligibleRoles.includes('van') && event.vanDriverNeeded);
+          if (!matchesMyRole) return false;
         }
         return true;
       })
@@ -1728,21 +2030,20 @@ export default function VolunteerEventHub() {
         if (dateB) return 1;
         return a.organizationName.localeCompare(b.organizationName);
       });
-  }, [events, roleFilter, searchTerm]);
+  }, [events, roleFilter, searchTerm, showOnlyMyRoles, myEligibleRoles]);
 
   // Calculate summary metrics for dashboard cards
   const summaryMetrics = useMemo(() => {
-    const totalEvents = events.length;
-    const eventsNeedingHelp = events.filter(e => e.hasUnfilledNeeds).length;
-    const totalSpeakerOpenings = events.reduce((sum, e) => sum + e.speakersUnfilled, 0);
-    const totalVolunteerOpenings = events.reduce((sum, e) => sum + e.volunteersUnfilled, 0);
-    const totalDriverOpenings = events.reduce((sum, e) => sum + e.driversUnfilled, 0);
-    const totalOpenings = totalSpeakerOpenings + totalVolunteerOpenings + totalDriverOpenings;
+    const upcomingEvents = events.filter(isUpcomingHubEvent);
+    const totalEvents = upcomingEvents.length;
+    const eventsNeedingHelp = upcomingEvents.filter((e) => e.hasUnfilledNeeds).length;
+    const totalVolunteerOpenings = upcomingEvents.reduce((sum, e) => sum + e.volunteersUnfilled, 0);
+    const totalDriverOpenings = upcomingEvents.reduce((sum, e) => sum + e.driversUnfilled, 0);
+    const totalOpenings = totalVolunteerOpenings + totalDriverOpenings;
 
     return {
       totalEvents,
       eventsNeedingHelp,
-      totalSpeakerOpenings,
       totalVolunteerOpenings,
       totalDriverOpenings,
       totalOpenings,
@@ -1753,9 +2054,8 @@ export default function VolunteerEventHub() {
   const eventsByDate = useMemo(() => {
     const grouped: Record<string, AvailableEvent[]> = {};
     filteredEvents.forEach(event => {
-      const dateStr = getEffectiveEventDate(event);
-      if (dateStr) {
-        const key = dateStr.split('T')[0];
+      const key = getCalendarDateKey(event);
+      if (key) {
         if (!grouped[key]) grouped[key] = [];
         grouped[key].push(event);
       }
@@ -1766,9 +2066,6 @@ export default function VolunteerEventHub() {
   const getRoleOpenings = (event: AvailableEvent) => {
     const roles: Array<{ singular: string; plural: string; count: number; color: string; bg: string; Icon: typeof Mic }> = [];
 
-    if (event.speakersUnfilled > 0) {
-      roles.push({ singular: 'speaker', plural: 'speakers', count: event.speakersUnfilled, color: '#A31C41', bg: '#A31C4114', Icon: Mic });
-    }
     if (event.volunteersUnfilled > 0) {
       roles.push({ singular: 'volunteer', plural: 'volunteers', count: event.volunteersUnfilled, color: '#007E8C', bg: '#007E8C14', Icon: UserCheck });
     }
@@ -1790,7 +2087,6 @@ export default function VolunteerEventHub() {
   const getTotalOpeningsForEvents = (dayEvents: AvailableEvent[]) => (
     dayEvents.reduce((sum, event) => (
       sum +
-      Math.max(0, event.speakersUnfilled) +
       Math.max(0, event.volunteersUnfilled) +
       Math.max(0, event.driversUnfilled) +
       (event.vanDriverNeeded ? 1 : 0)
@@ -1808,7 +2104,9 @@ export default function VolunteerEventHub() {
     return {
       events: monthEvents.length,
       openings: getTotalOpeningsForEvents(monthEvents),
-      days: new Set(monthEvents.map((event) => (getEffectiveEventDate(event) || '').split('T')[0])).size,
+      days: new Set(
+        monthEvents.map((event) => getCalendarDateKey(event)).filter(Boolean),
+      ).size,
     };
   }, [filteredEvents, currentMonth]);
 
@@ -1885,10 +2183,13 @@ export default function VolunteerEventHub() {
     );
   };
 
-  const handleSignupClick = (eventId: number) => {
+  const [preselectedSignupRole, setPreselectedSignupRole] = useState<'general' | 'driver' | undefined>(undefined);
+
+  const handleSignupClick = (eventId: number, preselectedRole?: 'general' | 'driver') => {
     const event = events.find(e => e.id === eventId);
     if (event) {
       setSelectedEvent(event);
+      setPreselectedSignupRole(preselectedRole);
       setSignupDialogOpen(true);
     }
   };
@@ -1951,7 +2252,7 @@ export default function VolunteerEventHub() {
   // Handle signup submit
   const handleSignupSubmit = (roles: string[], notes: string) => {
     if (selectedEvent) {
-      signupMutation.mutate({ eventId: selectedEvent.id, roles, notes });
+      signupMutation.mutate({ eventId: selectedEvent.id, event: selectedEvent, roles, notes });
     }
   };
 
@@ -2065,24 +2366,67 @@ export default function VolunteerEventHub() {
             )}
           </div>
 
-          {/* Summary stats inline */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
-            <div className="bg-white/20 rounded-lg p-3 text-center border border-white/20">
-              <div className="text-2xl font-bold">{summaryMetrics.totalEvents}</div>
-              <div className="text-base font-semibold leading-snug text-white">Upcoming Events</div>
-            </div>
-            <div className="bg-white/20 rounded-lg p-3 text-center border border-white/20">
-              <div className="text-2xl font-bold">{summaryMetrics.totalDriverOpenings}</div>
-              <div className="text-base font-semibold leading-snug text-white">Drivers Needed</div>
-            </div>
-            <div className="bg-white/20 rounded-lg p-3 text-center border border-white/20">
-              <div className="text-2xl font-bold">{summaryMetrics.totalSpeakerOpenings}</div>
-              <div className="text-base font-semibold leading-snug text-white">Speakers Needed</div>
-            </div>
-            <div className="bg-white/20 rounded-lg p-3 text-center border border-white/20">
-              <div className="text-2xl font-bold">{summaryMetrics.totalOpenings}</div>
-              <div className="text-base font-semibold leading-snug text-white">Total Openings</div>
-            </div>
+          {/* Hero metric — the answer to "where do you need me?". Leads
+              with the total open roles as one big number, then breaks down
+              by role type so a volunteer can immediately see which slots
+              fit them. We frame this as an invitation ("opportunities
+              available") rather than a status readout ("needed"). */}
+          <div className="mt-6">
+            {summaryMetrics.totalOpenings === 0 ? (
+              <div className="bg-white/15 rounded-xl px-5 py-6 border border-white/20 text-center">
+                <div className="text-base sm:text-lg text-white/90">
+                  All roles are currently filled. Thank you, volunteers! Check back soon for new opportunities.
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="bg-white/15 rounded-xl px-5 py-5 border border-white/20">
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span aria-hidden="true" className="text-3xl sm:text-4xl">🟧</span>
+                    <span className="text-3xl sm:text-5xl font-extrabold leading-none">
+                      {summaryMetrics.totalOpenings}
+                    </span>
+                    <span className="text-lg sm:text-xl font-semibold text-white">
+                      volunteer opportunit{summaryMetrics.totalOpenings === 1 ? 'y' : 'ies'} available
+                    </span>
+                  </div>
+                  <p className="mt-2 text-sm sm:text-base text-white/90">
+                    {summaryMetrics.eventsNeedingHelp > 0 ? (
+                      <>
+                        We need help at{' '}
+                        <span className="font-semibold">
+                          {summaryMetrics.eventsNeedingHelp} upcoming event{summaryMetrics.eventsNeedingHelp === 1 ? '' : 's'}
+                        </span>
+                        . Pick a role below — every spot you fill makes a real difference.
+                      </>
+                    ) : (
+                      <>
+                        Browse the events below to pick a role that fits you — every spot you fill makes a real difference.
+                      </>
+                    )}
+                  </p>
+                </div>
+
+                {/* Role-type breakdown — two supporting tiles so volunteers
+                    can immediately see which slot type matches them. The
+                    "General Volunteer" bucket is now surfaced (it was
+                    previously hidden inside Total Openings). */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                  <div className="bg-white/20 rounded-lg p-3 border border-white/20 flex items-baseline gap-2">
+                    <span className="text-2xl font-bold">{summaryMetrics.totalDriverOpenings}</span>
+                    <span className="text-sm sm:text-base font-semibold text-white">
+                      Driver opening{summaryMetrics.totalDriverOpenings === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                  <div className="bg-white/20 rounded-lg p-3 border border-white/20 flex items-baseline gap-2">
+                    <span className="text-2xl font-bold">{summaryMetrics.totalVolunteerOpenings}</span>
+                    <span className="text-sm sm:text-base font-semibold text-white">
+                      General volunteer opening{summaryMetrics.totalVolunteerOpenings === 1 ? '' : 's'}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
 
@@ -2108,18 +2452,13 @@ export default function VolunteerEventHub() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Roles</SelectItem>
-                    <SelectItem value="speaker">Speakers Needed</SelectItem>
                     <SelectItem value="volunteer">Volunteers Needed</SelectItem>
                     <SelectItem value="driver">Drivers Needed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              {view === 'calendar' ? (
-                <div className="rounded-lg border border-[#FBAD3F]/30 bg-[#FAF8F4] px-3 py-2 text-sm text-[#236383]">
-                  Calendar shows all upcoming events. Open spots are highlighted first.
-                </div>
-              ) : (
+              {view !== 'calendar' && (
                 <div className="flex items-center gap-2">
                   <Checkbox
                     id="showOnlyNeeds"
@@ -2131,37 +2470,55 @@ export default function VolunteerEventHub() {
                   </Label>
                 </div>
               )}
+
+              {view !== 'calendar' && (
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="showOnlyMyRoles"
+                    checked={showOnlyMyRoles}
+                    onCheckedChange={(checked) => setShowOnlyMyRoles(checked === true)}
+                  />
+                  <Label htmlFor="showOnlyMyRoles" className="text-sm cursor-pointer">
+                    Only opportunities I can do
+                  </Label>
+                </div>
+              )}
             </>
           )}
 
           <div className="flex-1" />
 
+          <div className="flex w-full flex-col gap-1 sm:w-auto sm:items-end">
+          {/* View toggle — icons sized up and active state given a small
+              shadow lift so switching views feels intentional, not
+              accidental. The label stays so the icon's meaning is
+              never ambiguous. */}
           <div className="flex w-full flex-wrap gap-1 rounded-lg border border-[#007e8c]/20 bg-[#007e8c]/5 p-1 sm:w-auto">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setView('calendar')}
-              className={`flex-1 gap-1.5 sm:flex-none ${view === 'calendar' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
+              className={`flex-1 gap-1.5 font-semibold sm:flex-none ${view === 'calendar' ? 'bg-[#007e8c] text-white shadow-sm hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
             >
-              <CalendarDays className="w-4 h-4" />
+              <CalendarDays className="w-[18px] h-[18px]" />
               Calendar
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setView('list')}
-              className={`flex-1 gap-1.5 sm:flex-none ${view === 'list' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
+              className={`flex-1 gap-1.5 font-semibold sm:flex-none ${view === 'list' ? 'bg-[#007e8c] text-white shadow-sm hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
             >
-              <List className="w-4 h-4" />
+              <List className="w-[18px] h-[18px]" />
               List
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setView('map')}
-              className={`flex-1 gap-1.5 sm:flex-none ${view === 'map' ? 'bg-[#007e8c] text-white hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
+              className={`flex-1 gap-1.5 font-semibold sm:flex-none ${view === 'map' ? 'bg-[#007e8c] text-white shadow-sm hover:bg-[#007e8c]/90 hover:text-white' : 'text-[#236383] hover:text-[#007e8c] hover:bg-[#007e8c]/10'}`}
             >
-              <MapIcon className="w-4 h-4" />
+              <MapIcon className="w-[18px] h-[18px]" />
               Map
             </Button>
             <Button
@@ -2210,6 +2567,12 @@ export default function VolunteerEventHub() {
               </>
             )}
           </div>
+          {view === 'calendar' && (
+            <p className="text-xs text-[#236383]/75 leading-snug px-1 text-center sm:text-right max-w-md">
+              Calendar shows all upcoming events. Open spots are highlighted first.
+            </p>
+          )}
+          </div>
         </div>
 
         {/* Guidance note: shown above the active view so volunteers see it
@@ -2255,7 +2618,16 @@ export default function VolunteerEventHub() {
                       <span className="font-semibold">{monthCalendarSummary.openings}</span>
                       <span>open spots</span>
                     </div>
-                    <Button variant="outline" size="sm" onClick={goToToday} className="border-[#007E8C]/30 text-[#236383] hover:bg-[#007E8C]/10">
+                    {/* Today button — used constantly on calendar interfaces,
+                        so styled like Google Calendar's: prominent, full
+                        outline, slightly oversized so it never reads as a
+                        utility button. */}
+                    <Button
+                      variant="outline"
+                      onClick={goToToday}
+                      className="h-10 px-5 border-2 border-[#007E8C] text-[#007E8C] font-bold hover:bg-[#007E8C] hover:text-white hover:border-[#007E8C] transition-colors shadow-sm"
+                    >
+                      <CalendarDays className="w-4 h-4 mr-1.5" aria-hidden="true" />
                       Today
                     </Button>
                   </div>
@@ -2277,19 +2649,57 @@ export default function VolunteerEventHub() {
                 </div>
               </div>
 
-              <CardContent className="p-4 sm:p-6">
-                <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_420px] gap-5">
+              <CardContent className="p-4 sm:p-5 lg:p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_380px] gap-5">
                   <div className="space-y-3">
+                    {/* Intro copy + legend — past events stay on the calendar
+                        as faded context so volunteers can see the full month
+                        at a glance, but only upcoming events read as
+                        actionable. The legend names each visual state up
+                        front so there's nothing to decode. */}
+                    <div className="rounded-lg border border-[#007E8C]/15 bg-white px-3 py-3 space-y-2">
+                      <p className="text-xs sm:text-sm text-gray-700 leading-snug">
+                        This calendar shows both completed and upcoming events so you can see the full month at a glance. Teal-tinted days have open volunteer spots.
+                      </p>
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[11px] sm:text-xs">
+                        {/* Cell-tint key. Each swatch is a tiny stand-in
+                            for the calendar cell so the legend visually
+                            mirrors the grid. The event-count badge was
+                            removed (its number could be mistaken for the
+                            date), so the legend now references only the
+                            cell background. */}
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="inline-block w-3.5 h-3.5 rounded-sm bg-[#e6f4f5] border border-[#47B3CB]" aria-hidden="true" />
+                          <span className="text-gray-700"><span className="font-semibold">Open spots</span> — sign up here</span>
+                        </span>
+                        <span className="text-gray-300" aria-hidden="true">·</span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="inline-block w-3.5 h-3.5 rounded-sm bg-white border border-gray-300" aria-hidden="true" />
+                          <span className="text-gray-700"><span className="font-semibold">Fully staffed</span></span>
+                        </span>
+                        <span className="text-gray-300" aria-hidden="true">·</span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="inline-block w-3.5 h-3.5 rounded-sm bg-gray-50 border border-gray-200" aria-hidden="true" />
+                          <span className="text-gray-700"><span className="font-semibold">Completed</span> — past event</span>
+                        </span>
+                        <span className="text-gray-300" aria-hidden="true">·</span>
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="inline-block w-3.5 h-3.5 rounded-sm bg-white border-2 border-[#007E8C]" aria-hidden="true" />
+                          <span className="text-gray-700"><span className="font-semibold">Today</span></span>
+                        </span>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-7 gap-1 sm:gap-2">
                       {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                        <div key={day} className="text-center text-[11px] sm:text-sm font-bold text-[#236383] py-2">
+                        <div key={day} className="text-center text-[11px] md:text-xs lg:text-sm font-bold text-[#236383] py-2">
                           {day}
                         </div>
                       ))}
 
                       {paddedDays.map((day, idx) => {
                         if (!day) {
-                          return <div key={`empty-${idx}`} className="min-h-[76px] sm:min-h-[120px]" />;
+                          return <div key={`empty-${idx}`} className="min-h-[60px] sm:min-h-[76px] lg:min-h-[120px]" />;
                         }
 
                         const dateKey = format(day, 'yyyy-MM-dd');
@@ -2301,61 +2711,138 @@ export default function VolunteerEventHub() {
                         const hasEvents = dayEvents.length > 0;
                         const topRoles = dayEvents.flatMap(getRoleOpenings).slice(0, 3);
 
+                        // Past days with events stay on the calendar as
+                        // muted, read-only context. They're still clickable
+                        // (opens the right panel for details) but their
+                        // styling is intentionally lower-emphasis: gray bg,
+                        // gray date number, no orange count badge, and a
+                        // "Completed ✓" pill instead of "X spots open."
+                        const isPastWithEvents = isPast && hasEvents;
+                        // Days with at least one open volunteer slot get
+                        // the at-a-glance "available" treatment: tinted
+                        // cell background + stronger badge color. Fully-
+                        // staffed days still show the badge but in gray
+                        // so the visual signal is reserved for cells
+                        // where help is actually needed.
+                        const hasOpenSpots =
+                          hasEvents && !isPastWithEvents && roleOpenings > 0;
+                        // Hover preview — native title shows the event
+                        // org names when you hover any day with events, so
+                        // you don't have to click just to see what's there.
+                        const hoverPreview = hasEvents
+                          ? dayEvents
+                              .slice(0, 4)
+                              .map((e) => e.organizationName)
+                              .join('\n') +
+                            (dayEvents.length > 4
+                              ? `\n+ ${dayEvents.length - 4} more`
+                              : '')
+                          : undefined;
                         return (
                           <button
                             key={dateKey}
                             type="button"
                             onClick={() => hasEvents && setSelectedCalendarDate(dateKey)}
                             disabled={!hasEvents}
-                            className={cn(
-                              'relative min-h-[76px] sm:min-h-[120px] rounded-xl border p-2 text-left transition-all',
+                            title={hoverPreview}
+                            aria-label={
                               hasEvents
-                                ? 'bg-white border-[#47B3CB]/35 hover:border-[#007E8C] hover:shadow-md cursor-pointer'
-                                : 'bg-gray-50 border-gray-100 cursor-default',
-                              isPast && hasEvents && 'opacity-75',
+                                ? isPastWithEvents
+                                  ? `${format(day, 'MMM d')} — ${dayEvents.length} completed event${dayEvents.length === 1 ? '' : 's'}`
+                                  : `${format(day, 'MMM d')} — ${dayEvents.length} upcoming event${dayEvents.length === 1 ? '' : 's'}`
+                                : `${format(day, 'MMM d')} — no events`
+                            }
+                            className={cn(
+                              'relative min-h-[60px] sm:min-h-[76px] lg:min-h-[120px] rounded-xl border p-2 text-left transition-all',
+                              !hasEvents && 'bg-gray-50 border-gray-100 cursor-default',
+                              hasEvents && !isPastWithEvents && !hasOpenSpots &&
+                                // Upcoming + fully-staffed: white cell,
+                                // neutral border. There's an event, but no
+                                // volunteer action required.
+                                'bg-white border-[#47B3CB]/35 hover:border-[#007E8C] hover:shadow-md cursor-pointer',
+                              hasOpenSpots &&
+                                // Upcoming + has open spots: tint the
+                                // entire cell soft teal so available days
+                                // visually pop out of the white grid.
+                                'bg-[#e6f4f5] border-[#47B3CB] hover:border-[#007E8C] hover:shadow-md cursor-pointer',
+                              isPastWithEvents &&
+                                'bg-gray-50 border-gray-200 hover:border-gray-300 hover:shadow-sm cursor-pointer',
                               isSelected && 'ring-2 ring-[#FBAD3F] border-[#007E8C] shadow-md bg-[#FAF8F4]',
-                              isToday && !isSelected && 'ring-2 ring-[#47B3CB]/60',
+                              // Today gets a stronger emphasis: bold colored
+                              // ring, brand-accent background tint, so the
+                              // "what's happening right now" anchor is
+                              // immediately findable in the grid.
+                              isToday && !isSelected && 'ring-2 ring-[#007E8C] bg-gradient-to-b from-[#47B3CB]/10 to-white shadow-sm',
                             )}
                           >
                             <div className="flex items-center justify-between gap-1">
                               <span
                                 className={cn(
                                   'inline-flex h-7 w-7 items-center justify-center rounded-full text-sm font-bold',
-                                  isToday ? 'bg-[#007E8C] text-white' : hasEvents ? 'text-[#236383]' : 'text-gray-400',
+                                  isToday
+                                    ? 'bg-[#007E8C] text-white'
+                                    : isPastWithEvents
+                                      ? 'text-gray-500'
+                                      : hasEvents
+                                        ? 'text-[#236383]'
+                                        : 'text-gray-400',
                                 )}
                               >
                                 {format(day, 'd')}
                               </span>
-                              {hasEvents && (
-                                <span className="rounded-full bg-[#FBAD3F]/20 px-2 py-0.5 text-[10px] font-bold text-[#92400E]">
-                                  {dayEvents.length}
-                                </span>
-                              )}
+                              {/* Event-count badge removed — having a
+                                  second number in the cell (next to the
+                                  date number) was read as part of the
+                                  date. The body text below ("1 event" /
+                                  "2 events") already carries the count
+                                  unambiguously. */}
                             </div>
 
                             {hasEvents ? (
                               <div className="mt-2 space-y-1">
-                                <div className="text-[11px] sm:text-sm font-bold text-[#236383] leading-tight">
+                                <div
+                                  className={cn(
+                                    'text-[11px] sm:text-sm font-bold leading-tight',
+                                    isPastWithEvents ? 'text-gray-500' : 'text-[#236383]',
+                                  )}
+                                >
                                   {dayEvents.length} {dayEvents.length === 1 ? 'event' : 'events'}
                                 </div>
-                                <div className="text-[10px] sm:text-xs text-gray-600">
-                                  {roleOpenings > 0
-                                    ? `${roleOpenings} ${roleOpenings === 1 ? 'spot' : 'spots'} open`
-                                    : 'Extra help welcome'}
-                                </div>
-                                <div className="hidden sm:flex flex-wrap gap-1 pt-1">
-                                  {topRoles.map((role, roleIdx) => (
-                                    <span
-                                      key={`${role.singular}-${roleIdx}`}
-                                      className="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold"
-                                      style={{ backgroundColor: role.bg, color: role.color }}
-                                      title={formatNeededRole(role)}
-                                    >
-                                      <role.Icon className="w-3 h-3" />
-                                      {role.count > 1 && <span className="ml-0.5">{role.count}</span>}
-                                    </span>
-                                  ))}
-                                </div>
+                                {isPastWithEvents ? (
+                                  <div className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-gray-500">
+                                    <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                                    Completed
+                                  </div>
+                                ) : roleOpenings > 0 ? (
+                                  // Staffing-status urgency indicator. When
+                                  // roles are unfilled, the row reads as a
+                                  // call to action with a warning icon and
+                                  // amber tint — not a passive count.
+                                  <div className="inline-flex items-center gap-1 rounded-full bg-[#FBAD3F]/15 px-2 py-0.5 text-[10px] sm:text-xs font-bold text-[#92400E]">
+                                    <AlertTriangle className="w-3 h-3" aria-hidden="true" />
+                                    {roleOpenings} {roleOpenings === 1 ? 'role' : 'roles'} open
+                                  </div>
+                                ) : (
+                                  <div className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-green-700 font-semibold">
+                                    <CheckCircle2 className="w-3 h-3" aria-hidden="true" />
+                                    Fully staffed
+                                  </div>
+                                )}
+                                {!isPastWithEvents && (
+                                  <div className="hidden sm:flex flex-wrap gap-1 pt-1">
+                                    {topRoles.map((role, roleIdx) => (
+                                      <span
+                                        key={`${role.singular}-${roleIdx}`}
+                                        className="inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[10px] font-bold"
+                                        style={{ backgroundColor: role.bg, color: role.color }}
+                                        title={formatNeededRole(role)}
+                                      >
+                                        <role.Icon className="w-3 h-3" />
+                                        {role.count > 1 && <span className="ml-0.5">{role.count}</span>}
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <div className="mt-2 text-[10px] sm:text-xs text-gray-400">No events</div>
@@ -2366,33 +2853,88 @@ export default function VolunteerEventHub() {
                     </div>
                   </div>
 
-                  <div className="rounded-2xl border border-[#007E8C]/20 bg-[#FAF8F4] p-4 sm:p-5 min-h-[360px]">
+                  {(() => {
+                    // Right-panel context: is the selected day in the past?
+                    // We short-circuit signup actions on past days and show a
+                    // read-only "Event completed" treatment instead.
+                    const selectedDateObj = selectedCalendarDate
+                      ? parseEventDate(selectedCalendarDate)
+                      : null;
+                    const isSelectedPast =
+                      !!selectedDateObj &&
+                      !isAfter(selectedDateObj, startOfDay(new Date())) &&
+                      !isSameDay(selectedDateObj, new Date());
+                    return (
+                  <div className="rounded-2xl border border-[#007E8C]/20 bg-[#FAF8F4] p-4 sm:p-5 lg:min-h-[360px]">
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <h3 className="text-lg font-bold text-[#236383]">{selectedDateLabel}</h3>
                         <p className="text-sm text-gray-600 mt-1">
                           {selectedCalendarDate
                             ? selectedDateEvents.length > 0
-                              ? `${selectedDateEvents.length} ${selectedDateEvents.length === 1 ? 'event' : 'events'} available`
+                              ? isSelectedPast
+                                ? `${selectedDateEvents.length} completed ${selectedDateEvents.length === 1 ? 'event' : 'events'}`
+                                : `${selectedDateEvents.length} ${selectedDateEvents.length === 1 ? 'event' : 'events'} available`
                               : 'No events on this day'
                             : 'Select a day with a gold number.'}
                         </p>
                       </div>
                       {selectedDateEvents.length > 0 && (
-                        <Badge className="bg-[#007E8C] text-white border-transparent">
-                          {getTotalOpeningsForEvents(selectedDateEvents)} open
-                        </Badge>
+                        isSelectedPast ? (
+                          <Badge className="bg-gray-200 text-gray-700 border-transparent">
+                            <CheckCircle2 className="w-3.5 h-3.5 mr-1" aria-hidden="true" />
+                            Completed
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-[#007E8C] text-white border-transparent">
+                            {getTotalOpeningsForEvents(selectedDateEvents)} open
+                          </Badge>
+                        )
                       )}
                     </div>
 
                     <div className="mt-4 space-y-3">
                       {selectedDateEvents.length === 0 ? (
-                        <div className="rounded-xl bg-white border border-dashed border-[#47B3CB]/40 p-6 text-center">
-                          <Calendar className="w-9 h-9 mx-auto text-[#47B3CB]" />
-                          <p className="font-semibold text-[#236383] mt-3">Choose a day with events</p>
-                          <p className="text-sm text-gray-600 mt-1">
-                            Days with opportunities show a gold count in the corner.
-                          </p>
+                        // Educational empty state. Rather than telling the
+                        // user there's nothing here, use the space to walk
+                        // them through how signing up actually works.
+                        <div className="space-y-3">
+                          <div className="rounded-xl bg-white border border-[#47B3CB]/30 p-5 shadow-sm">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Sparkles className="w-5 h-5 text-[#FBAD3F]" aria-hidden="true" />
+                              <h4 className="font-bold text-[#236383]">How volunteering works</h4>
+                            </div>
+                            <ol className="space-y-2.5">
+                              {[
+                                { n: 1, title: 'Select a day', body: 'Click any day with a number on it to see what\'s happening.' },
+                                { n: 2, title: 'Review event details', body: 'Check the location, time, and which roles are still open.' },
+                                { n: 3, title: 'Choose a role', body: 'Driver or general volunteer — pick what fits you.' },
+                                { n: 4, title: 'Submit your signup', body: 'Confirm and you\'re done. We\'ll send a reminder before the event.' },
+                              ].map((step) => (
+                                <li key={step.n} className="flex items-start gap-3">
+                                  <span className="flex-shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full bg-[#007E8C] text-white text-xs font-bold">
+                                    {step.n}
+                                  </span>
+                                  <div className="min-w-0">
+                                    <p className="text-sm font-semibold text-[#236383] leading-tight">{step.title}</p>
+                                    <p className="text-xs text-gray-600 mt-0.5 leading-snug">{step.body}</p>
+                                  </div>
+                                </li>
+                              ))}
+                            </ol>
+                          </div>
+
+                          <div className="rounded-xl bg-[#FAF8F4] border border-[#FBAD3F]/30 p-4">
+                            <div className="flex items-start gap-2.5">
+                              <HelpCircle className="w-5 h-5 text-[#B45309] mt-0.5 flex-shrink-0" aria-hidden="true" />
+                              <div className="min-w-0">
+                                <p className="font-semibold text-sm text-[#236383]">Need help?</p>
+                                <p className="text-xs text-gray-700 mt-0.5 leading-snug">
+                                  Reach out to the volunteer coordinator and we'll point you in the right direction.
+                                </p>
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       ) : (
                         selectedDateEvents.map((event) => {
@@ -2433,25 +2975,41 @@ export default function VolunteerEventHub() {
                                   )}
                                 </div>
 
-                                <div className="flex flex-wrap gap-2">
-                                  {roles.length > 0 ? roles.map((role) => (
-                                    <span
-                                      key={role.singular}
-                                      className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold"
-                                      style={{ backgroundColor: role.bg, color: role.color }}
-                                    >
-                                      <role.Icon className="w-3.5 h-3.5" />
-                                      {formatNeededRole(role)}
-                                    </span>
-                                  )) : (
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 text-green-700 px-3 py-1.5 text-xs font-bold">
+                                {isSelectedPast ? (
+                                  <div className="flex flex-wrap gap-2">
+                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 text-gray-600 px-3 py-1.5 text-xs font-bold">
                                       <CheckCircle2 className="w-3.5 h-3.5" />
-                                      Extra help welcome
+                                      Completed
                                     </span>
-                                  )}
-                                </div>
+                                  </div>
+                                ) : (
+                                  <div className="flex flex-wrap gap-2">
+                                    {roles.length > 0 ? roles.map((role) => (
+                                      <span
+                                        key={role.singular}
+                                        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold"
+                                        style={{ backgroundColor: role.bg, color: role.color }}
+                                      >
+                                        <role.Icon className="w-3.5 h-3.5" />
+                                        {formatNeededRole(role)}
+                                      </span>
+                                    )) : (
+                                      <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 text-green-700 px-3 py-1.5 text-xs font-bold">
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                        Extra help welcome
+                                      </span>
+                                    )}
+                                  </div>
+                                )}
 
-                                {existingSignup ? (
+                                {isSelectedPast ? (
+                                  <div className="rounded-lg bg-gray-50 border border-gray-200 px-3 py-3 text-sm text-gray-700">
+                                    <p className="font-semibold text-gray-800">Event completed</p>
+                                    <p className="text-xs text-gray-600 mt-0.5">
+                                      This event has already taken place.
+                                    </p>
+                                  </div>
+                                ) : existingSignup ? (
                                   <div className="rounded-lg bg-[#47B3CB]/10 border border-[#47B3CB]/30 px-3 py-2 text-sm font-semibold text-[#236383] flex items-center justify-between gap-2">
                                     <span className="inline-flex items-center gap-2">
                                       <Check className="w-4 h-4" />
@@ -2539,6 +3097,8 @@ export default function VolunteerEventHub() {
                       )}
                     </div>
                   </div>
+                  );
+                  })()}
                 </div>
               </CardContent>
             </Card>
@@ -2615,7 +3175,7 @@ export default function VolunteerEventHub() {
                 {/* Date range info */}
                 <div className="px-4 py-2 border-b bg-gray-50 text-sm text-gray-600">
                   <Calendar className="w-3.5 h-3.5 inline mr-1.5 -mt-0.5 text-[#007e8c]" />
-                  Showing <span className="font-semibold text-[#007e8c]">{filteredEvents.length}</span> scheduled events from today onward that need volunteers, speakers, or drivers
+                  Showing <span className="font-semibold text-[#007e8c]">{filteredEvents.length}</span> scheduled events from today onward that need volunteers or drivers
                 </div>
 
                 <div className="h-[520px] overflow-hidden rounded-lg sm:h-[600px]">
@@ -2650,7 +3210,6 @@ export default function VolunteerEventHub() {
                           key={event.id}
                           position={[parseFloat(event.latitude!), parseFloat(event.longitude!)]}
                           icon={createEventIcon(
-                            event.speakersUnfilled > 0,
                             event.volunteersUnfilled > 0,
                             event.driversUnfilled > 0,
                             event.status === 'completed',
@@ -2785,7 +3344,6 @@ export default function VolunteerEventHub() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Roles</SelectItem>
-                      <SelectItem value="speaker">Speaker</SelectItem>
                       <SelectItem value="general">General Volunteer</SelectItem>
                       <SelectItem value="driver">Driver</SelectItem>
                     </SelectContent>
@@ -3352,6 +3910,18 @@ export default function VolunteerEventHub() {
           onOpenChange={setSignupDialogOpen}
           onSubmit={handleSignupSubmit}
           isSubmitting={signupMutation.isPending}
+          preselectedRole={preselectedSignupRole}
+          userCapabilities={user as UserRoleCapabilities | null}
+        />
+
+        {/* "You're in!" confirmation shown right after a successful signup */}
+        <SignupSuccessDialog
+          event={signupConfirmation?.event ?? null}
+          roles={signupConfirmation?.roles ?? []}
+          open={signupConfirmation !== null}
+          onOpenChange={(isOpen) => {
+            if (!isOpen) setSignupConfirmation(null);
+          }}
         />
 
         <UnavailableDialog

@@ -66,7 +66,7 @@ task = "shell.exec"
 args = "npm run dev"
 
 [objectStorage]
-defaultBucketID = "replit-objstore-a7721532-5ea7-447a-83e7-dc6cdbc3d787"
+defaultBucketID = "replit-objstore-5c569e23-2e8a-423a-87c9-b9bf6fd00d94"
 
 [agent]
 integrations = ["javascript_sendgrid:1.0.0", "javascript_database:1.0.0", "twilio:1.0.0", "javascript_openai_ai_integrations:1.0.0", "javascript_object_storage:2.0.0"]
@@ -79,3 +79,7 @@ APP_ENV = "development"
 [userenv.production]
 APP_ENV = "production"
 CLIENT_URL = "https://sandwich-project-platform-final-katielong2316.replit.app"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 20000

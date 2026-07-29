@@ -3,6 +3,11 @@
  *
  * Handles initial request message, next action, scheduling notes, and planning notes.
  * Includes collaboration field locking support.
+ *
+ * For website/Google Form submissions, the initial message is click-to-edit
+ * (protects the original form text). For manually added events, all notes
+ * fields — including the initial message — are freely editable like the rest
+ * of the form.
  */
 import * as React from 'react';
 import { Button } from '@/components/ui/button';
@@ -19,6 +24,8 @@ interface NotesSectionProps {
   isComplete: boolean;
   isMessageEditable: boolean;
   setIsMessageEditable: (editable: boolean) => void;
+  /** When true, message is a normal editable field (manual create/edit). */
+  alwaysEditableMessage?: boolean;
   // Collaboration
   isCollaborationEnabled: boolean;
   isFieldLockedByOther: (fieldName: string) => boolean;
@@ -33,6 +40,7 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
   isComplete,
   isMessageEditable,
   setIsMessageEditable,
+  alwaysEditableMessage = false,
   isCollaborationEnabled,
   isFieldLockedByOther,
   getFieldLock,
@@ -40,6 +48,8 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
   handleFieldBlur,
 }) => {
   const [messageBeforeEdit, setMessageBeforeEdit] = React.useState(formData.message || '');
+
+  const showMessageEditor = alwaysEditableMessage || isMessageEditable;
 
   return (
     <div className="space-y-4 border rounded-lg p-4 bg-white">
@@ -53,53 +63,68 @@ export const NotesSection: React.FC<NotesSectionProps> = ({
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
             <Label htmlFor="message">Initial Request Message</Label>
-            {!isMessageEditable && formData.message && (
+            {!alwaysEditableMessage && !isMessageEditable && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => { setMessageBeforeEdit(formData.message || ''); setIsMessageEditable(true); }}
                 className="text-xs text-gray-500 hover:text-gray-700"
+                data-testid="button-edit-message"
               >
-                Edit
+                {formData.message ? 'Edit' : 'Add'}
               </Button>
             )}
           </div>
-          {isMessageEditable ? (
-            <div className="space-y-2">
+          {showMessageEditor ? (
+            alwaysEditableMessage ? (
               <Textarea
                 id="message"
                 value={formData.message}
                 onChange={(e) => {
                   const value = e.target.value;
-                  setLastNotesEditValue(value);
                   setFormData((prev: any) => ({ ...prev, message: value }));
                 }}
-                placeholder="Original request message from the organizer"
+                placeholder="Notes from the organizer or how this request came in"
                 className="min-h-[80px]"
+                data-testid="textarea-message"
               />
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  size="sm"
-                  onClick={() => setIsMessageEditable(false)}
-                  className="bg-[#47B3CB] hover:bg-[#47B3CB]/80 text-white"
-                >
-                  Save
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setIsMessageEditable(false);
-                    setFormData((prev: any) => ({ ...prev, message: messageBeforeEdit }));
+            ) : (
+              <div className="space-y-2">
+                <Textarea
+                  id="message"
+                  value={formData.message}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setFormData((prev: any) => ({ ...prev, message: value }));
                   }}
-                >
-                  Cancel
-                </Button>
+                  placeholder="Original request message from the organizer"
+                  className="min-h-[80px]"
+                  data-testid="textarea-message"
+                />
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={() => setIsMessageEditable(false)}
+                    className="bg-[#47B3CB] hover:bg-[#47B3CB]/80 text-white"
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setIsMessageEditable(false);
+                      setFormData((prev: any) => ({ ...prev, message: messageBeforeEdit }));
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
               </div>
-            </div>
+            )
           ) : (
             <div className="bg-brand-primary-lighter p-3 rounded border-l-4 border-brand-primary-border text-sm text-gray-700">
               {formData.message || 'No initial message recorded'}

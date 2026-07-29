@@ -17,6 +17,7 @@ import { hasPermission } from '@shared/unified-auth-utils';
 import { parseDateOnly, getTodayString, toDateOnlyString } from '@shared/date-utils';
 import { isValidTransition, getTransitionError, requiresReason, getReasonField, getReasonSatisfyingFields, getScheduledDateDefault, type EventStatus } from '@shared/event-status-workflow';
 import { parseSandwichCountInput } from '@shared/sandwich-count-utils';
+import { eventRequestPatchSchema } from '@shared/event-request-patch';
 import { requirePermission } from '../middleware/auth';
 import { isAuthenticated } from '../auth';
 import { getEventRequestsGoogleSheetsService } from '../google-sheets-event-requests-sync';
@@ -28,11 +29,46 @@ import { logger } from '../middleware/logger';
 import type { AuthenticatedRequest } from '../types/express';
 import { emitEventRequestUpdate } from '../socket-chat';
 import { safeJsonParse } from '../utils/safe-json';
+import { getUndefinedColumn, dropColumnKey, classifyDbError, parsePgError } from '../utils/pg-error-utils';
 import { geocodeAddress } from '../utils/geocoding';
 import { rateLimiter } from '../utils/rate-limiter';
-import { getEffectiveEventDate } from '../../shared/event-validation-utils';
+import { getEffectiveEventDate, getAssignmentUrgentGaps, daysSinceSubmitted, daysUntilEventDate } from '../../shared/event-validation-utils';
+import { filterEventsByWeekScope, parseWeekScopeOffset } from '../lib/event-week-filter';
 
 const router = Router();
+
+// Timestamp columns on event_requests that clients may send as date strings.
+// Every field here is converted string -> Date (via parseDateOnly) before hitting
+// Drizzle, which throws "value.toISOString is not a function" on raw strings.
+// Used by BOTH the PATCH and PUT handlers — always add new client-editable
+// timestamp fields HERE so the two handlers can never drift apart again.
+// NOTE: pickupDateTime is intentionally excluded — it must remain a local
+// datetime string (YYYY-MM-DDTHH:MM:SS) to avoid timezone conversion issues.
+const EVENT_REQUEST_TIMESTAMP_FIELDS = [
+  'toolkitSentDate',
+  'contactedAt',
+  'desiredEventDate',
+  'duplicateCheckDate',
+  'markedUnresponsiveAt',
+  'lastContactAttempt',
+  'nextFollowUpDate',
+  'contactCompletedAt',
+  'callScheduledAt',
+  'callCompletedAt',
+  'scheduledCallDate',
+  'tspContactAssignedDate',
+  'statusChangedAt',
+  'standbyExpectedDate',
+  'standbyMarkedAt',
+  'scheduledEventDate',
+  'socialMediaPostRequestedDate',
+  'socialMediaPostCompletedDate',
+  'addedToOfficialSheetAt',
+  'nextActionUpdatedAt',
+  'actualSandwichCountRecordedDate',
+  'followUpOneDayDate',
+  'followUpOneMonthDate',
+];
 
 // Helper functions for pickup time data migration
 const convertTimeToDateTime = (timeStr: string, baseDate?: Date | string): string | null => {
@@ -1138,6 +1174,15 @@ router.get(
       const daysParam = req.query.days as string | undefined;
       const statusParam = req.query.status as string | undefined;
       const needsActionParam = req.query.needsAction as string | undefined;
+      // The client (EventRequestContext) falls back to this endpoint when
+      // /api/event-requests/list fails, reusing the SAME query string. These
+      // advanced filters therefore mirror the /list handler below exactly so a
+      // fallback returns the same set instead of silently broadening the data
+      // (e.g. dropping the week scope). Keep the two handlers in sync.
+      const needsDriverParam = req.query.needsDriver as string | undefined;
+      const weekParam = req.query.week as string | undefined;
+      const needsVanParam = req.query.needsVan as string | undefined;
+      const corporatePriorityParam = req.query.corporatePriority as string | undefined;
 
       // Use database-level filtering when status is specified (much faster than loading all rows)
       let eventRequests: Awaited<ReturnType<typeof storage.getAllEventRequests>>;
@@ -1150,6 +1195,11 @@ router.get(
         }
       } else {
         eventRequests = await storage.getAllEventRequests();
+      }
+
+      // Filter to a Monday–Sunday calendar week (current, next, +2, +3).
+      if (weekParam && parseWeekScopeOffset(weekParam) !== null) {
+        eventRequests = filterEventsByWeekScope(eventRequests, weekParam);
       }
 
       // Filter by days (next N days from today) - done in memory since date logic is complex
@@ -1200,16 +1250,9 @@ router.get(
             ? (Array.isArray(event.assignedDriverIds) ? event.assignedDriverIds.length : 1)
             : 0;
           const needsDriver = driversNeeded > assignedDrivers;
-          
-          // Events needing speakers
-          const speakersNeeded = event.speakersNeeded || 0;
-          const assignedSpeakers = event.speakerDetails 
-            ? (typeof event.speakerDetails === 'string' 
-                ? Object.keys(JSON.parse(event.speakerDetails || '{}')).length 
-                : Object.keys(event.speakerDetails || {}).length)
-            : 0;
-          const needsSpeaker = speakersNeeded > assignedSpeakers;
-          
+
+          // (Speaker role retired — speaker needs no longer counted.)
+
           // Events needing volunteers
           const volunteersNeeded = event.volunteersNeeded || 0;
           const assignedVolunteers = event.volunteerDetails
@@ -1218,17 +1261,38 @@ router.get(
                 : Object.keys(event.volunteerDetails || {}).length)
             : 0;
           const needsVolunteer = volunteersNeeded > assignedVolunteers;
-          
+
           // Events needing van driver
           const needsVanDriver = event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan;
-          
+
           // Events without confirmed dates (new/in_process)
           const needsDateConfirmation = (event.status === 'new' || event.status === 'in_process') && !event.isConfirmed;
-          
-          return needsDriver || needsSpeaker || needsVolunteer || needsVanDriver || needsDateConfirmation;
+
+          return needsDriver || needsVolunteer || needsVanDriver || needsDateConfirmation;
         });
       }
-      
+
+      // Advanced staffing/priority filters. These mirror the /list handler
+      // exactly so a client fallback (list -> this endpoint) returns the same
+      // set instead of silently broadening it.
+      if (needsDriverParam === 'true') {
+        eventRequests = eventRequests.filter(event => {
+          const driversNeeded = event.driversNeeded || 0;
+          const assignedDrivers = Array.isArray(event.assignedDriverIds)
+            ? event.assignedDriverIds.filter(Boolean).length
+            : 0;
+          return (driversNeeded - assignedDrivers) > 0 && !event.selfTransport;
+        });
+      }
+
+      if (needsVanParam === 'true') {
+        eventRequests = eventRequests.filter(event => event.vanDriverNeeded === true);
+      }
+
+      if (corporatePriorityParam === 'true') {
+        eventRequests = eventRequests.filter(event => event.isCorporatePriority === true);
+      }
+
       // DEBUG: Log details about what we're returning
       const completedCount = eventRequests.filter(e => e.status === 'completed').length;
       logger.info(`📊 API returning ${eventRequests.length} filtered events (${completedCount} completed)`);
@@ -1261,6 +1325,7 @@ router.get(
       const statusParam = req.query.status as string | undefined;
       const needsActionParam = req.query.needsAction as string | undefined;
       const needsDriverParam = req.query.needsDriver as string | undefined;
+      const weekParam = req.query.week as string | undefined;
 
       // Use database-level filtering when status is specified (much faster than loading all rows)
       let eventRequests: Awaited<ReturnType<typeof storage.getAllEventRequests>>;
@@ -1273,6 +1338,11 @@ router.get(
         }
       } else {
         eventRequests = await storage.getAllEventRequests();
+      }
+
+      // Filter to a Monday–Sunday calendar week (current, next, +2, +3).
+      if (weekParam && parseWeekScopeOffset(weekParam) !== null) {
+        eventRequests = filterEventsByWeekScope(eventRequests, weekParam);
       }
 
       // Apply date filter in memory (complex date logic is harder to do in SQL)
@@ -1315,13 +1385,7 @@ router.get(
             : 0;
           const needsDriver = driversNeeded > assignedDrivers;
 
-          const speakersNeeded = event.speakersNeeded || 0;
-          const assignedSpeakers = event.speakerDetails
-            ? (typeof event.speakerDetails === 'string'
-                ? Object.keys(JSON.parse(event.speakerDetails || '{}')).length
-                : Object.keys(event.speakerDetails || {}).length)
-            : 0;
-          const needsSpeaker = speakersNeeded > assignedSpeakers;
+          // (Speaker role retired — speaker needs no longer counted.)
 
           const volunteersNeeded = event.volunteersNeeded || 0;
           const assignedVolunteers = event.volunteerDetails
@@ -1334,24 +1398,22 @@ router.get(
           const needsVanDriver = event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan;
           const needsDateConfirmation = (event.status === 'new' || event.status === 'in_process') && !event.isConfirmed;
 
-          return needsDriver || needsSpeaker || needsVolunteer || needsVanDriver || needsDateConfirmation;
+          return needsDriver || needsVolunteer || needsVanDriver || needsDateConfirmation;
         });
       }
 
-      // Filter for events specifically needing drivers (includes van drivers)
+      // Filter for events that still need regular drivers. This intentionally
+      // mirrors eventsNeedingDrivers in /operational-stats exactly (regular
+      // drivers only, self-transport excluded, same assigned-count semantics)
+      // so the dashboard "Need Drivers" tile and the list it opens agree.
+      // Van-only needs are surfaced by the separate "Needs Van" filter.
       if (needsDriverParam === 'true') {
         eventRequests = eventRequests.filter(event => {
-          // Regular drivers needed
           const driversNeeded = event.driversNeeded || 0;
-          const assignedDrivers = event.assignedDriverIds
-            ? (Array.isArray(event.assignedDriverIds) ? event.assignedDriverIds.length : 1)
+          const assignedDrivers = Array.isArray(event.assignedDriverIds)
+            ? event.assignedDriverIds.filter(Boolean).length
             : 0;
-          const needsRegularDriver = driversNeeded > assignedDrivers;
-
-          // Van driver needed
-          const needsVanDriver = event.vanDriverNeeded && !event.assignedVanDriverId && !event.isDhlVan;
-
-          return needsRegularDriver || needsVanDriver;
+          return (driversNeeded - assignedDrivers) > 0 && !event.selfTransport;
         });
       }
 
@@ -1763,13 +1825,23 @@ router.post(
       try {
         validatedData = insertEventRequestSchema.parse(requestData);
       } catch (validationError: unknown) {
-        const errorDetails = validationError instanceof z.ZodError
-          ? validationError.errors
+        const zodError = validationError instanceof z.ZodError ? validationError : null;
+        const errorDetails = zodError
+          ? zodError.errors
           : (validationError as Error).message;
+        // Surface the ACTUAL field-level problem (e.g. an invalid email) instead
+        // of the generic org-name message — that message made real validation
+        // failures look unexplained, since the user had already entered an org name.
+        const firstIssue = zodError?.errors?.[0];
+        const specificMessage = firstIssue
+          ? (firstIssue.path?.length
+              ? `${firstIssue.message} (field: ${firstIssue.path.join('.')})`
+              : firstIssue.message)
+          : null;
         return res.status(400).json({
           error: 'Validation failed',
           details: errorDetails,
-          message: 'Please check your input and try again. Make sure you provide at least an organization name or contact information.'
+          message: specificMessage || 'Please check your input and try again.',
         });
       }
 
@@ -2424,7 +2496,39 @@ router.patch(
       // Track fields the server silently dropped during processing so the client can warn the user.
       // Each entry: { field: 'fieldName', reason: 'human-readable explanation' }
       const droppedFields: Array<{ field: string; reason: string }> = [];
-      
+
+      // SHADOW VALIDATION (save-path consolidation PR-A — log-only, never rejects).
+      // Parse the incoming body against the shared eventRequestPatchSchema and log
+      // any violations so we can see what real payloads would fail BEFORE enforcement
+      // is turned on (see docs/event-request-save-path-consolidation.md). safeParse
+      // never throws and the result is intentionally discarded — this cannot affect
+      // the save. Set EVENT_PATCH_SHADOW_VALIDATION=off to silence.
+      if (process.env.EVENT_PATCH_SHADOW_VALIDATION !== 'off') {
+        try {
+          const shadow = eventRequestPatchSchema.safeParse(updates);
+          if (!shadow.success) {
+            const issues = shadow.error.issues.map((issue) => ({
+              path: issue.path.join('.') || '(root)',
+              code: issue.code,
+              message: issue.message,
+            }));
+            logger.warn(
+              `[PATCH /:id] SHADOW VALIDATION: event ${id} body would fail eventRequestPatchSchema (${issues.length} issue(s)): ${JSON.stringify(issues)}`
+            );
+          }
+        } catch (shadowError) {
+          // Defensive: a bug in shadow validation must never break a real save.
+          // Serialize the error into the message string — passing an Error as a
+          // second arg to the production logger loses the stack and can render as
+          // "{}" (Error's own props are non-enumerable).
+          const detail =
+            shadowError instanceof Error
+              ? `${shadowError.message}${shadowError.stack ? `\n${shadowError.stack}` : ''}`
+              : String(shadowError);
+          logger.warn(`[PATCH /:id] SHADOW VALIDATION threw (ignored): ${detail}`);
+        }
+      }
+
       // DEBUG: Log department field specifically
       logger.info(`[PATCH /:id] DEPARTMENT DEBUG: department in updates = "${updates.department}", type = ${typeof updates.department}`);
       // DEBUG: Log van driver fields
@@ -2513,28 +2617,9 @@ router.patch(
       const processedUpdates = { ...pickupProcessedUpdates };
 
       // Convert timestamp fields that might come as strings to Date objects
-      // NOTE: pickupDateTime is intentionally excluded - it should remain as a local datetime string
-      // to avoid timezone conversion issues (keep as YYYY-MM-DDTHH:MM:SS format)
-      const timestampFields = [
-        'toolkitSentDate',
-        'contactedAt',
-        'desiredEventDate',
-        'duplicateCheckDate',
-        'markedUnresponsiveAt',
-        'lastContactAttempt',
-        'nextFollowUpDate',
-        'contactCompletedAt',
-        'callScheduledAt',
-        'callCompletedAt',
-        'scheduledCallDate',
-        'tspContactAssignedDate',
-        'statusChangedAt',
-        'scheduledEventDate',
-        'socialMediaPostRequestedDate',
-        'socialMediaPostCompletedDate',
-        'addedToOfficialSheetAt',
-      ];
-      
+      // (shared list — see EVENT_REQUEST_TIMESTAMP_FIELDS at the top of this file)
+      const timestampFields = EVENT_REQUEST_TIMESTAMP_FIELDS;
+
       timestampFields.forEach((field) => {
         if (
           processedUpdates[field] &&
@@ -2609,6 +2694,31 @@ router.patch(
           }
         }
 
+        // Guard: an event can't land on the calendar without a date. With
+        // transition restrictions disabled (July 2026), 'scheduled' and
+        // 'rescheduled' are reachable from ANY status via the form dropdown,
+        // so enforce the one invariant that still matters — a scheduled/
+        // rescheduled event must have an event date (scheduled or desired).
+        // Resolve with `!== undefined` so an explicit null clear in this same
+        // PATCH is respected instead of falling back to the stored value.
+        if (toStatus === 'scheduled' || toStatus === 'rescheduled') {
+          const dateForCalendar =
+            (processedUpdates.scheduledEventDate !== undefined
+              ? processedUpdates.scheduledEventDate
+              : originalEvent.scheduledEventDate) ??
+            (processedUpdates.desiredEventDate !== undefined
+              ? processedUpdates.desiredEventDate
+              : originalEvent.desiredEventDate);
+          if (!dateForCalendar) {
+            logger.warn(`[PATCH /:id] Missing event date for event ${id}: ${fromStatus} → ${toStatus}`);
+            return res.status(400).json({
+              message: `An event date is required to mark this event as "${toStatus}". Please add an event date first.`,
+              error: 'MISSING_EVENT_DATE',
+              requestedStatus: toStatus,
+            });
+          }
+        }
+
         processedUpdates.statusChangedAt = new Date();
 
         // Pure transition side-effect from the shared workflow: when scheduling
@@ -2672,6 +2782,14 @@ router.patch(
         if (processedUpdates.status === 'non_event') {
           processedUpdates.nonEventAt = new Date();
           processedUpdates.nonEventBy = req.user?.id || null;
+        }
+
+        // Track when the event entered standby. Drives the "since ..." badge on
+        // the standby card and lets the standby follow-up reminder treat each
+        // standby episode independently. Only set on the transition INTO
+        // standby, so re-saving an already-standby event keeps the original date.
+        if (processedUpdates.status === 'standby') {
+          processedUpdates.standbyMarkedAt = new Date();
         }
 
         // Track metadata for rescheduled status
@@ -2849,24 +2967,47 @@ router.patch(
       }
 
       let updatedEventRequest;
-      try {
-        updatedEventRequest = await storage.updateEventRequest(id, {
-          ...processedUpdates,
-          updatedAt: new Date(),
-        });
-      } catch (updateError: any) {
-        // If the update fails and includes addedToOfficialSheetAt, retry without it
-        // (the column may not exist yet if migration 0043 hasn't run)
-        if (processedUpdates.addedToOfficialSheetAt !== undefined) {
-          logger.warn(`[PATCH /:id] Update failed with addedToOfficialSheetAt, retrying without it: ${updateError?.message}`);
-          droppedFields.push({ field: 'addedToOfficialSheetAt', reason: 'Database column not available on this branch (migration pending)' });
-          const { addedToOfficialSheetAt, ...updatesWithoutTimestamp } = processedUpdates;
-          updatedEventRequest = await storage.updateEventRequest(id, {
-            ...updatesWithoutTimestamp,
-            updatedAt: new Date(),
-          });
-        } else {
-          throw updateError;
+      {
+        // Some columns exist in the Drizzle schema but not on the current
+        // database branch — migrations are applied manually per Neon branch, so
+        // dev and production drift. Writing such a column throws Postgres 42703
+        // (undefined_column) and used to fail the ENTIRE save with an opaque
+        // 500 (the old code only special-cased addedToOfficialSheetAt). Instead,
+        // detect the missing column, drop it, record it for the client's
+        // partial-save warning, and retry. The loop handles several missing
+        // columns in a row; the bound prevents an infinite loop if a drop never
+        // resolves the error.
+        const attemptUpdates: Record<string, any> = { ...processedUpdates };
+        const MAX_COLUMN_DROP_RETRIES = 12;
+        for (let attempt = 0; ; attempt++) {
+          try {
+            updatedEventRequest = await storage.updateEventRequest(id, {
+              ...attemptUpdates,
+              updatedAt: new Date(),
+            });
+            break;
+          } catch (updateError: any) {
+            const missingColumn = getUndefinedColumn(updateError);
+            const droppedKey = missingColumn
+              ? dropColumnKey(attemptUpdates, missingColumn)
+              : null;
+            if (droppedKey && attempt < MAX_COLUMN_DROP_RETRIES) {
+              // Keep processedUpdates in sync with what we actually persist.
+              // Downstream logic (the activity-log change summary, side effects)
+              // keys off processedUpdates, so a dropped-but-still-present field
+              // would be reported as saved when it wasn't.
+              delete (processedUpdates as any)[droppedKey];
+              logger.warn(
+                `[PATCH /:id] Column "${missingColumn}" is not on this DB branch; dropping "${droppedKey}" and retrying: ${updateError?.message}`
+              );
+              droppedFields.push({
+                field: droppedKey,
+                reason: 'Database column not available on this branch (migration pending)',
+              });
+              continue;
+            }
+            throw updateError;
+          }
         }
       }
 
@@ -2985,21 +3126,41 @@ router.patch(
       res.json(responsePayload);
     } catch (error: unknown) {
       const err = error as Error;
+      const pg = parsePgError(error);
       logger.error('Error updating event request:', error);
       logger.error('Error stack:', err?.stack);
+      // Log the structured DB detail so the real cause (column/constraint/code)
+      // is recoverable from server logs even when the client only sees a
+      // friendly message.
+      logger.error(
+        `[PATCH /:id] DB error detail — code=${pg.code ?? 'n/a'}, column=${pg.column ?? 'n/a'}, constraint=${pg.constraint ?? 'n/a'}`
+      );
 
-      // Check for specific database errors
-      if (err?.message?.includes('invalid input syntax')) {
-        return res.status(400).json({
-          message: 'Invalid data format',
-          error: err.message,
-          details: 'Please check that all fields contain valid data'
+      // Translate recognized constraint/type errors into specific, actionable
+      // 4xx responses instead of a bare "Failed to update event request" 500.
+      const classified = classifyDbError(error);
+      if (classified) {
+        return res.status(classified.status).json({
+          message: classified.message,
+          error: classified.error,
+          column: classified.column,
+          // Stable, non-sensitive diagnostics on both the 4xx and 500 paths so
+          // the client's error report can identify the field/error class. The
+          // raw DB message can name internal schema/constraints, so it's gated
+          // to development (same convention as `details` below); the full
+          // message is always written to the server logs regardless of env.
+          dbCode: pg.code,
+          dbColumn: pg.column,
+          dbError: process.env.NODE_ENV === 'development' ? pg.message : undefined,
         });
       }
 
       res.status(500).json({
         message: 'Failed to update event request',
         error: err?.message || 'Unknown error',
+        dbCode: pg.code,
+        dbColumn: pg.column,
+        dbError: process.env.NODE_ENV === 'development' ? pg.message : undefined,
         details: process.env.NODE_ENV === 'development' ? err?.stack : undefined
       });
     }
@@ -3051,26 +3212,9 @@ router.put(
       const processedUpdates = { ...pickupProcessedUpdates };
 
       // Convert timestamp fields that might come as strings to Date objects
-      // NOTE: pickupDateTime is intentionally excluded - it should remain as a local datetime string
-      // to avoid timezone conversion issues (keep as YYYY-MM-DDTHH:MM:SS format)
-      const timestampFields = [
-        'toolkitSentDate',
-        'contactedAt',
-        'desiredEventDate',
-        'duplicateCheckDate',
-        'markedUnresponsiveAt',
-        'lastContactAttempt',
-        'nextFollowUpDate',
-        'contactCompletedAt',
-        'callScheduledAt',
-        'callCompletedAt',
-        'scheduledCallDate',
-        'tspContactAssignedDate',
-        'statusChangedAt',
-        'scheduledEventDate',
-        'nextActionUpdatedAt',
-      ];
-      
+      // (shared list — see EVENT_REQUEST_TIMESTAMP_FIELDS at the top of this file)
+      const timestampFields = EVENT_REQUEST_TIMESTAMP_FIELDS;
+
       timestampFields.forEach((field) => {
         if (
           processedUpdates[field] &&
@@ -3301,6 +3445,12 @@ router.put(
           if (processedUpdates.showOnVolunteerHub === undefined && !originalEvent.showOnVolunteerHub) {
             processedUpdates.showOnVolunteerHub = true;
           }
+        }
+
+        // Keep PUT behavior aligned with PATCH: stamp when the event entered
+        // standby (drives the "since ..." badge and per-episode reminder dedup).
+        if (toStatus === 'standby') {
+          processedUpdates.standbyMarkedAt = new Date();
         }
       }
 
@@ -4910,8 +5060,6 @@ router.get(
       }).map(event => {
         const driversNeeded = event.driversNeeded || 0;
         const assignedDrivers = getAssignedCount(event.assignedDriverIds);
-        const speakersNeeded = event.speakersNeeded || 0;
-        const assignedSpeakers = getAssignedCount(event.assignedSpeakerIds);
         const volunteersNeeded = event.volunteersNeeded || 0;
         const assignedVolunteers = getAssignedCount(event.assignedVolunteerIds);
 
@@ -4921,7 +5069,7 @@ router.get(
           eventDate: getEffectiveEventDate(event),
           status: event.status,
           needsDriver: (driversNeeded - assignedDrivers) > 0 && !event.selfTransport,
-          needsSpeaker: (speakersNeeded - assignedSpeakers) > 0,
+          needsSpeaker: false, // Speaker role retired — never a speaker need.
           needsVolunteer: (volunteersNeeded - assignedVolunteers) > 0,
           isToday: toDateOnlyString(getEffectiveEventDate(event)) === todayString,
         };
@@ -4939,12 +5087,8 @@ router.get(
         return (driversNeeded - assignedDrivers) > 0 && !selfTransport;
       });
 
-      // Events needing speakers
-      const eventsNeedingSpeakers = activeEvents.filter(event => {
-        const speakersNeeded = event.speakersNeeded || 0;
-        const assignedSpeakers = getAssignedCount(event.assignedSpeakerIds);
-        return (speakersNeeded - assignedSpeakers) > 0;
-      });
+      // Events needing speakers — speaker role retired, always empty.
+      const eventsNeedingSpeakers: typeof activeEvents = [];
 
       // Events needing volunteers
       const eventsNeedingVolunteers = activeEvents.filter(event => {
@@ -4961,11 +5105,7 @@ router.get(
         return sum + Math.max(0, needed - assigned);
       }, 0);
 
-      const totalSpeakersNeeded = activeEvents.reduce((sum, event) => {
-        const needed = event.speakersNeeded || 0;
-        const assigned = getAssignedCount(event.assignedSpeakerIds);
-        return sum + Math.max(0, needed - assigned);
-      }, 0);
+      const totalSpeakersNeeded = 0; // Speaker role retired.
 
       const totalVolunteersNeeded = activeEvents.reduce((sum, event) => {
         const needed = event.volunteersNeeded || 0;
@@ -5004,6 +5144,183 @@ router.get(
         rescheduled: activeEvents.filter(e => e.status === 'rescheduled').length,
       };
 
+      // ── My TSP-contact assignments ───────────────────────────────────
+      // When the logged-in user is assigned as the TSP contact on one or
+      // more events, surface a personalized snapshot. The fields below let
+      // the client decide whether to render the generic Operational Overview
+      // (no assignments) or the personalized snapshot (any assignments).
+      //
+      // Matching strategy: an event "belongs to" the current user when
+      // their user id appears in EITHER the canonical tspContactUserId
+      // field OR the tspContactAssigned column (which can hold either a
+      // user id or a free-text name depending on how it was assigned). We
+      // match against `req.user.id` and also their email-derived id form to
+      // catch both shapes.
+      const currentUserId = (req.user as any)?.id;
+      let myAssignments: any = null;
+      if (currentUserId) {
+        const userIdStr = String(currentUserId);
+        const isAssignedToMe = (event: any): boolean => {
+          if (!event) return false;
+          if (event.tspContactUserId && String(event.tspContactUserId) === userIdStr) return true;
+          if (event.tspContactAssigned && String(event.tspContactAssigned) === userIdStr) return true;
+          if (event.tspContact && String(event.tspContact) === userIdStr) return true;
+          return false;
+        };
+
+        // Only consider ACTIVE statuses for the personalized snapshot —
+        // completed/declined/cancelled aren't "things that need attention."
+        const myEvents = activeEvents.filter(isAssignedToMe);
+
+        // Stale in-process: no lastContactAttempt in the past 7 days. Treats
+        // missing lastContactAttempt as stale too, since the user has never
+        // logged contact on an in-process event they own.
+        const sevenDaysAgo = new Date(today);
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+        const LARGE_SANDWICH_THRESHOLD = 500;
+
+        const mapMyAssignmentEvent = (event: any) => {
+          const eventDate = toDateOnlyString(getEffectiveEventDate(event));
+          const lastContact = event.lastContactAttempt || null;
+          let needsFollowUp = false;
+          if (event.status === 'in_process') {
+            if (!lastContact) {
+              needsFollowUp = true;
+            } else {
+              const last = new Date(lastContact);
+              needsFollowUp = Number.isNaN(last.getTime()) || last < sevenDaysAgo;
+            }
+          }
+
+          const count = event.estimatedSandwichCount ?? null;
+          const countMax = event.estimatedSandwichCountMax ?? null;
+          const isLargeEvent =
+            (typeof count === 'number' && count >= LARGE_SANDWICH_THRESHOLD) ||
+            (typeof countMax === 'number' && countMax >= LARGE_SANDWICH_THRESHOLD);
+
+          const submittedDays = daysSinceSubmitted(event.createdAt, today);
+          const untilEvent = daysUntilEventDate(eventDate, today);
+          const urgentGaps = getAssignmentUrgentGaps(event, 7, today);
+
+          return {
+            id: event.id,
+            organizationName: event.organizationName,
+            status: event.status,
+            eventDate,
+            createdAt: event.createdAt ?? null,
+            daysSinceSubmitted: submittedDays,
+            daysUntilEvent: untilEvent,
+            urgentGaps,
+            needsUrgentDetails: urgentGaps.length > 0,
+            lastContactAttempt: lastContact,
+            estimatedSandwichCount: count,
+            estimatedSandwichCountMin: event.estimatedSandwichCountMin ?? null,
+            estimatedSandwichCountMax: countMax,
+            sandwichTypes: event.sandwichTypes ?? null,
+            needsFollowUp,
+            vanNeeded: !!(event.vanDriverNeeded || event.vanNeededLikely),
+            vanDriverNeeded: !!event.vanDriverNeeded,
+            vanNeededLikely: !!event.vanNeededLikely,
+            isLargeEvent,
+            isCorporatePriority: !!event.isCorporatePriority,
+          };
+        };
+
+        const isStaleInProcess = (event: any): boolean => {
+          if (event.status !== 'in_process') return false;
+          if (!event.lastContactAttempt) return true;
+          const last = new Date(event.lastContactAttempt);
+          if (Number.isNaN(last.getTime())) return true;
+          return last < sevenDaysAgo;
+        };
+
+        const sortByDateAsc = (a: { eventDate: string | null }, b: { eventDate: string | null }) => {
+          const dA = parseDateOnly(a.eventDate)?.getTime() || 0;
+          const dB = parseDateOnly(b.eventDate)?.getTime() || 0;
+          return dA - dB;
+        };
+
+        const toDateOnlyString = (value: unknown): string | null => {
+          if (!value) return null;
+          if (value instanceof Date) return value.toISOString().slice(0, 10);
+          if (typeof value === 'string') return value.slice(0, 10);
+          return null;
+        };
+
+        const sortRawEventsByDateAsc = (a: any, b: any) => {
+          const dA =
+            parseDateOnly(toDateOnlyString(getEffectiveEventDate(a)))?.getTime() || 0;
+          const dB =
+            parseDateOnly(toDateOnlyString(getEffectiveEventDate(b)))?.getTime() || 0;
+          return dA - dB;
+        };
+
+        // New requests assigned to me — highest priority, surfaced first.
+        const myNewRequests = myEvents
+          .filter((e) => e.status === 'new')
+          .sort((a, b) => {
+            const daysA = daysSinceSubmitted(a.createdAt, today) ?? 0;
+            const daysB = daysSinceSubmitted(b.createdAt, today) ?? 0;
+            if (daysB !== daysA) return daysB - daysA;
+            return sortRawEventsByDateAsc(a, b);
+          })
+          .map(mapMyAssignmentEvent);
+
+        const myInProcessStale = myEvents
+          .filter(isStaleInProcess)
+          .map(mapMyAssignmentEvent);
+
+        // Full breakdown by status for the snapshot summary.
+        const byStatus = {
+          new: myEvents.filter((e) => e.status === 'new').length,
+          in_process: myEvents.filter((e) => e.status === 'in_process').length,
+          scheduled: myEvents.filter((e) => e.status === 'scheduled').length,
+          rescheduled: myEvents.filter((e) => e.status === 'rescheduled').length,
+        };
+
+        const byStatusEvents = {
+          new: myEvents.filter((e) => e.status === 'new').sort(sortRawEventsByDateAsc).map(mapMyAssignmentEvent),
+          in_process: myEvents.filter((e) => e.status === 'in_process').sort(sortRawEventsByDateAsc).map(mapMyAssignmentEvent),
+          scheduled: myEvents.filter((e) => e.status === 'scheduled').sort(sortRawEventsByDateAsc).map(mapMyAssignmentEvent),
+          rescheduled: myEvents.filter((e) => e.status === 'rescheduled').sort(sortRawEventsByDateAsc).map(mapMyAssignmentEvent),
+        };
+
+        // Top-line list of every event this user owns, lightweight payload.
+        const allMyEvents = myEvents
+          .map(mapMyAssignmentEvent)
+          .sort((a, b) => {
+            const statusRank: Record<string, number> = { new: 0, in_process: 1, scheduled: 2, rescheduled: 2 };
+            const rA = statusRank[a.status || ''] ?? 9;
+            const rB = statusRank[b.status || ''] ?? 9;
+            if (rA !== rB) return rA - rB;
+            return sortByDateAsc(a, b);
+          });
+
+        const urgentDetailEvents = myEvents
+          .map(mapMyAssignmentEvent)
+          .filter((e) => e.needsUrgentDetails)
+          .sort((a, b) => {
+            const daysA = a.daysUntilEvent ?? 999;
+            const daysB = b.daysUntilEvent ?? 999;
+            if (daysA !== daysB) return daysA - daysB;
+            return (b.urgentGaps?.length ?? 0) - (a.urgentGaps?.length ?? 0);
+          });
+
+        myAssignments = {
+          total: myEvents.length,
+          newRequestsCount: myNewRequests.length,
+          inProcessStaleCount: myInProcessStale.length,
+          urgentDetailGapsCount: urgentDetailEvents.length,
+          byStatus,
+          byStatusEvents,
+          newRequests: myNewRequests,
+          inProcessStale: myInProcessStale,
+          urgentDetailEvents,
+          allMyEvents,
+        };
+      }
+
       res.json({
         thisWeekEventsCount: thisWeekEvents.length,
         eventsNeedingDrivers: eventsNeedingDrivers.length,
@@ -5020,6 +5337,7 @@ router.get(
         tomorrowEventsCount: upcomingDeadlines.filter(e => !e.isToday).length,
         activeEventsCount: activeEvents.length,
         statusCounts,
+        myAssignments,
       });
     } catch (error) {
       logger.error('Failed to fetch operational stats', error);
