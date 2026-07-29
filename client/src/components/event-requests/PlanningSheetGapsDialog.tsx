@@ -180,15 +180,40 @@ export function PlanningSheetGapsDialog({
                 </div>
               )}
 
-              {data.possibleMatchCount > 0 && (
-                <p className="text-xs text-gray-500">
-                  Note: {data.possibleMatchCount} other sheet row
-                  {data.possibleMatchCount === 1 ? '' : 's'} looked like a close
-                  match to an existing event on the same date, so{' '}
-                  {data.possibleMatchCount === 1 ? 'it is' : 'they are'} not listed
-                  above. The gap list matches on group name + date, so double-check
-                  any surprises against the app before acting.
-                </p>
+              {data.possibleMatches.length > 0 && (
+                <div>
+                  <h4 className="text-sm font-semibold text-amber-700 mb-1">
+                    Possible matches — not counted as gaps
+                  </h4>
+                  <p className="text-xs text-gray-500 mb-1">
+                    These sheet rows look like a close (name + same-date) match to
+                    an event already in the app, so they&apos;re excluded from the
+                    gap list above. The match is a heuristic — check any where the
+                    names don&apos;t really line up, in case a weak match is hiding
+                    a real gap.
+                  </p>
+                  <div className="border rounded-md border-amber-200">
+                    {data.possibleMatches.map((row) => (
+                      <div
+                        key={row.fingerprint}
+                        className="flex flex-wrap items-center gap-2 py-2 px-2 border-b last:border-b-0"
+                        data-testid={`possible-row-${row.rowIndex}`}
+                      >
+                        <span className="text-sm font-medium w-28 flex-shrink-0">
+                          {formatDate(row.date)}
+                        </span>
+                        <span className="text-sm flex-1 min-w-[10rem]">
+                          {row.groupName}
+                          {row.matchedEvent && (
+                            <span className="block text-xs text-amber-700">
+                              matched to &quot;{row.matchedEvent.organizationName}&quot; ({row.matchedEvent.status})
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
           )}

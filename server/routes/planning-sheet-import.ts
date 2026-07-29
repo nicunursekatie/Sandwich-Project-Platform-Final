@@ -1,6 +1,6 @@
 import { Router, Request, Response } from 'express';
 import { z } from 'zod';
-import { inArray } from 'drizzle-orm';
+import { inArray, isNull } from 'drizzle-orm';
 import { db } from '../db';
 import { eventRequests } from '@shared/schema';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -297,7 +297,11 @@ async function compareSheetToApp(): Promise<SheetComparison | null> {
       status: eventRequests.status,
       externalId: eventRequests.externalId,
     })
-    .from(eventRequests);
+    .from(eventRequests)
+    // Exclude soft-deleted requests — a deleted event doesn't "represent" a
+    // sheet row, so it shouldn't hide a gap (or count as already-in-app for
+    // the importer). Matches how the rest of the app filters event requests.
+    .where(isNull(eventRequests.deletedAt));
 
   const importedIds = new Set(events.map((e) => e.externalId));
   const eventsByDate = new Map<string, typeof events>();
