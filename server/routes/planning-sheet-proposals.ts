@@ -307,11 +307,13 @@ export function createPlanningSheetProposalsRouter(
 
   /**
    * GET /api/planning-sheet-proposals/sheet/read
-   * Read current data from the Planning Sheet (for comparison/debugging)
+   * Read current data from the Planning Sheet (for comparison/debugging).
+   * Full-sheet read stays on EVENT_REQUESTS_SYNC (same gate as planning-sheet import),
+   * separate from EVENT_REQUESTS_EDIT used by push/approve write paths.
    *
    * NOTE: This route MUST come before /:id to avoid "sheet" being caught as an id
    */
-  router.get('/sheet/read', isAuthenticated, requirePermission(PERMISSIONS.EVENT_REQUESTS_EDIT), async (req: AuthenticatedRequest, res: Response) => {
+  router.get('/sheet/read', isAuthenticated, requirePermission(PERMISSIONS.EVENT_REQUESTS_SYNC), async (req: AuthenticatedRequest, res: Response) => {
     try {
       const service = getPlanningSheetService();
       if (!service) {
