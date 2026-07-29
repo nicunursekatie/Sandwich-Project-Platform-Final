@@ -82,4 +82,4 @@ CLIENT_URL = "https://sandwich-project-platform-final-katielong2316.replit.app"
 
 [postMerge]
 path = "scripts/post-merge.sh"
-timeoutMs = 20000
+timeoutMs = 180000
