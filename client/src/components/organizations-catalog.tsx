@@ -743,7 +743,11 @@ export default function GroupCatalog({
   };
 
   const escapeCsvCell = (value: unknown): string => {
-    const str = String(value ?? '');
+    let str = String(value ?? '');
+    // Neutralize spreadsheet formula injection (=, +, -, @, tab, CR)
+    if (/^[=+\-@\t\r]/.test(str)) {
+      str = `'${str}`;
+    }
     return `"${str.replace(/"/g, '""')}"`;
   };
 
