@@ -1860,24 +1860,6 @@ router.post(
         createdBy: user?.id || 1,
       });
 
-      // Geocode address synchronously so coordinates are set before response
-      if (validatedData.eventAddress) {
-        try {
-          const coords = await geocodeAddress(validatedData.eventAddress);
-          if (coords) {
-            await storage.updateEventRequest(newEventRequest.id!, {
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-            });
-            logger.log(`✅ Geocoded event ${newEventRequest.id}: ${validatedData.eventAddress}`);
-          } else {
-            logger.warn(`⚠️ Geocoding returned no results for event ${newEventRequest.id}: ${validatedData.eventAddress}`);
-          }
-        } catch (error) {
-          logger.error(`Failed to geocode event ${newEventRequest.id}:`, error);
-        }
-      }
-
       // Enhanced audit logging for create operation
       await AuditLogger.logEventRequestChange(
         newEventRequest.id?.toString() || 'unknown',
@@ -1898,6 +1880,29 @@ router.post(
         'EVENT_REQUESTS_ADD',
         `Created event request: ${newEventRequest.id} for ${validatedData.organizationName}`
       );
+
+      // Geocode asynchronously — don't block the create response on Google/OSM.
+      // Coordinates appear shortly after; map views can pick them up on refresh.
+      if (validatedData.eventAddress) {
+        const eventId = newEventRequest.id!;
+        const address = validatedData.eventAddress;
+        geocodeAddress(address)
+          .then(async (coords) => {
+            if (coords) {
+              await storage.updateEventRequest(eventId, {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+              });
+              logger.log(`✅ Geocoded event ${eventId}: ${address}`);
+            } else {
+              logger.warn(`⚠️ Geocoding returned no results for event ${eventId}: ${address}`);
+            }
+          })
+          .catch((error) => {
+            logger.error(`Failed to geocode event ${eventId}:`, error);
+          });
+      }
+
       res.status(201).json(newEventRequest);
     } catch (error) {
       if (error instanceof z.ZodError) {
