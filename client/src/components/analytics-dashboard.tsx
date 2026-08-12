@@ -62,6 +62,7 @@ export default function AnalyticsDashboard() {
     collections,
     hosts: hostsData,
     stats: statsData,
+    totalAvailable,
     isLoading: dataLoading
   } = useCollectionsData();
 
@@ -254,19 +255,17 @@ export default function AnalyticsDashboard() {
     // Calculate yearly breakdown
     const yearlyBreakdown = calculateYearlyBreakdown(collections);
 
-    // Estimated volunteer engagements across all collections. Uses the shared
-    // methodology so this matches the Grant Metrics page exactly.
-    const groupSandwiches = collections.reduce(
-      (sum, c) => sum + calculateGroupSandwiches(c),
-      0
-    );
-    const individualSandwiches = collections.reduce(
-      (sum, c) => sum + Number(c.individualSandwiches || 0),
-      0
+    // Estimated volunteer engagements, from the unpaginated stats aggregate
+    // rather than the `collections` array. The collections query is capped at
+    // one page sorted newest-first, so reducing over it would silently drop the
+    // oldest records and disagree with the total-sandwich figure above.
+    const statsIndividualSandwiches = Number(statsData.individualSandwiches || 0);
+    const statsGroupSandwiches = Number(
+      statsData.groupSandwiches ?? totalSandwiches - statsIndividualSandwiches
     );
     const volunteerEngagement = estimateVolunteerEngagement({
-      groupSandwiches,
-      individualSandwiches,
+      groupSandwiches: statsGroupSandwiches,
+      individualSandwiches: statsIndividualSandwiches,
     });
 
     logger.log('\n📅 YEARLY BREAKDOWN CALCULATED:');
@@ -292,8 +291,11 @@ export default function AnalyticsDashboard() {
       ),
       lowEngagements: roundEngagementsForDisplay(volunteerEngagement.lowEngagements),
       highEngagements: roundEngagementsForDisplay(volunteerEngagement.highEngagements),
+      // The yearly rows are built from the paginated array, so they are only
+      // trustworthy when every record is loaded.
+      hasCompleteCollections: collections.length >= totalAvailable,
     };
-  }, [collections, statsData, hostsData]);
+  }, [collections, statsData, hostsData, totalAvailable]);
 
   // Add period selection state
   const [selectedPeriod, setSelectedPeriod] = useState('1year');
@@ -535,8 +537,17 @@ export default function AnalyticsDashboard() {
             Yearly Breakdown
           </h3>
           <p className="text-[#646464] mt-1">
-            Annual sandwich totals and estimated volunteer engagements since founding
+            {analyticsData.hasCompleteCollections
+              ? 'Annual sandwich totals and estimated volunteer engagements since founding'
+              : 'Annual sandwich totals since founding'}
           </p>
+          {!analyticsData.hasCompleteCollections && (
+            <p className="text-sm text-brand-orange mt-1">
+              Showing the {collections.length.toLocaleString()} most recent of{' '}
+              {totalAvailable.toLocaleString()} collections, so earlier years are
+              undercounted. See Grant Metrics for per-year volunteer estimates.
+            </p>
+          )}
         </div>
         <CardContent className="p-6">
           <div className="space-y-3">
@@ -574,15 +585,17 @@ export default function AnalyticsDashboard() {
                     <div className="text-sm text-[#646464]">
                       {yearData.totalCollections} collections
                     </div>
-                    <div className="text-sm text-[#646464]">
-                      ~{roundEngagementsForDisplay(
-                        estimateVolunteerEngagement({
-                          groupSandwiches: yearData.groupSandwiches,
-                          individualSandwiches: yearData.individualSandwiches,
-                        }).centralEngagements
-                      ).toLocaleString()}{' '}
-                      volunteer engagements
-                    </div>
+                    {analyticsData.hasCompleteCollections && (
+                      <div className="text-sm text-[#646464]">
+                        ~{roundEngagementsForDisplay(
+                          estimateVolunteerEngagement({
+                            groupSandwiches: yearData.groupSandwiches,
+                            individualSandwiches: yearData.individualSandwiches,
+                          }).centralEngagements
+                        ).toLocaleString()}{' '}
+                        volunteer engagements
+                      </div>
+                    )}
                   </div>
                 </div>
               ))
