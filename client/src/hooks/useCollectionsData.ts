@@ -26,6 +26,13 @@ export interface UseCollectionsDataResult {
   hosts: Host[];
   stats: CollectionsStats | null;
   hybridStats: HybridStats | null;
+  /**
+   * Total non-deleted collections in the database. `collections` is a single
+   * page sorted newest-first, so when this exceeds `collections.length` the
+   * array is missing the OLDEST records — any per-year or all-time aggregate
+   * built from it will be wrong for earlier years.
+   */
+  totalAvailable: number;
 
   // Loading states
   isLoading: boolean;
@@ -103,6 +110,7 @@ export function useCollectionsData(): UseCollectionsDataResult {
   });
 
   const collections = collectionsData?.collections || [];
+  const totalAvailable = collectionsData?.pagination?.total ?? collections.length;
   const isLoading = isCollectionsLoading || isHostsLoading || isStatsLoading || isHybridStatsLoading;
   const error = collectionsError || hostsError || null;
 
@@ -115,6 +123,7 @@ export function useCollectionsData(): UseCollectionsDataResult {
     hosts,
     stats: stats || null,
     hybridStats: hybridStats || null,
+    totalAvailable,
     isLoading,
     isCollectionsLoading,
     isHostsLoading,
