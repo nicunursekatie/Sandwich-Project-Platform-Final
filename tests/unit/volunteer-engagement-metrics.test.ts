@@ -105,6 +105,27 @@ describe('estimateHouseholdEngagements', () => {
   });
 });
 
+describe('per-year engagement estimates', () => {
+  it('estimates each year independently from its own group/individual split', () => {
+    const years = [
+      { year: 2025, groupSandwiches: 227245, individualSandwiches: 298838 },
+      { year: 2024, groupSandwiches: 110000, individualSandwiches: 200000 },
+    ];
+
+    const estimates = years.map((y) => ({
+      year: y.year,
+      engagements: roundEngagementsForDisplay(
+        estimateVolunteerEngagement(y).centralEngagements
+      ),
+    }));
+
+    expect(estimates).toEqual([
+      { year: 2025, engagements: 25300 },
+      { year: 2024, engagements: 15000 },
+    ]);
+  });
+});
+
 describe('2025 validation case', () => {
   const INDIVIDUAL_SANDWICHES_2025 = 298838;
   const GROUP_SANDWICHES_2025 = 227245;

@@ -25,6 +25,7 @@ import {
   Calendar,
   Trophy,
   HelpCircle,
+  HandHeart,
 } from 'lucide-react';
 import type { SandwichCollection } from '@shared/schema';
 import { useAnnualSandwichGoal } from '@/hooks/useAppSettings';
@@ -35,6 +36,11 @@ import {
   getRecordWeek,
   calculateYearlyBreakdown,
 } from '@/lib/analytics-utils';
+import {
+  VOLUNTEER_ENGAGEMENT_METHODOLOGY_NOTE,
+  estimateVolunteerEngagement,
+  roundEngagementsForDisplay,
+} from '@shared/volunteer-engagement-metrics';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
 import { getCollectionMonthKey } from '@/lib/date-utils';
 import { useAuth } from '@/hooks/useAuth';
@@ -248,6 +254,21 @@ export default function AnalyticsDashboard() {
     // Calculate yearly breakdown
     const yearlyBreakdown = calculateYearlyBreakdown(collections);
 
+    // Estimated volunteer engagements across all collections. Uses the shared
+    // methodology so this matches the Grant Metrics page exactly.
+    const groupSandwiches = collections.reduce(
+      (sum, c) => sum + calculateGroupSandwiches(c),
+      0
+    );
+    const individualSandwiches = collections.reduce(
+      (sum, c) => sum + Number(c.individualSandwiches || 0),
+      0
+    );
+    const volunteerEngagement = estimateVolunteerEngagement({
+      groupSandwiches,
+      individualSandwiches,
+    });
+
     logger.log('\n📅 YEARLY BREAKDOWN CALCULATED:');
     yearlyBreakdown.forEach(year => {
       let msg = `  ${year.year}: ${year.totalSandwiches.toLocaleString()} sandwiches (${year.totalCollections} collections)`;
@@ -266,6 +287,11 @@ export default function AnalyticsDashboard() {
       recordWeek: getRecordWeek(collections), // Get actual best performing week
       trendData,
       yearlyBreakdown,
+      estimatedEngagements: roundEngagementsForDisplay(
+        volunteerEngagement.centralEngagements
+      ),
+      lowEngagements: roundEngagementsForDisplay(volunteerEngagement.lowEngagements),
+      highEngagements: roundEngagementsForDisplay(volunteerEngagement.highEngagements),
     };
   }, [collections, statsData, hostsData]);
 
@@ -427,6 +453,31 @@ export default function AnalyticsDashboard() {
           </div>
           <p className="text-[#646464] font-medium">Total Hosts</p>
         </div>
+
+        <div className="bg-white rounded-lg p-4 lg:p-6 border-2 border-brand-primary/20 hover:shadow-lg transition-all">
+          <div className="flex items-center justify-between mb-4">
+            <HandHeart className="h-8 w-8 text-brand-primary" />
+            <UITooltip>
+              <TooltipTrigger asChild>
+                <button className="text-teal-600 hover:text-teal-800 transition-colors">
+                  <HelpCircle className="w-5 h-5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p className="font-semibold mb-1">Estimated volunteer engagements</p>
+                <p className="text-sm">{VOLUNTEER_ENGAGEMENT_METHODOLOGY_NOTE}</p>
+              </TooltipContent>
+            </UITooltip>
+          </div>
+          <div className="text-2xl lg:text-3xl font-bold text-brand-primary mb-2">
+            {analyticsData.estimatedEngagements.toLocaleString()}
+          </div>
+          <p className="text-[#646464] font-medium">Est. Volunteer Engagements</p>
+          <p className="text-sm text-[#646464] mt-2">
+            Range {analyticsData.lowEngagements.toLocaleString()}–
+            {analyticsData.highEngagements.toLocaleString()} · all time
+          </p>
+        </div>
       </div>
 
       {/* Period Summary Section */}
@@ -484,7 +535,7 @@ export default function AnalyticsDashboard() {
             Yearly Breakdown
           </h3>
           <p className="text-[#646464] mt-1">
-            Annual sandwich totals since founding
+            Annual sandwich totals and estimated volunteer engagements since founding
           </p>
         </div>
         <CardContent className="p-6">
@@ -522,6 +573,15 @@ export default function AnalyticsDashboard() {
                     </div>
                     <div className="text-sm text-[#646464]">
                       {yearData.totalCollections} collections
+                    </div>
+                    <div className="text-sm text-[#646464]">
+                      ~{roundEngagementsForDisplay(
+                        estimateVolunteerEngagement({
+                          groupSandwiches: yearData.groupSandwiches,
+                          individualSandwiches: yearData.individualSandwiches,
+                        }).centralEngagements
+                      ).toLocaleString()}{' '}
+                      volunteer engagements
                     </div>
                   </div>
                 </div>

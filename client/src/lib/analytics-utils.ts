@@ -433,6 +433,10 @@ export interface YearlyTotal {
   year: number;
   totalSandwiches: number;
   totalCollections: number;
+  /** Group-event portion of totalSandwiches — drives volunteer engagement estimates. */
+  groupSandwiches: number;
+  /** Individual/household portion of totalSandwiches. */
+  individualSandwiches: number;
   isPeakYear?: boolean;
   isIncomplete?: boolean;
 }
@@ -449,7 +453,10 @@ export interface YearlyTotal {
 export function calculateYearlyBreakdown(
   collections: SandwichCollection[]
 ): YearlyTotal[] {
-  const yearlyData: Record<number, { sandwiches: number; count: number }> = {};
+  const yearlyData: Record<
+    number,
+    { sandwiches: number; count: number; group: number; individual: number }
+  > = {};
 
   collections.forEach((collection) => {
     if (!collection.collectionDate) return;
@@ -468,12 +475,14 @@ export function calculateYearlyBreakdown(
 
     // Initialize year if not exists
     if (!yearlyData[year]) {
-      yearlyData[year] = { sandwiches: 0, count: 0 };
+      yearlyData[year] = { sandwiches: 0, count: 0, group: 0, individual: 0 };
     }
 
     // Add to yearly total
     yearlyData[year].sandwiches += collectionTotal;
     yearlyData[year].count += 1;
+    yearlyData[year].group += groupTotal;
+    yearlyData[year].individual += individual;
   });
 
   // Convert to array and sort by year (newest first)
@@ -484,6 +493,8 @@ export function calculateYearlyBreakdown(
         year,
         totalSandwiches: data.sandwiches,
         totalCollections: data.count,
+        groupSandwiches: data.group,
+        individualSandwiches: data.individual,
       };
     })
     .sort((a, b) => b.year - a.year);
