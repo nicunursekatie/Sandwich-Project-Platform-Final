@@ -103,6 +103,12 @@ describe('estimateHouseholdEngagements', () => {
     expect(estimateHouseholdEngagements(79)).toBe(3);
     expect(estimateHouseholdEngagements(80)).toBe(5);
   });
+
+  it('maps non-finite and negative inputs to zero rather than the 80+ bucket', () => {
+    expect(estimateHouseholdEngagements(NaN)).toBe(0);
+    expect(estimateHouseholdEngagements(Infinity)).toBe(0);
+    expect(estimateHouseholdEngagements(-5)).toBe(0);
+  });
 });
 
 describe('per-year engagement estimates', () => {

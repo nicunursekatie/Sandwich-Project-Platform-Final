@@ -461,8 +461,12 @@ export default function AnalyticsDashboard() {
             <HandHeart className="h-8 w-8 text-brand-primary" />
             <UITooltip>
               <TooltipTrigger asChild>
-                <button className="text-teal-600 hover:text-teal-800 transition-colors">
-                  <HelpCircle className="w-5 h-5" />
+                <button
+                  type="button"
+                  aria-label="How estimated volunteer engagements are calculated"
+                  className="text-teal-600 hover:text-teal-800 transition-colors"
+                >
+                  <HelpCircle className="w-5 h-5" aria-hidden="true" />
                 </button>
               </TooltipTrigger>
               <TooltipContent className="max-w-xs">

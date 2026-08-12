@@ -125,7 +125,9 @@ export function calculateVolunteerEconomicValueUsd(
  * drop-off-level data.
  */
 export function estimateHouseholdEngagements(householdSandwiches: number): number {
-  if (householdSandwiches <= 0) return 0;
+  // Non-finite values must be caught first: every `<=` below is false for NaN,
+  // which would otherwise fall through to the 80+ bucket.
+  if (!Number.isFinite(householdSandwiches) || householdSandwiches <= 0) return 0;
   if (householdSandwiches <= 20) return 1;
   if (householdSandwiches <= 49) return 2;
   if (householdSandwiches <= 79) return 3;
@@ -145,7 +147,7 @@ export function roundEngagementsForDisplay(value: number): number {
 
 export const VOLUNTEER_ENGAGEMENT_METHODOLOGY_NOTE =
   'Estimated volunteer engagements are derived from sandwich production rather than unique-person records. ' +
-  `TSP historical group-event data supports approximately ${GROUP_SANDWICHES_PER_ENGAGEMENT_HIGH_BOUND}-${GROUP_SANDWICHES_PER_ENGAGEMENT_LOW_BOUND} sandwiches per participant, ` +
+  `TSP's historical group-event data supports approximately ${GROUP_SANDWICHES_PER_ENGAGEMENT_HIGH_BOUND}-${GROUP_SANDWICHES_PER_ENGAGEMENT_LOW_BOUND} sandwiches per participant, ` +
   `with adult events generally centering around 20-${GROUP_SANDWICHES_PER_ENGAGEMENT_CENTRAL} sandwiches per participant. ` +
   `Individual/household engagement estimates currently use approximately ${INDIVIDUAL_SANDWICHES_PER_ENGAGEMENT_CENTRAL} sandwiches per participant because historical collection records do not consistently capture household-level participant counts. ` +
   'Repeat volunteers may be represented more than once. Drivers, host homes, sorting, distribution, and other support roles are not added here because person-level records are incomplete and adding them could double-count sandwich makers.';
