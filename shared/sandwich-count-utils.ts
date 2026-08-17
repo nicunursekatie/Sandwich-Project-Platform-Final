@@ -58,6 +58,59 @@ export function parseSandwichCountInput(value: number | string | null | undefine
   return { count, min: null, max: null, isRange: false };
 }
 
+export interface SandwichTypeEntry {
+  type?: string;
+  quantity?: number | string | null;
+}
+
+/**
+ * Parse a sandwichTypes value (JSONB array from the DB, or a JSON string from a
+ * form payload) into an array. Never throws — malformed input yields [].
+ */
+export function parseSandwichTypeEntries(sandwichTypes: unknown): SandwichTypeEntry[] {
+  if (!sandwichTypes) return [];
+  try {
+    const parsed = typeof sandwichTypes === 'string' ? JSON.parse(sandwichTypes) : sandwichTypes;
+    return Array.isArray(parsed) ? (parsed as SandwichTypeEntry[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Sum quantities from a sandwichTypes value (array or JSON string). */
+export function sumSandwichTypeQuantities(sandwichTypes: unknown): number {
+  return parseSandwichTypeEntries(sandwichTypes).reduce(
+    (sum, item) => sum + (Number(item?.quantity) || 0),
+    0,
+  );
+}
+
+/**
+ * True when a sandwichTypes breakdown should drive UI/display as the live
+ * representation of the count.
+ *
+ * The types-mode twin of hasActiveSandwichRange, and it exists for the same
+ * reason: a breakdown that DISAGREES with an explicit exact count is stale
+ * leftover data, not the user's intent. Whoever wrote the exact count wrote it
+ * last, so a disagreeing breakdown must not be shown, must not seed an editor
+ * in "Specify Types" mode, and must not be summed back over the exact count
+ * (the "500 saves as 498" bug — 250 turkey + 248 PBJ left behind by an earlier
+ * types entry). A breakdown with no exact count, or one that sums to exactly
+ * the stored count, is legitimate and stays active.
+ */
+export function hasActiveSandwichTypes(
+  sandwichTypes: unknown,
+  exactCount?: number | string | null,
+): boolean {
+  const entries = parseSandwichTypeEntries(sandwichTypes);
+  if (entries.length === 0) return false;
+
+  const exact = toFiniteCount(exactCount);
+  if (exact === null) return true;
+
+  return sumSandwichTypeQuantities(entries) === exact;
+}
+
 export function getRangeMidpoint(minValue: number | string | null | undefined, maxValue: number | string | null | undefined): number | null {
   const min = toFiniteCount(minValue);
   const max = toFiniteCount(maxValue);
