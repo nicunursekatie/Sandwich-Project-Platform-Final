@@ -77,7 +77,10 @@ interface OrganizationContact {
   hasHostedEvent: boolean;
   eventDate?: string | null;
   totalSandwiches?: number;
+  /** This card's collection total. Repeated across an org's cards — never sum these. */
   actualSandwichTotal?: number;
+  /** Deduplicated org-wide collection total from the API, safe to compare across orgs. */
+  organizationSandwichTotal?: number;
   actualEventCount?: number;
   eventFrequency?: string | null;
   latestCollectionDate?: string | null;
@@ -147,6 +150,29 @@ const getCategoryBadgeColor = (category: string | null | undefined): string => {
   };
   return colors[category] || 'bg-gray-100 text-gray-700';
 };
+
+/**
+ * Collection totals are stamped onto every matching contact card, so summing
+ * card values would rank orgs by number of contacts. Prefer the API's unique
+ * org-level total; otherwise count each department once.
+ */
+function uniqueGroupSandwichTotal(departments: OrganizationContact[]): number {
+  const orgLevel = departments.find(
+    (card) => typeof card.organizationSandwichTotal === 'number',
+  )?.organizationSandwichTotal;
+  if (typeof orgLevel === 'number') return orgLevel;
+
+  const byDept = new Map<string, number>();
+  for (const card of departments) {
+    const key = (card.department || '').toLowerCase().trim();
+    byDept.set(key, Math.max(byDept.get(key) || 0, card.actualSandwichTotal || 0));
+  }
+  const deptTotals = Array.from(byDept.values());
+  if (deptTotals.length === 0) return 0;
+  const uniqueValues = new Set(deptTotals);
+  if (uniqueValues.size === 1) return deptTotals[0];
+  return deptTotals.reduce((sum, n) => sum + n, 0);
+}
 
 // Helper function to determine if an event is in the future
 function isFutureEvent(org: OrganizationContact): boolean {
@@ -479,6 +505,8 @@ export default function GroupCatalog({
       eventDate: contact.eventDate || null,
       totalSandwiches: contact.totalSandwiches || 0,
       actualSandwichTotal: contact.actualSandwichTotal || 0,
+      organizationSandwichTotal:
+        typeof org.actualSandwichTotal === 'number' ? org.actualSandwichTotal : undefined,
       actualEventCount: contact.actualEventCount || 0,
       eventFrequency: contact.eventFrequency || null,
       latestCollectionDate: contact.latestCollectionDate || null,
@@ -604,7 +632,6 @@ export default function GroupCatalog({
         const group = groups.get(orgName)!;
         group.departments.push(org);
         group.totalRequests += org.totalRequests;
-        group.actualSandwichTotal += org.actualSandwichTotal || 0;
         group.hasHostedEvent = group.hasHostedEvent || org.hasHostedEvent;
 
         // Update latest request date
@@ -625,6 +652,10 @@ export default function GroupCatalog({
       }, new Map())
       .values()
   );
+
+  activeGroupInfo.forEach((group) => {
+    group.actualSandwichTotal = uniqueGroupSandwichTotal(group.departments);
+  });
 
   // Helper to get sortable name (strips leading "The " for alphabetical sorting)
   const getSortableName = (name: string): string => {

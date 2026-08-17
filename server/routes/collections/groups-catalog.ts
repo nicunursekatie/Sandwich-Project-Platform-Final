@@ -591,7 +591,20 @@ function buildCatalog(
   }
 
   // Step 5: Merge collection data into existing cards or create historical-only cards
-  for (const [, orgData] of collectionData) {
+  //
+  // A single collection total gets copied onto every card that matches (one card
+  // per contact/department), so card totals cannot be summed to get an
+  // organization total. Record each collection bucket once per organization here
+  // so Step 8 can expose a total that isn't inflated by contact count.
+  const orgCollectionTotals = new Map<string, Map<string, number>>();
+  const recordOrgTotal = (canonicalName: string, collectionKey: string, sandwiches: number) => {
+    if (!orgCollectionTotals.has(canonicalName)) {
+      orgCollectionTotals.set(canonicalName, new Map());
+    }
+    orgCollectionTotals.get(canonicalName)!.set(collectionKey, sandwiches);
+  };
+
+  for (const [collectionKey, orgData] of collectionData) {
     const sortedPastEvents = orgData.pastEvents.sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
@@ -609,6 +622,7 @@ function buildCatalog(
       if (!deptMatches) continue;
 
       foundExisting = true;
+      recordOrgTotal(card.canonicalName, collectionKey, orgData.totalSandwiches);
       card.actualSandwichTotal += orgData.totalSandwiches;
       card.actualEventCount += orgData.eventCount;
       card.eventFrequency = calculateEventFrequency(Array.from(orgData.eventDates));
@@ -636,6 +650,7 @@ function buildCatalog(
       const latestDateStr = new Date(latestMs).toISOString().split('T')[0];
 
       const key = `${orgData.canonicalName}|${orgData.department}|`;
+      recordOrgTotal(orgData.canonicalName, collectionKey, orgData.totalSandwiches);
       cards.set(key, createEmptyCard({
         organizationName: orgData.originalName,
         canonicalName: orgData.canonicalName,
@@ -710,6 +725,10 @@ function buildCatalog(
   // Step 8: Build final sorted output
   const organizations = Array.from(orgsMap.values()).map(org => {
     const catInfo = lookupCategory(org.canonicalName, categoryMap);
+    const orgTotals = orgCollectionTotals.get(org.canonicalName);
+    const actualSandwichTotal = orgTotals
+      ? Array.from(orgTotals.values()).reduce((sum, n) => sum + n, 0)
+      : 0;
 
     return {
       name: org.displayName,
@@ -718,6 +737,8 @@ function buildCatalog(
       category: catInfo?.category || null,
       schoolClassification: catInfo?.schoolClassification || null,
       isReligious: catInfo?.isReligious || false,
+      // Counts each collection once, unlike summing `departments[].actualSandwichTotal`.
+      actualSandwichTotal,
       departments: org.departments
         .map(card => ({
           organizationName: card.organizationName,

@@ -53,6 +53,8 @@ import {
 const COLORS = {
   primary: '#236383',
   accent: '#FBAD3F',
+  // Brand amber is ~1.9:1 on white, so text uses a darkened variant instead.
+  accentText: '#B45309',
   teal: '#007E8C',
   sky: '#47B3CB',
   red: '#A31C41',
@@ -547,6 +549,7 @@ export default function PaceComparisonAnalytics() {
             title="Group events"
             icon={<Users className="h-5 w-5" />}
             accent={COLORS.accent}
+            textAccent={COLORS.accentText}
             current={curr.group}
             comparisons={[
               {
@@ -752,7 +755,7 @@ export default function PaceComparisonAnalytics() {
                   <YAxis stroke="#64748b" fontSize={12} tickFormatter={(v) => fmtNum(v)} />
                   <Tooltip
                     cursor={{ fill: `${COLORS.primary}0D` }}
-                    formatter={(value: number) => [`${fmtNum(value)} sandwiches`, '']}
+                    formatter={(value: number) => `${fmtNum(value)} sandwiches`}
                     labelStyle={{ color: COLORS.primary, fontWeight: 600 }}
                     contentStyle={{
                       backgroundColor: 'white',
@@ -851,26 +854,31 @@ function ComparisonCard({
   title,
   icon,
   accent,
+  textAccent,
   current,
   comparisons,
 }: {
   title: string;
   icon: ReactNode;
+  /** Decorative color: accent bar, borders, header tint. */
   accent: string;
+  /** Text color, when `accent` is too light to meet 4.5:1 on the header tint. */
+  textAccent?: string;
   current: number;
   comparisons: { shortLabel: string; detail?: string; value: number; pct: number | null }[];
 }) {
+  const fg = textAccent ?? accent;
   return (
     <Card className="overflow-hidden border-2 hover:shadow-lg transition-all" style={{ borderColor: `${accent}33` }}>
       <div className="h-1 w-full" style={{ background: accent }} />
       <CardHeader className="pb-2 border-b" style={{ background: `${accent}0D`, borderColor: `${accent}1A` }}>
-        <CardTitle className="flex items-center gap-2 text-sm font-semibold" style={{ color: accent }}>
+        <CardTitle className="flex items-center gap-2 text-sm font-semibold" style={{ color: fg }}>
           <span className="shrink-0">{icon}</span>
           {title}
         </CardTitle>
       </CardHeader>
       <CardContent className="pt-4">
-        <div className="text-3xl font-bold tabular-nums" style={{ color: accent }}>
+        <div className="text-3xl font-bold tabular-nums" style={{ color: fg }}>
           {fmtNum(current)}
         </div>
         <div className="mt-4 space-y-2">
