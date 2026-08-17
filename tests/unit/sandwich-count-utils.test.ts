@@ -2,6 +2,7 @@ import {
   getReportableSandwichCount,
   hasActiveSandwichRange,
   hasActiveSandwichTypes,
+  normalizeSandwichTypesForStorage,
   sumSandwichTypeQuantities,
   getRangeMidpoint,
 } from '../../shared/sandwich-count-utils';
@@ -134,5 +135,34 @@ describe('hasActiveSandwichTypes', () => {
 
   it('keeps a zero-quantity breakdown active when no exact count contradicts it', () => {
     expect(hasActiveSandwichTypes([{ type: 'turkey', quantity: 0 }], null)).toBe(true);
+  });
+});
+
+describe('normalizeSandwichTypesForStorage', () => {
+  const entries = [
+    { type: 'turkey', quantity: 250 },
+    { type: 'pbj', quantity: 248 },
+  ];
+
+  it('parses the double-encoded JSON string the client sends into a real array', () => {
+    // The client JSON.stringify()s the breakdown; writing that string into a
+    // jsonb column stored a scalar, which SQL cannot read.
+    expect(normalizeSandwichTypesForStorage(JSON.stringify(entries))).toEqual(entries);
+  });
+
+  it('passes an array through unchanged', () => {
+    expect(normalizeSandwichTypesForStorage(entries)).toEqual(entries);
+  });
+
+  it('collapses empty and absent breakdowns to null', () => {
+    expect(normalizeSandwichTypesForStorage(null)).toBeNull();
+    expect(normalizeSandwichTypesForStorage(undefined)).toBeNull();
+    expect(normalizeSandwichTypesForStorage([])).toBeNull();
+    expect(normalizeSandwichTypesForStorage('[]')).toBeNull();
+  });
+
+  it('collapses unparseable input to null rather than storing a scalar', () => {
+    expect(normalizeSandwichTypesForStorage('not json')).toBeNull();
+    expect(normalizeSandwichTypesForStorage('{"type":"turkey"}')).toBeNull();
   });
 });

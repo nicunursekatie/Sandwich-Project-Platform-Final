@@ -21,6 +21,27 @@
 -- rows themselves stay double-valued until someone reopens and re-saves them.
 -- This migration heals them in place.
 --
+-- Two storage shapes (why an earlier draft of this query errored)
+-- --------------------------------------------------------------
+-- sandwich_types is JSONB, but the column holds TWO different shapes:
+--
+--   * a real JSON array  -> [{"type": "turkey", "quantity": 250}, ...]
+--   * a JSON scalar STRING containing an array, i.e. double-encoded:
+--     "[{\"type\": \"turkey\", \"quantity\": 250}]"
+--
+-- The second shape exists because the client JSON.stringify()s the breakdown
+-- before sending it and the save routes wrote that string straight into the
+-- jsonb column. The app never noticed (its parsers accept both), but SQL cannot
+-- read the scalar form — jsonb_array_length()/jsonb_array_elements() fail with
+-- "cannot get array length of a scalar". The server now normalizes on write, so
+-- new saves only produce the array shape; this migration handles both so the
+-- rows written before that fix are healed too.
+--
+-- Postgres also does not guarantee WHERE-clause evaluation order, so a
+-- jsonb_typeof() guard sitting next to jsonb_array_elements() in the same WHERE
+-- does NOT reliably protect it. The MATERIALIZED CTEs below are optimization
+-- fences that force the filtering to happen before the array functions run.
+--
 -- What we heal (the bug signature)
 -- --------------------------------
 -- Rows that carry BOTH an exact estimated_sandwich_count AND a sandwich_types
@@ -50,84 +71,156 @@
 -- rejects manual transaction control). Run the PREVIEW on its own first; when
 -- the rows look right, select and run the UPDATE.
 
+-- ── OPTIONAL DIAGNOSTIC: which storage shapes are actually present ───────────
+-- Safe on any data (jsonb_typeof works on every jsonb value). Useful to confirm
+-- how many double-encoded rows the pre-fix save path left behind.
+--
+-- SELECT jsonb_typeof(sandwich_types) AS shape, count(*)
+-- FROM event_requests
+-- WHERE sandwich_types IS NOT NULL
+-- GROUP BY 1
+-- ORDER BY 2 DESC;
+
 -- ── PREVIEW (safe, read-only) ────────────────────────────────────────────────
 -- Shows exactly which rows the UPDATE below will touch and how the displayed
--- number will change (types_total -> exact count).
+-- number will change (types_total_now -> exact count).
 --
+-- WITH candidates AS MATERIALIZED (
+--   SELECT
+--     id,
+--     organization_name,
+--     status,
+--     estimated_sandwich_count,
+--     sandwich_types,
+--     CASE
+--       WHEN jsonb_typeof(sandwich_types) = 'array' THEN sandwich_types
+--       WHEN jsonb_typeof(sandwich_types) = 'string'
+--            AND left(btrim(sandwich_types #>> '{}'), 1) = '['
+--         THEN (sandwich_types #>> '{}')::jsonb
+--     END AS types_array
+--   FROM event_requests
+--   WHERE estimated_sandwich_count IS NOT NULL
+--     AND estimated_sandwich_count > 0
+--     AND sandwich_types IS NOT NULL
+-- ),
+-- arrays AS MATERIALIZED (
+--   SELECT *
+--   FROM candidates
+--   WHERE types_array IS NOT NULL
+--     AND jsonb_typeof(types_array) = 'array'
+-- ),
+-- summed AS MATERIALIZED (
+--   SELECT
+--     a.*,
+--     (
+--       SELECT COALESCE(SUM(
+--         CASE
+--           WHEN elem->>'quantity' ~ '^-?[0-9]+(\.[0-9]+)?$'
+--           THEN (elem->>'quantity')::numeric
+--           ELSE 0
+--         END
+--       ), 0)
+--       FROM jsonb_array_elements(a.types_array) AS elem
+--     )::int AS types_total_now
+--   FROM arrays a
+--   WHERE jsonb_array_length(a.types_array) > 0
+-- )
 -- SELECT
 --   id,
 --   organization_name,
 --   status,
 --   estimated_sandwich_count AS exact_count,
---   sandwich_types,
---   (
---     SELECT COALESCE(SUM(
---       CASE
---         WHEN elem->>'quantity' ~ '^-?[0-9]+(\.[0-9]+)?$'
---         THEN (elem->>'quantity')::numeric
---         ELSE 0
---       END
---     ), 0)
---     FROM jsonb_array_elements(sandwich_types) AS elem
---   )::int AS types_total_now
--- FROM event_requests
--- WHERE estimated_sandwich_count IS NOT NULL
---   AND estimated_sandwich_count > 0
---   AND sandwich_types IS NOT NULL
---   AND jsonb_typeof(sandwich_types) = 'array'
---   AND jsonb_array_length(sandwich_types) > 0
---   AND estimated_sandwich_count <> (
---     SELECT COALESCE(SUM(
---       CASE
---         WHEN elem->>'quantity' ~ '^-?[0-9]+(\.[0-9]+)?$'
---         THEN (elem->>'quantity')::numeric
---         ELSE 0
---       END
---     ), 0)
---     FROM jsonb_array_elements(sandwich_types) AS elem
---   )::int
+--   types_total_now,
+--   jsonb_typeof(sandwich_types) AS stored_shape,
+--   sandwich_types
+-- FROM summed
+-- WHERE estimated_sandwich_count <> types_total_now
 -- ORDER BY id;
 
 -- ── HEAL ─────────────────────────────────────────────────────────────────────
-UPDATE event_requests
+WITH candidates AS MATERIALIZED (
+  SELECT
+    id,
+    estimated_sandwich_count,
+    CASE
+      WHEN jsonb_typeof(sandwich_types) = 'array' THEN sandwich_types
+      WHEN jsonb_typeof(sandwich_types) = 'string'
+           AND left(btrim(sandwich_types #>> '{}'), 1) = '['
+        THEN (sandwich_types #>> '{}')::jsonb
+    END AS types_array
+  FROM event_requests
+  WHERE estimated_sandwich_count IS NOT NULL
+    AND estimated_sandwich_count > 0
+    AND sandwich_types IS NOT NULL
+),
+arrays AS MATERIALIZED (
+  SELECT *
+  FROM candidates
+  WHERE types_array IS NOT NULL
+    AND jsonb_typeof(types_array) = 'array'
+),
+stale AS MATERIALIZED (
+  SELECT a.id
+  FROM arrays a
+  WHERE jsonb_array_length(a.types_array) > 0
+    AND a.estimated_sandwich_count <> (
+      SELECT COALESCE(SUM(
+        CASE
+          WHEN elem->>'quantity' ~ '^-?[0-9]+(\.[0-9]+)?$'
+          THEN (elem->>'quantity')::numeric
+          ELSE 0
+        END
+      ), 0)
+      FROM jsonb_array_elements(a.types_array) AS elem
+    )::int
+)
+UPDATE event_requests e
 SET sandwich_types = NULL
-WHERE estimated_sandwich_count IS NOT NULL
-  AND estimated_sandwich_count > 0
-  AND sandwich_types IS NOT NULL
-  AND jsonb_typeof(sandwich_types) = 'array'
-  AND jsonb_array_length(sandwich_types) > 0
-  AND estimated_sandwich_count <> (
-    SELECT COALESCE(SUM(
-      CASE
-        WHEN elem->>'quantity' ~ '^-?[0-9]+(\.[0-9]+)?$'
-        THEN (elem->>'quantity')::numeric
-        ELSE 0
-      END
-    ), 0)
-    FROM jsonb_array_elements(sandwich_types) AS elem
-  )::int;
+FROM stale s
+WHERE e.id = s.id;
 
 -- ── OPTIONAL: the same heal for the ACTUAL (post-event) count ────────────────
 -- actual_sandwich_types / actual_sandwich_count have the identical defect. Per
 -- CLAUDE.md, actual_sandwich_count is a manual for-reference field and official
 -- totals live in sandwich_collections, so this is lower stakes — but a stale
 -- actual breakdown will misreport the same way on completed-event cards.
--- Preview it the same way before running.
+-- Preview it by adapting the PREVIEW query above before running.
 --
--- UPDATE event_requests
+-- WITH candidates AS MATERIALIZED (
+--   SELECT
+--     id,
+--     actual_sandwich_count,
+--     CASE
+--       WHEN jsonb_typeof(actual_sandwich_types) = 'array' THEN actual_sandwich_types
+--       WHEN jsonb_typeof(actual_sandwich_types) = 'string'
+--            AND left(btrim(actual_sandwich_types #>> '{}'), 1) = '['
+--         THEN (actual_sandwich_types #>> '{}')::jsonb
+--     END AS types_array
+--   FROM event_requests
+--   WHERE actual_sandwich_count IS NOT NULL
+--     AND actual_sandwich_count > 0
+--     AND actual_sandwich_types IS NOT NULL
+-- ),
+-- arrays AS MATERIALIZED (
+--   SELECT * FROM candidates
+--   WHERE types_array IS NOT NULL AND jsonb_typeof(types_array) = 'array'
+-- ),
+-- stale AS MATERIALIZED (
+--   SELECT a.id
+--   FROM arrays a
+--   WHERE jsonb_array_length(a.types_array) > 0
+--     AND a.actual_sandwich_count <> (
+--       SELECT COALESCE(SUM(
+--         CASE
+--           WHEN elem->>'quantity' ~ '^-?[0-9]+(\.[0-9]+)?$'
+--           THEN (elem->>'quantity')::numeric
+--           ELSE 0
+--         END
+--       ), 0)
+--       FROM jsonb_array_elements(a.types_array) AS elem
+--     )::int
+-- )
+-- UPDATE event_requests e
 -- SET actual_sandwich_types = NULL
--- WHERE actual_sandwich_count IS NOT NULL
---   AND actual_sandwich_count > 0
---   AND actual_sandwich_types IS NOT NULL
---   AND jsonb_typeof(actual_sandwich_types) = 'array'
---   AND jsonb_array_length(actual_sandwich_types) > 0
---   AND actual_sandwich_count <> (
---     SELECT COALESCE(SUM(
---       CASE
---         WHEN elem->>'quantity' ~ '^-?[0-9]+(\.[0-9]+)?$'
---         THEN (elem->>'quantity')::numeric
---         ELSE 0
---       END
---     ), 0)
---     FROM jsonb_array_elements(actual_sandwich_types) AS elem
---   )::int;
+-- FROM stale s
+-- WHERE e.id = s.id;

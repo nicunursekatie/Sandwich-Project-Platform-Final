@@ -86,6 +86,24 @@ export function sumSandwichTypeQuantities(sandwichTypes: unknown): number {
 }
 
 /**
+ * Normalize a sandwichTypes value into what the JSONB column should hold: a
+ * real array, or NULL when there is no breakdown.
+ *
+ * The client serializes breakdowns with JSON.stringify() before sending them,
+ * so the save routes receive a STRING. Writing that string into a jsonb column
+ * stores a JSON scalar string ("[{\"type\":...}]") rather than a JSON array —
+ * double-encoded. The client hides this because its parsers accept both, but
+ * SQL cannot: jsonb_array_length()/jsonb_array_elements() error with "cannot
+ * get array length of a scalar" on those rows, so reporting and heal queries
+ * skip or break on them. Normalizing on write keeps the column one shape.
+ */
+export function normalizeSandwichTypesForStorage(value: unknown): SandwichTypeEntry[] | null {
+  if (value === null || value === undefined) return null;
+  const entries = parseSandwichTypeEntries(value);
+  return entries.length > 0 ? entries : null;
+}
+
+/**
  * True when a sandwichTypes breakdown should drive UI/display as the live
  * representation of the count.
  *
