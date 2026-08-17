@@ -71,15 +71,70 @@
 -- rejects manual transaction control). Run the PREVIEW on its own first; when
 -- the rows look right, select and run the UPDATE.
 
--- ── OPTIONAL DIAGNOSTIC: which storage shapes are actually present ───────────
--- Safe on any data (jsonb_typeof works on every jsonb value). Useful to confirm
--- how many double-encoded rows the pre-fix save path left behind.
+-- ── STEP 0 — DIAGNOSTIC: which storage shapes are present ────────────────────
+-- Safe on any data (jsonb_typeof works on every jsonb value).
 --
 -- SELECT jsonb_typeof(sandwich_types) AS shape, count(*)
 -- FROM event_requests
 -- WHERE sandwich_types IS NOT NULL
 -- GROUP BY 1
 -- ORDER BY 2 DESC;
+--
+-- Measured on production 2026-08-17: string 336, array 37, object 2 — i.e. ~90%
+-- of stored breakdowns were double-encoded by the pre-fix save path.
+--
+-- Inspect the handful of 'object' rows before deciding anything about them:
+--
+-- SELECT id, organization_name, estimated_sandwich_count, sandwich_types
+-- FROM event_requests
+-- WHERE jsonb_typeof(sandwich_types) = 'object';
+
+-- ── STEP 1 — NORMALIZE SHAPE (string -> array) ───────────────────────────────
+-- Independent of the stale-count heal: this only changes HOW the breakdown is
+-- stored, never what it says. The server now writes arrays, but rows written
+-- before that fix stay double-encoded, and SQL (exports, reporting, the heal
+-- below) cannot read them. Run this first so the column holds one shape.
+--
+-- Only touches strings that actually look like a JSON array, so a plain text
+-- value (e.g. "Deli & PBJ") is left alone rather than failing the cast.
+--
+-- PREVIEW:
+--
+-- SELECT id, organization_name, sandwich_types AS stored_now,
+--        (sandwich_types #>> '{}')::jsonb AS would_become
+-- FROM (
+--   SELECT id, organization_name, sandwich_types
+--   FROM event_requests
+--   WHERE jsonb_typeof(sandwich_types) = 'string'
+--     AND left(btrim(sandwich_types #>> '{}'), 1) = '['
+--     AND right(btrim(sandwich_types #>> '{}'), 1) = ']'
+-- ) s
+-- ORDER BY id;
+--
+-- APPLY:
+WITH decodable AS MATERIALIZED (
+  SELECT id
+  FROM event_requests
+  WHERE jsonb_typeof(sandwich_types) = 'string'
+    AND left(btrim(sandwich_types #>> '{}'), 1) = '['
+    AND right(btrim(sandwich_types #>> '{}'), 1) = ']'
+)
+UPDATE event_requests e
+SET sandwich_types = (e.sandwich_types #>> '{}')::jsonb
+FROM decodable d
+WHERE e.id = d.id;
+
+-- If the statement above fails on a malformed value, isolate the offenders with
+-- this (Postgres 16+ only) and exclude them:
+--
+-- SELECT id, sandwich_types
+-- FROM event_requests
+-- WHERE jsonb_typeof(sandwich_types) = 'string'
+--   AND NOT pg_input_is_valid(sandwich_types #>> '{}', 'jsonb');
+
+-- ── STEP 2 — the stale-count heal ────────────────────────────────────────────
+-- The queries below still handle the string shape, so they work whether or not
+-- Step 1 has been run.
 
 -- ── PREVIEW (safe, read-only) ────────────────────────────────────────────────
 -- Shows exactly which rows the UPDATE below will touch and how the displayed

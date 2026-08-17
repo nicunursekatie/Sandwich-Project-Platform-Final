@@ -64,14 +64,41 @@ export interface SandwichTypeEntry {
 }
 
 /**
- * Parse a sandwichTypes value (JSONB array from the DB, or a JSON string from a
- * form payload) into an array. Never throws — malformed input yields [].
+ * Parse a sandwichTypes value into an array of entries. Never throws —
+ * unrecognizable input yields [].
+ *
+ * Accepts every shape the column has held over time, matching the client's
+ * parseSandwichTypes() so the two can't disagree about whether a row has a
+ * breakdown:
+ *   * a real array                    -> [{type, quantity}, ...]
+ *   * a double-encoded JSON string    -> "[{\"type\": ...}]"
+ *   * an object keyed by index        -> {"0": {type, quantity}, ...}
+ *   * the legacy type->quantity map   -> {deli: 0, turkey: 250, pbj: 248}
  */
 export function parseSandwichTypeEntries(sandwichTypes: unknown): SandwichTypeEntry[] {
   if (!sandwichTypes) return [];
   try {
     const parsed = typeof sandwichTypes === 'string' ? JSON.parse(sandwichTypes) : sandwichTypes;
-    return Array.isArray(parsed) ? (parsed as SandwichTypeEntry[]) : [];
+    if (Array.isArray(parsed)) return parsed as SandwichTypeEntry[];
+    if (!parsed || typeof parsed !== 'object') return [];
+
+    const values = Object.values(parsed as Record<string, unknown>);
+    if (values.length === 0) return [];
+
+    // Object keyed by index, holding real entries.
+    if (values.every((item) => !!item && typeof item === 'object' && 'type' in (item as object) && 'quantity' in (item as object))) {
+      return values as SandwichTypeEntry[];
+    }
+
+    // Legacy {deli: 0, turkey: 250} map. Zero quantities carry no information
+    // in this shape, so they are dropped (same rule as the client parser).
+    if (values.every((value) => typeof value === 'number')) {
+      return Object.entries(parsed as Record<string, number>)
+        .map(([type, quantity]) => ({ type, quantity }))
+        .filter((entry) => entry.quantity > 0);
+    }
+
+    return [];
   } catch {
     return [];
   }

@@ -166,3 +166,32 @@ describe('normalizeSandwichTypesForStorage', () => {
     expect(normalizeSandwichTypesForStorage('{"type":"turkey"}')).toBeNull();
   });
 });
+
+describe('parseSandwichTypeEntries — legacy storage shapes', () => {
+  it('reads the legacy type->quantity map, dropping zero quantities', () => {
+    // Two production rows still store this shape. The client parser has always
+    // understood it, so the shared one must agree or a breakdown that renders
+    // today would be treated as absent.
+    expect(sumSandwichTypeQuantities({ deli: 0, turkey: 250, pbj: 248 })).toBe(498);
+    expect(hasActiveSandwichTypes({ deli: 0, turkey: 250, pbj: 248 }, 498)).toBe(true);
+    expect(hasActiveSandwichTypes({ deli: 0, turkey: 250, pbj: 248 }, 500)).toBe(false);
+  });
+
+  it('reads an index-keyed object of entries', () => {
+    const indexed = { '0': { type: 'turkey', quantity: 250 }, '1': { type: 'pbj', quantity: 248 } };
+    expect(sumSandwichTypeQuantities(indexed)).toBe(498);
+    expect(hasActiveSandwichTypes(indexed, 500)).toBe(false);
+  });
+
+  it('normalizes a legacy map into a real array for storage', () => {
+    expect(normalizeSandwichTypesForStorage({ turkey: 250, pbj: 248 })).toEqual([
+      { type: 'turkey', quantity: 250 },
+      { type: 'pbj', quantity: 248 },
+    ]);
+  });
+
+  it('still ignores objects that are not a breakdown', () => {
+    expect(sumSandwichTypeQuantities({ foo: 'bar' })).toBe(0);
+    expect(hasActiveSandwichTypes({ foo: 'bar' }, 500)).toBe(false);
+  });
+});
