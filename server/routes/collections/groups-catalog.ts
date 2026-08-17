@@ -532,6 +532,17 @@ function buildCatalog(
   // Step 4: Process sandwich collections
   const requestDateLookup = buildEventRequestDateLookup(allEventRequests, nameMap);
   const collectionData = new Map<string, CollectionOrgData>();
+  // Unique sandwich totals from every collection row. The ±7 day event-request
+  // skip below only hides duplicate event-history; collections remain the source
+  // of truth for ranking groups by sandwiches made.
+  const orgCollectionTotals = new Map<string, Map<string, number>>();
+  const addOrgTotal = (canonicalName: string, collectionKey: string, sandwiches: number) => {
+    if (!orgCollectionTotals.has(canonicalName)) {
+      orgCollectionTotals.set(canonicalName, new Map());
+    }
+    const byKey = orgCollectionTotals.get(canonicalName)!;
+    byKey.set(collectionKey, (byKey.get(collectionKey) || 0) + (sandwiches || 0));
+  };
 
   for (const collection of allCollections) {
     const collectionDate = collection.collectionDate;
@@ -542,13 +553,13 @@ function buildCatalog(
       const clean = orgName.trim();
       const cleanDept = (dept || '').trim();
       const canon = getCanonicalName(clean, nameMap);
+      const key = `${canon}|${cleanDept}`;
+      addOrgTotal(canon, key, sandwichCount || 0);
 
-      // Deduplicate: skip if this collection matches an event request within ±7 days
+      // Deduplicate event history only: skip if this collection matches an event request within ±7 days
       if (collectionDate && isCollectionDuplicate(canon, collectionDate, requestDateLookup)) {
         return;
       }
-
-      const key = `${canon}|${cleanDept}`;
       if (!collectionData.has(key)) {
         collectionData.set(key, {
           canonicalName: canon,
@@ -591,20 +602,9 @@ function buildCatalog(
   }
 
   // Step 5: Merge collection data into existing cards or create historical-only cards
-  //
-  // A single collection total gets copied onto every card that matches (one card
-  // per contact/department), so card totals cannot be summed to get an
-  // organization total. Record each collection bucket once per organization here
-  // so Step 8 can expose a total that isn't inflated by contact count.
-  const orgCollectionTotals = new Map<string, Map<string, number>>();
-  const recordOrgTotal = (canonicalName: string, collectionKey: string, sandwiches: number) => {
-    if (!orgCollectionTotals.has(canonicalName)) {
-      orgCollectionTotals.set(canonicalName, new Map());
-    }
-    orgCollectionTotals.get(canonicalName)!.set(collectionKey, sandwiches);
-  };
-
-  for (const [collectionKey, orgData] of collectionData) {
+  // Card-level actualSandwichTotal is copied onto every matching contact and is
+  // not safe to sum. Organization ranking uses orgCollectionTotals from Step 4.
+  for (const [, orgData] of collectionData) {
     const sortedPastEvents = orgData.pastEvents.sort((a, b) =>
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
@@ -622,7 +622,6 @@ function buildCatalog(
       if (!deptMatches) continue;
 
       foundExisting = true;
-      recordOrgTotal(card.canonicalName, collectionKey, orgData.totalSandwiches);
       card.actualSandwichTotal += orgData.totalSandwiches;
       card.actualEventCount += orgData.eventCount;
       card.eventFrequency = calculateEventFrequency(Array.from(orgData.eventDates));
@@ -650,7 +649,6 @@ function buildCatalog(
       const latestDateStr = new Date(latestMs).toISOString().split('T')[0];
 
       const key = `${orgData.canonicalName}|${orgData.department}|`;
-      recordOrgTotal(orgData.canonicalName, collectionKey, orgData.totalSandwiches);
       cards.set(key, createEmptyCard({
         organizationName: orgData.originalName,
         canonicalName: orgData.canonicalName,
@@ -725,10 +723,17 @@ function buildCatalog(
   // Step 8: Build final sorted output
   const organizations = Array.from(orgsMap.values()).map(org => {
     const catInfo = lookupCategory(org.canonicalName, categoryMap);
-    const orgTotals = orgCollectionTotals.get(org.canonicalName);
-    const actualSandwichTotal = orgTotals
-      ? Array.from(orgTotals.values()).reduce((sum, n) => sum + n, 0)
-      : 0;
+    const sandwichBuckets = new Map<string, number>();
+    for (const [canon, buckets] of orgCollectionTotals) {
+      if (canon === org.canonicalName || organizationNamesMatch(canon, org.canonicalName)) {
+        for (const [collectionKey, sandwiches] of buckets) {
+          if (!sandwichBuckets.has(collectionKey)) {
+            sandwichBuckets.set(collectionKey, sandwiches);
+          }
+        }
+      }
+    }
+    const actualSandwichTotal = Array.from(sandwichBuckets.values()).reduce((sum, n) => sum + n, 0);
 
     return {
       name: org.displayName,
@@ -737,7 +742,7 @@ function buildCatalog(
       category: catInfo?.category || null,
       schoolClassification: catInfo?.schoolClassification || null,
       isReligious: catInfo?.isReligious || false,
-      // Counts each collection once, unlike summing `departments[].actualSandwichTotal`.
+      // Unique collection total, including rows skipped from event-history dedup.
       actualSandwichTotal,
       departments: org.departments
         .map(card => ({

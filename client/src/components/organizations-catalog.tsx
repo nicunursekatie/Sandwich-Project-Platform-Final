@@ -152,26 +152,15 @@ const getCategoryBadgeColor = (category: string | null | undefined): string => {
 };
 
 /**
- * Collection totals are stamped onto every matching contact card, so summing
- * card values would rank orgs by number of contacts. Prefer the API's unique
- * org-level total; otherwise count each department once.
+ * Card-level sandwich totals are repeated across contacts and cannot be summed
+ * or inferred from equal department values. Rank groups only by the API's
+ * deduplicated organization total.
  */
 function uniqueGroupSandwichTotal(departments: OrganizationContact[]): number {
   const orgLevel = departments.find(
     (card) => typeof card.organizationSandwichTotal === 'number',
   )?.organizationSandwichTotal;
-  if (typeof orgLevel === 'number') return orgLevel;
-
-  const byDept = new Map<string, number>();
-  for (const card of departments) {
-    const key = (card.department || '').toLowerCase().trim();
-    byDept.set(key, Math.max(byDept.get(key) || 0, card.actualSandwichTotal || 0));
-  }
-  const deptTotals = Array.from(byDept.values());
-  if (deptTotals.length === 0) return 0;
-  const uniqueValues = new Set(deptTotals);
-  if (uniqueValues.size === 1) return deptTotals[0];
-  return deptTotals.reduce((sum, n) => sum + n, 0);
+  return orgLevel ?? 0;
 }
 
 // Helper function to determine if an event is in the future
