@@ -579,6 +579,7 @@ export default function GroupCatalog({
     hasHostedEvent: boolean;
     latestRequestDate: string;
     latestActivityDate: string;
+    actualSandwichTotal: number;
   }
 
   // Process active organizations into groups
@@ -596,12 +597,14 @@ export default function GroupCatalog({
             hasHostedEvent: false,
             latestRequestDate: org.latestRequestDate,
             latestActivityDate: org.latestActivityDate,
+            actualSandwichTotal: 0,
           });
         }
 
         const group = groups.get(orgName)!;
         group.departments.push(org);
         group.totalRequests += org.totalRequests;
+        group.actualSandwichTotal += org.actualSandwichTotal || 0;
         group.hasHostedEvent = group.hasHostedEvent || org.hasHostedEvent;
 
         // Update latest request date
@@ -632,7 +635,7 @@ export default function GroupCatalog({
     return trimmed;
   };
 
-  // Sort groups by organization name or latest activity date
+  // Sort groups by organization name, sandwich total, category, or latest activity date
   const sortedActiveGroups = activeGroupInfo.sort((a, b) => {
     if (sortBy === 'groupName') {
       const aName = getSortableName(a.groupName || '');
@@ -640,6 +643,15 @@ export default function GroupCatalog({
       return sortOrder === 'desc'
         ? bName.localeCompare(aName)
         : aName.localeCompare(bName);
+    }
+
+    if (sortBy === 'sandwiches') {
+      const aCount = a.actualSandwichTotal || 0;
+      const bCount = b.actualSandwichTotal || 0;
+      if (aCount !== bCount) {
+        return sortOrder === 'desc' ? bCount - aCount : aCount - bCount;
+      }
+      return getSortableName(a.groupName || '').localeCompare(getSortableName(b.groupName || ''));
     }
 
     if (sortBy === 'category') {
@@ -679,6 +691,12 @@ export default function GroupCatalog({
         return sortOrder === 'desc'
           ? b.totalRequests - a.totalRequests
           : a.totalRequests - b.totalRequests;
+      }
+
+      if (sortBy === 'sandwiches') {
+        const aCount = a.actualSandwichTotal || 0;
+        const bCount = b.actualSandwichTotal || 0;
+        return sortOrder === 'desc' ? bCount - aCount : aCount - bCount;
       }
 
       if (sortBy === 'category') {
@@ -1104,13 +1122,21 @@ export default function GroupCatalog({
             <span className="text-sm font-medium text-gray-600">Sort:</span>
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) => {
+                const value = e.target.value;
+                setSortBy(value);
+                // Highest sandwich totals first is the useful default
+                if (value === 'sandwiches') {
+                  setSortOrder('desc');
+                }
+              }}
               className="border border-gray-300 rounded px-3 py-2 text-sm min-h-[44px] flex-1 sm:flex-none"
             >
               <option value="groupName">Group Name</option>
               <option value="contactName">Contact Name</option>
               <option value="eventDate">Event Date</option>
               <option value="totalRequests">Total Requests</option>
+              <option value="sandwiches"># of Sandwiches</option>
               <option value="category">Category</option>
             </select>
             <Button
