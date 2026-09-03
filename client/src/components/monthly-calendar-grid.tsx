@@ -176,6 +176,17 @@ function formatDateShort(dateStr: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// Single-day observances name their weekday: a holiday landing on a collection
+// or distribution day affects operations differently than one landing on a weekend.
+function formatItemDateRange(startDate: string, endDate: string): string {
+  const start = parseDateSafe(startDate);
+  const end = parseDateSafe(endDate);
+  if (start.toDateString() === end.toDateString()) {
+    return start.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+  }
+  return `${formatDateShort(startDate)} - ${formatDateShort(endDate)}`;
+}
+
 // Get color for an item based on its district(s) or category
 function getItemColor(item: TrackedCalendarItem): { bg: string; text: string; border: string } {
   // Religious holidays use category color directly
@@ -782,7 +793,7 @@ export function MonthlyCalendarGrid({
                               <div className="space-y-1">
                                 <p className="font-semibold">{item.title}</p>
                                 <p className="text-sm text-gray-600">
-                                  {formatDateShort(item.startDate)} - {formatDateShort(item.endDate)}
+                                  {formatItemDateRange(item.startDate, item.endDate)}
                                 </p>
                                 {/* Tracked item: show districts */}
                                 {item.type === 'tracked' && item.districts && item.districts.length > 0 && (
