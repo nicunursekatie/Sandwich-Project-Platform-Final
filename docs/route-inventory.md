@@ -544,6 +544,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/photo-scanner/confirm | 1 | client/src/pages/photo-scanner.tsx |
 | /api/photo-scanner/hosts | 1 | client/src/pages/photo-scanner.tsx |
 | /api/photo-scanner/scan-base64 | 1 | client/src/pages/photo-scanner.tsx |
+| /api/planning-sheet-import/gaps | 1 | client/src/components/event-requests/PlanningSheetGapsDialog.tsx |
 | /api/planning-sheet-import/import | 1 | client/src/components/event-requests/PlanningSheetImportDialog.tsx |
 | /api/planning-sheet-import/preview | 2 | client/src/components/event-requests/PlanningSheetImportDialog.tsx |
 | /api/planning-sheet-proposals | 1 | client/src/components/planning-sheet-proposals.tsx |
