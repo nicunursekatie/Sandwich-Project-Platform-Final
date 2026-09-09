@@ -181,7 +181,9 @@ export function PushToSheetButton({
         title: 'Successfully pushed to Planning Sheet!',
         description: data.isUpdate
           ? `Updated row ${data.rowIndex} in the Planning Sheet.`
-          : `Added new row ${data.rowIndex} to the Planning Sheet.`,
+          : [`Added new row ${data.rowIndex} to the Planning Sheet.`, data.placementNote]
+              .filter(Boolean)
+              .join(' '),
       });
       queryClient.invalidateQueries({ queryKey: ['planning-sheet-preview', eventId] });
       // Server marks addedToOfficialSheet=true — fetch once and patch caches surgically.
@@ -551,6 +553,57 @@ export function PushToSheetButton({
                       </div>
                     </div>
                   </>
+                )}
+
+                {/* Where the new row will land. The sheet is read as a calendar,
+                    so a row dropped at the bottom instead of in date order needs
+                    to be visible before the push, not discovered afterwards. */}
+                {previewData.placement && (
+                  previewData.placement.insertBeforeRow ? (
+                    <Alert
+                      className={
+                        previewData.placement.outOfOrderRows?.length
+                          ? 'bg-amber-50 border-amber-300'
+                          : 'bg-blue-50 border-blue-200'
+                      }
+                    >
+                      <ArrowRight
+                        className={`h-4 w-4 ${
+                          previewData.placement.outOfOrderRows?.length
+                            ? 'text-amber-600'
+                            : 'text-blue-600'
+                        }`}
+                      />
+                      <AlertTitle
+                        className={
+                          previewData.placement.outOfOrderRows?.length
+                            ? 'text-amber-800'
+                            : 'text-blue-800'
+                        }
+                      >
+                        Goes in at row {previewData.placement.insertBeforeRow}
+                      </AlertTitle>
+                      <AlertDescription
+                        className={
+                          previewData.placement.outOfOrderRows?.length
+                            ? 'text-amber-700'
+                            : 'text-blue-700'
+                        }
+                      >
+                        {previewData.placement.note}
+                      </AlertDescription>
+                    </Alert>
+                  ) : (
+                    <Alert className="bg-amber-50 border-amber-300">
+                      <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      <AlertTitle className="text-amber-800">
+                        Goes at the bottom of the sheet, not in date order
+                      </AlertTitle>
+                      <AlertDescription className="text-amber-700">
+                        {previewData.placement.note}
+                      </AlertDescription>
+                    </Alert>
+                  )
                 )}
 
                 {/* Full field list (for non-conflict modes: new row, potential duplicates, fallback update) */}

@@ -6,6 +6,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import {
   getPlanningSheetService,
   PLANNING_SHEET_COLUMNS,
+  type SheetPlacement,
 } from '../planning-sheet-sync-service';
 import { logger } from '../utils/production-safe-logger';
 import type { AuthenticatedRequest } from '../types/express';
@@ -150,12 +151,17 @@ export function createPlanningSheetProposalsRouter(
       // Find matching row in the current sheet for side-by-side comparison
       let existingSheetRow = null;
       let potentialMatches: any[] = [];
+      let placement: SheetPlacement | null = null;
       try {
         // Try exact match first
         existingSheetRow = await service.findMatchingRow(parsedEventId);
 
         // If no exact match, look for potential matches (same org name or same date)
         if (!existingSheetRow) {
+          // Where a new row would land, so the team can catch a bad placement
+          // before pushing instead of discovering it in the sheet afterwards.
+          placement = await service.previewPlacement(parsedEventId);
+
           const allSheetRows = await service.readPlanningSheet();
           const proposedDate = rowData[0]; // Date column
           const proposedOrg = rowData[2]?.toLowerCase().trim(); // Group Name column
@@ -211,6 +217,7 @@ export function createPlanningSheetProposalsRouter(
         } : null,
         existingRawData,
         potentialMatches,
+        placement,
       });
     } catch (error) {
       logger.error('Error previewing event data:', error);
@@ -294,7 +301,8 @@ export function createPlanningSheetProposalsRouter(
           success: true,
           message: result.message,
           rowIndex: result.rowIndex,
-          isUpdate: result.isUpdate
+          isUpdate: result.isUpdate,
+          placementNote: result.placementNote
         });
       } else {
         res.status(400).json({ success: false, error: result.message });

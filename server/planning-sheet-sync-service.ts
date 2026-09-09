@@ -226,6 +226,255 @@ export interface PlanningSheetRow {
 }
 
 /**
+ * Parse a date cell from the planning sheet.
+ *
+ * Handles the formats the team actually types: "1/15/26", "1/15/2026",
+ * "01/15/2026" — and, because the year lives in the tab name ("2026 Groups")
+ * rather than the cell, bare month/day values like "1/15" or "Jan 15".
+ *
+ * That last case matters: JS's native parser resolves a year-less date to
+ * 2001. A row that parses as 2001 sorts before every real event, so if the
+ * later-dated rows in the sheet are written that way, nothing looks "after"
+ * the event being placed and ordered insertion silently degrades into
+ * appending at the bottom of the sheet. `fallbackYear` supplies the year
+ * those cells omit.
+ */
+export function parsePlanningSheetDate(
+  dateStr: string,
+  fallbackYear?: number
+): Date | null {
+  if (!dateStr || !dateStr.trim()) return null;
+  const trimmed = dateStr.trim();
+
+  // M/D/YY or M/D/YYYY — the canonical format this sheet uses.
+  const parts = trimmed.split('/');
+  if (parts.length === 3) {
+    const month = parseInt(parts[0], 10) - 1; // JS months are 0-indexed
+    const day = parseInt(parts[1], 10);
+    let year = parseInt(parts[2], 10);
+    if (year < 100) year += 2000; // "26" -> 2026
+
+    if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
+      return new Date(year, month, day);
+    }
+  }
+
+  // Anything else ("Jan 15, 2026", "1/15", "Jan 15") goes through the native
+  // parser, which never fails loudly — it invents a year instead.
+  const parsed = new Date(trimmed);
+  if (isNaN(parsed.getTime())) return null;
+
+  // A year the sheet can't plausibly be about means the text carried no year
+  // and the parser defaulted one in. Substitute the sheet's own year.
+  if (fallbackYear && Math.abs(parsed.getFullYear() - fallbackYear) > 5) {
+    return new Date(fallbackYear, parsed.getMonth(), parsed.getDate());
+  }
+
+  return parsed;
+}
+
+/**
+ * Parse a time string like "2:00 PM" or "14:00" to minutes since midnight.
+ * Returns null if the time string can't be parsed.
+ */
+export function parsePlanningSheetTime(timeStr: string): number | null {
+  if (!timeStr || typeof timeStr !== 'string' || !timeStr.trim()) return null;
+
+  // 12-hour format: "2:00 PM", "10:30 AM"
+  const match12 = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  if (match12) {
+    let hours = parseInt(match12[1], 10);
+    const minutes = parseInt(match12[2], 10);
+    const ampm = match12[3].toUpperCase();
+    if (ampm === 'PM' && hours !== 12) hours += 12;
+    if (ampm === 'AM' && hours === 12) hours = 0;
+    return hours * 60 + minutes;
+  }
+
+  // 24-hour format: "14:00", "09:30", "14:00:00"
+  const match24 = timeStr.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  if (match24) {
+    return parseInt(match24[1], 10) * 60 + parseInt(match24[2], 10);
+  }
+
+  return null;
+}
+
+export type SheetPlacementReason =
+  | 'insert_after_previous_event'
+  | 'insert_before_later_event'
+  | 'append_event_is_latest'
+  | 'append_no_dated_rows';
+
+export interface SheetPlacement {
+  /** 1-based sheet row to insert at (existing rows shift down), or null to append. */
+  insertBeforeRow: number | null;
+  reason: SheetPlacementReason;
+  /** One-line explanation, shown in the push preview/result and written to the logs. */
+  note: string;
+  totalRows: number;
+  datedRows: number;
+  /** Rows whose date cell has text in it that could not be read as a date. */
+  unreadableDates: { rowIndex: number; value: string }[];
+  /**
+   * Rows sitting on the wrong side of the chosen position — the sheet says one
+   * thing and their date says another. Usually a mistyped year.
+   */
+  outOfOrderRows: { rowIndex: number; date: string }[];
+  lastDatedRow: { rowIndex: number; date: string } | null;
+}
+
+/**
+ * Work out where a new row belongs so the sheet stays in date (then time)
+ * order — the property that makes it readable as a calendar for the year.
+ *
+ * Two things about this sheet make the obvious approach wrong.
+ *
+ * First, it is not a flat list of dated rows. It is grouped into week blocks,
+ * each padded with empty slots for events still to come and closed by a total
+ * row, and none of those structural rows carry a date. So the new row is tucked
+ * directly beneath the event it follows, which keeps it inside its own week
+ * rather than below the total that is supposed to count it.
+ *
+ * Second, the sheet is hand-maintained, so a single mistyped year is normal.
+ * Scanning from the top for the first later-dated row makes any such typo a
+ * magnet: a row mistyped as 2029 is "later" than every event, so every push
+ * lands immediately above it no matter what date it carries. Instead of
+ * trusting one row, the split point is chosen to disagree with as few rows as
+ * possible — a lone bad date is outvoted by the hundreds of correct ones, and
+ * it gets reported so someone can go fix it.
+ */
+export function computeSheetPlacement(
+  rows: PlanningSheetRow[],
+  eventDate: Date,
+  options: { eventTime?: string | null; fallbackYear?: number } = {}
+): SheetPlacement {
+  const { eventTime = null, fallbackYear } = options;
+  const eventTimeMinutes =
+    typeof eventTime === 'string' ? parsePlanningSheetTime(eventTime) : null;
+
+  const unreadableDates: { rowIndex: number; value: string }[] = [];
+  const dated: { row: PlanningSheetRow; sortsAfter: boolean }[] = [];
+
+  for (const row of rows) {
+    const rowDate = parsePlanningSheetDate(row.date, fallbackYear);
+    if (!rowDate) {
+      // No date means a structural row — a week's empty slot, a spacer, or the
+      // total that closes a week. Text that isn't a readable date is different,
+      // and worth reporting.
+      if (row.date && row.date.trim()) {
+        unreadableDates.push({ rowIndex: row.rowIndex, value: row.date });
+      }
+      continue;
+    }
+
+    // Does this row belong below the new event? Same-day rows are ordered by
+    // start time, falling back to pickup time; a row with no readable time
+    // stays above.
+    let sortsAfter = rowDate.getTime() > eventDate.getTime();
+    if (!sortsAfter && rowDate.getTime() === eventDate.getTime() && eventTimeMinutes !== null) {
+      const rowTime =
+        parsePlanningSheetTime(row.eventStartTime) ??
+        parsePlanningSheetTime(row.pickUpTime);
+      sortsAfter = rowTime !== null && eventTimeMinutes < rowTime;
+    }
+
+    dated.push({ row, sortsAfter });
+  }
+
+  const datedRows = dated.length;
+  const lastDated = dated[datedRows - 1]?.row ?? null;
+  const lastDatedRow = lastDated ? { rowIndex: lastDated.rowIndex, date: lastDated.date } : null;
+
+  const unreadableSuffix = unreadableDates.length
+    ? ` ${unreadableDates.length} row(s) have a date cell that could not be read (e.g. row ${unreadableDates[0].rowIndex}: "${unreadableDates[0].value}").`
+    : '';
+
+  if (datedRows === 0) {
+    return {
+      insertBeforeRow: null,
+      reason: 'append_no_dated_rows',
+      note: `Appending to the end: none of the ${rows.length} rows read back with a usable date.${unreadableSuffix}`,
+      totalRows: rows.length,
+      datedRows,
+      unreadableDates,
+      outOfOrderRows: [],
+      lastDatedRow,
+    };
+  }
+
+  // Pick the split that the fewest rows argue against: every row above it that
+  // belongs below, plus every row below it that belongs above.
+  const totalEarlier = dated.filter((d) => !d.sortsAfter).length;
+  let laterAbove = 0;
+  let earlierAbove = 0;
+  let best = { splitAfter: 0, conflicts: totalEarlier };
+
+  for (let i = 0; i < datedRows; i++) {
+    if (dated[i].sortsAfter) laterAbove++;
+    else earlierAbove++;
+    const conflicts = laterAbove + (totalEarlier - earlierAbove);
+    // <= so that a tie resolves downward, below the events it ties with.
+    if (conflicts <= best.conflicts) best = { splitAfter: i + 1, conflicts };
+  }
+
+  const outOfOrderRows = dated
+    .filter((d, i) => (i < best.splitAfter ? d.sortsAfter : !d.sortsAfter))
+    .map((d) => ({ rowIndex: d.row.rowIndex, date: d.row.date }));
+
+  const disorderSuffix = outOfOrderRows.length
+    ? ` Heads up: ${outOfOrderRows.length} row(s) are dated on the wrong side of this position — check row ${outOfOrderRows[0].rowIndex} ("${outOfOrderRows[0].date}"). A mistyped year there pulls pushed events out of place.`
+    : '';
+
+  const anchor = best.splitAfter > 0 ? dated[best.splitAfter - 1].row : null;
+  const following = best.splitAfter < datedRows ? dated[best.splitAfter].row : null;
+
+  // Nothing sorts before this event: it goes above the sheet's first event.
+  if (!anchor) {
+    return {
+      insertBeforeRow: following!.rowIndex,
+      reason: 'insert_before_later_event',
+      note: `Inserting at row ${following!.rowIndex}, ahead of "${`${following!.date} ${following!.groupName}`.trim()}" — nothing in the sheet is dated earlier.${disorderSuffix}${unreadableSuffix}`,
+      totalRows: rows.length,
+      datedRows,
+      unreadableDates,
+      outOfOrderRows,
+      lastDatedRow,
+    };
+  }
+
+  // Later than everything, with no rows below to sit above: append.
+  if (!following && anchor.rowIndex === rows[rows.length - 1]?.rowIndex) {
+    return {
+      insertBeforeRow: null,
+      reason: 'append_event_is_latest',
+      note: `Appending to the end: this event is later than every row in the sheet (the last one is ${anchor.date}, row ${anchor.rowIndex}).${disorderSuffix}${unreadableSuffix}`,
+      totalRows: rows.length,
+      datedRows,
+      unreadableDates,
+      outOfOrderRows,
+      lastDatedRow,
+    };
+  }
+
+  const target = anchor.rowIndex + 1;
+  const closingRows = following ? following.rowIndex - target : 0;
+
+  return {
+    insertBeforeRow: target,
+    reason: 'insert_after_previous_event',
+    note: `Inserting at row ${target}, directly after "${`${anchor.date} ${anchor.groupName}`.trim()}".${
+      closingRows > 0 ? ` That keeps it above the ${closingRows} row(s) that close out the week.` : ''
+    }${disorderSuffix}${unreadableSuffix}`,
+    totalRows: rows.length,
+    datedRows,
+    unreadableDates,
+    outOfOrderRows,
+    lastDatedRow,
+  };
+}
+
+/**
  * Planning Sheet Sync Service
  * Handles reading from and proposing changes to the Planning/Schedule Google Sheet
  *
@@ -737,7 +986,9 @@ export class PlanningSheetSyncService {
   }
 
   /**
-   * Apply a new row to the sheet
+   * Apply a new row to the sheet, in date order like the manual push does.
+   * (This path used to append unconditionally, which dropped every approved
+   * proposal at the bottom of the sheet regardless of its date.)
    */
   private async applyNewRow(proposal: any): Promise<{ success: boolean; message: string }> {
     const rowData = proposal.proposedRowData as string[];
@@ -745,16 +996,30 @@ export class PlanningSheetSyncService {
       return { success: false, message: 'Invalid row data in proposal' };
     }
 
-    // Append the row to the sheet
-    await this.sheets.spreadsheets.values.append({
-      spreadsheetId: this.spreadsheetId,
-      range: this.getSheetRange('A:AA'),
-      valueInputOption: 'USER_ENTERED',
-      insertDataOption: 'INSERT_ROWS',
-      resource: { values: [rowData] },
-    });
+    const rowDate = this.parseSheetDate(rowData[PLANNING_SHEET_COLUMNS.DATE] || '');
+    if (rowDate) {
+      const placement = await this.findPlacement(
+        rowDate,
+        rowData[PLANNING_SHEET_COLUMNS.EVENT_START_TIME] || null
+      );
+      if (
+        placement.insertBeforeRow !== null &&
+        (await this.insertRowAt(placement.insertBeforeRow, rowData))
+      ) {
+        logger.info(
+          `Applied new row to Planning Sheet for proposal ${proposal.id} at row ${placement.insertBeforeRow}`
+        );
+        return {
+          success: true,
+          message: `Row added at row ${placement.insertBeforeRow} (sorted by date)`,
+        };
+      }
+    }
 
-    logger.log(`Applied new row to Planning Sheet for proposal ${proposal.id}`);
+    const newRowIndex = await this.appendRow(rowData);
+    logger.info(
+      `Applied new row to Planning Sheet for proposal ${proposal.id} at row ${newRowIndex} (appended)`
+    );
     return { success: true, message: 'Row added successfully' };
   }
 
@@ -827,124 +1092,82 @@ export class PlanningSheetSyncService {
   }
 
   /**
-   * Parse a date string from the sheet (e.g., "1/15/26", "1/15/2026", or "01/15/2026") into a Date object
+   * The year this worksheet covers, taken from its name ("2026 Groups").
+   * Date cells in the sheet often omit the year because the tab carries it.
    */
+  private sheetYearHint(): number | undefined {
+    const match = this.worksheetName.match(/(20\d{2})/);
+    return match ? parseInt(match[1], 10) : undefined;
+  }
+
   private parseSheetDate(dateStr: string): Date | null {
-    if (!dateStr || !dateStr.trim()) return null;
-
-    // Try parsing MM/DD/YY or MM/DD/YYYY format
-    const parts = dateStr.trim().split('/');
-    if (parts.length === 3) {
-      const month = parseInt(parts[0], 10) - 1; // JS months are 0-indexed
-      const day = parseInt(parts[1], 10);
-      let year = parseInt(parts[2], 10);
-
-      // Handle 2-digit years (e.g., "26" -> 2026)
-      if (year < 100) {
-        // Assume 2000s for years 00-99
-        year += 2000;
-      }
-
-      if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
-        const date = new Date(year, month, day);
-        logger.log(`[PlanningSheet] Parsed date "${dateStr}" -> ${date.toISOString()}`);
-        return date;
-      }
-    }
-
-    // Fallback: try native Date parsing
-    const parsed = new Date(dateStr);
-    if (!isNaN(parsed.getTime())) {
-      logger.log(`[PlanningSheet] Fallback parsed date "${dateStr}" -> ${parsed.toISOString()}`);
-      return parsed;
-    }
-
-    logger.warn(`[PlanningSheet] Could not parse date: "${dateStr}"`);
-    return null;
+    return parsePlanningSheetDate(dateStr, this.sheetYearHint());
   }
 
-  /**
-   * Parse a time string like "2:00 PM" or "14:00" to minutes since midnight for comparison.
-   * Returns null if the time string can't be parsed.
-   */
   private parseTimeToMinutes(timeStr: string): number | null {
-    if (!timeStr || !timeStr.trim()) return null;
-
-    // Try 12-hour format: "2:00 PM", "10:30 AM"
-    const match12 = timeStr.trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
-    if (match12) {
-      let hours = parseInt(match12[1], 10);
-      const minutes = parseInt(match12[2], 10);
-      const ampm = match12[3].toUpperCase();
-      if (ampm === 'PM' && hours !== 12) hours += 12;
-      if (ampm === 'AM' && hours === 12) hours = 0;
-      return hours * 60 + minutes;
-    }
-
-    // Try 24-hour format: "14:00", "09:30"
-    const match24 = timeStr.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
-    if (match24) {
-      return parseInt(match24[1], 10) * 60 + parseInt(match24[2], 10);
-    }
-
-    return null;
+    return parsePlanningSheetTime(timeStr);
   }
 
   /**
-   * Find the correct row index to insert a new event based on date ordering,
-   * with secondary sort by time (start time or pickup time) within the same date.
-   * Returns the row index where the new row should be inserted (rows after this will shift down).
-   * If no suitable position is found, returns null (append to end).
+   * Work out where a new row for this event belongs in the sheet.
+   *
+   * The outcome is logged at a level that survives production (the debug
+   * `logger.log` used previously is compiled out when NODE_ENV=production, so
+   * a wrong placement left no trace at all), and returned to the caller so the
+   * push preview and result can say where the row went and why.
    */
-  private async findInsertionRowIndex(eventDate: Date, eventTimeStr?: string | null): Promise<number | null> {
+  async findPlacement(
+    eventDate: Date,
+    eventTimeStr?: string | null
+  ): Promise<SheetPlacement> {
     const sheetRows = await this.readPlanningSheet();
+    const placement = computeSheetPlacement(sheetRows, eventDate, {
+      eventTime: eventTimeStr,
+      fallbackYear: this.sheetYearHint(),
+    });
 
-    logger.log(`[PlanningSheet] Finding insertion point for event date: ${eventDate.toISOString()}${eventTimeStr ? `, time: ${eventTimeStr}` : ''}`);
-    logger.log(`[PlanningSheet] Sheet has ${sheetRows.length} rows`);
+    const context = `[PlanningSheet] Placing event dated ${eventDate.toDateString()}${
+      eventTimeStr ? ` at ${eventTimeStr}` : ''
+    } among ${placement.totalRows} rows (${placement.datedRows} dated): ${placement.note}`;
 
-    if (sheetRows.length === 0) {
-      logger.log(`[PlanningSheet] Sheet is empty, will append`);
-      return null; // Empty sheet, just append
+    if (placement.insertBeforeRow === null) {
+      logger.warn(context);
+    } else {
+      logger.info(context);
     }
 
-    // Log first few dates to help debug
-    const firstRows = sheetRows.slice(0, 5);
-    logger.log(`[PlanningSheet] First 5 row dates: ${firstRows.map(r => `row${r.rowIndex}="${r.date}"`).join(', ')}`);
+    return placement;
+  }
 
-    const eventTimeMinutes = eventTimeStr ? this.parseTimeToMinutes(eventTimeStr) : null;
+  /**
+   * The date and time an event should be sorted by in the sheet. The date is
+   * normalized to midnight so it compares against the sheet's date-only cells.
+   */
+  private placementInputsFor(event: { scheduledEventDate?: Date | null; desiredEventDate?: Date | null; eventStartTime?: string | null; pickupDateTime?: string | null }): { date: Date; time: string | null } {
+    const eventDate = getEffectiveEventDate(event);
+    const raw = eventDate ? new Date(eventDate) : new Date();
+    return {
+      date: new Date(raw.getFullYear(), raw.getMonth(), raw.getDate()),
+      time: event.eventStartTime || event.pickupDateTime || null,
+    };
+  }
 
-    // Find the correct insertion point based on date, then time within same date
-    for (const row of sheetRows) {
-      const rowDate = this.parseSheetDate(row.date);
-      if (!rowDate) continue;
+  /**
+   * Where a push would place this event, without writing anything. Used by the
+   * push preview so the team can see the target row before committing.
+   */
+  async previewPlacement(eventId: number): Promise<SheetPlacement | null> {
+    await this.ensureInitialized();
 
-      if (rowDate > eventDate) {
-        // This row's date is after our event date — insert before it
-        logger.log(`[PlanningSheet] Found insertion point: row ${row.rowIndex} has date ${row.date} which is AFTER event date`);
-        return row.rowIndex;
-      }
+    const [event] = await db
+      .select()
+      .from(eventRequests)
+      .where(eq(eventRequests.id, eventId))
+      .limit(1);
+    if (!event) return null;
 
-      // Same date — check time-based ordering
-      if (rowDate.getTime() === eventDate.getTime() && eventTimeMinutes !== null) {
-        // Compare by start time first, then pickup time
-        const rowTime = this.parseTimeToMinutes(row.eventStartTime) ??
-                        this.parseTimeToMinutes(row.pickUpTime);
-
-        if (rowTime !== null && eventTimeMinutes < rowTime) {
-          // Our event is earlier in the day — insert before this row
-          logger.log(`[PlanningSheet] Found insertion point by time: row ${row.rowIndex} has time ${row.eventStartTime || row.pickUpTime} which is AFTER event time ${eventTimeStr}`);
-          return row.rowIndex;
-        }
-      }
-    }
-
-    // Log the last few dates to help debug
-    const lastRows = sheetRows.slice(-5);
-    logger.log(`[PlanningSheet] Last 5 row dates: ${lastRows.map(r => `row${r.rowIndex}="${r.date}"`).join(', ')}`);
-    logger.log(`[PlanningSheet] No row found with date/time after event, will append to end`);
-
-    // No row found with a later date - append to end
-    return null;
+    const { date, time } = this.placementInputsFor(event);
+    return this.findPlacement(date, time);
   }
 
   /**
@@ -967,6 +1190,62 @@ export class PlanningSheetSyncService {
       logger.error('[PlanningSheet] Error getting worksheet ID:', error);
       return null;
     }
+  }
+
+  /**
+   * Append a row after the last row of the sheet. Returns the row number it
+   * landed on, when the API reports one.
+   */
+  private async appendRow(rowData: string[]): Promise<number | undefined> {
+    const response = await this.sheets.spreadsheets.values.append({
+      spreadsheetId: this.spreadsheetId,
+      range: this.getSheetRange('A:AA'),
+      valueInputOption: 'USER_ENTERED',
+      insertDataOption: 'INSERT_ROWS',
+      resource: { values: [rowData] },
+    });
+
+    const updatedRange = response.data.updates?.updatedRange || '';
+    const rowMatch = updatedRange.match(/(\d+)$/);
+    return rowMatch ? parseInt(rowMatch[1], 10) : undefined;
+  }
+
+  /**
+   * Insert a blank row at `rowIndex` (pushing everything below it down) and
+   * write the row data into it. Returns false when the worksheet can't be
+   * identified, in which case nothing was written.
+   */
+  private async insertRowAt(rowIndex: number, rowData: string[]): Promise<boolean> {
+    const sheetId = await this.getWorksheetId();
+    if (sheetId === null) return false;
+
+    await this.sheets.spreadsheets.batchUpdate({
+      spreadsheetId: this.spreadsheetId,
+      resource: {
+        requests: [
+          {
+            insertDimension: {
+              range: {
+                sheetId,
+                dimension: 'ROWS',
+                startIndex: rowIndex - 1, // 0-indexed
+                endIndex: rowIndex, // Insert 1 row
+              },
+              inheritFromBefore: false,
+            },
+          },
+        ],
+      },
+    });
+
+    await this.sheets.spreadsheets.values.update({
+      spreadsheetId: this.spreadsheetId,
+      range: this.getSheetRange(`A${rowIndex}:AA${rowIndex}`),
+      valueInputOption: 'USER_ENTERED',
+      resource: { values: [rowData] },
+    });
+
+    return true;
   }
 
   /**
@@ -1023,7 +1302,14 @@ export class PlanningSheetSyncService {
     eventId: number,
     userId: string,
     mergeDecisions?: Record<string, 'use_app' | 'keep_sheet' | 'append'>
-  ): Promise<{ success: boolean; message: string; rowIndex?: number; isUpdate?: boolean }> {
+  ): Promise<{
+    success: boolean;
+    message: string;
+    rowIndex?: number;
+    isUpdate?: boolean;
+    /** Why the row landed where it did — surfaced in the UI so a wrong placement is visible. */
+    placementNote?: string;
+  }> {
     try {
       await this.ensureInitialized();
 
@@ -1099,85 +1385,40 @@ export class PlanningSheetSyncService {
           return { success: false, message: 'Event not found' };
         }
 
-        const eventDate = getEffectiveEventDate(event[0]);
-        let eventDateObj = eventDate ? new Date(eventDate) : new Date();
-
-        // Normalize to midnight for date-only comparison (ignore time component)
-        eventDateObj = new Date(eventDateObj.getFullYear(), eventDateObj.getMonth(), eventDateObj.getDate());
-
-        // Get event time for secondary sort within same date
-        const eventTime = event[0].eventStartTime || event[0].pickupDateTime || null;
-
         // Find the correct insertion point based on date and time
-        logger.log(`[PlanningSheet] Event date for insertion (normalized): ${eventDateObj.toISOString()}, time: ${eventTime || 'none'}`);
-        const insertBeforeRow = await this.findInsertionRowIndex(eventDateObj, eventTime);
-        logger.log(`[PlanningSheet] insertBeforeRow result: ${insertBeforeRow}`);
+        const { date: eventDateObj, time: eventTime } = this.placementInputsFor(event[0]);
+        const placement = await this.findPlacement(eventDateObj, eventTime);
+        const insertBeforeRow = placement.insertBeforeRow;
+        let placementNote = placement.note;
 
         if (insertBeforeRow !== null) {
-          // Insert row at specific position to maintain chronological order
-          const sheetId = await this.getWorksheetId();
-          logger.log(`[PlanningSheet] Worksheet ID: ${sheetId}`);
+          const inserted = await this.insertRowAt(insertBeforeRow, rowData);
 
-          if (sheetId === null) {
-            logger.warn(`[PlanningSheet] Could not find worksheet ID for "${this.worksheetName}", falling back to append`);
+          if (!inserted) {
+            placementNote = `Appended to the end: the worksheet "${this.worksheetName}" could not be identified, so the row could not be inserted at row ${insertBeforeRow} where it belongs.`;
+            logger.warn(`[PlanningSheet] ${placementNote}`);
           } else {
-            // Use batchUpdate to insert a blank row at the correct position
-            await this.sheets.spreadsheets.batchUpdate({
-              spreadsheetId: this.spreadsheetId,
-              resource: {
-                requests: [{
-                  insertDimension: {
-                    range: {
-                      sheetId: sheetId,
-                      dimension: 'ROWS',
-                      startIndex: insertBeforeRow - 1, // 0-indexed
-                      endIndex: insertBeforeRow, // Insert 1 row
-                    },
-                    inheritFromBefore: false,
-                  },
-                }],
-              },
-            });
-
-            // Now write the data to the newly inserted row
-            const range = this.getSheetRange(`A${insertBeforeRow}:AA${insertBeforeRow}`);
-            await this.sheets.spreadsheets.values.update({
-              spreadsheetId: this.spreadsheetId,
-              range,
-              valueInputOption: 'USER_ENTERED',
-              resource: { values: [rowData] },
-            });
-
-            logger.log(`[PlanningSheet] User ${userId} inserted new row at position ${insertBeforeRow} for event ${eventId} (chronological order)`);
+            logger.info(`[PlanningSheet] User ${userId} inserted new row at position ${insertBeforeRow} for event ${eventId} (chronological order)`);
             return {
               success: true,
               message: `Inserted new row at position ${insertBeforeRow} in Planning Sheet (sorted by date)`,
               rowIndex: insertBeforeRow,
-              isUpdate: false
+              isUpdate: false,
+              placementNote,
             };
           }
         }
 
         // Fallback: Append to end if no insertion point found or worksheet ID unavailable
-        const response = await this.sheets.spreadsheets.values.append({
-          spreadsheetId: this.spreadsheetId,
-          range: this.getSheetRange('A:AA'),
-          valueInputOption: 'USER_ENTERED',
-          insertDataOption: 'INSERT_ROWS',
-          resource: { values: [rowData] },
-        });
+        const newRowIndex = await this.appendRow(rowData);
 
-        // Extract the row number from the response
-        const updatedRange = response.data.updates?.updatedRange || '';
-        const rowMatch = updatedRange.match(/(\d+)$/);
-        const newRowIndex = rowMatch ? parseInt(rowMatch[1]) : undefined;
-
-        logger.log(`[PlanningSheet] User ${userId} appended new row ${newRowIndex} for event ${eventId}`);
+        logger.info(`[PlanningSheet] User ${userId} appended new row ${newRowIndex} for event ${eventId}. ${placementNote}`);
         return {
           success: true,
           message: `Added new row ${newRowIndex || ''} to Planning Sheet`,
           rowIndex: newRowIndex,
-          isUpdate: false
+          isUpdate: false,
+          placementNote,
         };
       }
     } catch (error) {
