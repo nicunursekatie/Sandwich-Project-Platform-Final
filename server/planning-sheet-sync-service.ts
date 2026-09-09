@@ -246,31 +246,69 @@ export function parsePlanningSheetDate(
   if (!dateStr || !dateStr.trim()) return null;
   const trimmed = dateStr.trim();
 
-  // M/D/YY or M/D/YYYY — the canonical format this sheet uses.
-  const parts = trimmed.split('/');
-  if (parts.length === 3) {
-    const month = parseInt(parts[0], 10) - 1; // JS months are 0-indexed
-    const day = parseInt(parts[1], 10);
-    let year = parseInt(parts[2], 10);
-    if (year < 100) year += 2000; // "26" -> 2026
+  // A trailing "?" or "*" marks a date the team hasn't confirmed yet. The date
+  // itself still counts for ordering — treating the row as undated would hide
+  // it from placement entirely.
+  const cleaned = trimmed.replace(/[?*.\s]+$/, '');
 
-    if (!isNaN(month) && !isNaN(day) && !isNaN(year)) {
-      return new Date(year, month, day);
-    }
+  // ISO, in case a cell was pasted in from elsewhere.
+  const iso = cleaned.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+  if (iso) {
+    return calendarDate(parseInt(iso[1], 10), parseInt(iso[2], 10), parseInt(iso[3], 10));
   }
 
-  // Anything else ("Jan 15, 2026", "1/15", "Jan 15") goes through the native
-  // parser, which never fails loudly — it invents a year instead.
-  const parsed = new Date(trimmed);
+  // M/D/YY, M/D/YYYY, or M/D with the year left off — the formats this sheet
+  // uses. Matched as a whole rather than split on "/", because parseInt reads
+  // "31x" as 31 and would let a mistyped cell pass as a real date.
+  const numeric = cleaned.match(/^(\d{1,2})\/(\d{1,2})(?:\/(\d{2}|\d{4}))?$/);
+  if (numeric) {
+    const [, monthStr, dayStr, yearStr] = numeric;
+    let year: number | null = null;
+    if (yearStr) {
+      year = parseInt(yearStr, 10);
+      if (yearStr.length === 2) year += 2000; // "26" -> 2026
+    } else if (fallbackYear) {
+      year = fallbackYear; // "1/15" on the "2026 Groups" tab
+    }
+    if (year === null) return null;
+    return calendarDate(year, parseInt(monthStr, 10), parseInt(dayStr, 10));
+  }
+
+  // Month-name formats ("Jan 15, 2026", "Jan 15") go through the native
+  // parser. It is only trusted with text that names a month, because given
+  // anything else it invents an answer — it reads "3//26" as March 26, 2001,
+  // which would put a fabricated date into the ordering.
+  if (!/[a-z]{3}/i.test(cleaned)) return null;
+
+  const parsed = new Date(cleaned);
   if (isNaN(parsed.getTime())) return null;
 
-  // A year the sheet can't plausibly be about means the text carried no year
-  // and the parser defaulted one in. Substitute the sheet's own year.
-  if (fallbackYear && Math.abs(parsed.getFullYear() - fallbackYear) > 5) {
-    return new Date(fallbackYear, parsed.getMonth(), parsed.getDate());
+  // "Jan 15" with no year resolves to 2001, so use the sheet's year instead.
+  // A year that IS written out is left exactly as typed even when it looks
+  // wrong: a mistyped year has to show up as an outlier, not be quietly
+  // corrected into looking correct.
+  if (fallbackYear && !/\d{4}/.test(cleaned)) {
+    return calendarDate(fallbackYear, parsed.getMonth() + 1, parsed.getDate());
   }
 
   return parsed;
+}
+
+/**
+ * Build a date, rejecting day/month combinations that don't exist. The Date
+ * constructor rolls overflow forward instead of complaining, so a typo like
+ * "2/31/26" would otherwise sort as March 3 rather than being reported.
+ */
+function calendarDate(year: number, month: number, day: number): Date | null {
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+  return date;
 }
 
 /**
@@ -295,6 +333,13 @@ export function parsePlanningSheetTime(timeStr: string): number | null {
   const match24 = timeStr.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
   if (match24) {
     return parseInt(match24[1], 10) * 60 + parseInt(match24[2], 10);
+  }
+
+  // Local datetime string ("2026-01-15T14:00:00") — the shape pickupDateTime
+  // is stored in, which is used as a last resort when ordering same-day rows.
+  const matchDateTime = timeStr.trim().match(/^\d{4}-\d{2}-\d{2}T(\d{1,2}):(\d{2})/);
+  if (matchDateTime) {
+    return parseInt(matchDateTime[1], 10) * 60 + parseInt(matchDateTime[2], 10);
   }
 
   return null;
@@ -1118,9 +1163,11 @@ export class PlanningSheetSyncService {
    */
   async findPlacement(
     eventDate: Date,
-    eventTimeStr?: string | null
+    eventTimeStr?: string | null,
+    /** Rows already read by the caller, to avoid re-reading the sheet. */
+    knownRows?: PlanningSheetRow[]
   ): Promise<SheetPlacement> {
-    const sheetRows = await this.readPlanningSheet();
+    const sheetRows = knownRows ?? (await this.readPlanningSheet());
     const placement = computeSheetPlacement(sheetRows, eventDate, {
       eventTime: eventTimeStr,
       fallbackYear: this.sheetYearHint(),
@@ -1143,12 +1190,14 @@ export class PlanningSheetSyncService {
    * The date and time an event should be sorted by in the sheet. The date is
    * normalized to midnight so it compares against the sheet's date-only cells.
    */
-  private placementInputsFor(event: { scheduledEventDate?: Date | null; desiredEventDate?: Date | null; eventStartTime?: string | null; pickupDateTime?: string | null }): { date: Date; time: string | null } {
+  private placementInputsFor(event: { scheduledEventDate?: Date | null; desiredEventDate?: Date | null; eventStartTime?: string | null; pickupTime?: string | null; pickupDateTime?: string | null }): { date: Date; time: string | null } {
     const eventDate = getEffectiveEventDate(event);
     const raw = eventDate ? new Date(eventDate) : new Date();
     return {
       date: new Date(raw.getFullYear(), raw.getMonth(), raw.getDate()),
-      time: event.eventStartTime || event.pickupDateTime || null,
+      // pickupTime first, since that is what gets written to the sheet's pickup
+      // column and therefore what same-day rows are compared against.
+      time: event.eventStartTime || event.pickupTime || event.pickupDateTime || null,
     };
   }
 
@@ -1156,7 +1205,10 @@ export class PlanningSheetSyncService {
    * Where a push would place this event, without writing anything. Used by the
    * push preview so the team can see the target row before committing.
    */
-  async previewPlacement(eventId: number): Promise<SheetPlacement | null> {
+  async previewPlacement(
+    eventId: number,
+    knownRows?: PlanningSheetRow[]
+  ): Promise<SheetPlacement | null> {
     await this.ensureInitialized();
 
     const [event] = await db
@@ -1167,7 +1219,7 @@ export class PlanningSheetSyncService {
     if (!event) return null;
 
     const { date, time } = this.placementInputsFor(event);
-    return this.findPlacement(date, time);
+    return this.findPlacement(date, time, knownRows);
   }
 
   /**
@@ -1434,7 +1486,10 @@ export class PlanningSheetSyncService {
    * Find a row in the Planning Sheet that matches an event
    * Used to determine if we should create a new row or update existing
    */
-  async findMatchingRow(eventId: number): Promise<PlanningSheetRow | null> {
+  async findMatchingRow(
+    eventId: number,
+    knownRows?: PlanningSheetRow[]
+  ): Promise<PlanningSheetRow | null> {
     const event = await db
       .select()
       .from(eventRequests)
@@ -1446,7 +1501,7 @@ export class PlanningSheetSyncService {
     }
 
     const e = event[0];
-    const sheetRows = await this.readPlanningSheet();
+    const sheetRows = knownRows ?? (await this.readPlanningSheet());
 
     // Try to match by organization name + date
     const eventDate = getEffectiveEventDate(e);

@@ -1,6 +1,7 @@
 import {
   computeSheetPlacement,
   parsePlanningSheetDate,
+  parsePlanningSheetTime,
   type PlanningSheetRow,
 } from '../../server/planning-sheet-sync-service';
 
@@ -70,10 +71,58 @@ describe('parsePlanningSheetDate', () => {
     expect(parsePlanningSheetDate('Mar 14', 2026)).toEqual(new Date(2026, 2, 14));
   });
 
+  it('keeps a written-out year even when it looks mistyped', () => {
+    // The whole point is to surface these, not quietly correct them into
+    // looking right.
+    expect(parsePlanningSheetDate('12/1/2029', 2026)).toEqual(new Date(2029, 11, 1));
+    expect(parsePlanningSheetDate('Jan 15, 2020', 2026)).toEqual(new Date(2020, 0, 15));
+  });
+
   it('returns null for cells that are not dates', () => {
     expect(parsePlanningSheetDate('')).toBeNull();
     expect(parsePlanningSheetDate('   ')).toBeNull();
     expect(parsePlanningSheetDate('TBD')).toBeNull();
+  });
+
+  it('rejects dates that do not exist instead of rolling them over', () => {
+    // new Date(2026, 1, 31) would silently become March 3.
+    expect(parsePlanningSheetDate('2/31/26')).toBeNull();
+    expect(parsePlanningSheetDate('13/1/26')).toBeNull();
+    expect(parsePlanningSheetDate('3/32/26')).toBeNull();
+  });
+
+  it('rejects numeric cells that are too mangled to trust', () => {
+    // parseInt would read "14x" as 14 and treat the cell as a real date.
+    expect(parsePlanningSheetDate('3/14x/26')).toBeNull();
+    // The native parser reads this as March 26, 2001 if given the chance.
+    expect(parsePlanningSheetDate('3//26')).toBeNull();
+    expect(parsePlanningSheetDate('3//26', 2026)).toBeNull();
+    expect(parsePlanningSheetDate('//')).toBeNull();
+  });
+
+  it('still reads a date the team marked as unconfirmed', () => {
+    // "3/14/26?" means the date isn't settled yet. It should still order as
+    // March 14 — calling it undated would make the row invisible to placement.
+    expect(parsePlanningSheetDate('3/14/26?')).toEqual(new Date(2026, 2, 14));
+  });
+});
+
+describe('parsePlanningSheetTime', () => {
+  it('reads the formats the sheet and the app produce', () => {
+    expect(parsePlanningSheetTime('2:00 PM')).toBe(14 * 60);
+    expect(parsePlanningSheetTime('10:30 AM')).toBe(10 * 60 + 30);
+    expect(parsePlanningSheetTime('12:00 AM')).toBe(0);
+    expect(parsePlanningSheetTime('14:00')).toBe(14 * 60);
+    expect(parsePlanningSheetTime('09:30:00')).toBe(9 * 60 + 30);
+  });
+
+  it('reads the local datetime string pickupDateTime is stored in', () => {
+    expect(parsePlanningSheetTime('2026-01-15T14:00:00')).toBe(14 * 60);
+  });
+
+  it('returns null for anything it cannot read', () => {
+    expect(parsePlanningSheetTime('')).toBeNull();
+    expect(parsePlanningSheetTime('afternoon')).toBeNull();
   });
 });
 

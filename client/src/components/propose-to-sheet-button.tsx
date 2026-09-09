@@ -593,6 +593,18 @@ export function PushToSheetButton({
                         {previewData.placement.note}
                       </AlertDescription>
                     </Alert>
+                  ) : previewData.placement.reason === 'append_event_is_latest' ? (
+                    // Appending is the correct answer here — the event really is
+                    // later than everything in the sheet, so no warning.
+                    <Alert className="bg-blue-50 border-blue-200">
+                      <ArrowRight className="h-4 w-4 text-blue-600" />
+                      <AlertTitle className="text-blue-800">
+                        Goes at the end of the sheet
+                      </AlertTitle>
+                      <AlertDescription className="text-blue-700">
+                        {previewData.placement.note}
+                      </AlertDescription>
+                    </Alert>
                   ) : (
                     <Alert className="bg-amber-50 border-amber-300">
                       <AlertTriangle className="h-4 w-4 text-amber-600" />
