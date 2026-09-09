@@ -103,13 +103,15 @@ for (const row of rows) {
     blank.push(row);
     continue;
   }
-  const withoutHint = parsePlanningSheetDate(raw);
+  // Classify on the hinted result, because that is what placement actually
+  // uses. A year-less cell like "10/20" is meant to fail without the hint, so
+  // judging it on that would report a perfectly good row as unreadable.
   const withHint = parsePlanningSheetDate(raw, yearHint);
-  if (!withoutHint || !withHint) {
+  if (!withHint) {
     unreadable.push(row);
     continue;
   }
-  dated.push({ row, date: withoutHint, withHint });
+  dated.push({ row, date: parsePlanningSheetDate(raw) ?? withHint, withHint });
 }
 
 console.log(`\n--- Date column ---`);

@@ -126,6 +126,128 @@ describe('parsePlanningSheetTime', () => {
   });
 });
 
+/**
+ * The sheet as the team actually keeps it: each week opens with an undated
+ * "Week of ..." header row, its events follow in date order, and spare slots
+ * sit beneath them before the next header.
+ */
+const weekHeader = (rowIndex: number, label: string) =>
+  makeRow(rowIndex, '', { dayOfWeek: `Week of ${label}`, groupName: '' });
+
+const blankSlot = (rowIndex: number) =>
+  makeRow(rowIndex, '', { dayOfWeek: '', groupName: '' });
+
+const weeklySheet = [
+  weekHeader(362, 'Aug 31'),
+  makeRow(363, '9/2/26', { dayOfWeek: 'Wednesday' }),
+  makeRow(364, '9/2/26', { dayOfWeek: 'Wednesday' }),
+  makeRow(365, '9/6/26', { dayOfWeek: 'Sunday' }),
+  weekHeader(366, 'Sep 7'),
+  makeRow(367, '9/8/26', { dayOfWeek: 'Tuesday' }),
+  makeRow(368, '9/9/26', { dayOfWeek: 'Wednesday' }),
+  blankSlot(369),
+  weekHeader(370, 'Sep 14'),
+  makeRow(371, '9/14/26', { dayOfWeek: 'Monday' }),
+];
+
+describe('computeSheetPlacement in a sheet grouped by week', () => {
+  // The regression that started this round: anchoring on the previous event
+  // put the first event of a week onto its own header row, which reads as the
+  // last row of the week before.
+  it('puts the first event of a week under that week header, not above it', () => {
+    const placement = computeSheetPlacement(weeklySheet, new Date(2026, 8, 7), {
+      fallbackYear: 2026,
+    });
+    expect(placement.insertBeforeRow).toBe(367); // below the "Week of Sep 7" header
+    expect(placement.reason).toBe('insert_in_week_block');
+    expect(placement.weekBlock).toEqual({ headerRow: 366, label: 'Sep 7' });
+  });
+
+  it('keeps the last event of a week above the next week header', () => {
+    // 9/13 is still the week of Sep 7, so it must not cross into Sep 14.
+    const placement = computeSheetPlacement(weeklySheet, new Date(2026, 8, 13), {
+      fallbackYear: 2026,
+    });
+    expect(placement.insertBeforeRow).toBe(369); // the spare slot in its own week
+    expect(placement.weekBlock?.label).toBe('Sep 7');
+  });
+
+  it('orders within the week it belongs to', () => {
+    const placement = computeSheetPlacement(weeklySheet, new Date(2026, 8, 9), {
+      fallbackYear: 2026,
+    });
+    expect(placement.insertBeforeRow).toBe(369); // after the existing 9/9 row
+    expect(placement.weekBlock?.label).toBe('Sep 7');
+  });
+
+  it('places an event into an earlier week without disturbing later ones', () => {
+    const placement = computeSheetPlacement(weeklySheet, new Date(2026, 8, 3), {
+      fallbackYear: 2026,
+    });
+    expect(placement.insertBeforeRow).toBe(365); // between 9/2 and 9/6
+    expect(placement.weekBlock?.label).toBe('Aug 31');
+  });
+
+  it('flags an event whose week has no header of its own', () => {
+    const gapped = [
+      weekHeader(366, 'Sep 7'),
+      makeRow(367, '9/8/26'),
+      weekHeader(370, 'Sep 28'),
+      makeRow(371, '9/28/26'),
+    ];
+    // The weeks of Sep 14 and Sep 21 are simply missing from the sheet.
+    const placement = computeSheetPlacement(gapped, new Date(2026, 8, 16), {
+      fallbackYear: 2026,
+    });
+    expect(placement.reason).toBe('insert_week_block_missing');
+    expect(placement.insertBeforeRow).toBe(370); // end of the Sep 7 week, above the next header
+    expect(placement.note).toContain('no "week of" header');
+  });
+
+  it('starts a week that has a header but no events yet', () => {
+    const emptyWeek = [
+      weekHeader(436, 'Nov 23'),
+      makeRow(437, '11/23/26'),
+      blankSlot(438),
+      weekHeader(440, 'Nov 30'),
+      blankSlot(441),
+    ];
+    const placement = computeSheetPlacement(emptyWeek, new Date(2026, 11, 2), {
+      fallbackYear: 2026,
+    });
+    expect(placement.insertBeforeRow).toBe(441); // directly under the Nov 30 header
+    expect(placement.weekBlock?.label).toBe('Nov 30');
+  });
+
+  it('reads a December header at the top of the sheet as the previous year', () => {
+    // A "2026 Groups" tab opens with the tail of 2025.
+    const yearBoundary = [
+      weekHeader(2, 'Dec 29'),
+      makeRow(3, '12/30/25'),
+      weekHeader(4, 'Jan 5'),
+      makeRow(5, '1/5/26'),
+    ];
+    const placement = computeSheetPlacement(yearBoundary, new Date(2025, 11, 31), {
+      fallbackYear: 2026,
+    });
+    // Inside the Dec 29 week rather than pushed into the Jan 5 one, which is
+    // where it would land if the header were read as Dec 29 2026.
+    expect(placement.insertBeforeRow).toBe(4);
+    expect(placement.weekBlock?.label).toBe('Dec 29');
+  });
+
+  it('is still not hijacked by a mistyped year in another week', () => {
+    const withTypo = weeklySheet.map(r =>
+      r.rowIndex === 363 ? makeRow(363, '12/1/2029') : r
+    );
+    const placement = computeSheetPlacement(withTypo, new Date(2026, 8, 7), {
+      fallbackYear: 2026,
+    });
+    expect(placement.insertBeforeRow).toBe(367);
+    expect(placement.weekBlock?.label).toBe('Sep 7');
+  });
+});
+
 describe('computeSheetPlacement', () => {
   it('inserts directly below the event it follows', () => {
     const placement = computeSheetPlacement(sortedSheet, new Date(2026, 6, 4));
@@ -139,35 +261,34 @@ describe('computeSheetPlacement', () => {
     expect(placement.reason).toBe('insert_before_later_event');
   });
 
-  // The sheet is grouped into week blocks: dated events, then any empty slots
-  // reserved for that week, then a total row. None of the structural rows carry
-  // a date, and stepping over them drops the event into the following week and
-  // out of the total that should count it.
-  it('stays inside its own week block instead of stepping over the total row', () => {
-    const weekBlocks = [
+  // Without week headers there is nothing to anchor to but the neighbouring
+  // dates, so the row is tucked directly beneath the event it follows and
+  // above any undated rows that come after it.
+  it('sits directly beneath the previous event, above any undated rows', () => {
+    const undatedGap = [
       makeRow(363, '9/2/26'),
       makeRow(365, '9/6/26'),
-      makeRow(366, '', { groupName: '', estimateSandwiches: '4250' }), // week total
+      makeRow(366, '', { groupName: '' }),
       makeRow(367, '9/8/26'),
       makeRow(368, '9/9/26'),
     ];
 
-    const placement = computeSheetPlacement(weekBlocks, new Date(2026, 8, 7));
-    expect(placement.insertBeforeRow).toBe(366); // not 367, below the total
-    expect(placement.note).toContain('close out the week');
+    const placement = computeSheetPlacement(undatedGap, new Date(2026, 8, 7));
+    expect(placement.insertBeforeRow).toBe(366);
+    expect(placement.reason).toBe('insert_after_previous_event');
+    expect(placement.note).toContain('follow before the next event');
   });
 
-  it('fills a week that has empty slots reserved for it', () => {
-    const weekBlocks = [
+  it('fills undated slots left between two events', () => {
+    const withSlots = [
       makeRow(419, '10/24/26'),
       makeRow(420, ''),
       makeRow(421, ''),
-      makeRow(424, '', { groupName: '', estimateSandwiches: '1050' }), // week total
       makeRow(425, '11/4/26'),
     ];
 
     expect(
-      computeSheetPlacement(weekBlocks, new Date(2026, 9, 25)).insertBeforeRow
+      computeSheetPlacement(withSlots, new Date(2026, 9, 25)).insertBeforeRow
     ).toBe(420);
   });
 

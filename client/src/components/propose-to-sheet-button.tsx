@@ -555,68 +555,51 @@ export function PushToSheetButton({
                   </>
                 )}
 
-                {/* Where the new row will land. The sheet is read as a calendar,
-                    so a row dropped at the bottom instead of in date order needs
-                    to be visible before the push, not discovered afterwards. */}
-                {previewData.placement && (
-                  previewData.placement.insertBeforeRow ? (
+                {/* Where the new row will land. The sheet is read as a
+                    calendar, grouped into weeks, so a row landing outside its
+                    week needs to be visible before the push rather than
+                    discovered in the sheet afterwards. */}
+                {previewData.placement && (() => {
+                  const placement = previewData.placement;
+                  const needsAttention =
+                    placement.outOfOrderRows?.length > 0 ||
+                    placement.reason === 'insert_week_block_missing' ||
+                    placement.reason === 'append_no_dated_rows';
+
+                  const title = placement.insertBeforeRow
+                    ? placement.weekBlock && placement.reason === 'insert_in_week_block'
+                      ? `Goes in at row ${placement.insertBeforeRow}, under "Week of ${placement.weekBlock.label}"`
+                      : `Goes in at row ${placement.insertBeforeRow}`
+                    : placement.reason === 'append_no_dated_rows'
+                      ? 'Goes at the bottom of the sheet, not in date order'
+                      : 'Goes at the end of the sheet';
+
+                  return (
                     <Alert
                       className={
-                        previewData.placement.outOfOrderRows?.length
+                        needsAttention
                           ? 'bg-amber-50 border-amber-300'
                           : 'bg-blue-50 border-blue-200'
                       }
                     >
-                      <ArrowRight
-                        className={`h-4 w-4 ${
-                          previewData.placement.outOfOrderRows?.length
-                            ? 'text-amber-600'
-                            : 'text-blue-600'
-                        }`}
-                      />
+                      {needsAttention ? (
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      ) : (
+                        <ArrowRight className="h-4 w-4 text-blue-600" />
+                      )}
                       <AlertTitle
-                        className={
-                          previewData.placement.outOfOrderRows?.length
-                            ? 'text-amber-800'
-                            : 'text-blue-800'
-                        }
+                        className={needsAttention ? 'text-amber-800' : 'text-blue-800'}
                       >
-                        Goes in at row {previewData.placement.insertBeforeRow}
+                        {title}
                       </AlertTitle>
                       <AlertDescription
-                        className={
-                          previewData.placement.outOfOrderRows?.length
-                            ? 'text-amber-700'
-                            : 'text-blue-700'
-                        }
+                        className={needsAttention ? 'text-amber-700' : 'text-blue-700'}
                       >
-                        {previewData.placement.note}
+                        {placement.note}
                       </AlertDescription>
                     </Alert>
-                  ) : previewData.placement.reason === 'append_event_is_latest' ? (
-                    // Appending is the correct answer here — the event really is
-                    // later than everything in the sheet, so no warning.
-                    <Alert className="bg-blue-50 border-blue-200">
-                      <ArrowRight className="h-4 w-4 text-blue-600" />
-                      <AlertTitle className="text-blue-800">
-                        Goes at the end of the sheet
-                      </AlertTitle>
-                      <AlertDescription className="text-blue-700">
-                        {previewData.placement.note}
-                      </AlertDescription>
-                    </Alert>
-                  ) : (
-                    <Alert className="bg-amber-50 border-amber-300">
-                      <AlertTriangle className="h-4 w-4 text-amber-600" />
-                      <AlertTitle className="text-amber-800">
-                        Goes at the bottom of the sheet, not in date order
-                      </AlertTitle>
-                      <AlertDescription className="text-amber-700">
-                        {previewData.placement.note}
-                      </AlertDescription>
-                    </Alert>
-                  )
-                )}
+                  );
+                })()}
 
                 {/* Full field list (for non-conflict modes: new row, potential duplicates, fallback update) */}
                 {!(hasExistingRow && hasExistingRawData) && (

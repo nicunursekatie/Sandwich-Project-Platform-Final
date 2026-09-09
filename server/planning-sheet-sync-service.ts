@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
 import { JWT } from 'google-auth-library';
 import { db } from './db';
-import { eq, desc, inArray } from 'drizzle-orm';
+import { eq, desc, inArray, and, gte, sql } from 'drizzle-orm';
 import { eventRequests, proposedSheetChanges, users } from '@shared/schema';
 import { logger } from './utils/production-safe-logger';
 import { getEffectiveEventDate } from '../shared/event-validation-utils';
@@ -283,6 +283,11 @@ export function parsePlanningSheetDate(
   const parsed = new Date(cleaned);
   if (isNaN(parsed.getTime())) return null;
 
+  // The native parser rolls overflow forward too ("Feb 31, 2026" comes back as
+  // March 3), so check the day it landed on is the day that was written.
+  const writtenDay = cleaned.match(/\b(\d{1,2})\b/);
+  if (writtenDay && parseInt(writtenDay[1], 10) !== parsed.getDate()) return null;
+
   // "Jan 15" with no year resolves to 2001, so use the sheet's year instead.
   // A year that IS written out is left exactly as typed even when it looks
   // wrong: a mistyped year has to show up as an outlier, not be quietly
@@ -323,6 +328,9 @@ export function parsePlanningSheetTime(timeStr: string): number | null {
   if (match12) {
     let hours = parseInt(match12[1], 10);
     const minutes = parseInt(match12[2], 10);
+    // These cells are hand-typed, so "13:00 PM" and "9:99" turn up. Reading
+    // them as real times would quietly reorder same-day events.
+    if (hours < 1 || hours > 12 || minutes > 59) return null;
     const ampm = match12[3].toUpperCase();
     if (ampm === 'PM' && hours !== 12) hours += 12;
     if (ampm === 'AM' && hours === 12) hours = 0;
@@ -330,22 +338,38 @@ export function parsePlanningSheetTime(timeStr: string): number | null {
   }
 
   // 24-hour format: "14:00", "09:30", "14:00:00"
-  const match24 = timeStr.trim().match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/);
+  const match24 = timeStr.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
   if (match24) {
-    return parseInt(match24[1], 10) * 60 + parseInt(match24[2], 10);
+    const hours = parseInt(match24[1], 10);
+    const minutes = parseInt(match24[2], 10);
+    const seconds = match24[3] ? parseInt(match24[3], 10) : 0;
+    if (hours > 23 || minutes > 59 || seconds > 59) return null;
+    return hours * 60 + minutes;
   }
 
   // Local datetime string ("2026-01-15T14:00:00") — the shape pickupDateTime
   // is stored in, which is used as a last resort when ordering same-day rows.
-  const matchDateTime = timeStr.trim().match(/^\d{4}-\d{2}-\d{2}T(\d{1,2}):(\d{2})/);
+  const matchDateTime = timeStr
+    .trim()
+    .match(/^\d{4}-\d{2}-\d{2}T(\d{1,2}):(\d{2})/);
   if (matchDateTime) {
-    return parseInt(matchDateTime[1], 10) * 60 + parseInt(matchDateTime[2], 10);
+    const hours = parseInt(matchDateTime[1], 10);
+    const minutes = parseInt(matchDateTime[2], 10);
+    if (hours > 23 || minutes > 59) return null;
+    return hours * 60 + minutes;
   }
 
   return null;
 }
 
 export type SheetPlacementReason =
+  /** Placed inside the "week of ..." block its date belongs to. */
+  | 'insert_in_week_block'
+  /** Its week has no header in the sheet, so it went after the previous week. */
+  | 'insert_week_block_missing'
+  /** Dated before the first week the sheet covers. */
+  | 'insert_before_first_week_block'
+  /** Sheets with no week headers fall back to plain date order. */
   | 'insert_after_previous_event'
   | 'insert_before_later_event'
   | 'append_event_is_latest'
@@ -366,28 +390,169 @@ export interface SheetPlacement {
    * thing and their date says another. Usually a mistyped year.
    */
   outOfOrderRows: { rowIndex: number; date: string }[];
+  /** The week block the row is going into, when the sheet is grouped by week. */
+  weekBlock: { headerRow: number; label: string } | null;
   lastDatedRow: { rowIndex: number; date: string } | null;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/** The sheet opens each week with a row reading "Week of Sep 7" and no date. */
+const WEEK_HEADER_PATTERN = /^\s*week of\s+(.+?)\s*$/i;
+
+interface WeekBlock {
+  /** Row the "Week of ..." header itself sits on. */
+  headerRow: number;
+  label: string;
+  start: Date;
+  /** The week's rows: its events, plus any spare slots kept beneath them. */
+  rows: PlanningSheetRow[];
+}
+
 /**
- * Work out where a new row belongs so the sheet stays in date (then time)
- * order — the property that makes it readable as a calendar for the year.
+ * Split the sheet into the week blocks it is actually organised into.
  *
- * Two things about this sheet make the obvious approach wrong.
+ * This grouping is what makes the sheet readable as a calendar, and it is the
+ * sheet's own statement of which events belong to which week — much safer to
+ * follow than inferring week boundaries from dates.
+ */
+function parseWeekBlocks(
+  rows: PlanningSheetRow[],
+  fallbackYear?: number
+): WeekBlock[] {
+  const blocks: WeekBlock[] = [];
+
+  for (const row of rows) {
+    const header = (row.dayOfWeek || '').match(WEEK_HEADER_PATTERN);
+    const start = header ? parsePlanningSheetDate(header[1], fallbackYear) : null;
+    if (header && start) {
+      blocks.push({ headerRow: row.rowIndex, label: header[1], start, rows: [] });
+    } else if (blocks.length) {
+      blocks[blocks.length - 1].rows.push(row);
+    }
+  }
+
+  // Week labels carry no year, so a tab covering one season starts with weeks
+  // belonging to the previous year ("Week of Dec 29" above "Week of Jan 5") and
+  // can end with weeks belonging to the next. Roll those so the blocks read in
+  // the ascending order the sheet is kept in. Only a jump of half a year or
+  // more is treated as a year boundary, so a merely mistyped header is left
+  // alone rather than being thrown a year off.
+  for (let i = 0; i < blocks.length; i++) {
+    const neighbour = i === 0 ? blocks[1] : blocks[i - 1];
+    if (!neighbour) continue;
+    const backwards =
+      i === 0
+        ? blocks[0].start.getTime() - neighbour.start.getTime()
+        : neighbour.start.getTime() - blocks[i].start.getTime();
+    if (backwards > 180 * DAY_MS) {
+      const shift = i === 0 ? -1 : 1;
+      blocks[i].start = new Date(
+        blocks[i].start.getFullYear() + shift,
+        blocks[i].start.getMonth(),
+        blocks[i].start.getDate()
+      );
+    }
+  }
+
+  return blocks;
+}
+
+interface DatedRow {
+  row: PlanningSheetRow;
+  /** True when this row belongs below the event being placed. */
+  sortsAfter: boolean;
+}
+
+/** Read the rows that carry a usable date, and note the ones that don't. */
+function readDatedRows(
+  rows: PlanningSheetRow[],
+  eventDate: Date,
+  eventTimeMinutes: number | null,
+  fallbackYear?: number
+): { dated: DatedRow[]; unreadableDates: { rowIndex: number; value: string }[] } {
+  const unreadableDates: { rowIndex: number; value: string }[] = [];
+  const dated: DatedRow[] = [];
+
+  for (const row of rows) {
+    const rowDate = parsePlanningSheetDate(row.date, fallbackYear);
+    if (!rowDate) {
+      // No date means structure — a week header or a spare slot. Text that
+      // isn't a readable date is different, and worth reporting.
+      if (row.date && row.date.trim()) {
+        unreadableDates.push({ rowIndex: row.rowIndex, value: row.date });
+      }
+      continue;
+    }
+
+    // Same-day rows are ordered by start time, falling back to pickup time; a
+    // row with no readable time stays above.
+    let sortsAfter = rowDate.getTime() > eventDate.getTime();
+    if (
+      !sortsAfter &&
+      rowDate.getTime() === eventDate.getTime() &&
+      eventTimeMinutes !== null
+    ) {
+      const rowTime =
+        parsePlanningSheetTime(row.eventStartTime) ??
+        parsePlanningSheetTime(row.pickUpTime);
+      sortsAfter = rowTime !== null && eventTimeMinutes < rowTime;
+    }
+
+    dated.push({ row, sortsAfter });
+  }
+
+  return { dated, unreadableDates };
+}
+
+/**
+ * Choose the split point that the fewest rows argue against: every row above it
+ * that belongs below, plus every row below it that belongs above.
  *
- * First, it is not a flat list of dated rows. It is grouped into week blocks,
- * each padded with empty slots for events still to come and closed by a total
- * row, and none of those structural rows carry a date. So the new row is tucked
- * directly beneath the event it follows, which keeps it inside its own week
- * rather than below the total that is supposed to count it.
+ * Trusting one row instead is what made a single mistyped year so damaging — a
+ * row typed as 2029 is "later" than everything, so scanning from the top for
+ * the first later row stopped there on every push. Counting disagreements lets
+ * hundreds of correct rows outvote one bad one.
+ */
+function chooseSplit(dated: DatedRow[]): { splitAfter: number; conflicts: number } {
+  const totalEarlier = dated.filter((d) => !d.sortsAfter).length;
+  let laterAbove = 0;
+  let earlierAbove = 0;
+  let best = { splitAfter: 0, conflicts: totalEarlier };
+
+  for (let i = 0; i < dated.length; i++) {
+    if (dated[i].sortsAfter) laterAbove++;
+    else earlierAbove++;
+    const conflicts = laterAbove + (totalEarlier - earlierAbove);
+    // <= so that a tie resolves downward, below the rows it ties with.
+    if (conflicts <= best.conflicts) best = { splitAfter: i + 1, conflicts };
+  }
+
+  return best;
+}
+
+/** The rows that disagree with the chosen split — usually a mistyped year. */
+function conflictingRows(dated: DatedRow[], splitAfter: number) {
+  return dated
+    .filter((d, i) => (i < splitAfter ? d.sortsAfter : !d.sortsAfter))
+    .map((d) => ({ rowIndex: d.row.rowIndex, date: d.row.date }));
+}
+
+function describeRow(row: PlanningSheetRow) {
+  return `${row.date} ${row.groupName}`.trim();
+}
+
+/**
+ * Work out where a new row belongs so the sheet stays readable as a calendar.
  *
- * Second, the sheet is hand-maintained, so a single mistyped year is normal.
- * Scanning from the top for the first later-dated row makes any such typo a
- * magnet: a row mistyped as 2029 is "later" than every event, so every push
- * lands immediately above it no matter what date it carries. Instead of
- * trusting one row, the split point is chosen to disagree with as few rows as
- * possible — a lone bad date is outvoted by the hundreds of correct ones, and
- * it gets reported so someone can go fix it.
+ * The sheet is grouped into weeks: a row reading "Week of Sep 7" opens each
+ * week, its events follow in date order, and spare slots sit beneath them. So
+ * the job is to find the week the event belongs to and order it within that
+ * week — not to scan the whole sheet for a neighbouring date. Scanning is what
+ * puts the first event of a week above its own header, at the foot of the
+ * previous week, and the last event of a week below the next header.
+ *
+ * Sheets with no week headers fall back to plain date order.
  */
 export function computeSheetPlacement(
   rows: PlanningSheetRow[],
@@ -398,107 +563,177 @@ export function computeSheetPlacement(
   const eventTimeMinutes =
     typeof eventTime === 'string' ? parsePlanningSheetTime(eventTime) : null;
 
-  const unreadableDates: { rowIndex: number; value: string }[] = [];
-  const dated: { row: PlanningSheetRow; sortsAfter: boolean }[] = [];
+  // Reported sheet-wide, so a bad cell anywhere still gets surfaced even when
+  // placement only needed to look at one week.
+  const { dated: allDated, unreadableDates } = readDatedRows(
+    rows,
+    eventDate,
+    eventTimeMinutes,
+    fallbackYear
+  );
 
-  for (const row of rows) {
-    const rowDate = parsePlanningSheetDate(row.date, fallbackYear);
-    if (!rowDate) {
-      // No date means a structural row — a week's empty slot, a spacer, or the
-      // total that closes a week. Text that isn't a readable date is different,
-      // and worth reporting.
-      if (row.date && row.date.trim()) {
-        unreadableDates.push({ rowIndex: row.rowIndex, value: row.date });
-      }
-      continue;
-    }
-
-    // Does this row belong below the new event? Same-day rows are ordered by
-    // start time, falling back to pickup time; a row with no readable time
-    // stays above.
-    let sortsAfter = rowDate.getTime() > eventDate.getTime();
-    if (!sortsAfter && rowDate.getTime() === eventDate.getTime() && eventTimeMinutes !== null) {
-      const rowTime =
-        parsePlanningSheetTime(row.eventStartTime) ??
-        parsePlanningSheetTime(row.pickUpTime);
-      sortsAfter = rowTime !== null && eventTimeMinutes < rowTime;
-    }
-
-    dated.push({ row, sortsAfter });
-  }
-
-  const datedRows = dated.length;
-  const lastDated = dated[datedRows - 1]?.row ?? null;
-  const lastDatedRow = lastDated ? { rowIndex: lastDated.rowIndex, date: lastDated.date } : null;
+  const lastDated = allDated[allDated.length - 1]?.row ?? null;
+  const shared = {
+    totalRows: rows.length,
+    datedRows: allDated.length,
+    unreadableDates,
+    lastDatedRow: lastDated
+      ? { rowIndex: lastDated.rowIndex, date: lastDated.date }
+      : null,
+  };
 
   const unreadableSuffix = unreadableDates.length
     ? ` ${unreadableDates.length} row(s) have a date cell that could not be read (e.g. row ${unreadableDates[0].rowIndex}: "${unreadableDates[0].value}").`
     : '';
 
-  if (datedRows === 0) {
+  const blocks = parseWeekBlocks(rows, fallbackYear);
+  const lastSheetRow = rows[rows.length - 1]?.rowIndex ?? 0;
+
+  if (blocks.length > 0) {
+    // The week the event belongs to: the last one starting on or before it.
+    let block: WeekBlock | null = null;
+    for (const candidate of blocks) {
+      if (
+        candidate.start.getTime() <= eventDate.getTime() &&
+        (!block || candidate.start.getTime() >= block.start.getTime())
+      ) {
+        block = candidate;
+      }
+    }
+
+    if (!block) {
+      const first = blocks[0];
+      return {
+        ...shared,
+        insertBeforeRow: first.headerRow,
+        reason: 'insert_before_first_week_block',
+        note: `Inserting at row ${first.headerRow}, above "Week of ${first.label}" — this event is dated before the first week in the sheet.${unreadableSuffix}`,
+        outOfOrderRows: [],
+        weekBlock: null,
+      };
+    }
+
+    const weekBlock = { headerRow: block.headerRow, label: block.label };
+    const following = blocks.find((b) => b.headerRow > block!.headerRow) ?? null;
+    // Inserting here lands at the foot of this week, above the next header.
+    const endOfBlock = following ? following.headerRow : lastSheetRow + 1;
+
+    const { dated } = readDatedRows(
+      block.rows,
+      eventDate,
+      eventTimeMinutes,
+      fallbackYear
+    );
+    const { splitAfter } = chooseSplit(dated);
+    const outOfOrderRows = conflictingRows(dated, splitAfter);
+    const disorderSuffix = outOfOrderRows.length
+      ? ` Heads up: ${outOfOrderRows.length} row(s) in this week are dated on the wrong side of this position — check row ${outOfOrderRows[0].rowIndex} ("${outOfOrderRows[0].date}"). A mistyped year there pulls events out of place.`
+      : '';
+
+    // More than a week past the block's start means the event's own week has no
+    // header of its own — a gap in the sheet rather than a placement decision.
+    const daysIntoBlock =
+      (eventDate.getTime() - block.start.getTime()) / DAY_MS;
+
+    if (daysIntoBlock >= 7) {
+      const target = endOfBlock;
+      if (!following && target > lastSheetRow) {
+        return {
+          ...shared,
+          insertBeforeRow: null,
+          reason: 'insert_week_block_missing',
+          note: `Appending to the end: the sheet has no "week of" header for this event's week, and "Week of ${block.label}" is the last week in it. Add a week header if this event should be grouped on its own.${disorderSuffix}${unreadableSuffix}`,
+          outOfOrderRows,
+          weekBlock,
+        };
+      }
+      return {
+        ...shared,
+        insertBeforeRow: target,
+        reason: 'insert_week_block_missing',
+        note: `Inserting at row ${target}. The sheet has no "week of" header for this event's week, so it goes at the end of "Week of ${block.label}" — add a week header if it should be grouped on its own.${disorderSuffix}${unreadableSuffix}`,
+        outOfOrderRows,
+        weekBlock,
+      };
+    }
+
+    const anchor = splitAfter > 0 ? dated[splitAfter - 1].row : null;
+    let target: number;
+    let position: string;
+
+    if (anchor) {
+      target = anchor.rowIndex + 1;
+      position = `directly after "${describeRow(anchor)}"`;
+    } else if (dated.length > 0) {
+      target = dated[0].row.rowIndex;
+      position = `at the top of that week, ahead of "${describeRow(dated[0].row)}"`;
+    } else {
+      target = block.headerRow + 1;
+      position = 'as the first event of that week';
+    }
+
+    if (!following && target > lastSheetRow) {
+      return {
+        ...shared,
+        insertBeforeRow: null,
+        reason: 'append_event_is_latest',
+        note: `Appending to the end: this event is later than every row in the sheet, in the last week it covers ("Week of ${block.label}").${disorderSuffix}${unreadableSuffix}`,
+        outOfOrderRows,
+        weekBlock,
+      };
+    }
+
     return {
-      insertBeforeRow: null,
-      reason: 'append_no_dated_rows',
-      note: `Appending to the end: none of the ${rows.length} rows read back with a usable date.${unreadableSuffix}`,
-      totalRows: rows.length,
-      datedRows,
-      unreadableDates,
-      outOfOrderRows: [],
-      lastDatedRow,
+      ...shared,
+      insertBeforeRow: target,
+      reason: 'insert_in_week_block',
+      note: `Inserting at row ${target}, in the "Week of ${block.label}" block, ${position}.${disorderSuffix}${unreadableSuffix}`,
+      outOfOrderRows,
+      weekBlock,
     };
   }
 
-  // Pick the split that the fewest rows argue against: every row above it that
-  // belongs below, plus every row below it that belongs above.
-  const totalEarlier = dated.filter((d) => !d.sortsAfter).length;
-  let laterAbove = 0;
-  let earlierAbove = 0;
-  let best = { splitAfter: 0, conflicts: totalEarlier };
+  // ---- No week headers: fall back to plain date order across the sheet. ----
 
-  for (let i = 0; i < datedRows; i++) {
-    if (dated[i].sortsAfter) laterAbove++;
-    else earlierAbove++;
-    const conflicts = laterAbove + (totalEarlier - earlierAbove);
-    // <= so that a tie resolves downward, below the events it ties with.
-    if (conflicts <= best.conflicts) best = { splitAfter: i + 1, conflicts };
+  if (allDated.length === 0) {
+    return {
+      ...shared,
+      insertBeforeRow: null,
+      reason: 'append_no_dated_rows',
+      note: `Appending to the end: none of the ${rows.length} rows read back with a usable date.${unreadableSuffix}`,
+      outOfOrderRows: [],
+      weekBlock: null,
+    };
   }
 
-  const outOfOrderRows = dated
-    .filter((d, i) => (i < best.splitAfter ? d.sortsAfter : !d.sortsAfter))
-    .map((d) => ({ rowIndex: d.row.rowIndex, date: d.row.date }));
-
+  const { splitAfter } = chooseSplit(allDated);
+  const outOfOrderRows = conflictingRows(allDated, splitAfter);
   const disorderSuffix = outOfOrderRows.length
     ? ` Heads up: ${outOfOrderRows.length} row(s) are dated on the wrong side of this position — check row ${outOfOrderRows[0].rowIndex} ("${outOfOrderRows[0].date}"). A mistyped year there pulls pushed events out of place.`
     : '';
 
-  const anchor = best.splitAfter > 0 ? dated[best.splitAfter - 1].row : null;
-  const following = best.splitAfter < datedRows ? dated[best.splitAfter].row : null;
+  const anchor = splitAfter > 0 ? allDated[splitAfter - 1].row : null;
+  const following = splitAfter < allDated.length ? allDated[splitAfter].row : null;
 
-  // Nothing sorts before this event: it goes above the sheet's first event.
   if (!anchor) {
     return {
+      ...shared,
       insertBeforeRow: following!.rowIndex,
       reason: 'insert_before_later_event',
-      note: `Inserting at row ${following!.rowIndex}, ahead of "${`${following!.date} ${following!.groupName}`.trim()}" — nothing in the sheet is dated earlier.${disorderSuffix}${unreadableSuffix}`,
-      totalRows: rows.length,
-      datedRows,
-      unreadableDates,
+      note: `Inserting at row ${following!.rowIndex}, ahead of "${describeRow(following!)}" — nothing in the sheet is dated earlier.${disorderSuffix}${unreadableSuffix}`,
       outOfOrderRows,
-      lastDatedRow,
+      weekBlock: null,
     };
   }
 
-  // Later than everything, with no rows below to sit above: append.
-  if (!following && anchor.rowIndex === rows[rows.length - 1]?.rowIndex) {
+  if (!following && anchor.rowIndex === lastSheetRow) {
     return {
+      ...shared,
       insertBeforeRow: null,
       reason: 'append_event_is_latest',
       note: `Appending to the end: this event is later than every row in the sheet (the last one is ${anchor.date}, row ${anchor.rowIndex}).${disorderSuffix}${unreadableSuffix}`,
-      totalRows: rows.length,
-      datedRows,
-      unreadableDates,
       outOfOrderRows,
-      lastDatedRow,
+      weekBlock: null,
     };
   }
 
@@ -506,16 +741,16 @@ export function computeSheetPlacement(
   const closingRows = following ? following.rowIndex - target : 0;
 
   return {
+    ...shared,
     insertBeforeRow: target,
     reason: 'insert_after_previous_event',
-    note: `Inserting at row ${target}, directly after "${`${anchor.date} ${anchor.groupName}`.trim()}".${
-      closingRows > 0 ? ` That keeps it above the ${closingRows} row(s) that close out the week.` : ''
+    note: `Inserting at row ${target}, directly after "${describeRow(anchor)}".${
+      closingRows > 0
+        ? ` That keeps it above the ${closingRows} row(s) that follow before the next event.`
+        : ''
     }${disorderSuffix}${unreadableSuffix}`,
-    totalRows: rows.length,
-    datedRows,
-    unreadableDates,
     outOfOrderRows,
-    lastDatedRow,
+    weekBlock: null,
   };
 }
 
@@ -1045,7 +1280,11 @@ export class PlanningSheetSyncService {
     if (rowDate) {
       const placement = await this.findPlacement(
         rowDate,
-        rowData[PLANNING_SHEET_COLUMNS.EVENT_START_TIME] || null
+        // Same fallback the direct push uses, so both paths order same-day
+        // rows the same way.
+        rowData[PLANNING_SHEET_COLUMNS.EVENT_START_TIME] ||
+          rowData[PLANNING_SHEET_COLUMNS.PICK_UP_TIME] ||
+          null
       );
       if (
         placement.insertBeforeRow !== null &&
@@ -1066,6 +1305,50 @@ export class PlanningSheetSyncService {
       `Applied new row to Planning Sheet for proposal ${proposal.id} at row ${newRowIndex} (appended)`
     );
     return { success: true, message: 'Row added successfully' };
+  }
+
+  /**
+   * Inserting a row pushes everything below it down by one, which leaves any
+   * proposal still waiting to be applied pointing at the row above the one it
+   * meant. Nudge those stored indexes along with the sheet.
+   *
+   * This only matters because new rows are inserted in date order — appending
+   * to the bottom never moved an existing row.
+   */
+  private async shiftPendingProposalRows(insertedAt: number): Promise<void> {
+    try {
+      const shifted = await db
+        .update(proposedSheetChanges)
+        .set({
+          targetRowIndex: sql`${proposedSheetChanges.targetRowIndex} + 1`,
+          updatedAt: new Date(),
+        })
+        .where(
+          and(
+            eq(proposedSheetChanges.targetSheetId, this.spreadsheetId),
+            eq(proposedSheetChanges.targetSheetName, this.worksheetName),
+            inArray(proposedSheetChanges.status, ['pending', 'approved']),
+            gte(proposedSheetChanges.targetRowIndex, insertedAt)
+          )
+        )
+        .returning({ id: proposedSheetChanges.id });
+
+      if (shifted.length > 0) {
+        logger.info(
+          `[PlanningSheet] Inserting at row ${insertedAt} moved ${shifted.length} pending proposal(s) down a row: ${shifted
+            .map((s) => s.id)
+            .join(', ')}`
+        );
+      }
+    } catch (error) {
+      // The row is already in the sheet at this point, so a bookkeeping failure
+      // must not fail the apply — but it does need to be visible, because the
+      // affected proposals now point one row too high.
+      logger.error(
+        `[PlanningSheet] Could not re-point pending proposals after inserting at row ${insertedAt}. Any pending cell update below that row now targets the wrong row.`,
+        error
+      );
+    }
   }
 
   /**
@@ -1296,6 +1579,10 @@ export class PlanningSheetSyncService {
       valueInputOption: 'USER_ENTERED',
       resource: { values: [rowData] },
     });
+
+    // Everything below just moved down a row, including whatever rows pending
+    // proposals are pointing at.
+    await this.shiftPendingProposalRows(rowIndex);
 
     return true;
   }
