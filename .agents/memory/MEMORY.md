@@ -6,3 +6,4 @@
 - [sandwich_collections jsonb quirk](sandwich-collections-jsonb.md) — some prod rows store group_collections as string-encoded jsonb; totals scripts must parse it or they undercount.
 - [Type-check OOM workaround](typecheck-oom.md) — full tsc needs NODE_OPTIONS=--max-old-space-size=6144; a silent zero-error result means the run crashed (repo has ~1.4k pre-existing errors).
 - [Planning sheet write attribution](planning-sheet-writers.md) — "mystery rows" in the planning sheet = manual push button; check added_to_official_sheet_at timestamps first, import/bg-sync are read-only.
+- [Event lead-time data boundary](event-lead-time-data-boundary.md) — request lead-time analysis is reliable only from late August 2025; older event records were bulk-imported after their event dates.
