@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { eq, desc, sql } from 'drizzle-orm';
-import { workLogs } from '@shared/schema';
+import { workLogs, workLogTimers } from '@shared/schema';
 import { db } from '../db';
 import { PERMISSIONS } from '@shared/auth-utils';
 import {
@@ -9,6 +9,7 @@ import {
   requireOwnershipPermission,
 } from '../middleware/auth';
 import { logger } from '../utils/production-safe-logger';
+import { elapsedToDuration, easternWorkDate } from '../utils/work-log-timer';
 
 // Default and maximum limits for pagination to prevent unbounded queries
 // Default is set high (1000) to maintain backwards compatibility since client doesn't paginate yet
@@ -25,6 +26,14 @@ const insertWorkLogSchema = z.object({
   workDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Invalid date format',
   }),
+});
+
+const startTimerSchema = z.object({
+  description: z.string().max(2000).optional(),
+});
+
+const stopTimerSchema = z.object({
+  description: z.string().max(2000).optional(),
 });
 
 // Middleware to check if user is super admin or admin
@@ -161,6 +170,140 @@ router.post(
     } catch (error) {
       logger.error('Error creating work log:', error);
       res.status(500).json({ error: 'Failed to create work log' });
+    }
+  }
+);
+
+// --- Start/stop stopwatch ---------------------------------------------------
+// Declared before the '/:id' handlers so '/timer' isn't swallowed by the param route.
+
+// Get the caller's running timer (null when nothing is running)
+router.get('/timer', async (req, res) => {
+  if (!req.user?.id) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  try {
+    const [timer] = await db
+      .select()
+      .from(workLogTimers)
+      .where(eq(workLogTimers.userId, req.user.id));
+    res.json({ timer: timer || null });
+  } catch (error) {
+    logger.error('Error fetching work log timer:', error);
+    res.status(500).json({ error: 'Failed to fetch work log timer' });
+  }
+});
+
+// Start the clock
+router.post(
+  '/timer/start',
+  requirePermission(PERMISSIONS.WORK_LOGS_ADD),
+  async (req, res) => {
+    if (!req.user?.id) {
+      return res.status(400).json({ error: 'User context missing' });
+    }
+    const result = startTimerSchema.safeParse(req.body ?? {});
+    if (!result.success)
+      return res.status(400).json({ error: result.error.message });
+
+    try {
+      // Let the unique index on user_id decide the winner, so two tabs clicking
+      // "Start Work" at once can't create two timers.
+      const [timer] = await db
+        .insert(workLogTimers)
+        .values({
+          userId: req.user.id,
+          startedAt: new Date(),
+          description: result.data.description?.trim() || null,
+        })
+        .onConflictDoNothing({ target: workLogTimers.userId })
+        .returning();
+
+      if (!timer) {
+        const [existing] = await db
+          .select()
+          .from(workLogTimers)
+          .where(eq(workLogTimers.userId, req.user.id));
+        return res
+          .status(409)
+          .json({ error: 'A timer is already running', timer: existing || null });
+      }
+
+      res.status(201).json({ timer });
+    } catch (error) {
+      logger.error('Error starting work log timer:', error);
+      res.status(500).json({ error: 'Failed to start work log timer' });
+    }
+  }
+);
+
+// Stop the clock and turn the elapsed time into a work log entry
+router.post(
+  '/timer/stop',
+  requirePermission(PERMISSIONS.WORK_LOGS_ADD),
+  async (req, res) => {
+    if (!req.user?.id) {
+      return res.status(400).json({ error: 'User context missing' });
+    }
+    const result = stopTimerSchema.safeParse(req.body ?? {});
+    if (!result.success)
+      return res.status(400).json({ error: result.error.message });
+
+    try {
+      // Delete-and-return so two rapid stop clicks can't produce two entries.
+      const [timer] = await db
+        .delete(workLogTimers)
+        .where(eq(workLogTimers.userId, req.user.id))
+        .returning();
+      if (!timer) {
+        return res.status(404).json({ error: 'No timer is running' });
+      }
+
+      const startedAt = new Date(timer.startedAt);
+      const elapsedSeconds = Math.max(
+        0,
+        Math.round((Date.now() - startedAt.getTime()) / 1000)
+      );
+      const { hours, minutes, capped } = elapsedToDuration(elapsedSeconds);
+
+      const description =
+        result.data.description?.trim() ||
+        timer.description?.trim() ||
+        'Work logged';
+
+      const [log] = await db
+        .insert(workLogs)
+        .values({
+          userId: req.user.id,
+          description,
+          hours,
+          minutes,
+          workDate: easternWorkDate(startedAt),
+        })
+        .returning();
+
+      res.status(201).json({ log, elapsedSeconds, capped });
+    } catch (error) {
+      logger.error('Error stopping work log timer:', error);
+      res.status(500).json({ error: 'Failed to stop work log timer' });
+    }
+  }
+);
+
+// Throw away a running timer without logging anything
+router.delete(
+  '/timer',
+  requirePermission(PERMISSIONS.WORK_LOGS_ADD),
+  async (req, res) => {
+    if (!req.user?.id) {
+      return res.status(400).json({ error: 'User context missing' });
+    }
+    try {
+      await db.delete(workLogTimers).where(eq(workLogTimers.userId, req.user.id));
+      res.status(204).send();
+    } catch (error) {
+      logger.error('Error discarding work log timer:', error);
+      res.status(500).json({ error: 'Failed to discard work log timer' });
     }
   }
 );
