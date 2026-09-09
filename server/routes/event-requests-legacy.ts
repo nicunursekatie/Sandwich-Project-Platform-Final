@@ -23,7 +23,7 @@ import { isAuthenticated } from '../auth';
 import { getEventRequestsGoogleSheetsService } from '../google-sheets-event-requests-sync';
 import { AuditLogger } from '../audit-logger';
 import { db } from '../db';
-import { eq, desc, and, sql, gte, or, isNull, ne, isNotNull } from 'drizzle-orm';
+import { eq, desc, and, sql, gte, lte, or, isNull, ne, isNotNull } from 'drizzle-orm';
 import { EmailNotificationService } from '../services/email-notification-service';
 import { logger } from '../middleware/logger';
 import type { AuthenticatedRequest } from '../types/express';
@@ -1860,24 +1860,6 @@ router.post(
         createdBy: user?.id || 1,
       });
 
-      // Geocode address synchronously so coordinates are set before response
-      if (validatedData.eventAddress) {
-        try {
-          const coords = await geocodeAddress(validatedData.eventAddress);
-          if (coords) {
-            await storage.updateEventRequest(newEventRequest.id!, {
-              latitude: coords.latitude,
-              longitude: coords.longitude,
-            });
-            logger.log(`✅ Geocoded event ${newEventRequest.id}: ${validatedData.eventAddress}`);
-          } else {
-            logger.warn(`⚠️ Geocoding returned no results for event ${newEventRequest.id}: ${validatedData.eventAddress}`);
-          }
-        } catch (error) {
-          logger.error(`Failed to geocode event ${newEventRequest.id}:`, error);
-        }
-      }
-
       // Enhanced audit logging for create operation
       await AuditLogger.logEventRequestChange(
         newEventRequest.id?.toString() || 'unknown',
@@ -1898,6 +1880,29 @@ router.post(
         'EVENT_REQUESTS_ADD',
         `Created event request: ${newEventRequest.id} for ${validatedData.organizationName}`
       );
+
+      // Geocode asynchronously — don't block the create response on Google/OSM.
+      // Coordinates appear shortly after; map views can pick them up on refresh.
+      if (validatedData.eventAddress) {
+        const eventId = newEventRequest.id!;
+        const address = validatedData.eventAddress;
+        geocodeAddress(address)
+          .then(async (coords) => {
+            if (coords) {
+              await storage.updateEventRequest(eventId, {
+                latitude: coords.latitude,
+                longitude: coords.longitude,
+              });
+              logger.log(`✅ Geocoded event ${eventId}: ${address}`);
+            } else {
+              logger.warn(`⚠️ Geocoding returned no results for event ${eventId}: ${address}`);
+            }
+          })
+          .catch((error) => {
+            logger.error(`Failed to geocode event ${eventId}:`, error);
+          });
+      }
+
       res.status(201).json(newEventRequest);
     } catch (error) {
       if (error instanceof z.ZodError) {
@@ -4996,7 +5001,10 @@ router.get(
   requirePermission('EVENT_REQUESTS_VIEW'),
   async (req, res) => {
     try {
-      const allEventRequests = await storage.getAllEventRequests();
+      // Active statuses only — never load the full event_requests table (completed
+      // history alone is large enough to leave the dashboard Today widget spinning).
+      const activeStatuses = ['new', 'in_process', 'scheduled', 'rescheduled'];
+      const activeEvents = await storage.getEventRequestsByStatuses(activeStatuses);
 
       // Use timezone-safe date handling (Eastern Time)
       const todayString = getTodayString(); // "YYYY-MM-DD" in Eastern Time
@@ -5023,16 +5031,8 @@ router.get(
       const endOfLastWeek = new Date(startOfWeek);
       endOfLastWeek.setMilliseconds(-1);
 
-      // Active events (not completed, declined, cancelled)
-      const activeStatuses = ['new', 'in_process', 'scheduled', 'rescheduled'];
-      const activeEvents = allEventRequests.filter(event =>
-        activeStatuses.includes(event.status || '')
-      );
-
-      // This week's events (active events happening this week - excludes completed, cancelled, etc.)
-      const thisWeekEvents = allEventRequests.filter(event => {
-        // Only count active events
-        if (!activeStatuses.includes(event.status || '')) return false;
+      // This week's events (active events happening this week)
+      const thisWeekEvents = activeEvents.filter(event => {
         const eventDate = getEffectiveEventDate(event);
         if (!eventDate) return false;
         const date = parseDateOnly(eventDate);
@@ -5047,11 +5047,7 @@ router.get(
       };
 
       // Events happening today or tomorrow (upcoming deadlines)
-      const upcomingDeadlines = allEventRequests.filter(event => {
-        if (event.status === 'completed' || event.status === 'declined' ||
-            event.status === 'cancelled') {
-          return false;
-        }
+      const upcomingDeadlines = activeEvents.filter(event => {
         const eventDate = getEffectiveEventDate(event);
         if (!eventDate) return false;
         const date = parseDateOnly(eventDate);
@@ -5113,25 +5109,43 @@ router.get(
         return sum + Math.max(0, needed - assigned);
       }, 0);
 
-      // Last week's events for completion rate
-      // Only count events that were actually attempted (exclude cancelled/declined)
-      const lastWeekEvents = allEventRequests.filter(event => {
-        const eventDate = getEffectiveEventDate(event);
-        if (!eventDate) return false;
-        const date = parseDateOnly(eventDate);
-        if (!date || date < startOfLastWeek || date > endOfLastWeek) return false;
-        // Exclude events that were intentionally not attempted
-        if (event.status === 'cancelled' || event.status === 'declined') {
-          return false;
-        }
-        return true;
-      });
+      // Last week's completion rate — lightweight projection only (id + status +
+      // dates), scoped to last week's effective date range so we don't pull the
+      // entire completed-event history into memory. Effective date prefers
+      // scheduledEventDate over desiredEventDate (same as getEffectiveEventDate).
+      const lastWeekRows = await db
+        .select({
+          id: eventRequests.id,
+          status: eventRequests.status,
+          scheduledEventDate: eventRequests.scheduledEventDate,
+          desiredEventDate: eventRequests.desiredEventDate,
+        })
+        .from(eventRequests)
+        .where(
+          and(
+            isNull(eventRequests.deletedAt),
+            sql`${eventRequests.status} NOT IN ('cancelled', 'declined')`,
+            or(
+              and(
+                isNotNull(eventRequests.scheduledEventDate),
+                gte(eventRequests.scheduledEventDate, startOfLastWeek),
+                lte(eventRequests.scheduledEventDate, endOfLastWeek),
+              ),
+              and(
+                isNull(eventRequests.scheduledEventDate),
+                isNotNull(eventRequests.desiredEventDate),
+                gte(eventRequests.desiredEventDate, startOfLastWeek),
+                lte(eventRequests.desiredEventDate, endOfLastWeek),
+              ),
+            ),
+          ),
+        );
 
-      const lastWeekCompleted = lastWeekEvents.filter(event =>
-        event.status === 'completed'
+      const lastWeekCompleted = lastWeekRows.filter(
+        (event) => event.status === 'completed',
       ).length;
 
-      const lastWeekTotal = lastWeekEvents.length;
+      const lastWeekTotal = lastWeekRows.length;
       const completionRate = lastWeekTotal > 0
         ? Math.round((lastWeekCompleted / lastWeekTotal) * 100)
         : null;
@@ -5239,13 +5253,6 @@ router.get(
           const dA = parseDateOnly(a.eventDate)?.getTime() || 0;
           const dB = parseDateOnly(b.eventDate)?.getTime() || 0;
           return dA - dB;
-        };
-
-        const toDateOnlyString = (value: unknown): string | null => {
-          if (!value) return null;
-          if (value instanceof Date) return value.toISOString().slice(0, 10);
-          if (typeof value === 'string') return value.slice(0, 10);
-          return null;
         };
 
         const sortRawEventsByDateAsc = (a: any, b: any) => {

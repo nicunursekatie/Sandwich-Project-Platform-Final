@@ -863,13 +863,16 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
   const createEventRequestMutation = useMutation({
     mutationFn: (data: any) => apiRequest('POST', '/api/event-requests', data),
     networkMode: 'always',
-    onSuccess: async () => {
+    onSuccess: () => {
       clearAutoSave();
       setHasRecoveredData(false);
       toast({ title: 'Event Created Successfully', description: `"${formData.organizationName || 'New event'}" has been created.`, duration: 8000 });
-      await invalidateEventRequestQueries(queryClient);
+      // Close immediately — the event is already saved. List refresh must not
+      // keep the dialog stuck on "Creating..." (users were canceling mid-wait
+      // and then finding the event had already been created).
       onSuccessCallback();
       onClose();
+      void refreshEventRequestListAndCounts(queryClient);
     },
     onError: (error: any) => {
       setIsSubmitting(false);

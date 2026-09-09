@@ -117,8 +117,9 @@ Named individuals in the code suggest a **small, centralized leadership**:
 - Reference high-water marks appear in the code (e.g., a record week of ~22,500, and a
   strong August 2025) — best treated as internal benchmarks rather than live totals.
 - Impact is translated into grant language: **~$2/sandwich**, **$4/meal (2 sandwiches)**,
-  volunteer time valued at the **2024 IRS rate of $33.49/hour**, and participant
-  estimates of ~10 sandwiches per person.
+  volunteer time valued at the **2025 Independent Sector rate of $36.14/hour**, and
+  **estimated volunteer engagements** (not unique people) derived from sandwich
+  production — see `shared/volunteer-engagement-metrics.ts`.
 
 ---
 

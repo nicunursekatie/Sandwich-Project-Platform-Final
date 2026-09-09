@@ -62,6 +62,20 @@ import {
   Cell,
 } from 'recharts';
 import { calculateTotalSandwiches, calculateGroupSandwiches, parseCollectionDate } from '@/lib/analytics-utils';
+import {
+  GROUP_SANDWICHES_PER_ENGAGEMENT_CENTRAL,
+  GROUP_SANDWICHES_PER_ENGAGEMENT_HIGH_BOUND,
+  GROUP_SANDWICHES_PER_ENGAGEMENT_LOW_BOUND,
+  INDIVIDUAL_SANDWICHES_PER_ENGAGEMENT_CENTRAL,
+  INDIVIDUAL_SANDWICHES_PER_ENGAGEMENT_HIGH_BOUND,
+  INDIVIDUAL_SANDWICHES_PER_ENGAGEMENT_LOW_BOUND,
+  SANDWICHES_PER_ACTIVE_VOLUNTEER_HOUR,
+  VOLUNTEER_ENGAGEMENT_METHODOLOGY_NOTE,
+  VOLUNTEER_HOURS_METHODOLOGY_NOTE,
+  calculateVolunteerEconomicValueUsd,
+  estimateVolunteerEngagement,
+  roundEngagementsForDisplay,
+} from '@shared/volunteer-engagement-metrics';
 import { getRegionFromCoordinates } from '@/lib/atlanta-regions';
 import { normalizeFocusArea, sortFocusAreaEntries } from '@/lib/focus-area-groups';
 import { logger } from '@/lib/logger';
@@ -515,9 +529,9 @@ export default function GrantMetrics() {
   const filteredCompletedGroupEvents = getFilteredCompletedGroupEvents();
 
   /**
-   * Two-track volunteer hours model:
-   * Track 1 — group events (assembly-line builds + per-event prep/logistics)
-   * Track 2 — individual/family collections (household makers + shopping/dropoff)
+   * Estimated volunteer engagements and active volunteer hours for the
+   * selected period. Methodology and constants live in
+   * `shared/volunteer-engagement-metrics.ts`.
    */
   const calculateVolunteerMetrics = (
     collectionsToAnalyze: any[],
@@ -532,54 +546,55 @@ export default function GrantMetrics() {
       0
     );
 
-    // Track 1 — Group Events
-    const groupParticipants = groupEventSandwiches / 25;
-    const groupMakingHours = groupParticipants * 1.5;
-    const groupShoppingHours = completedGroupEvents * 2;
-    const groupOrgPrepHours = completedGroupEvents * 1.5;
-    const groupTspLogisticsHours = completedGroupEvents * 1.5;
-    const groupTotalHours =
-      groupMakingHours +
-      groupShoppingHours +
-      groupOrgPrepHours +
-      groupTspLogisticsHours;
+    const estimate = estimateVolunteerEngagement({
+      groupSandwiches: groupEventSandwiches,
+      individualSandwiches: Math.max(0, totalSandwiches - groupEventSandwiches),
+    });
 
-    // Track 2 — Individual/Family Collections
-    const individualSandwiches = Math.max(0, totalSandwiches - groupEventSandwiches);
-    const familyUnits = individualSandwiches / 20;
-    const individualParticipants = familyUnits * 2.5;
-    const individualMakingHours = individualParticipants * 0.75;
-    const individualShoppingHours = familyUnits * 1;
-    const individualDropoffHours = familyUnits * 0.5;
-    const individualTotalHours =
-      individualMakingHours + individualShoppingHours + individualDropoffHours;
-
-    const estimatedParticipants = Math.round(groupParticipants + individualParticipants);
-    const totalVolunteerHours = Math.round(groupTotalHours + individualTotalHours);
-    const economicValue = Math.round(
-      totalVolunteerHours * IRS_VOLUNTEER_RATE_USD_PER_HOUR
+    const economicValue = calculateVolunteerEconomicValueUsd(
+      estimate.activeVolunteerHours,
+      IRS_VOLUNTEER_RATE_USD_PER_HOUR
     );
 
-    // Average hours per engagement (group event + family collection run)
-    const totalEngagements = completedGroupEvents + familyUnits;
-    const avgHoursPerEvent = Math.round(
-      totalVolunteerHours / Math.max(totalEngagements, 1)
-    );
+    // Active sandwich-making time per engagement — a consequence of the two
+    // rate assumptions, not an independent input.
+    const avgHoursPerEngagement =
+      estimate.centralEngagements > 0
+        ? estimate.activeVolunteerHours / estimate.centralEngagements
+        : 0;
 
     return {
-      estimatedParticipants,
-      totalVolunteerHours,
-      economicValue,
-      avgHoursPerEvent,
       totalSandwiches,
       groupEventSandwiches,
       completedGroupEvents,
-      groupParticipants: Math.round(groupParticipants),
-      groupTotalHours: Math.round(groupTotalHours),
-      individualSandwiches: Math.round(individualSandwiches),
-      familyUnits: Math.round(familyUnits),
-      individualParticipants: Math.round(individualParticipants),
-      individualTotalHours: Math.round(individualTotalHours),
+      individualSandwiches: estimate.individualSandwiches,
+
+      // Headline figures, rounded for display only.
+      estimatedEngagements: roundEngagementsForDisplay(estimate.centralEngagements),
+      lowEngagements: roundEngagementsForDisplay(estimate.lowEngagements),
+      highEngagements: roundEngagementsForDisplay(estimate.highEngagements),
+      activeVolunteerHours: roundEngagementsForDisplay(estimate.activeVolunteerHours),
+      /** Unabbreviated hours, for the methodology walkthrough. */
+      activeVolunteerHoursExact: Math.round(estimate.activeVolunteerHours),
+
+      // Per-stream detail for the methodology breakdown panels.
+      groupEngagements: Math.round(estimate.groupEngagements),
+      groupEngagementsLow: Math.round(
+        estimate.groupSandwiches / GROUP_SANDWICHES_PER_ENGAGEMENT_LOW_BOUND
+      ),
+      groupEngagementsHigh: Math.round(
+        estimate.groupSandwiches / GROUP_SANDWICHES_PER_ENGAGEMENT_HIGH_BOUND
+      ),
+      individualEngagements: Math.round(estimate.individualEngagements),
+      individualEngagementsLow: Math.round(
+        estimate.individualSandwiches / INDIVIDUAL_SANDWICHES_PER_ENGAGEMENT_LOW_BOUND
+      ),
+      individualEngagementsHigh: Math.round(
+        estimate.individualSandwiches / INDIVIDUAL_SANDWICHES_PER_ENGAGEMENT_HIGH_BOUND
+      ),
+
+      economicValue,
+      avgHoursPerEngagement,
     };
   };
 
@@ -1041,7 +1056,7 @@ export default function GrantMetrics() {
             </div>
             <div className="text-center">
               <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">4,000+</div>
-              <div className="text-sm md:text-base text-white/90 mt-1">Volunteers in our broader community*</div>
+              <div className="text-sm md:text-base text-white/90 mt-1">Community members in our broader network*</div>
             </div>
             <div className="text-center">
               <div className="text-4xl md:text-5xl font-bold text-[#fbad3f]">{recipientMetrics.total > 0 ? recipientMetrics.total : '—'}</div>
@@ -1049,7 +1064,7 @@ export default function GrantMetrics() {
             </div>
           </div>
           <div className="text-xs text-white/60 text-center -mt-4 mb-6 italic">
-            *Volunteer community size reflects our private group membership and is tracked outside this database.
+            *Community network size reflects our private group membership, tracked outside this database. It is a separately maintained audience figure — not a count of measured annual volunteers, and not the same as the estimated volunteer engagements below.
           </div>
 
           {/* Our Story */}
@@ -1480,26 +1495,26 @@ export default function GrantMetrics() {
               <div className="text-center p-4 bg-[#FEF4E0] rounded-lg">
                 <Users className="w-8 h-8 mx-auto mb-2 text-[#FBAD3F]" />
                 <div className="text-3xl font-black text-[#FBAD3F] mb-1">
-                  {filteredVolunteerMetrics.estimatedParticipants.toLocaleString()}
+                  {filteredVolunteerMetrics.estimatedEngagements.toLocaleString()}
                 </div>
                 <p className="text-sm text-gray-700 font-medium">
-                  Est. volunteer participants
+                  Estimated volunteer engagements
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Group + individual/family tracks
+                  Range {filteredVolunteerMetrics.lowEngagements.toLocaleString()}–{filteredVolunteerMetrics.highEngagements.toLocaleString()} · not unique people
                 </p>
               </div>
 
               <div className="text-center p-4 bg-[#E0F2F1] rounded-lg">
                 <Clock className="w-8 h-8 mx-auto mb-2 text-[#007E8C]" />
                 <div className="text-3xl font-black text-[#007E8C] mb-1">
-                  {filteredVolunteerMetrics.totalVolunteerHours.toLocaleString()}
+                  {filteredVolunteerMetrics.activeVolunteerHours.toLocaleString()}
                 </div>
                 <p className="text-sm text-gray-700 font-medium">
                   Est. volunteer hours
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Two-track methodology
+                  Active sandwich-making time only
                 </p>
               </div>
 
@@ -1523,13 +1538,13 @@ export default function GrantMetrics() {
               <div className="text-center p-4 bg-[#FCE4E6] rounded-lg">
                 <Activity className="w-8 h-8 mx-auto mb-2 text-[#A31C41]" />
                 <div className="text-3xl font-black text-[#A31C41] mb-1">
-                  {filteredVolunteerMetrics.avgHoursPerEvent}
+                  {filteredVolunteerMetrics.avgHoursPerEngagement.toFixed(1)}
                 </div>
                 <p className="text-sm text-gray-700 font-medium">
-                  Avg hours per engagement
+                  Avg active hours per engagement
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  Group events + family collection runs
+                  Sandwich-making time per participation
                 </p>
               </div>
             </div>
@@ -1538,50 +1553,37 @@ export default function GrantMetrics() {
               <div className="bg-gradient-to-r from-white to-[#E8F4F8] p-5 rounded-lg border border-[#236383]/30">
                 <h3 className="font-bold text-gray-900 mb-3 flex items-center">
                   <FileText className="w-5 h-5 mr-2 text-[#236383]" />
-                  Track 1 — Group Events
+                  Group sandwich-making engagements
                 </h3>
                 <div className="space-y-2 text-sm text-gray-700">
                   <div className="flex items-start gap-2">
                     <Badge className="bg-[#236383]/20 text-[#236383] border-[#236383]/30 shrink-0">
-                      Participants
+                      Sandwiches
                     </Badge>
-                    <span>Group sandwiches ÷ 25 (assembly-line pace) = {filteredVolunteerMetrics.groupParticipants.toLocaleString()} participants</span>
+                    <span>{filteredVolunteerMetrics.groupEventSandwiches.toLocaleString()} group-event sandwiches ({filteredVolunteerMetrics.completedGroupEvents.toLocaleString()} completed group events in this period)</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Badge className="bg-[#236383]/20 text-[#236383] border-[#236383]/30 shrink-0">
-                      Making
+                      Central
                     </Badge>
-                    <span>{filteredVolunteerMetrics.groupParticipants.toLocaleString()} participants × 1.5 hrs each</span>
+                    <span>÷ {GROUP_SANDWICHES_PER_ENGAGEMENT_CENTRAL} sandwiches per participant = {filteredVolunteerMetrics.groupEngagements.toLocaleString()} engagements</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Badge className="bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 shrink-0">
-                      Shopping
+                      Range
                     </Badge>
-                    <span>{filteredVolunteerMetrics.completedGroupEvents.toLocaleString()} completed events × 2 hrs (1 shopper ahead)</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30 shrink-0">
-                      Org prep
-                    </Badge>
-                    <span>{filteredVolunteerMetrics.completedGroupEvents.toLocaleString()} events × 1.5 hrs (group coordination)</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Badge className="bg-[#A31C41]/20 text-[#A31C41] border-[#A31C41]/30 shrink-0">
-                      TSP logistics
-                    </Badge>
-                    <span>{filteredVolunteerMetrics.completedGroupEvents.toLocaleString()} events × 1.5 hrs (TSP coordination)</span>
+                    <span>÷ {GROUP_SANDWICHES_PER_ENGAGEMENT_LOW_BOUND} to ÷ {GROUP_SANDWICHES_PER_ENGAGEMENT_HIGH_BOUND} = {filteredVolunteerMetrics.groupEngagementsLow.toLocaleString()}–{filteredVolunteerMetrics.groupEngagementsHigh.toLocaleString()} engagements</span>
                   </div>
                 </div>
                 <p className="text-xs text-[#236383] font-medium mt-3">
-                  Track 1 total: {filteredVolunteerMetrics.groupTotalHours.toLocaleString()} hours
-                  ({filteredVolunteerMetrics.groupEventSandwiches.toLocaleString()} group-event sandwiches)
+                  Historical group-event data supports {GROUP_SANDWICHES_PER_ENGAGEMENT_HIGH_BOUND}–{GROUP_SANDWICHES_PER_ENGAGEMENT_LOW_BOUND} sandwiches per adult participant; adult/deli groups center around 20–{GROUP_SANDWICHES_PER_ENGAGEMENT_CENTRAL}.
                 </p>
               </div>
 
               <div className="bg-gradient-to-r from-white to-[#FEF4E0] p-5 rounded-lg border border-[#FBAD3F]/30">
                 <h3 className="font-bold text-gray-900 mb-3 flex items-center">
                   <FileText className="w-5 h-5 mr-2 text-[#FBAD3F]" />
-                  Track 2 — Individual/Family Collections
+                  Individual/household engagements
                 </h3>
                 <div className="space-y-2 text-sm text-gray-700">
                   <div className="flex items-start gap-2">
@@ -1591,40 +1593,50 @@ export default function GrantMetrics() {
                     <span>Total − group = {filteredVolunteerMetrics.individualSandwiches.toLocaleString()} individual sandwiches</span>
                   </div>
                   <div className="flex items-start gap-2">
-                    <Badge className="bg-[#FBAD3F]/20 text-[#FBAD3F] border-[#FBAD3F]/30 shrink-0">
-                      Families
+                    <Badge className="bg-[#236383]/20 text-[#236383] border-[#236383]/30 shrink-0">
+                      Central
                     </Badge>
-                    <span>Individual sandwiches ÷ 20 (~1 loaf per run) = {filteredVolunteerMetrics.familyUnits.toLocaleString()} family units</span>
+                    <span>÷ {INDIVIDUAL_SANDWICHES_PER_ENGAGEMENT_CENTRAL} sandwiches per participant = {filteredVolunteerMetrics.individualEngagements.toLocaleString()} engagements</span>
                   </div>
                   <div className="flex items-start gap-2">
                     <Badge className="bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 shrink-0">
-                      Participants
+                      Range
                     </Badge>
-                    <span>{filteredVolunteerMetrics.familyUnits.toLocaleString()} families × 2.5 makers = {filteredVolunteerMetrics.individualParticipants.toLocaleString()} participants</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Badge className="bg-[#236383]/20 text-[#236383] border-[#236383]/30 shrink-0">
-                      Making
-                    </Badge>
-                    <span>{filteredVolunteerMetrics.individualParticipants.toLocaleString()} participants × 0.75 hrs (45 min each)</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <Badge className="bg-[#A31C41]/20 text-[#A31C41] border-[#A31C41]/30 shrink-0">
-                      Shopping + dropoff
-                    </Badge>
-                    <span>{filteredVolunteerMetrics.familyUnits.toLocaleString()} families × 1 hr shopping + 0.5 hr dropoff</span>
+                    <span>÷ {INDIVIDUAL_SANDWICHES_PER_ENGAGEMENT_LOW_BOUND} to ÷ {INDIVIDUAL_SANDWICHES_PER_ENGAGEMENT_HIGH_BOUND} = {filteredVolunteerMetrics.individualEngagementsLow.toLocaleString()}–{filteredVolunteerMetrics.individualEngagementsHigh.toLocaleString()} engagements</span>
                   </div>
                 </div>
                 <p className="text-xs text-[#FBAD3F] font-medium mt-3">
-                  Track 2 total: {filteredVolunteerMetrics.individualTotalHours.toLocaleString()} hours
+                  No household-size multiplier is applied. Collection records store an area or host&apos;s aggregate individual total, not per-household drop-offs.
                 </p>
               </div>
             </div>
 
+            <div className="bg-gradient-to-r from-white to-[#E0F2F1] p-5 rounded-lg border border-[#007E8C]/30 mb-4">
+              <h3 className="font-bold text-gray-900 mb-3 flex items-center">
+                <Clock className="w-5 h-5 mr-2 text-[#007E8C]" />
+                Estimated active sandwich-making volunteer hours
+              </h3>
+              <div className="space-y-2 text-sm text-gray-700">
+                <div className="flex items-start gap-2">
+                  <Badge className="bg-[#007E8C]/20 text-[#007E8C] border-[#007E8C]/30 shrink-0">
+                    Hours
+                  </Badge>
+                  <span>{filteredVolunteerMetrics.totalSandwiches.toLocaleString()} total sandwiches ÷ {SANDWICHES_PER_ACTIVE_VOLUNTEER_HOUR} per active hour = {filteredVolunteerMetrics.activeVolunteerHoursExact.toLocaleString()} hours</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <Badge className="bg-[#236383]/20 text-[#236383] border-[#236383]/30 shrink-0">
+                    Value
+                  </Badge>
+                  <span>× ${IRS_VOLUNTEER_RATE_USD_PER_HOUR.toFixed(2)}/hr (Independent Sector, {IRS_VOLUNTEER_RATE_YEAR}) = ${filteredVolunteerMetrics.economicValue.toLocaleString()}</span>
+                </div>
+              </div>
+              <p className="text-xs text-[#007E8C] font-medium mt-3">
+                {VOLUNTEER_HOURS_METHODOLOGY_NOTE}
+              </p>
+            </div>
+
             <p className="text-xs text-gray-600 italic px-1">
-              * Two-track methodology separates group assembly-line events from individual/family collection runs,
-              producing more accurate participant and hour estimates than the prior single formula (total sandwiches ÷ 10 × 20 min + flat per-event overhead).
-              Combined totals use Independent Sector&apos;s ${IRS_VOLUNTEER_RATE_USD_PER_HOUR.toFixed(2)}/hr rate ({IRS_VOLUNTEER_RATE_YEAR}) for grant-facing economic value.
+              * {VOLUNTEER_ENGAGEMENT_METHODOLOGY_NOTE}
             </p>
           </CardContent>
         </Card>
@@ -1775,7 +1787,7 @@ export default function GrantMetrics() {
                   <div>
                     <p className="font-semibold text-gray-900">Community Ownership</p>
                     <p className="text-sm text-gray-600">
-                      {filteredVolunteerMetrics.estimatedParticipants.toLocaleString()}+ participants means deep community buy-in and resilience
+                      About {filteredVolunteerMetrics.estimatedEngagements.toLocaleString()} volunteer engagements means deep community buy-in and resilience
                     </p>
                   </div>
                 </div>

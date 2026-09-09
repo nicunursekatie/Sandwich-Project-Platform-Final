@@ -119,6 +119,7 @@ export const PERMISSION_GROUPS = {
       PERMISSIONS.EVENT_REQUESTS_DELETE,
       PERMISSIONS.EVENT_REQUESTS_DELETE_CARD,
       PERMISSIONS.EVENT_REQUESTS_SYNC,
+      PERMISSIONS.MANAGE_EVENTS,
       PERMISSIONS.EVENT_REQUESTS_COMPLETE_CONTACT,
       PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP,
       PERMISSIONS.EVENT_REQUESTS_ASSIGN_OTHERS,
@@ -412,6 +413,7 @@ export function getPermissionLabel(permission: string): string {
     [PERMISSIONS.VOLUNTEER_SIGNUP_APPROVE]: 'Approve Volunteer Signups',
     [PERMISSIONS.DRIVER_SIGNUP_APPROVE]: 'Approve Driver Signups',
     [PERMISSIONS.EVENT_CHECK_IN_ALERTS]: 'Event Check-In Alerts',
+    [PERMISSIONS.MANAGE_EVENTS]: 'Push Events to Planning Sheet',
   };
 
   // Return custom label if exists
@@ -442,6 +444,7 @@ export function getPermissionDescription(permission: string): string {
     [PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW]: 'View admin overview of TSP contact assignments and workload distribution',
     [PERMISSIONS.EVENT_REQUESTS_SEND_SMS]: 'Send event details via SMS to selected users',
     [PERMISSIONS.EVENT_CHECK_IN_ALERTS]: 'Configure intake check-in reminders (no-contact, stale event, date-approaching) in the profile Alerts tab',
+    [PERMISSIONS.MANAGE_EVENTS]: 'Push scheduled events from the app to the official planning Google Sheet',
 
     // Chat room descriptions
     [PERMISSIONS.CHAT_GENERAL]: 'Access to general team chat',

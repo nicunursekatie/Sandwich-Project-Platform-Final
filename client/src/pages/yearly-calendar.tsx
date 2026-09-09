@@ -148,8 +148,10 @@ function formatDateRange(startDate: string, endDate: string): string {
   
   if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
     if (start.getDate() === end.getDate()) {
-      // Single day
-      return `${month} ${start.getDate()}`;
+      // Single-day observances name their weekday: a holiday landing on a
+      // collection or distribution day affects operations differently than
+      // one landing on a weekend.
+      return start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
     }
     return `${month} ${start.getDate()}-${end.getDate()}`;
   }

@@ -879,8 +879,31 @@ function MyAssignmentsView({
 }
 
 export default function OperationalOverview({ onNavigate }: OperationalOverviewProps) {
-  const { data: stats, isLoading, error } = useQuery<OperationalStats>({
+  const { data: stats, isLoading, isError, error, refetch } = useQuery<OperationalStats | null>({
     queryKey: ['/api/event-requests/operational-stats'],
+    queryFn: async ({ signal }) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 25000);
+      const onAbort = () => controller.abort();
+      signal?.addEventListener('abort', onAbort);
+      try {
+        const res = await fetch('/api/event-requests/operational-stats', {
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        if (res.status === 403 || res.status === 401) {
+          // No permission / not logged in — hide the widget quietly.
+          return null;
+        }
+        if (!res.ok) {
+          throw new Error('Failed to load operational stats');
+        }
+        return (await res.json()) as OperationalStats;
+      } finally {
+        clearTimeout(timeoutId);
+        signal?.removeEventListener('abort', onAbort);
+      }
+    },
     staleTime: 60 * 1000, // 1 minute
     refetchInterval: 2 * 60 * 1000, // Refresh every 2 minutes
   });
@@ -912,10 +935,6 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
     onNavigate('event-requests');
   };
 
-  if (error) {
-    return null; // Silently fail if user doesn't have permission
-  }
-
   if (isLoading) {
     return (
       <div className="mx-4 mb-8">
@@ -924,8 +943,39 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
     );
   }
 
-  if (!stats) {
+  // Permission-denied path returns null data without throwing.
+  if (!stats && !isError) {
     return null;
+  }
+
+  if (isError || !stats) {
+    return (
+      <div className="mx-4 mb-8">
+        <div
+          className="premium-card-elevated p-6"
+          style={{ borderTop: '4px solid #007E8C' }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 className="premium-text-h4 text-brand-primary">My Assignments</h3>
+              <p className="premium-text-body-sm text-gray-600 mt-1">
+                Couldn't load your assigned events right now.
+                {error instanceof Error && error.name === 'AbortError'
+                  ? ' The request timed out.'
+                  : ''}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white"
+            >
+              Try again
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   // Personalized snapshot takes priority for users with TSP-contact

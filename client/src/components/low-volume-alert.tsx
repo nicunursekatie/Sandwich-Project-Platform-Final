@@ -105,9 +105,19 @@ function formatWeekRange(start: Date, end: Date): string {
 }
 
 export function LowVolumeAlert({ onNavigateToWeek }: LowVolumeAlertProps) {
-  // Fetch event requests
+  // Active upcoming pipeline only — the unfiltered `/api/event-requests` table
+  // is far larger than this forecast needs and was starving the dashboard.
   const { data: eventRequests = [] } = useQuery<EventRequest[]>({
-    queryKey: ['/api/event-requests'],
+    queryKey: ['/api/event-requests/list', { status: 'scheduled,in_process,rescheduled' }, 'group-forecast'],
+    queryFn: async ({ signal }) => {
+      const response = await fetch(
+        '/api/event-requests/list?status=scheduled,in_process,rescheduled',
+        { credentials: 'include', signal },
+      );
+      if (!response.ok) throw new Error('Failed to fetch event requests');
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
   });
 
   // Fetch historical collection data to calculate baseline and current week actuals

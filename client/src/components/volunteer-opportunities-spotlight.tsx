@@ -68,13 +68,28 @@ const getUrgency = (request: EventRequest): Urgency => {
 };
 
 export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportunitiesSpotlightProps) {
-  const { data: eventRequests = [], isLoading } = useQuery<EventRequest[]>({
-    queryKey: ['/api/event-requests'],
+  // Only scheduled/rescheduled rows — never the full event-requests table.
+  // The unfiltered `/api/event-requests` payload is large enough to leave this
+  // widget stuck on its skeleton while the dashboard's other sections render.
+  const { data: eventRequests = [], isLoading, isError, refetch } = useQuery<EventRequest[]>({
+    queryKey: ['/api/event-requests/list', { status: 'scheduled,rescheduled' }, 'volunteer-spotlight'],
+    queryFn: async ({ signal }) => {
+      const response = await fetch(
+        '/api/event-requests/list?status=scheduled,rescheduled',
+        { credentials: 'include', signal },
+      );
+      if (!response.ok) {
+        throw new Error('Failed to fetch volunteer opportunities');
+      }
+      const data = await response.json();
+      return Array.isArray(data) ? data : [];
+    },
     staleTime: 60 * 1000,
   });
 
-  const opportunities = eventRequests
+  const understaffedUpcoming = (Array.isArray(eventRequests) ? eventRequests : [])
     .filter((request) => isScheduledOrRescheduled(request.status))
+    .filter((request) => daysUntil(request) >= 0)
     .filter((request) => {
       const { needsVolunteer, needsDriver } = getUnfilledNeeds(request);
       return needsVolunteer || needsDriver;
@@ -85,8 +100,9 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
       const timeA = dateA ? (parseDateOnly(dateA)?.getTime() ?? Infinity) : Infinity;
       const timeB = dateB ? (parseDateOnly(dateB)?.getTime() ?? Infinity) : Infinity;
       return timeA - timeB;
-    })
-    .slice(0, 3);
+    });
+
+  const opportunities = understaffedUpcoming.slice(0, 3);
 
   const formatEventDate = (request: EventRequest) => {
     const date = getEffectiveEventDate(request);
@@ -100,6 +116,28 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
         <div className="space-y-3">
           <div className="h-20 bg-gray-100 rounded"></div>
           <div className="h-20 bg-gray-100 rounded"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="premium-card-elevated p-6 mx-4 mb-8" style={{ borderTop: '4px solid #007E8C' }}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 className="premium-text-h4 text-[#007E8C]">Volunteer Opportunities</h3>
+            <p className="premium-text-body-sm text-gray-600 mt-1">
+              Couldn't load volunteer needs right now.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => refetch()}
+            className="premium-btn-outline text-sm"
+          >
+            Try again
+          </button>
         </div>
       </div>
     );
@@ -208,9 +246,9 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
 
       <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
         <p className="text-sm text-gray-500">
-          {opportunities.length < eventRequests.filter(r => isScheduledOrRescheduled(r.status) && (getUnfilledNeeds(r).needsVolunteer || getUnfilledNeeds(r).needsDriver)).length
-            ? `Showing ${opportunities.length} of ${eventRequests.filter(r => isScheduledOrRescheduled(r.status) && (getUnfilledNeeds(r).needsVolunteer || getUnfilledNeeds(r).needsDriver)).length} opportunities`
-            : `${opportunities.length} upcoming opportunity${opportunities.length !== 1 ? 'ies' : 'y'}`}
+          {opportunities.length < understaffedUpcoming.length
+            ? `Showing ${opportunities.length} of ${understaffedUpcoming.length} opportunities`
+            : `${opportunities.length} upcoming opportunit${opportunities.length !== 1 ? 'ies' : 'y'}`}
         </p>
         <button
           onClick={() => onNavigate('event-requests')}

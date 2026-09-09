@@ -229,7 +229,7 @@ export const useEventMutations = () => {
       logger.log('Response:', result);
       return result;
     },
-    onSuccess: async (data) => {
+    onSuccess: (data) => {
       logger.log('=== CREATE EVENT SUCCESS HANDLER ===');
       logger.log('Created event:', data);
 
@@ -240,12 +240,13 @@ export const useEventMutations = () => {
         duration: 8000,
       });
 
-      // Await query invalidation so the list reflects the new event
-      await invalidateEventRequestQueries(queryClient);
-
+      // Close immediately — the event is already saved. Refresh lists in the
+      // background so the dialog doesn't sit on "Creating..." while every
+      // event/volunteer-hub query refetches.
       closeDialog('eventDetails');
       setSelectedEventRequest(null);
       setIsEditing(false);
+      void refreshEventRequestListAndCounts(queryClient);
     },
     onError: (error: any) => {
       logger.error('Create event request error:', error);
