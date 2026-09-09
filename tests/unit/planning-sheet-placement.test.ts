@@ -1,0 +1,419 @@
+import {
+  computeSheetPlacement,
+  parsePlanningSheetDate,
+  parsePlanningSheetTime,
+  type PlanningSheetRow,
+} from '../../server/planning-sheet-sync-service';
+
+function makeRow(
+  rowIndex: number,
+  date: string,
+  overrides: Partial<PlanningSheetRow> = {}
+): PlanningSheetRow {
+  return {
+    rowIndex,
+    date,
+    dayOfWeek: '',
+    groupName: `Group ${rowIndex}`,
+    eventStartTime: '',
+    eventEndTime: '',
+    pickUpTime: '',
+    pickUpNextDay: '',
+    allDetails: '',
+    vanBooked: '',
+    staffing: '',
+    staffingParsed: {
+      driver: { needed: false, assigned: null, isVanDriver: false },
+      speaker: { needed: false, assigned: null },
+      volunteer: { needed: false, assigned: null },
+    },
+    estimateSandwiches: '',
+    deliOrPbj: '',
+    finalSandwiches: '',
+    totalInApp: '',
+    socialPost: '',
+    sentToolkit: '',
+    contactName: '',
+    email: '',
+    phone: '',
+    tspContact: '',
+    address: '',
+    recipientHost: '',
+    afterEventNotes: '',
+    cancelled: '',
+    notes: '',
+    addlNotes: '',
+    waitingOn: '',
+    ...overrides,
+  };
+}
+
+/** A year's worth of events in date order, the way the team keeps the sheet. */
+const sortedSheet = [
+  makeRow(2, '1/15/26'),
+  makeRow(3, '3/14/26'),
+  makeRow(4, '6/2/26'),
+  makeRow(5, '10/20/26'),
+  makeRow(6, '12/5/26'),
+];
+
+describe('parsePlanningSheetDate', () => {
+  it('reads the formats the sheet actually contains', () => {
+    expect(parsePlanningSheetDate('3/14/26')).toEqual(new Date(2026, 2, 14));
+    expect(parsePlanningSheetDate('3/14/2026')).toEqual(new Date(2026, 2, 14));
+    expect(parsePlanningSheetDate('03/14/2026')).toEqual(new Date(2026, 2, 14));
+    expect(parsePlanningSheetDate('Mar 14, 2026')).toEqual(new Date(2026, 2, 14));
+  });
+
+  it('applies the sheet year to cells that omit it', () => {
+    // Without the hint these resolve to 2001 and sort before every real event.
+    expect(parsePlanningSheetDate('3/14', 2026)).toEqual(new Date(2026, 2, 14));
+    expect(parsePlanningSheetDate('Mar 14', 2026)).toEqual(new Date(2026, 2, 14));
+  });
+
+  it('keeps a written-out year even when it looks mistyped', () => {
+    // The whole point is to surface these, not quietly correct them into
+    // looking right.
+    expect(parsePlanningSheetDate('12/1/2029', 2026)).toEqual(new Date(2029, 11, 1));
+    expect(parsePlanningSheetDate('Jan 15, 2020', 2026)).toEqual(new Date(2020, 0, 15));
+  });
+
+  it('returns null for cells that are not dates', () => {
+    expect(parsePlanningSheetDate('')).toBeNull();
+    expect(parsePlanningSheetDate('   ')).toBeNull();
+    expect(parsePlanningSheetDate('TBD')).toBeNull();
+  });
+
+  it('rejects dates that do not exist instead of rolling them over', () => {
+    // new Date(2026, 1, 31) would silently become March 3.
+    expect(parsePlanningSheetDate('2/31/26')).toBeNull();
+    expect(parsePlanningSheetDate('13/1/26')).toBeNull();
+    expect(parsePlanningSheetDate('3/32/26')).toBeNull();
+  });
+
+  it('rejects numeric cells that are too mangled to trust', () => {
+    // parseInt would read "14x" as 14 and treat the cell as a real date.
+    expect(parsePlanningSheetDate('3/14x/26')).toBeNull();
+    // The native parser reads this as March 26, 2001 if given the chance.
+    expect(parsePlanningSheetDate('3//26')).toBeNull();
+    expect(parsePlanningSheetDate('3//26', 2026)).toBeNull();
+    expect(parsePlanningSheetDate('//')).toBeNull();
+  });
+
+  it('still reads a date the team marked as unconfirmed', () => {
+    // "3/14/26?" means the date isn't settled yet. It should still order as
+    // March 14 — calling it undated would make the row invisible to placement.
+    expect(parsePlanningSheetDate('3/14/26?')).toEqual(new Date(2026, 2, 14));
+  });
+});
+
+describe('parsePlanningSheetTime', () => {
+  it('reads the formats the sheet and the app produce', () => {
+    expect(parsePlanningSheetTime('2:00 PM')).toBe(14 * 60);
+    expect(parsePlanningSheetTime('10:30 AM')).toBe(10 * 60 + 30);
+    expect(parsePlanningSheetTime('12:00 AM')).toBe(0);
+    expect(parsePlanningSheetTime('14:00')).toBe(14 * 60);
+    expect(parsePlanningSheetTime('09:30:00')).toBe(9 * 60 + 30);
+  });
+
+  it('reads the local datetime string pickupDateTime is stored in', () => {
+    expect(parsePlanningSheetTime('2026-01-15T14:00:00')).toBe(14 * 60);
+  });
+
+  it('returns null for anything it cannot read', () => {
+    expect(parsePlanningSheetTime('')).toBeNull();
+    expect(parsePlanningSheetTime('afternoon')).toBeNull();
+  });
+});
+
+/**
+ * The sheet as the team actually keeps it: each week opens with an undated
+ * "Week of ..." header row, its events follow in date order, and spare slots
+ * sit beneath them before the next header.
+ */
+const weekHeader = (rowIndex: number, label: string) =>
+  makeRow(rowIndex, '', { dayOfWeek: `Week of ${label}`, groupName: '' });
+
+const blankSlot = (rowIndex: number) =>
+  makeRow(rowIndex, '', { dayOfWeek: '', groupName: '' });
+
+const weeklySheet = [
+  weekHeader(362, 'Aug 31'),
+  makeRow(363, '9/2/26', { dayOfWeek: 'Wednesday' }),
+  makeRow(364, '9/2/26', { dayOfWeek: 'Wednesday' }),
+  makeRow(365, '9/6/26', { dayOfWeek: 'Sunday' }),
+  weekHeader(366, 'Sep 7'),
+  makeRow(367, '9/8/26', { dayOfWeek: 'Tuesday' }),
+  makeRow(368, '9/9/26', { dayOfWeek: 'Wednesday' }),
+  blankSlot(369),
+  weekHeader(370, 'Sep 14'),
+  makeRow(371, '9/14/26', { dayOfWeek: 'Monday' }),
+];
+
+describe('computeSheetPlacement in a sheet grouped by week', () => {
+  // The regression that started this round: anchoring on the previous event
+  // put the first event of a week onto its own header row, which reads as the
+  // last row of the week before.
+  it('puts the first event of a week under that week header, not above it', () => {
+    const placement = computeSheetPlacement(weeklySheet, new Date(2026, 8, 7), {
+      fallbackYear: 2026,
+    });
+    expect(placement.insertBeforeRow).toBe(367); // below the "Week of Sep 7" header
+    expect(placement.reason).toBe('insert_in_week_block');
+    expect(placement.weekBlock).toEqual({ headerRow: 366, label: 'Sep 7' });
+  });
+
+  it('keeps the last event of a week above the next week header', () => {
+    // 9/13 is still the week of Sep 7, so it must not cross into Sep 14.
+    const placement = computeSheetPlacement(weeklySheet, new Date(2026, 8, 13), {
+      fallbackYear: 2026,
+    });
+    expect(placement.insertBeforeRow).toBe(369); // the spare slot in its own week
+    expect(placement.weekBlock?.label).toBe('Sep 7');
+  });
+
+  it('orders within the week it belongs to', () => {
+    const placement = computeSheetPlacement(weeklySheet, new Date(2026, 8, 9), {
+      fallbackYear: 2026,
+    });
+    expect(placement.insertBeforeRow).toBe(369); // after the existing 9/9 row
+    expect(placement.weekBlock?.label).toBe('Sep 7');
+  });
+
+  it('places an event into an earlier week without disturbing later ones', () => {
+    const placement = computeSheetPlacement(weeklySheet, new Date(2026, 8, 3), {
+      fallbackYear: 2026,
+    });
+    expect(placement.insertBeforeRow).toBe(365); // between 9/2 and 9/6
+    expect(placement.weekBlock?.label).toBe('Aug 31');
+  });
+
+  it('flags an event whose week has no header of its own', () => {
+    const gapped = [
+      weekHeader(366, 'Sep 7'),
+      makeRow(367, '9/8/26'),
+      weekHeader(370, 'Sep 28'),
+      makeRow(371, '9/28/26'),
+    ];
+    // The weeks of Sep 14 and Sep 21 are simply missing from the sheet.
+    const placement = computeSheetPlacement(gapped, new Date(2026, 8, 16), {
+      fallbackYear: 2026,
+    });
+    expect(placement.reason).toBe('insert_week_block_missing');
+    expect(placement.insertBeforeRow).toBe(370); // end of the Sep 7 week, above the next header
+    expect(placement.note).toContain('no "week of" header');
+  });
+
+  it('starts a week that has a header but no events yet', () => {
+    const emptyWeek = [
+      weekHeader(436, 'Nov 23'),
+      makeRow(437, '11/23/26'),
+      blankSlot(438),
+      weekHeader(440, 'Nov 30'),
+      blankSlot(441),
+    ];
+    const placement = computeSheetPlacement(emptyWeek, new Date(2026, 11, 2), {
+      fallbackYear: 2026,
+    });
+    expect(placement.insertBeforeRow).toBe(441); // directly under the Nov 30 header
+    expect(placement.weekBlock?.label).toBe('Nov 30');
+  });
+
+  it('reads a December header at the top of the sheet as the previous year', () => {
+    // A "2026 Groups" tab opens with the tail of 2025.
+    const yearBoundary = [
+      weekHeader(2, 'Dec 29'),
+      makeRow(3, '12/30/25'),
+      weekHeader(4, 'Jan 5'),
+      makeRow(5, '1/5/26'),
+    ];
+    const placement = computeSheetPlacement(yearBoundary, new Date(2025, 11, 31), {
+      fallbackYear: 2026,
+    });
+    // Inside the Dec 29 week rather than pushed into the Jan 5 one, which is
+    // where it would land if the header were read as Dec 29 2026.
+    expect(placement.insertBeforeRow).toBe(4);
+    expect(placement.weekBlock?.label).toBe('Dec 29');
+  });
+
+  it('is still not hijacked by a mistyped year in another week', () => {
+    const withTypo = weeklySheet.map(r =>
+      r.rowIndex === 363 ? makeRow(363, '12/1/2029') : r
+    );
+    const placement = computeSheetPlacement(withTypo, new Date(2026, 8, 7), {
+      fallbackYear: 2026,
+    });
+    expect(placement.insertBeforeRow).toBe(367);
+    expect(placement.weekBlock?.label).toBe('Sep 7');
+  });
+});
+
+describe('computeSheetPlacement', () => {
+  it('inserts directly below the event it follows', () => {
+    const placement = computeSheetPlacement(sortedSheet, new Date(2026, 6, 4));
+    expect(placement.insertBeforeRow).toBe(5); // after 6/2/26 (row 4), before 10/20/26
+    expect(placement.reason).toBe('insert_after_previous_event');
+  });
+
+  it('inserts at the top when the event precedes everything', () => {
+    const placement = computeSheetPlacement(sortedSheet, new Date(2026, 0, 1));
+    expect(placement.insertBeforeRow).toBe(2);
+    expect(placement.reason).toBe('insert_before_later_event');
+  });
+
+  // Without week headers there is nothing to anchor to but the neighbouring
+  // dates, so the row is tucked directly beneath the event it follows and
+  // above any undated rows that come after it.
+  it('sits directly beneath the previous event, above any undated rows', () => {
+    const undatedGap = [
+      makeRow(363, '9/2/26'),
+      makeRow(365, '9/6/26'),
+      makeRow(366, '', { groupName: '' }),
+      makeRow(367, '9/8/26'),
+      makeRow(368, '9/9/26'),
+    ];
+
+    const placement = computeSheetPlacement(undatedGap, new Date(2026, 8, 7));
+    expect(placement.insertBeforeRow).toBe(366);
+    expect(placement.reason).toBe('insert_after_previous_event');
+    expect(placement.note).toContain('follow before the next event');
+  });
+
+  it('fills undated slots left between two events', () => {
+    const withSlots = [
+      makeRow(419, '10/24/26'),
+      makeRow(420, ''),
+      makeRow(421, ''),
+      makeRow(425, '11/4/26'),
+    ];
+
+    expect(
+      computeSheetPlacement(withSlots, new Date(2026, 9, 25)).insertBeforeRow
+    ).toBe(420);
+  });
+
+  // The bug that started all this: one row mistyped as 2029 is "later" than
+  // every event, so scanning from the top for the first later-dated row stopped
+  // there every single time and every push landed on that one row.
+  it('is not hijacked by a single mistyped year', () => {
+    const withTypo = [
+      makeRow(2, '1/15/26'),
+      makeRow(3, '2/10/26'),
+      makeRow(4, '3/14/26'),
+      makeRow(5, '12/1/2029'), // typo — should have been 2026
+      makeRow(6, '4/2/26'),
+      makeRow(7, '5/8/26'),
+      makeRow(8, '6/2/26'),
+      makeRow(9, '7/4/26'),
+    ];
+
+    const placement = computeSheetPlacement(withTypo, new Date(2026, 5, 20));
+    expect(placement.insertBeforeRow).toBe(9); // after 6/2, before 7/4
+    expect(placement.outOfOrderRows).toEqual([{ rowIndex: 5, date: '12/1/2029' }]);
+    expect(placement.note).toContain('row 5');
+  });
+
+  it('is not dragged to the bottom by a stray past date either', () => {
+    const withStrayPast = [
+      makeRow(2, '1/15/26'),
+      makeRow(3, '2/10/26'),
+      makeRow(4, '3/14/26'),
+      makeRow(5, '4/2/26'),
+      makeRow(6, '5/8/26'),
+      makeRow(7, '4/18/25'), // typo — should have been 2026
+      makeRow(8, '7/4/26'),
+      makeRow(9, '8/1/26'),
+    ];
+
+    const placement = computeSheetPlacement(withStrayPast, new Date(2026, 5, 20));
+    expect(placement.insertBeforeRow).toBe(8); // after 5/8, before 7/4
+    // The stray sits above the chosen position and is dated before the event,
+    // so it doesn't argue with this placement — nothing to warn about here.
+    expect(placement.outOfOrderRows).toEqual([]);
+  });
+
+  it('orders by start time within the same date', () => {
+    const sameDay = [
+      makeRow(2, '3/14/26', { eventStartTime: '9:00 AM' }),
+      makeRow(3, '3/14/26', { eventStartTime: '2:00 PM' }),
+      makeRow(4, '4/1/26'),
+    ];
+
+    expect(
+      computeSheetPlacement(sameDay, new Date(2026, 2, 14), { eventTime: '11:00' })
+        .insertBeforeRow
+    ).toBe(3);
+    expect(
+      computeSheetPlacement(sameDay, new Date(2026, 2, 14), { eventTime: '8:00' })
+        .insertBeforeRow
+    ).toBe(2);
+    // Later than every event that day: sits below the last of them.
+    expect(
+      computeSheetPlacement(sameDay, new Date(2026, 2, 14), { eventTime: '18:00' })
+        .insertBeforeRow
+    ).toBe(4);
+  });
+
+  it('falls back to pickup time when a row has no start time', () => {
+    const sameDay = [
+      makeRow(2, '3/14/26', { pickUpTime: '4:00 PM' }),
+      makeRow(3, '4/1/26'),
+    ];
+    expect(
+      computeSheetPlacement(sameDay, new Date(2026, 2, 14), { eventTime: '10:00' })
+        .insertBeforeRow
+    ).toBe(2);
+  });
+
+  it('treats a blank date cell as structure, not as a bad value', () => {
+    const withGaps = [
+      makeRow(2, '1/15/26'),
+      makeRow(3, ''),
+      makeRow(4, '10/20/26'),
+    ];
+    const placement = computeSheetPlacement(withGaps, new Date(2026, 5, 2));
+    expect(placement.insertBeforeRow).toBe(3);
+    expect(placement.unreadableDates).toHaveLength(0);
+  });
+
+  it('appends only when nothing in the sheet is dated later', () => {
+    const placement = computeSheetPlacement(sortedSheet, new Date(2026, 11, 31));
+    expect(placement.insertBeforeRow).toBeNull();
+    expect(placement.reason).toBe('append_event_is_latest');
+    expect(placement.lastDatedRow).toEqual({ rowIndex: 6, date: '12/5/26' });
+  });
+
+  it('places against year-less date cells using the sheet year', () => {
+    // The regression this guards: "10/20" reads as the year 2001, so nothing
+    // looks later than the event and every push lands at the bottom.
+    const yearless = [makeRow(2, '1/15'), makeRow(3, '10/20'), makeRow(4, '12/5')];
+
+    expect(computeSheetPlacement(yearless, new Date(2026, 5, 2)).insertBeforeRow).toBeNull();
+    expect(
+      computeSheetPlacement(yearless, new Date(2026, 5, 2), { fallbackYear: 2026 })
+        .insertBeforeRow
+    ).toBe(3);
+  });
+
+  it('reports date cells it could not read when it gives up and appends', () => {
+    const unreadable = [
+      makeRow(2, 'Nov 3rd?'),
+      makeRow(3, 'date TBD'),
+      makeRow(4, '1/15/26'),
+    ];
+    const placement = computeSheetPlacement(unreadable, new Date(2026, 5, 2));
+
+    expect(placement.insertBeforeRow).toBeNull();
+    expect(placement.unreadableDates).toEqual([
+      { rowIndex: 2, value: 'Nov 3rd?' },
+      { rowIndex: 3, value: 'date TBD' },
+    ]);
+    expect(placement.note).toContain('could not be read');
+  });
+
+  it('appends on an empty sheet', () => {
+    const placement = computeSheetPlacement([], new Date(2026, 5, 2));
+    expect(placement.insertBeforeRow).toBeNull();
+    expect(placement.reason).toBe('append_no_dated_rows');
+  });
+});

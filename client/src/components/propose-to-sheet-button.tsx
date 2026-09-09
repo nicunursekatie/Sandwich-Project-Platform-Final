@@ -181,7 +181,9 @@ export function PushToSheetButton({
         title: 'Successfully pushed to Planning Sheet!',
         description: data.isUpdate
           ? `Updated row ${data.rowIndex} in the Planning Sheet.`
-          : `Added new row ${data.rowIndex} to the Planning Sheet.`,
+          : [`Added new row ${data.rowIndex} to the Planning Sheet.`, data.placementNote]
+              .filter(Boolean)
+              .join(' '),
       });
       queryClient.invalidateQueries({ queryKey: ['planning-sheet-preview', eventId] });
       // Server marks addedToOfficialSheet=true — fetch once and patch caches surgically.
@@ -552,6 +554,52 @@ export function PushToSheetButton({
                     </div>
                   </>
                 )}
+
+                {/* Where the new row will land. The sheet is read as a
+                    calendar, grouped into weeks, so a row landing outside its
+                    week needs to be visible before the push rather than
+                    discovered in the sheet afterwards. */}
+                {previewData.placement && (() => {
+                  const placement = previewData.placement;
+                  const needsAttention =
+                    placement.outOfOrderRows?.length > 0 ||
+                    placement.reason === 'insert_week_block_missing' ||
+                    placement.reason === 'append_no_dated_rows';
+
+                  const title = placement.insertBeforeRow
+                    ? placement.weekBlock && placement.reason === 'insert_in_week_block'
+                      ? `Goes in at row ${placement.insertBeforeRow}, under "Week of ${placement.weekBlock.label}"`
+                      : `Goes in at row ${placement.insertBeforeRow}`
+                    : placement.reason === 'append_no_dated_rows'
+                      ? 'Goes at the bottom of the sheet, not in date order'
+                      : 'Goes at the end of the sheet';
+
+                  return (
+                    <Alert
+                      className={
+                        needsAttention
+                          ? 'bg-amber-50 border-amber-300'
+                          : 'bg-blue-50 border-blue-200'
+                      }
+                    >
+                      {needsAttention ? (
+                        <AlertTriangle className="h-4 w-4 text-amber-600" />
+                      ) : (
+                        <ArrowRight className="h-4 w-4 text-blue-600" />
+                      )}
+                      <AlertTitle
+                        className={needsAttention ? 'text-amber-800' : 'text-blue-800'}
+                      >
+                        {title}
+                      </AlertTitle>
+                      <AlertDescription
+                        className={needsAttention ? 'text-amber-700' : 'text-blue-700'}
+                      >
+                        {placement.note}
+                      </AlertDescription>
+                    </Alert>
+                  );
+                })()}
 
                 {/* Full field list (for non-conflict modes: new row, potential duplicates, fallback update) */}
                 {!(hasExistingRow && hasExistingRawData) && (

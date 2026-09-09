@@ -62,6 +62,9 @@ logs/
 .env.test.local
 .env.production.local
 
+# Planning sheet dumps pulled for diagnostics — these contain contact details
+sheet-read*.json
+
 # Build artifacts
 build/
 out/

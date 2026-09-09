@@ -6,6 +6,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import {
   getPlanningSheetService,
   PLANNING_SHEET_COLUMNS,
+  type SheetPlacement,
 } from '../planning-sheet-sync-service';
 import { logger } from '../utils/production-safe-logger';
 import type { AuthenticatedRequest } from '../types/express';
@@ -150,13 +151,22 @@ export function createPlanningSheetProposalsRouter(
       // Find matching row in the current sheet for side-by-side comparison
       let existingSheetRow = null;
       let potentialMatches: any[] = [];
+      let placement: SheetPlacement | null = null;
       try {
+        // One read feeds matching, placement, and duplicate detection. Reading
+        // per step would triple the API calls and let the three answers be
+        // based on different versions of the sheet.
+        const allSheetRows = await service.readPlanningSheet();
+
         // Try exact match first
-        existingSheetRow = await service.findMatchingRow(parsedEventId);
+        existingSheetRow = await service.findMatchingRow(parsedEventId, allSheetRows);
 
         // If no exact match, look for potential matches (same org name or same date)
         if (!existingSheetRow) {
-          const allSheetRows = await service.readPlanningSheet();
+          // Where a new row would land, so the team can catch a bad placement
+          // before pushing instead of discovering it in the sheet afterwards.
+          placement = await service.previewPlacement(parsedEventId, allSheetRows);
+
           const proposedDate = rowData[0]; // Date column
           const proposedOrg = rowData[2]?.toLowerCase().trim(); // Group Name column
 
@@ -211,6 +221,7 @@ export function createPlanningSheetProposalsRouter(
         } : null,
         existingRawData,
         potentialMatches,
+        placement,
       });
     } catch (error) {
       logger.error('Error previewing event data:', error);
@@ -294,7 +305,8 @@ export function createPlanningSheetProposalsRouter(
           success: true,
           message: result.message,
           rowIndex: result.rowIndex,
-          isUpdate: result.isUpdate
+          isUpdate: result.isUpdate,
+          placementNote: result.placementNote
         });
       } else {
         res.status(400).json({ success: false, error: result.message });
