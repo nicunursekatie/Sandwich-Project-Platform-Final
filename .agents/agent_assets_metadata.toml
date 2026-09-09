@@ -6,21 +6,53 @@ id = "li4xptBByAdYja6M1tatQ"
 uri = "file://exports/the-sandwich-project-overview.pdf"
 type = "pdf"
 title = "The Sandwich Project Platform — Overview"
+logical_id = "949c1358-6362-473c-a6d6-c4d5893b8ca1"
 
 [[outputs]]
 id = "P7Mu951CDT5yqRspIPW-_"
 uri = "file://docs/ORGANIZATIONAL_OVERVIEW.md"
 type = "text"
 title = "The Sandwich Project — Organizational Overview"
+logical_id = "696856d6-cc6c-4f4f-b5c2-57253d4dd9cb"
 
 [[outputs]]
 id = "eWbNU9bzS1cjBRSgC06vw"
 uri = "file://docs/ORGANIZATIONAL_OVERVIEW.pdf"
 type = "pdf"
 title = "The Sandwich Project — Organizational Overview (PDF)"
+logical_id = "65d57c4a-76f2-46c9-a523-83a10fc4723f"
 
 [[outputs]]
 id = "X_-ZLlamwYN39_1v5Kurk"
 uri = "file://EVENT_MANAGEMENT_MINIMUM_MAP.md"
 type = "text"
 title = "Minimum Event Management — Scope & Sequencing Map"
+logical_id = "16b01820-9624-45ee-a375-545d21203b26"
+
+[[outputs]]
+id = "Fbc9Rb_Wr7ZcXRYeXo7jB"
+uri = "file://exports/october-2025-event-lead-time-sandwich-volume.csv"
+type = "table"
+title = "October 2025 Event Lead-Time Sandwich Volume"
+description = "CSV export showing completed October 2025 events by request lead-time bracket, using estimated sandwich counts."
+logical_id = "6028c3dd-0b81-465c-897a-4cce9270f3ef"
+content_hash = "sha256:4f512869376e3d0e041b6ef01c5c886d267875720983f53b1c0e278f7faa3b9a"
+size = 215
+mtime_ms = 1788984356306
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb1d30f8-d852-4bae-abcd-b7c4521e3d85/6028c3dd-0b81-465c-897a-4cce9270f3ef/a64f1c39-f4c8-4e93-9da7-e2e659e1aa94"
+storage_version_token = "1788984357018793"
+content_type = "text/csv"
+
+[[outputs]]
+id = "ddAG-p2dhbqICO5uM0j3_"
+uri = "file://exports/october-2025-event-lead-time-per-event-volumes.csv"
+type = "table"
+title = "October 2025 Per-Event Estimated Sandwich Volumes"
+description = "One row per completed event, grouped by request lead-time bracket, with request date, event date, lead days, and estimated sandwiches. Blank volume cells indicate no estimate was recorded."
+logical_id = "e570f478-1399-4218-9661-448245766f4f"
+content_hash = "sha256:60800cc86cbe858c148c222f90012b977093bcea9f1ac07c55887f13e501bc47"
+size = 3953
+mtime_ms = 1788984919214
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb1d30f8-d852-4bae-abcd-b7c4521e3d85/e570f478-1399-4218-9661-448245766f4f/c9ca91e7-dc29-42c6-adb0-0721db6bf3e4"
+storage_version_token = "1788984920069287"
+content_type = "text/csv"
