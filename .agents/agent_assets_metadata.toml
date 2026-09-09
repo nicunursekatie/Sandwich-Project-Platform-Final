@@ -42,3 +42,17 @@ mtime_ms = 1788984356306
 storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb1d30f8-d852-4bae-abcd-b7c4521e3d85/6028c3dd-0b81-465c-897a-4cce9270f3ef/a64f1c39-f4c8-4e93-9da7-e2e659e1aa94"
 storage_version_token = "1788984357018793"
 content_type = "text/csv"
+
+[[outputs]]
+id = "ddAG-p2dhbqICO5uM0j3_"
+uri = "file://exports/october-2025-event-lead-time-per-event-volumes.csv"
+type = "table"
+title = "October 2025 Per-Event Estimated Sandwich Volumes"
+description = "One row per completed event, grouped by request lead-time bracket, with request date, event date, lead days, and estimated sandwiches. Blank volume cells indicate no estimate was recorded."
+logical_id = "e570f478-1399-4218-9661-448245766f4f"
+content_hash = "sha256:60800cc86cbe858c148c222f90012b977093bcea9f1ac07c55887f13e501bc47"
+size = 3953
+mtime_ms = 1788984919214
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb1d30f8-d852-4bae-abcd-b7c4521e3d85/e570f478-1399-4218-9661-448245766f4f/c9ca91e7-dc29-42c6-adb0-0721db6bf3e4"
+storage_version_token = "1788984920069287"
+content_type = "text/csv"
