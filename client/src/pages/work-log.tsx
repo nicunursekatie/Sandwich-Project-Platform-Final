@@ -12,10 +12,20 @@ import { useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { useResourcePermissions, usePermissions } from '@/hooks/useResourcePermissions';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
+import { useToast } from '@/hooks/use-toast';
+
+function formatElapsed(totalSeconds: number) {
+  const safeSeconds = Math.max(0, totalSeconds);
+  const hh = Math.floor(safeSeconds / 3600);
+  const mm = Math.floor((safeSeconds % 3600) / 60);
+  const ss = safeSeconds % 60;
+  return [hh, mm, ss].map((part) => String(part).padStart(2, '0')).join(':');
+}
 
 export default function WorkLogPage() {
   const { user } = useAuth();
   const { trackView, trackFormSubmit } = useActivityTracker();
+  const { toast } = useToast();
 
   useEffect(() => {
     trackView(
@@ -100,6 +110,110 @@ export default function WorkLogPage() {
     },
   });
 
+  // --- Start work / stop work stopwatch ---
+  const { data: timerResponse } = useQuery({
+    queryKey: ['/api/work-logs/timer'],
+    queryFn: async () => apiRequest('GET', '/api/work-logs/timer'),
+    enabled: !!user && !!canCreateLogs,
+    // The timer lives on the server so it survives reloads and follows the user
+    // between devices; refetch on focus so a stale tab doesn't show a dead timer.
+    refetchOnWindowFocus: true,
+  });
+  const activeTimer = timerResponse?.timer ?? null;
+
+  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [timerDescription, setTimerDescription] = useState('');
+
+  useEffect(() => {
+    if (!activeTimer?.startedAt) {
+      setElapsedSeconds(0);
+      return;
+    }
+    const startedAtMs = new Date(activeTimer.startedAt).getTime();
+    const tick = () =>
+      setElapsedSeconds(Math.max(0, Math.round((Date.now() - startedAtMs) / 1000)));
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [activeTimer?.startedAt]);
+
+  const invalidateTimer = () =>
+    queryClient.invalidateQueries({ queryKey: ['/api/work-logs/timer'] });
+
+  const startTimer = useMutation({
+    mutationFn: async () =>
+      apiRequest('POST', '/api/work-logs/timer/start', {
+        description: timerDescription || undefined,
+      }),
+    onSuccess: () => {
+      invalidateTimer();
+      toast({
+        title: 'Timer started',
+        description: 'Your time is being tracked. Click "Stop Work" when you finish.',
+      });
+    },
+    onError: (err: any) => {
+      invalidateTimer();
+      toast({
+        title: 'Could not start the timer',
+        description: err?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const stopTimer = useMutation({
+    mutationFn: async () =>
+      apiRequest('POST', '/api/work-logs/timer/stop', {
+        description: timerDescription || undefined,
+      }),
+    onSuccess: (result: any) => {
+      setTimerDescription('');
+      invalidateTimer();
+      queryClient.invalidateQueries({ queryKey: ['/api/work-logs'] });
+      refetch();
+      const log = result?.log;
+      toast({
+        title: 'Work logged',
+        description: result?.capped
+          ? 'That timer ran for more than 24 hours, so the entry was capped at 24h 0m. Remove it and log the time manually if that is not right.'
+          : `Logged ${log?.hours ?? 0}h ${log?.minutes ?? 0}m.`,
+        variant: result?.capped ? 'destructive' : undefined,
+      });
+    },
+    onError: (err: any) => {
+      invalidateTimer();
+      toast({
+        title: 'Could not stop the timer',
+        description: err?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const discardTimer = useMutation({
+    mutationFn: async () => apiRequest('DELETE', '/api/work-logs/timer'),
+    onSuccess: () => {
+      setTimerDescription('');
+      invalidateTimer();
+      toast({
+        title: 'Timer discarded',
+        description: 'No work log entry was created.',
+      });
+    },
+    onError: (err: any) => {
+      invalidateTimer();
+      toast({
+        title: 'Could not discard the timer',
+        description: err?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const timerBusy =
+    startTimer.isPending || stopTimer.isPending || discardTimer.isPending;
+
   return (
     <div className="max-w-4xl mx-auto py-6 space-y-6">
       <PageBreadcrumbs segments={[
@@ -112,6 +226,88 @@ export default function WorkLogPage() {
         Debug: {safelogs.length} logs loaded • User:{' '}
         {(user as any)?.email || 'Unknown'}
       </div>
+
+      {canCreateLogs && (
+        <Card className="shadow-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg font-semibold text-gray-900">
+              Time Your Work
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <div
+                  className={`font-mono text-3xl tabular-nums ${
+                    activeTimer ? 'text-brand-orange' : 'text-gray-400'
+                  }`}
+                  aria-live="polite"
+                >
+                  {formatElapsed(activeTimer ? elapsedSeconds : 0)}
+                </div>
+                <div className="mt-1 text-sm text-gray-600">
+                  {activeTimer
+                    ? `Running since ${new Date(activeTimer.startedAt).toLocaleTimeString()}`
+                    : 'Start the timer and we will log the elapsed time for you.'}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {activeTimer ? (
+                  <>
+                    <Button
+                      type="button"
+                      onClick={() => stopTimer.mutate()}
+                      disabled={timerBusy}
+                      className="bg-brand-orange hover:bg-brand-orange-dark text-white font-medium px-6"
+                    >
+                      {stopTimer.isPending ? 'Stopping...' : 'Stop Work'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      onClick={() => discardTimer.mutate()}
+                      disabled={timerBusy}
+                      className="text-gray-500 hover:text-red-600 hover:bg-red-50"
+                    >
+                      Discard
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    type="button"
+                    onClick={() => startTimer.mutate()}
+                    disabled={timerBusy}
+                    className="bg-brand-orange hover:bg-brand-orange-dark text-white font-medium px-6"
+                  >
+                    {startTimer.isPending ? 'Starting...' : 'Start Work'}
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+                What are you working on?{' '}
+                <span className="text-gray-500 font-normal">(optional)</span>
+              </label>
+              <Textarea
+                value={timerDescription}
+                onChange={(e) => setTimerDescription(e.target.value)}
+                placeholder={
+                  activeTimer?.description ||
+                  'Describe what you worked on (optional)...'
+                }
+                rows={2}
+                className="resize-none"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Saved with the entry when you stop the timer.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {canCreateLogs && (
         <Card className="shadow-sm">
