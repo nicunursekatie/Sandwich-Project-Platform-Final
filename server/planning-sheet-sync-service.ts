@@ -365,8 +365,6 @@ export function parsePlanningSheetTime(timeStr: string): number | null {
 export type SheetPlacementReason =
   /** Placed inside the "week of ..." block its date belongs to. */
   | 'insert_in_week_block'
-  /** Its week has no header in the sheet, so it went after the previous week. */
-  | 'insert_week_block_missing'
   /** Dated before the first week the sheet covers. */
   | 'insert_before_first_week_block'
   /** Sheets with no week headers fall back to plain date order. */
@@ -392,6 +390,13 @@ export interface SheetPlacement {
   outOfOrderRows: { rowIndex: number; date: string }[];
   /** The week block the row is going into, when the sheet is grouped by week. */
   weekBlock: { headerRow: number; label: string } | null;
+  /**
+   * Row whose formatting a newly inserted row should be given. Google can only
+   * inherit formatting from a neighbour, and a new row frequently sits right
+   * above or below a "week of" header — which is how a pushed event ended up
+   * looking like a week header instead of an event.
+   */
+  formatFromRow: number | null;
   lastDatedRow: { rowIndex: number; date: string } | null;
 }
 
@@ -538,6 +543,20 @@ function conflictingRows(dated: DatedRow[], splitAfter: number) {
     .map((d) => ({ rowIndex: d.row.rowIndex, date: d.row.date }));
 }
 
+/**
+ * The nearest real event row to copy formatting from: the closest one above the
+ * insertion point, or the closest below when the row is going in at the top.
+ */
+function formatModelRow(dated: DatedRow[], target: number): number | null {
+  let above: number | null = null;
+  let below: number | null = null;
+  for (const { row } of dated) {
+    if (row.rowIndex < target) above = row.rowIndex;
+    else if (below === null) below = row.rowIndex;
+  }
+  return above ?? below;
+}
+
 function describeRow(row: PlanningSheetRow) {
   return `${row.date} ${row.groupName}`.trim();
 }
@@ -582,6 +601,9 @@ export function computeSheetPlacement(
       : null,
   };
 
+  // Only used where unreadable cells actually explain the outcome. Reporting
+  // them on every push was noise: the sheet repeats its column headings
+  // part-way down, and dates that aren't settled yet are written as "TBD".
   const unreadableSuffix = unreadableDates.length
     ? ` ${unreadableDates.length} row(s) have a date cell that could not be read (e.g. row ${unreadableDates[0].rowIndex}: "${unreadableDates[0].value}").`
     : '';
@@ -607,7 +629,8 @@ export function computeSheetPlacement(
         ...shared,
         insertBeforeRow: first.headerRow,
         reason: 'insert_before_first_week_block',
-        note: `Inserting at row ${first.headerRow}, above "Week of ${first.label}" — this event is dated before the first week in the sheet.${unreadableSuffix}`,
+        formatFromRow: formatModelRow(allDated, first.headerRow),
+        note: `Inserting at row ${first.headerRow}, above "Week of ${first.label}" — this event is dated before the first week in the sheet.`,
         outOfOrderRows: [],
         weekBlock: null,
       };
@@ -615,8 +638,6 @@ export function computeSheetPlacement(
 
     const weekBlock = { headerRow: block.headerRow, label: block.label };
     const following = blocks.find((b) => b.headerRow > block!.headerRow) ?? null;
-    // Inserting here lands at the foot of this week, above the next header.
-    const endOfBlock = following ? following.headerRow : lastSheetRow + 1;
 
     const { dated } = readDatedRows(
       block.rows,
@@ -629,33 +650,6 @@ export function computeSheetPlacement(
     const disorderSuffix = outOfOrderRows.length
       ? ` Heads up: ${outOfOrderRows.length} row(s) in this week are dated on the wrong side of this position — check row ${outOfOrderRows[0].rowIndex} ("${outOfOrderRows[0].date}"). A mistyped year there pulls events out of place.`
       : '';
-
-    // More than a week past the block's start means the event's own week has no
-    // header of its own — a gap in the sheet rather than a placement decision.
-    const daysIntoBlock =
-      (eventDate.getTime() - block.start.getTime()) / DAY_MS;
-
-    if (daysIntoBlock >= 7) {
-      const target = endOfBlock;
-      if (!following && target > lastSheetRow) {
-        return {
-          ...shared,
-          insertBeforeRow: null,
-          reason: 'insert_week_block_missing',
-          note: `Appending to the end: the sheet has no "week of" header for this event's week, and "Week of ${block.label}" is the last week in it. Add a week header if this event should be grouped on its own.${disorderSuffix}${unreadableSuffix}`,
-          outOfOrderRows,
-          weekBlock,
-        };
-      }
-      return {
-        ...shared,
-        insertBeforeRow: target,
-        reason: 'insert_week_block_missing',
-        note: `Inserting at row ${target}. The sheet has no "week of" header for this event's week, so it goes at the end of "Week of ${block.label}" — add a week header if it should be grouped on its own.${disorderSuffix}${unreadableSuffix}`,
-        outOfOrderRows,
-        weekBlock,
-      };
-    }
 
     const anchor = splitAfter > 0 ? dated[splitAfter - 1].row : null;
     let target: number;
@@ -677,7 +671,8 @@ export function computeSheetPlacement(
         ...shared,
         insertBeforeRow: null,
         reason: 'append_event_is_latest',
-        note: `Appending to the end: this event is later than every row in the sheet, in the last week it covers ("Week of ${block.label}").${disorderSuffix}${unreadableSuffix}`,
+        formatFromRow: formatModelRow(allDated, lastSheetRow + 1),
+        note: `Appending to the end: this event is later than every row in the sheet, in the last week it covers ("Week of ${block.label}").${disorderSuffix}`,
         outOfOrderRows,
         weekBlock,
       };
@@ -687,7 +682,10 @@ export function computeSheetPlacement(
       ...shared,
       insertBeforeRow: target,
       reason: 'insert_in_week_block',
-      note: `Inserting at row ${target}, in the "Week of ${block.label}" block, ${position}.${disorderSuffix}${unreadableSuffix}`,
+      // Prefer a row from this same week, so anything the team formats per
+      // week carries over; otherwise the nearest event row anywhere.
+      formatFromRow: formatModelRow(dated, target) ?? formatModelRow(allDated, target),
+      note: `Inserting at row ${target}, in the "Week of ${block.label}" block, ${position}.${disorderSuffix}`,
       outOfOrderRows,
       weekBlock,
     };
@@ -700,6 +698,7 @@ export function computeSheetPlacement(
       ...shared,
       insertBeforeRow: null,
       reason: 'append_no_dated_rows',
+      formatFromRow: null,
       note: `Appending to the end: none of the ${rows.length} rows read back with a usable date.${unreadableSuffix}`,
       outOfOrderRows: [],
       weekBlock: null,
@@ -720,6 +719,7 @@ export function computeSheetPlacement(
       ...shared,
       insertBeforeRow: following!.rowIndex,
       reason: 'insert_before_later_event',
+      formatFromRow: formatModelRow(allDated, following!.rowIndex),
       note: `Inserting at row ${following!.rowIndex}, ahead of "${describeRow(following!)}" — nothing in the sheet is dated earlier.${disorderSuffix}${unreadableSuffix}`,
       outOfOrderRows,
       weekBlock: null,
@@ -731,6 +731,7 @@ export function computeSheetPlacement(
       ...shared,
       insertBeforeRow: null,
       reason: 'append_event_is_latest',
+      formatFromRow: formatModelRow(allDated, lastSheetRow + 1),
       note: `Appending to the end: this event is later than every row in the sheet (the last one is ${anchor.date}, row ${anchor.rowIndex}).${disorderSuffix}${unreadableSuffix}`,
       outOfOrderRows,
       weekBlock: null,
@@ -744,6 +745,7 @@ export function computeSheetPlacement(
     ...shared,
     insertBeforeRow: target,
     reason: 'insert_after_previous_event',
+    formatFromRow: formatModelRow(allDated, target),
     note: `Inserting at row ${target}, directly after "${describeRow(anchor)}".${
       closingRows > 0
         ? ` That keeps it above the ${closingRows} row(s) that follow before the next event.`
@@ -1277,30 +1279,35 @@ export class PlanningSheetSyncService {
     }
 
     const rowDate = this.parseSheetDate(rowData[PLANNING_SHEET_COLUMNS.DATE] || '');
-    if (rowDate) {
-      const placement = await this.findPlacement(
-        rowDate,
-        // Same fallback the direct push uses, so both paths order same-day
-        // rows the same way.
-        rowData[PLANNING_SHEET_COLUMNS.EVENT_START_TIME] ||
-          rowData[PLANNING_SHEET_COLUMNS.PICK_UP_TIME] ||
-          null
+    const placement = rowDate
+      ? await this.findPlacement(
+          rowDate,
+          // Same fallback the direct push uses, so both paths order same-day
+          // rows the same way.
+          rowData[PLANNING_SHEET_COLUMNS.EVENT_START_TIME] ||
+            rowData[PLANNING_SHEET_COLUMNS.PICK_UP_TIME] ||
+            null
+        )
+      : null;
+
+    if (
+      placement?.insertBeforeRow != null &&
+      (await this.insertRowAt(
+        placement.insertBeforeRow,
+        rowData,
+        placement.formatFromRow
+      ))
+    ) {
+      logger.info(
+        `Applied new row to Planning Sheet for proposal ${proposal.id} at row ${placement.insertBeforeRow}`
       );
-      if (
-        placement.insertBeforeRow !== null &&
-        (await this.insertRowAt(placement.insertBeforeRow, rowData))
-      ) {
-        logger.info(
-          `Applied new row to Planning Sheet for proposal ${proposal.id} at row ${placement.insertBeforeRow}`
-        );
-        return {
-          success: true,
-          message: `Row added at row ${placement.insertBeforeRow} (sorted by date)`,
-        };
-      }
+      return {
+        success: true,
+        message: `Row added at row ${placement.insertBeforeRow} (sorted by date)`,
+      };
     }
 
-    const newRowIndex = await this.appendRow(rowData);
+    const newRowIndex = await this.appendRow(rowData, placement?.formatFromRow ?? null);
     logger.info(
       `Applied new row to Planning Sheet for proposal ${proposal.id} at row ${newRowIndex} (appended)`
     );
@@ -1531,7 +1538,10 @@ export class PlanningSheetSyncService {
    * Append a row after the last row of the sheet. Returns the row number it
    * landed on, when the API reports one.
    */
-  private async appendRow(rowData: string[]): Promise<number | undefined> {
+  private async appendRow(
+    rowData: string[],
+    formatFromRow?: number | null
+  ): Promise<number | undefined> {
     const response = await this.sheets.spreadsheets.values.append({
       spreadsheetId: this.spreadsheetId,
       range: this.getSheetRange('A:AA'),
@@ -1542,7 +1552,49 @@ export class PlanningSheetSyncService {
 
     const updatedRange = response.data.updates?.updatedRange || '';
     const rowMatch = updatedRange.match(/(\d+)$/);
-    return rowMatch ? parseInt(rowMatch[1], 10) : undefined;
+    const newRowIndex = rowMatch ? parseInt(rowMatch[1], 10) : undefined;
+
+    // The bottom of the sheet can be a trailing week header with no events
+    // under it yet, and an appended row takes on whatever formatting is already
+    // there. Give it an event row's look instead.
+    if (newRowIndex && formatFromRow && formatFromRow !== newRowIndex) {
+      await this.copyRowFormat(formatFromRow, newRowIndex);
+    }
+
+    return newRowIndex;
+  }
+
+  /** Copy one row's formatting onto another, leaving its values alone. */
+  private async copyRowFormat(sourceRow: number, destinationRow: number): Promise<void> {
+    const sheetId = await this.getWorksheetId();
+    if (sheetId === null) return;
+
+    await this.sheets.spreadsheets.batchUpdate({
+      spreadsheetId: this.spreadsheetId,
+      resource: {
+        requests: [
+          {
+            copyPaste: {
+              source: {
+                sheetId,
+                startRowIndex: sourceRow - 1,
+                endRowIndex: sourceRow,
+                startColumnIndex: 0,
+                endColumnIndex: 27, // A:AA
+              },
+              destination: {
+                sheetId,
+                startRowIndex: destinationRow - 1,
+                endRowIndex: destinationRow,
+                startColumnIndex: 0,
+                endColumnIndex: 27,
+              },
+              pasteType: 'PASTE_FORMAT',
+            },
+          },
+        ],
+      },
+    });
   }
 
   /**
@@ -1550,27 +1602,63 @@ export class PlanningSheetSyncService {
    * write the row data into it. Returns false when the worksheet can't be
    * identified, in which case nothing was written.
    */
-  private async insertRowAt(rowIndex: number, rowData: string[]): Promise<boolean> {
+  private async insertRowAt(
+    rowIndex: number,
+    rowData: string[],
+    formatFromRow?: number | null
+  ): Promise<boolean> {
     const sheetId = await this.getWorksheetId();
     if (sheetId === null) return false;
 
+    const requests: any[] = [
+      {
+        insertDimension: {
+          range: {
+            sheetId,
+            dimension: 'ROWS',
+            startIndex: rowIndex - 1, // 0-indexed
+            endIndex: rowIndex, // Insert 1 row
+          },
+          // Of the two neighbours Google can inherit from, the row above is the
+          // better guess. Either can be a week header though, so the formatting
+          // is set explicitly below.
+          inheritFromBefore: rowIndex > 1,
+        },
+      },
+    ];
+
+    // Give the new row the look of a real event row. Inheriting from a
+    // neighbour is not enough: a new row often lands directly above or below a
+    // "week of" header — the last event of a week sits above the next header,
+    // the first event of a week sits below its own — and would otherwise take
+    // on that header's formatting.
+    if (formatFromRow) {
+      // Anything at or below the insertion point has just shifted down one.
+      const source = formatFromRow >= rowIndex ? formatFromRow + 1 : formatFromRow;
+      requests.push({
+        copyPaste: {
+          source: {
+            sheetId,
+            startRowIndex: source - 1,
+            endRowIndex: source,
+            startColumnIndex: 0,
+            endColumnIndex: 27, // A:AA
+          },
+          destination: {
+            sheetId,
+            startRowIndex: rowIndex - 1,
+            endRowIndex: rowIndex,
+            startColumnIndex: 0,
+            endColumnIndex: 27,
+          },
+          pasteType: 'PASTE_FORMAT',
+        },
+      });
+    }
+
     await this.sheets.spreadsheets.batchUpdate({
       spreadsheetId: this.spreadsheetId,
-      resource: {
-        requests: [
-          {
-            insertDimension: {
-              range: {
-                sheetId,
-                dimension: 'ROWS',
-                startIndex: rowIndex - 1, // 0-indexed
-                endIndex: rowIndex, // Insert 1 row
-              },
-              inheritFromBefore: false,
-            },
-          },
-        ],
-      },
+      resource: { requests },
     });
 
     await this.sheets.spreadsheets.values.update({
@@ -1731,7 +1819,11 @@ export class PlanningSheetSyncService {
         let placementNote = placement.note;
 
         if (insertBeforeRow !== null) {
-          const inserted = await this.insertRowAt(insertBeforeRow, rowData);
+          const inserted = await this.insertRowAt(
+            insertBeforeRow,
+            rowData,
+            placement.formatFromRow
+          );
 
           if (!inserted) {
             placementNote = `Appended to the end: the worksheet "${this.worksheetName}" could not be identified, so the row could not be inserted at row ${insertBeforeRow} where it belongs.`;
@@ -1749,7 +1841,7 @@ export class PlanningSheetSyncService {
         }
 
         // Fallback: Append to end if no insertion point found or worksheet ID unavailable
-        const newRowIndex = await this.appendRow(rowData);
+        const newRowIndex = await this.appendRow(rowData, placement.formatFromRow);
 
         logger.info(`[PlanningSheet] User ${userId} appended new row ${newRowIndex} for event ${eventId}. ${placementNote}`);
         return {
