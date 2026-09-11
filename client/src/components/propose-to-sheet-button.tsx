@@ -563,7 +563,6 @@ export function PushToSheetButton({
                   const placement = previewData.placement;
                   const needsAttention =
                     placement.outOfOrderRows?.length > 0 ||
-                    placement.reason === 'insert_week_block_missing' ||
                     placement.reason === 'append_no_dated_rows';
 
                   const title = placement.insertBeforeRow

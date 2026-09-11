@@ -2,6 +2,7 @@ import {
   computeSheetPlacement,
   parsePlanningSheetDate,
   parsePlanningSheetTime,
+  PlanningSheetSyncService,
   type PlanningSheetRow,
 } from '../../server/planning-sheet-sync-service';
 
@@ -188,20 +189,76 @@ describe('computeSheetPlacement in a sheet grouped by week', () => {
     expect(placement.weekBlock?.label).toBe('Aug 31');
   });
 
-  it('flags an event whose week has no header of its own', () => {
-    const gapped = [
-      weekHeader(366, 'Sep 7'),
-      makeRow(367, '9/8/26'),
-      weekHeader(370, 'Sep 28'),
-      makeRow(371, '9/28/26'),
+  // The team does not keep a header for every calendar week — a block simply
+  // owns every row from its header to the next one, however many weeks that
+  // spans. The live sheet has a "Week of Oct 18" block holding events through
+  // 10/30 because no Oct 25 header was ever added.
+  it('orders within a block that spans more than one week', () => {
+    const spanning = [
+      weekHeader(418, 'Oct 18'),
+      makeRow(419, '10/19/26'),
+      makeRow(421, '10/24/26'),
+      makeRow(426, '10/30/26'),
+      weekHeader(427, 'Nov 1'),
+      makeRow(428, '11/4/26'),
     ];
-    // The weeks of Sep 14 and Sep 21 are simply missing from the sheet.
-    const placement = computeSheetPlacement(gapped, new Date(2026, 8, 16), {
+
+    const placement = computeSheetPlacement(spanning, new Date(2026, 9, 31), {
       fallbackYear: 2026,
     });
-    expect(placement.reason).toBe('insert_week_block_missing');
-    expect(placement.insertBeforeRow).toBe(370); // end of the Sep 7 week, above the next header
-    expect(placement.note).toContain('no "week of" header');
+    expect(placement.insertBeforeRow).toBe(427); // after 10/30, above the Nov 1 header
+    expect(placement.reason).toBe('insert_in_week_block');
+    expect(placement.weekBlock?.label).toBe('Oct 18');
+    // Nothing alarming to say: this is simply where the sheet puts it.
+    expect(placement.note).not.toContain('no "week of" header');
+  });
+
+  // A pushed event came out styled as a week header, because Google can only
+  // inherit formatting from a neighbouring row and a new row routinely lands
+  // next to a header. Placement names an event row to copy instead.
+  it('names an event row to copy formatting from, never a week header', () => {
+    // Last event of a week: the row below is the next week's header.
+    const endOfWeek = computeSheetPlacement(weeklySheet, new Date(2026, 8, 13), {
+      fallbackYear: 2026,
+    });
+    expect(endOfWeek.insertBeforeRow).toBe(369);
+    expect(endOfWeek.formatFromRow).toBe(368); // the 9/9 event, not header 370
+
+    // First event of a week: the row above is that week's own header.
+    const startOfWeek = computeSheetPlacement(weeklySheet, new Date(2026, 8, 7), {
+      fallbackYear: 2026,
+    });
+    expect(startOfWeek.insertBeforeRow).toBe(367);
+    // The 9/8 event in its own week, not header 366 directly above it. Being
+    // at the insertion point, it shifts down one when the row goes in, which
+    // insertRowAt accounts for.
+    expect(startOfWeek.formatFromRow).toBe(367);
+  });
+
+  it('orders correctly whatever day the week labels start on', () => {
+    // The labels were switched from Saturday-start to Sunday-start, so the
+    // placement must not assume either.
+    const sundayStart = [
+      weekHeader(2, 'Oct 18'), // a Sunday
+      makeRow(3, '10/19/26'),
+      weekHeader(4, 'Oct 25'), // a Sunday
+      makeRow(5, '10/26/26'),
+    ];
+    expect(
+      computeSheetPlacement(sundayStart, new Date(2026, 9, 24), { fallbackYear: 2026 })
+        .weekBlock?.label
+    ).toBe('Oct 18');
+
+    const saturdayStart = [
+      weekHeader(2, 'Oct 17'), // a Saturday
+      makeRow(3, '10/19/26'),
+      weekHeader(4, 'Oct 24'), // a Saturday
+      makeRow(5, '10/26/26'),
+    ];
+    expect(
+      computeSheetPlacement(saturdayStart, new Date(2026, 9, 24), { fallbackYear: 2026 })
+        .weekBlock?.label
+    ).toBe('Oct 24');
   });
 
   it('starts a week that has a header but no events yet', () => {
@@ -415,5 +472,116 @@ describe('computeSheetPlacement', () => {
     const placement = computeSheetPlacement([], new Date(2026, 5, 2));
     expect(placement.insertBeforeRow).toBeNull();
     expect(placement.reason).toBe('append_no_dated_rows');
+  });
+});
+
+/**
+ * The formatting copy is the whole point of this change — a pushed row must not
+ * come out looking like a week header — and the one bit of arithmetic that can
+ * silently get it wrong is the source row shifting down when the insert happens
+ * at or above it. So these drive the real Sheets requests through a fake client.
+ */
+describe('writing a row into the sheet', () => {
+  const SHEET_ID = 7;
+  const WORKSHEET = '2026 Groups';
+
+  function fakeService(options: { onBatchUpdate?: () => void } = {}) {
+    const service = new PlanningSheetSyncService('spreadsheet-1', WORKSHEET) as any;
+    const batches: any[][] = [];
+    const written: { range: string; values: string[][] }[] = [];
+
+    service.sheets = {
+      spreadsheets: {
+        get: async () => ({
+          data: { sheets: [{ properties: { title: WORKSHEET, sheetId: SHEET_ID } }] },
+        }),
+        batchUpdate: async ({ resource }: any) => {
+          options.onBatchUpdate?.();
+          batches.push(resource.requests);
+          return {};
+        },
+        values: {
+          update: async ({ range, resource }: any) => {
+            written.push({ range, values: resource.values });
+            return {};
+          },
+          append: async () => ({
+            data: { updates: { updatedRange: `'${WORKSHEET}'!A480:AA480` } },
+          }),
+        },
+      },
+    };
+    // Re-pointing pending proposals is exercised separately; it needs a database.
+    service.shiftPendingProposalRows = async () => {};
+
+    return { service, batches, written };
+  }
+
+  const row = ['10/31/26', 'Saturday', 'Some Group'];
+
+  it('copies formatting from a source row above the insertion point', () => {
+    const { service, batches, written } = fakeService();
+
+    return service.insertRowAt(427, row, 426).then((ok: boolean) => {
+      expect(ok).toBe(true);
+
+      const [insert, copy] = batches[0];
+      expect(insert.insertDimension.range).toMatchObject({
+        sheetId: SHEET_ID,
+        dimension: 'ROWS',
+        startIndex: 426, // 0-indexed row 427
+        endIndex: 427,
+      });
+      expect(insert.insertDimension.inheritFromBefore).toBe(true);
+
+      // Row 426 is above the insert, so it does not move.
+      expect(copy.copyPaste.pasteType).toBe('PASTE_FORMAT');
+      expect(copy.copyPaste.source).toMatchObject({ startRowIndex: 425, endRowIndex: 426 });
+      expect(copy.copyPaste.destination).toMatchObject({ startRowIndex: 426, endRowIndex: 427 });
+
+      expect(written[0].values).toEqual([row]);
+    });
+  });
+
+  it('follows a source row that the insert pushes down', async () => {
+    const { service, batches } = fakeService();
+    // Inserting at 367 and copying from 367: that row becomes 368.
+    await service.insertRowAt(367, row, 367);
+
+    const copy = batches[0][1];
+    expect(copy.copyPaste.source).toMatchObject({ startRowIndex: 367, endRowIndex: 368 });
+    expect(copy.copyPaste.destination).toMatchObject({ startRowIndex: 366, endRowIndex: 367 });
+  });
+
+  it('does the insert and the formatting in one batch, so neither lands alone', async () => {
+    const { service, batches } = fakeService();
+    await service.insertRowAt(427, row, 426);
+
+    expect(batches).toHaveLength(1);
+    expect(batches[0]).toHaveLength(2);
+  });
+
+  it('formats an appended row from the source row', async () => {
+    const { service, batches } = fakeService();
+    const appendedAt = await service.appendRow(row, 446);
+
+    expect(appendedAt).toBe(480);
+    const copy = batches[0][0];
+    expect(copy.copyPaste.pasteType).toBe('PASTE_FORMAT');
+    expect(copy.copyPaste.source).toMatchObject({ startRowIndex: 445, endRowIndex: 446 });
+    expect(copy.copyPaste.destination).toMatchObject({ startRowIndex: 479, endRowIndex: 480 });
+  });
+
+  it('still reports the appended row when formatting it fails', async () => {
+    // The append has already committed the row, so a failure to restyle it must
+    // not surface as a failed push — that would leave the event unmarked and
+    // invite a duplicate, or strand an approved proposal as failed.
+    const { service } = fakeService({
+      onBatchUpdate: () => {
+        throw new Error('Google API unavailable');
+      },
+    });
+
+    await expect(service.appendRow(row, 446)).resolves.toBe(480);
   });
 });
