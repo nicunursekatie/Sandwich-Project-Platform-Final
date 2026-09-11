@@ -188,20 +188,76 @@ describe('computeSheetPlacement in a sheet grouped by week', () => {
     expect(placement.weekBlock?.label).toBe('Aug 31');
   });
 
-  it('flags an event whose week has no header of its own', () => {
-    const gapped = [
-      weekHeader(366, 'Sep 7'),
-      makeRow(367, '9/8/26'),
-      weekHeader(370, 'Sep 28'),
-      makeRow(371, '9/28/26'),
+  // The team does not keep a header for every calendar week — a block simply
+  // owns every row from its header to the next one, however many weeks that
+  // spans. The live sheet has a "Week of Oct 18" block holding events through
+  // 10/30 because no Oct 25 header was ever added.
+  it('orders within a block that spans more than one week', () => {
+    const spanning = [
+      weekHeader(418, 'Oct 18'),
+      makeRow(419, '10/19/26'),
+      makeRow(421, '10/24/26'),
+      makeRow(426, '10/30/26'),
+      weekHeader(427, 'Nov 1'),
+      makeRow(428, '11/4/26'),
     ];
-    // The weeks of Sep 14 and Sep 21 are simply missing from the sheet.
-    const placement = computeSheetPlacement(gapped, new Date(2026, 8, 16), {
+
+    const placement = computeSheetPlacement(spanning, new Date(2026, 9, 31), {
       fallbackYear: 2026,
     });
-    expect(placement.reason).toBe('insert_week_block_missing');
-    expect(placement.insertBeforeRow).toBe(370); // end of the Sep 7 week, above the next header
-    expect(placement.note).toContain('no "week of" header');
+    expect(placement.insertBeforeRow).toBe(427); // after 10/30, above the Nov 1 header
+    expect(placement.reason).toBe('insert_in_week_block');
+    expect(placement.weekBlock?.label).toBe('Oct 18');
+    // Nothing alarming to say: this is simply where the sheet puts it.
+    expect(placement.note).not.toContain('no "week of" header');
+  });
+
+  // A pushed event came out styled as a week header, because Google can only
+  // inherit formatting from a neighbouring row and a new row routinely lands
+  // next to a header. Placement names an event row to copy instead.
+  it('names an event row to copy formatting from, never a week header', () => {
+    // Last event of a week: the row below is the next week's header.
+    const endOfWeek = computeSheetPlacement(weeklySheet, new Date(2026, 8, 13), {
+      fallbackYear: 2026,
+    });
+    expect(endOfWeek.insertBeforeRow).toBe(369);
+    expect(endOfWeek.formatFromRow).toBe(368); // the 9/9 event, not header 370
+
+    // First event of a week: the row above is that week's own header.
+    const startOfWeek = computeSheetPlacement(weeklySheet, new Date(2026, 8, 7), {
+      fallbackYear: 2026,
+    });
+    expect(startOfWeek.insertBeforeRow).toBe(367);
+    // The 9/8 event in its own week, not header 366 directly above it. Being
+    // at the insertion point, it shifts down one when the row goes in, which
+    // insertRowAt accounts for.
+    expect(startOfWeek.formatFromRow).toBe(367);
+  });
+
+  it('orders correctly whatever day the week labels start on', () => {
+    // The labels were switched from Saturday-start to Sunday-start, so the
+    // placement must not assume either.
+    const sundayStart = [
+      weekHeader(2, 'Oct 18'), // a Sunday
+      makeRow(3, '10/19/26'),
+      weekHeader(4, 'Oct 25'), // a Sunday
+      makeRow(5, '10/26/26'),
+    ];
+    expect(
+      computeSheetPlacement(sundayStart, new Date(2026, 9, 24), { fallbackYear: 2026 })
+        .weekBlock?.label
+    ).toBe('Oct 18');
+
+    const saturdayStart = [
+      weekHeader(2, 'Oct 17'), // a Saturday
+      makeRow(3, '10/19/26'),
+      weekHeader(4, 'Oct 24'), // a Saturday
+      makeRow(5, '10/26/26'),
+    ];
+    expect(
+      computeSheetPlacement(saturdayStart, new Date(2026, 9, 24), { fallbackYear: 2026 })
+        .weekBlock?.label
+    ).toBe('Oct 24');
   });
 
   it('starts a week that has a header but no events yet', () => {
