@@ -2,6 +2,7 @@ import {
   computeSheetPlacement,
   parsePlanningSheetDate,
   parsePlanningSheetTime,
+  PlanningSheetSyncService,
   type PlanningSheetRow,
 } from '../../server/planning-sheet-sync-service';
 
@@ -471,5 +472,116 @@ describe('computeSheetPlacement', () => {
     const placement = computeSheetPlacement([], new Date(2026, 5, 2));
     expect(placement.insertBeforeRow).toBeNull();
     expect(placement.reason).toBe('append_no_dated_rows');
+  });
+});
+
+/**
+ * The formatting copy is the whole point of this change — a pushed row must not
+ * come out looking like a week header — and the one bit of arithmetic that can
+ * silently get it wrong is the source row shifting down when the insert happens
+ * at or above it. So these drive the real Sheets requests through a fake client.
+ */
+describe('writing a row into the sheet', () => {
+  const SHEET_ID = 7;
+  const WORKSHEET = '2026 Groups';
+
+  function fakeService(options: { onBatchUpdate?: () => void } = {}) {
+    const service = new PlanningSheetSyncService('spreadsheet-1', WORKSHEET) as any;
+    const batches: any[][] = [];
+    const written: { range: string; values: string[][] }[] = [];
+
+    service.sheets = {
+      spreadsheets: {
+        get: async () => ({
+          data: { sheets: [{ properties: { title: WORKSHEET, sheetId: SHEET_ID } }] },
+        }),
+        batchUpdate: async ({ resource }: any) => {
+          options.onBatchUpdate?.();
+          batches.push(resource.requests);
+          return {};
+        },
+        values: {
+          update: async ({ range, resource }: any) => {
+            written.push({ range, values: resource.values });
+            return {};
+          },
+          append: async () => ({
+            data: { updates: { updatedRange: `'${WORKSHEET}'!A480:AA480` } },
+          }),
+        },
+      },
+    };
+    // Re-pointing pending proposals is exercised separately; it needs a database.
+    service.shiftPendingProposalRows = async () => {};
+
+    return { service, batches, written };
+  }
+
+  const row = ['10/31/26', 'Saturday', 'Some Group'];
+
+  it('copies formatting from a source row above the insertion point', () => {
+    const { service, batches, written } = fakeService();
+
+    return service.insertRowAt(427, row, 426).then((ok: boolean) => {
+      expect(ok).toBe(true);
+
+      const [insert, copy] = batches[0];
+      expect(insert.insertDimension.range).toMatchObject({
+        sheetId: SHEET_ID,
+        dimension: 'ROWS',
+        startIndex: 426, // 0-indexed row 427
+        endIndex: 427,
+      });
+      expect(insert.insertDimension.inheritFromBefore).toBe(true);
+
+      // Row 426 is above the insert, so it does not move.
+      expect(copy.copyPaste.pasteType).toBe('PASTE_FORMAT');
+      expect(copy.copyPaste.source).toMatchObject({ startRowIndex: 425, endRowIndex: 426 });
+      expect(copy.copyPaste.destination).toMatchObject({ startRowIndex: 426, endRowIndex: 427 });
+
+      expect(written[0].values).toEqual([row]);
+    });
+  });
+
+  it('follows a source row that the insert pushes down', async () => {
+    const { service, batches } = fakeService();
+    // Inserting at 367 and copying from 367: that row becomes 368.
+    await service.insertRowAt(367, row, 367);
+
+    const copy = batches[0][1];
+    expect(copy.copyPaste.source).toMatchObject({ startRowIndex: 367, endRowIndex: 368 });
+    expect(copy.copyPaste.destination).toMatchObject({ startRowIndex: 366, endRowIndex: 367 });
+  });
+
+  it('does the insert and the formatting in one batch, so neither lands alone', async () => {
+    const { service, batches } = fakeService();
+    await service.insertRowAt(427, row, 426);
+
+    expect(batches).toHaveLength(1);
+    expect(batches[0]).toHaveLength(2);
+  });
+
+  it('formats an appended row from the source row', async () => {
+    const { service, batches } = fakeService();
+    const appendedAt = await service.appendRow(row, 446);
+
+    expect(appendedAt).toBe(480);
+    const copy = batches[0][0];
+    expect(copy.copyPaste.pasteType).toBe('PASTE_FORMAT');
+    expect(copy.copyPaste.source).toMatchObject({ startRowIndex: 445, endRowIndex: 446 });
+    expect(copy.copyPaste.destination).toMatchObject({ startRowIndex: 479, endRowIndex: 480 });
+  });
+
+  it('still reports the appended row when formatting it fails', async () => {
+    // The append has already committed the row, so a failure to restyle it must
+    // not surface as a failed push — that would leave the event unmarked and
+    // invite a duplicate, or strand an approved proposal as failed.
+    const { service } = fakeService({
+      onBatchUpdate: () => {
+        throw new Error('Google API unavailable');
+      },
+    });
+
+    await expect(service.appendRow(row, 446)).resolves.toBe(480);
   });
 });

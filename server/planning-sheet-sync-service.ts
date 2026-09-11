@@ -1473,6 +1473,25 @@ export class PlanningSheetSyncService {
       logger.info(context);
     }
 
+    // Logged separately rather than in the note, which is shown to whoever is
+    // pushing. Repeated column headings and "TBD" dates are normal here, so
+    // they are noise in the UI but still worth keeping for diagnostics.
+    if (placement.unreadableDates.length > 0) {
+      logger.info(
+        `[PlanningSheet] ${placement.unreadableDates.length} date cell(s) could not be read: ${placement.unreadableDates
+          .map((u) => `row ${u.rowIndex} "${u.value}"`)
+          .join(', ')}`
+      );
+    }
+
+    if (placement.outOfOrderRows.length > 0) {
+      logger.warn(
+        `[PlanningSheet] ${placement.outOfOrderRows.length} row(s) are dated on the wrong side of row ${placement.insertBeforeRow ?? 'the end'}: ${placement.outOfOrderRows
+          .map((o) => `row ${o.rowIndex} "${o.date}"`)
+          .join(', ')}`
+      );
+    }
+
     return placement;
   }
 
@@ -1557,8 +1576,21 @@ export class PlanningSheetSyncService {
     // The bottom of the sheet can be a trailing week header with no events
     // under it yet, and an appended row takes on whatever formatting is already
     // there. Give it an event row's look instead.
+    //
+    // Best-effort on purpose: the row is already committed by the append above,
+    // so a transient failure here must not be reported as a failed push. That
+    // would leave the event unmarked in the app — inviting a duplicate row on
+    // retry — or strand an approved proposal as 'failed' after it had applied.
+    // Wrong formatting on one row is a far smaller problem than either.
     if (newRowIndex && formatFromRow && formatFromRow !== newRowIndex) {
-      await this.copyRowFormat(formatFromRow, newRowIndex);
+      try {
+        await this.copyRowFormat(formatFromRow, newRowIndex);
+      } catch (error) {
+        logger.warn(
+          `[PlanningSheet] Row ${newRowIndex} was appended but could not be given event-row formatting from row ${formatFromRow}. The row is in the sheet and may need restyling by hand.`,
+          error
+        );
+      }
     }
 
     return newRowIndex;
