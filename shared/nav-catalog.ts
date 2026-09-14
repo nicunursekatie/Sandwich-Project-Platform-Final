@@ -633,6 +633,64 @@ export function getDashboardSectionUrl(section: string): string {
   return `/dashboard?section=${section.slice(0, queryIndex)}&${section.slice(queryIndex + 1)}`;
 }
 
+function splitNavHref(href: string): [string, string] {
+  const queryIndex = href.indexOf('?');
+  if (queryIndex === -1) return [href, ''];
+  return [href.slice(0, queryIndex), href.slice(queryIndex + 1)];
+}
+
+function urlOwnsQuery(candidateHref: string, urlParams: URLSearchParams): boolean {
+  const queryIndex = candidateHref.indexOf('?');
+  if (queryIndex === -1) return false;
+  const candidateParams = new URLSearchParams(candidateHref.slice(queryIndex + 1));
+  return [...candidateParams.entries()].every(([key, value]) => urlParams.get(key) === value);
+}
+
+/**
+ * Whether a catalog href is the single current destination.
+ * When `activeSection` is provided (dashboard sidebar, analytics), it is
+ * authoritative so split-view cannot highlight two items at once. The URL is
+ * only a fallback for callers that omit `activeSection`.
+ */
+export function isNavHrefActive(
+  href: string | undefined,
+  opts: {
+    activeSection?: string;
+    urlSearch?: string;
+    siblingHrefs?: string[];
+  },
+): boolean {
+  if (!href) return false;
+  const { activeSection, urlSearch = '', siblingHrefs = [] } = opts;
+  const [baseHref, hrefQuery] = splitNavHref(href);
+
+  if (activeSection) {
+    if (activeSection === href) return true;
+    const [activeBase] = splitNavHref(activeSection);
+    if (baseHref === 'dashboard') {
+      return activeBase === 'dashboard' || activeBase === '';
+    }
+    if (activeBase !== baseHref) return false;
+    if (hrefQuery) return false;
+    return !siblingHrefs.some(
+      (other) => other !== href && other.startsWith(`${baseHref}?`) && other === activeSection,
+    );
+  }
+
+  const search = urlSearch.startsWith('?') ? urlSearch.slice(1) : urlSearch;
+  const urlParams = new URLSearchParams(search);
+  const urlSection = urlParams.get('section') || '';
+
+  if (baseHref === 'dashboard') {
+    return !urlSection || urlSection === 'dashboard';
+  }
+  if (urlSection !== baseHref) return false;
+  if (hrefQuery) return urlOwnsQuery(href, urlParams);
+  return !siblingHrefs.some(
+    (other) => other !== href && other.startsWith(`${baseHref}?`) && urlOwnsQuery(other, urlParams),
+  );
+}
+
 export function getNavHref(item: Pick<NavCatalogItem, 'href' | 'externalUrl' | 'topNav'>): string {
   if (item.externalUrl) return item.externalUrl;
   if (item.topNav && item.href === 'help') return '/help';

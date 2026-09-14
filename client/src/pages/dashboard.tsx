@@ -231,13 +231,16 @@ function MultiViewSidebar({
     }
 
     if (isMultiViewEnabled) {
+      // Keep panel destinations local. Writing the URL here feeds back through
+      // dashboard URL→activeSection→MultiView sync and can strip query-backed
+      // tabs, and it would also light up a second sidebar item from the URL.
       navigateActivePanel(section);
-    } else {
-      dashboardSetActiveSection(section.split('?')[0]);
+      onMobileClose();
+      return;
     }
 
+    dashboardSetActiveSection(section.split('?')[0]);
     onMobileClose();
-
     window.history.pushState({}, '', getDashboardSectionUrl(section));
   }, [isMultiViewEnabled, activePanel, navigateActivePanel, dashboardSetActiveSection, effectiveActiveSection, onTrackNavigation, onMobileClose, setLocation]);
 

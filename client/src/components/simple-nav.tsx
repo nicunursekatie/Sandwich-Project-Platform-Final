@@ -19,6 +19,7 @@ import {
   getNavHref,
   isExternalNavItem,
   isNavCatalogItemVisible,
+  isNavHrefActive,
 } from '@shared/nav-catalog';
 
 export default function SimpleNav({
@@ -145,57 +146,13 @@ export default function SimpleNav({
       setCollapsedSections(next);
     };
 
-    const isActive = (href: string | undefined) => {
-      if (!href) return false;
-      // Panel-local destinations (multi-view) store the catalog href, including
-      // query strings, without writing them onto window.location.
-      if (activeSection === href) return true;
-
-      const [baseHref, hrefQuery] = (() => {
-        const idx = href.indexOf('?');
-        if (idx === -1) return [href, ''];
-        return [href.slice(0, idx), href.slice(idx + 1)];
-      })();
-
-      if (baseHref === 'dashboard') {
-        const urlSection = typeof window === 'undefined'
-          ? null
-          : new URLSearchParams(window.location.search).get('section');
-        if (urlSection && urlSection !== 'dashboard') return false;
-        const activeBase = (activeSection || '').split('?')[0];
-        return !activeBase || activeBase === 'dashboard' || activeBase === '';
-      }
-
-      const urlParams = typeof window === 'undefined'
-        ? new URLSearchParams()
-        : new URLSearchParams(window.location.search);
-      const urlSection = urlParams.get('section') || '';
-      const activeBase = (activeSection || '').split('?')[0];
-      const sectionMatches =
-        activeBase === baseHref ||
-        urlSection === baseHref;
-
-      if (!sectionMatches) return false;
-
-      const queryOwnedBy = (candidateHref: string) => {
-        const queryIndex = candidateHref.indexOf('?');
-        if (queryIndex === -1) return false;
-        if (activeSection === candidateHref) return true;
-        const candidateQuery = candidateHref.slice(queryIndex + 1);
-        const candidateParams = new URLSearchParams(candidateQuery);
-        return [...candidateParams.entries()].every(([key, value]) => urlParams.get(key) === value);
-      };
-
-      if (hrefQuery) {
-        return queryOwnedBy(href);
-      }
-
-      const siblingOwnsQuery = displayNavigationItems.some((other) => {
-        if (other.href === href) return false;
-        return other.href.startsWith(`${baseHref}?`) && queryOwnedBy(other.href);
+    const siblingHrefs = displayNavigationItems.map((item) => item.href);
+    const isActive = (href: string | undefined) =>
+      isNavHrefActive(href, {
+        activeSection,
+        urlSearch: typeof window === 'undefined' ? '' : window.location.search,
+        siblingHrefs,
       });
-      return !siblingOwnsQuery;
-    };
 
     const getBadgeCount = (itemId: string) => {
       switch (itemId) {

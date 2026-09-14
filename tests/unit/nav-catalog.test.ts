@@ -8,6 +8,7 @@ import {
   isExternalNavItem,
   getNavHref,
   getDashboardSectionUrl,
+  isNavHrefActive,
 } from '../../shared/nav-catalog';
 import { PERMISSION_GROUPS } from '../../shared/permission-config';
 
@@ -81,5 +82,31 @@ describe('nav catalog', () => {
     expect(getDashboardSectionUrl('event-requests?tab=planning')).toBe(
       '/dashboard?section=event-requests&tab=planning',
     );
+  });
+
+  it('highlights only the focused destination when activeSection is set', () => {
+    const siblings = [
+      'event-requests',
+      'event-requests?tab=planning',
+      'event-requests?tab=admin_overview',
+      'chat',
+    ];
+    const opts = {
+      activeSection: 'chat',
+      urlSearch: '?section=event-requests&tab=planning',
+      siblingHrefs: siblings,
+    };
+    expect(isNavHrefActive('chat', opts)).toBe(true);
+    expect(isNavHrefActive('event-requests', opts)).toBe(false);
+    expect(isNavHrefActive('event-requests?tab=planning', opts)).toBe(false);
+
+    const planning = {
+      activeSection: 'event-requests?tab=planning',
+      urlSearch: '?section=event-requests&tab=admin_overview',
+      siblingHrefs: siblings,
+    };
+    expect(isNavHrefActive('event-requests?tab=planning', planning)).toBe(true);
+    expect(isNavHrefActive('event-requests?tab=admin_overview', planning)).toBe(false);
+    expect(isNavHrefActive('event-requests', planning)).toBe(false);
   });
 });
