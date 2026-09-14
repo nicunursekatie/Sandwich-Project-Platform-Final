@@ -111,6 +111,8 @@ export const PERMISSION_RISK_LEVELS: Record<string, PermissionRiskLevel> = {
   [PERMISSIONS.NAV_DOCUMENT_MANAGEMENT]: 'safe',
   [PERMISSIONS.NAV_USER_MANAGEMENT]: 'safe',
   [PERMISSIONS.NAV_TOOLKIT]: 'safe',
+  [PERMISSIONS.NAV_FLYERS]: 'safe',
+  [PERMISSIONS.NAV_VOLUNTEER_HANDBOOK]: 'safe',
 
   // SAFE - Chat access (read-only communication)
   [PERMISSIONS.CHAT_GENERAL]: 'safe',

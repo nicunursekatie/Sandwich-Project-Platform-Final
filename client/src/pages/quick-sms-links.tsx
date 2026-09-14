@@ -36,7 +36,7 @@ export default function QuickSMSLinks() {
     (item) => item.href
   ).map((item) => ({
     value: item.href!,
-    label: item.isSubItem ? `  → ${item.label}` : item.label, // Indent sub-items visually
+    label: item.label,
   }));
 
   const sendSMSMutation = useMutation({

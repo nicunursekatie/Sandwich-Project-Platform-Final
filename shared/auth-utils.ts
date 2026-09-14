@@ -347,6 +347,8 @@ export const PERMISSIONS = {
   NAV_SMART_SEARCH_ADMIN: 'NAV_SMART_SEARCH_ADMIN', // Access to SmartSearch AI admin
   NAV_QUICK_TOOLS: 'NAV_QUICK_TOOLS', // Access to Quick Tools
   NAV_DOCUMENTS: 'NAV_DOCUMENTS', // Access to Documents section
+  NAV_FLYERS: 'NAV_FLYERS', // Access to Flyers tab
+  NAV_VOLUNTEER_HANDBOOK: 'NAV_VOLUNTEER_HANDBOOK', // Access to Volunteer Handbook (external)
 
   // VOLUNTEER / DRIVER HUB - Signup approval
   VOLUNTEER_SIGNUP_APPROVE: 'VOLUNTEER_SIGNUP_APPROVE', // Approve/decline volunteer signups from the Volunteer Event Hub
@@ -639,6 +641,10 @@ export function getDefaultPermissionsForRole(role: string): string[] {
     case USER_ROLES.VOLUNTEER:
       return [
         // Navigation permissions
+        PERMISSIONS.NAV_DASHBOARD,
+        PERMISSIONS.NAV_FLYERS,
+        PERMISSIONS.NAV_VOLUNTEER_HANDBOOK,
+        PERMISSIONS.NAV_IMPORTANT_LINKS,
         PERMISSIONS.NAV_PROMOTION,
 
         PERMISSIONS.COLLECTIONS_VIEW,
@@ -838,6 +844,8 @@ export function getDefaultPermissionsForRole(role: string): string[] {
         PERMISSIONS.NAV_SMART_SEARCH_ADMIN,
         PERMISSIONS.NAV_QUICK_TOOLS,
         PERMISSIONS.NAV_DOCUMENTS,
+        PERMISSIONS.NAV_FLYERS,
+        PERMISSIONS.NAV_VOLUNTEER_HANDBOOK,
 
         // All VIEW permissions - can see everything
         PERMISSIONS.ADMIN_ACCESS,

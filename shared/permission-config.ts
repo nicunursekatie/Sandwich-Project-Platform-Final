@@ -1,4 +1,5 @@
 import { PERMISSIONS } from './auth-utils';
+import { getNavigationTabPermissionKeys, getNavLabelForPermission } from './nav-catalog';
 
 /**
  * Permission Groups for UI Organization
@@ -330,72 +331,7 @@ export const PERMISSION_GROUPS = {
   },
   NAVIGATION: {
     label: 'Navigation Tabs',
-    permissions: [
-      // Dashboard
-      PERMISSIONS.NAV_MY_ACTIONS,
-      PERMISSIONS.NAV_MY_AVAILABILITY,
-      PERMISSIONS.NAV_TEAM_AVAILABILITY,
-      PERMISSIONS.NAV_VOLUNTEER_CALENDAR,
-
-      // Collections
-      PERMISSIONS.NAV_COLLECTIONS_LOG,
-
-      // Communication
-      PERMISSIONS.NAV_TEAM_CHAT,
-      PERMISSIONS.NAV_INBOX,
-      PERMISSIONS.NAV_SUGGESTIONS,
-      PERMISSIONS.VIEW_HOLDING_ZONE,
-      PERMISSIONS.NAV_YEARLY_CALENDAR,
-      PERMISSIONS.NAV_PROMOTION,
-      PERMISSIONS.NAV_QUICK_SMS_LINKS,
-
-      // Operations
-      PERMISSIONS.NAV_HOSTS,
-      PERMISSIONS.NAV_DRIVERS,
-      PERMISSIONS.NAV_VOLUNTEERS,
-      PERMISSIONS.NAV_RECIPIENTS,
-      PERMISSIONS.NAV_GROUPS_CATALOG,
-      PERMISSIONS.NAV_DISTRIBUTION_TRACKING,
-      PERMISSIONS.NAV_INVENTORY_CALCULATOR,
-      PERMISSIONS.NAV_WORK_LOG,
-      PERMISSIONS.NAV_EXPENSES,
-      PERMISSIONS.NAV_COOLER_TRACKING,
-
-      // Event Planning
-      PERMISSIONS.NAV_EVENT_PLANNING,
-      PERMISSIONS.NAV_DRIVER_PLANNING,
-      PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW,
-      PERMISSIONS.NAV_EVENT_REMINDERS,
-      PERMISSIONS.NAV_SIGNUP_GENIUS,
-      PERMISSIONS.NAV_EVENTS_GOOGLE_SHEET,
-
-      // Strategic Planning
-      PERMISSIONS.NAV_PROJECTS,
-      PERMISSIONS.NAV_MEETINGS,
-
-      // Analytics & Reports
-      PERMISSIONS.NAV_ANALYTICS,
-      PERMISSIONS.NAV_GRANT_METRICS,
-      PERMISSIONS.NAV_WEEKLY_MONITORING,
-
-      // Documentation
-      PERMISSIONS.NAV_RESOURCES,
-      PERMISSIONS.NAV_IMPORTANT_LINKS,
-      PERMISSIONS.NAV_AUTO_FORM_FILLER,
-      PERMISSIONS.NAV_SERVICE_HOURS_FORM,
-      PERMISSIONS.NAV_WISHLIST,
-      PERMISSIONS.NAV_DOCUMENT_MANAGEMENT,
-      PERMISSIONS.NAV_VOLUNTEER_HUB,
-      PERMISSIONS.NAV_HOST_RESOURCES,
-
-      // Admin
-      PERMISSIONS.ADMIN_PANEL_ACCESS,
-      PERMISSIONS.NAV_USER_MANAGEMENT,
-      PERMISSIONS.NAV_HISTORICAL_IMPORT,
-
-      // Help
-      PERMISSIONS.NAV_HELP,
-    ],
+    permissions: getNavigationTabPermissionKeys(),
   },
 } as const;
 
@@ -403,11 +339,11 @@ export const PERMISSION_GROUPS = {
  * Get human-readable label for a permission
  */
 export function getPermissionLabel(permission: string): string {
+  const navLabel = getNavLabelForPermission(permission);
+  if (navLabel) return navLabel;
+
   // Custom labels for specific permissions
   const customLabels: Record<string, string> = {
-    [PERMISSIONS.NAV_IMPORTANT_LINKS]: 'Nav Quick Tools',
-    [PERMISSIONS.NAV_PROMOTION]: 'Nav Social Media Graphics',
-    [PERMISSIONS.NAV_VOLUNTEER_HUB]: 'Open Volunteer Hub',
     [PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP]: 'Volunteer Hub: Sign Yourself Up',
     [PERMISSIONS.EVENT_REQUESTS_ASSIGN_OTHERS]: 'Volunteer Hub: Assign Someone Else',
     [PERMISSIONS.VOLUNTEER_SIGNUP_APPROVE]: 'Approve Volunteer Signups',

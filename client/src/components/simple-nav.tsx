@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { useLocation } from 'wouter';
 import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
 import type { UserForPermissions } from '@shared/types';
@@ -10,37 +7,29 @@ import { useMessaging } from '@/hooks/useMessaging';
 import { useStreamChatUnread } from '@/hooks/useStreamChatUnread';
 import { useQuery } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { HelpBubble } from '@/components/help-system/HelpBubble';
 import { NavItem } from '@/nav.types';
-import sandwich_logo from '@assets/LOGOS/sandwich logo.png';
-// tsp_wordmark import removed — the sidebar brand block was redundant with
-// the TSP logo + name already shown in the top navigation bar. Convention:
-// brand anchors in the top-left top-nav slot (already present in dashboard.tsx),
-// the sidebar is for navigation. Removing the duplicate frees ~70px of
-// vertical space so primary nav items sit higher up the screen.
+import { NAV_ITEMS } from '@/nav.config';
 import { logger } from '@/lib/logger';
-import { ChevronDown, ChevronRight, ExternalLink, ChevronsUp } from 'lucide-react';
-// SmartSearch import removed — its UI was consolidated into UnifiedTopSearch
-// in the top navigation header. The endpoint it called
-// (/api/smart-search/fuzzy) is now used by the unified bar.
+import { ChevronDown, ChevronRight, ExternalLink, ChevronsUp, ChevronsDown } from 'lucide-react';
 import { OnboardingTooltip } from '@/components/ui/onboarding-tooltip';
 import { useOnboarding, OnboardingStep } from '@/hooks/useOnboarding';
 import { useNavViewModeOptional } from '@/contexts/nav-view-mode-context';
+import { buildNavSectionGroups, NAV_GROUP_LABELS } from '@/lib/nav-sidebar-layout';
 import {
-  buildNavSectionGroups,
-  buildPromotedSidebarNavItems,
-  filterItemsForSidebarSections,
-  isPromotedSidebarNavItem,
-  NAV_GROUP_LABELS,
-} from '@/lib/nav-sidebar-layout';
+  getNavHref,
+  isExternalNavItem,
+  isNavCatalogItemVisible,
+  isNavHrefActive,
+} from '@shared/nav-catalog';
 
 export default function SimpleNav({
-  navigationItems,
+  navigationItems = NAV_ITEMS,
   onSectionChange,
   activeSection,
   isCollapsed = false,
 }: {
-  navigationItems: NavItem[];
+  navigationItems?: NavItem[];
+  /** Catalog href, including query strings (e.g. event-requests?tab=planning). Use getDashboardSectionUrl to navigate. */
   onSectionChange: (section: string) => void;
   activeSection?: string;
   isCollapsed?: boolean;
@@ -48,22 +37,10 @@ export default function SimpleNav({
   try {
     const { user } = useAuth();
     const navViewMode = useNavViewModeOptional();
-    const [location, setLocation] = useLocation();
-    const { unreadCounts, totalUnread } = useMessaging();
-    const { totalUnread: streamChatUnread, dmsUnread, groupsUnread, roomsUnread } = useStreamChatUnread();
+    const { unreadCounts } = useMessaging();
+    const { dmsUnread, groupsUnread, roomsUnread } = useStreamChatUnread();
 
-    // ── Persisted sidebar state ────────────────────────────────────────
-    // Both collapsedSections and expandedParents are persisted to
-    // localStorage so the sidebar's shape stays consistent across reloads
-    // and tabs. Previously these reset to defaults on every page load, which
-    // made the sidebar feel like it was "context-switching" because
-    // different parent items would be expanded depending on when the page
-    // was loaded.
-    //
-    // Versioned keys (`v1` suffix): bump if the default sets change so an
-    // old persisted state doesn't trap a user in a stale shape.
-    const COLLAPSED_SECTIONS_KEY = 'sidebar.collapsedSections.v1';
-    const EXPANDED_PARENTS_KEY = 'sidebar.expandedParents.v1';
+    const COLLAPSED_SECTIONS_KEY = 'sidebar.collapsedSections.v2';
 
     const loadPersistedSet = (key: string, fallback: string[]): Set<string> => {
       try {
@@ -81,36 +58,22 @@ export default function SimpleNav({
       try {
         localStorage.setItem(key, JSON.stringify(Array.from(value)));
       } catch {
-        // localStorage may be disabled / over quota — fail silently so the
-        // sidebar still works in-session.
+        // localStorage may be disabled / over quota
       }
     };
 
-    // State for collapsible sections — default to all-expanded (empty Set).
     const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
-      () => loadPersistedSet(COLLAPSED_SECTIONS_KEY, [])
+      () => loadPersistedSet(COLLAPSED_SECTIONS_KEY, []),
     );
 
-    // State for expanded parent items (like TSP Network). Default opens the
-    // most commonly accessed parents so first-time visitors see useful
-    // content. Returning users get whatever state they left it in.
-    const [expandedParents, setExpandedParents] = useState<Set<string>>(
-      () => loadPersistedSet(EXPANDED_PARENTS_KEY, ['tsp-network', 'collections', 'chat', 'event-requests'])
-    );
-
-    // Persist on change.
     useEffect(() => {
       persistSet(COLLAPSED_SECTIONS_KEY, collapsedSections);
     }, [collapsedSections]);
-    useEffect(() => {
-      persistSet(EXPANDED_PARENTS_KEY, expandedParents);
-    }, [expandedParents]);
 
-    // Get Gmail inbox unread count
     const { data: gmailUnreadCount = 0 } = useQuery({
-      queryKey: ['/api/emails/unread-count', (user as any)?.id || 'no-user'],
+      queryKey: ['/api/emails/unread-count', (user as { id?: string } | null)?.id || 'no-user'],
       queryFn: async () => {
-        if (!(user as any)?.id) return 0;
+        if (!(user as { id?: string } | null)?.id) return 0;
         try {
           const response = await apiRequest('GET', '/api/emails/unread-count');
           return typeof response?.count === 'number' ? response.count : 0;
@@ -119,16 +82,15 @@ export default function SimpleNav({
           return 0;
         }
       },
-      enabled: !!(user as any)?.id,
-      refetchInterval: 2 * 60 * 1000, // 2 minutes (reduced from 30 seconds for cost optimization)
+      enabled: !!(user as { id?: string } | null)?.id,
+      refetchInterval: 2 * 60 * 1000,
       retry: false,
     });
 
-    // Get event reminders pending count
     const { data: remindersCount = 0 } = useQuery({
-      queryKey: ['/api/event-reminders/count', (user as any)?.id || 'no-user'],
+      queryKey: ['/api/event-reminders/count', (user as { id?: string } | null)?.id || 'no-user'],
       queryFn: async () => {
-        if (!(user as any)?.id) return 0;
+        if (!(user as { id?: string } | null)?.id) return 0;
         try {
           const response = await apiRequest('GET', '/api/event-reminders/count');
           return typeof response?.count === 'number' ? response.count : 0;
@@ -137,186 +99,67 @@ export default function SimpleNav({
           return 0;
         }
       },
-      enabled: !!(user as any)?.id,
+      enabled: !!(user as { id?: string } | null)?.id,
       refetchInterval: 60000,
       retry: false,
     });
 
-    // Filter navigation items based on user permissions and exclude topNav items
-    const permissionFilteredItems = navigationItems.filter(item => {
-      // Exclude items marked for top nav
-      if (item.topNav) {
-        return false;
-      }
-      if (!item.permission) {
-        return true;
-      }
-      // Cast user to UserForPermissions to satisfy type requirements
-      const userForPermissions: UserForPermissions | null | undefined = user ? {
-        id: user.id,
-        email: user.email,
-        role: user.role,
-        permissions: (user.permissions as string[] | number | null | undefined) ?? null,
-        isActive: user.isActive,
-      } : null;
-      return hasPermission(userForPermissions, item.permission);
+    const userForPermissions: UserForPermissions | null | undefined = user
+      ? {
+          id: user.id,
+          email: user.email,
+          role: user.role,
+          permissions: (user.permissions as string[] | number | null | undefined) ?? null,
+          isActive: user.isActive,
+        }
+      : null;
+
+    const permissionFilteredItems = navigationItems.filter((item) => {
+      if (item.topNav) return false;
+      return isNavCatalogItemVisible(item, {
+        isAuthenticated: Boolean(user),
+        hasPermission: hasPermission(userForPermissions, item.permissionKey),
+      });
     });
 
-    // Second pass: hide parent items that have no visible children
-    const filteredNavigationItems = permissionFilteredItems.filter(item => {
-      // If this item is a sub-item, keep it
-      if (item.isSubItem) {
-        return true;
-      }
-      // Check if this item is a parent (has children in the original nav items)
-      const hasChildrenInConfig = navigationItems.some(navItem => navItem.parentId === item.id);
-      if (!hasChildrenInConfig) {
-        // Not a parent, keep it
-        return true;
-      }
-      // This is a parent - check if it has any visible children
-      const hasVisibleChildren = permissionFilteredItems.some(navItem => navItem.parentId === item.id);
-      return hasVisibleChildren;
-    });
+    const displayNavigationItems =
+      navViewMode?.applyUserViewFilter(permissionFilteredItems) ?? permissionFilteredItems;
 
-    // User View preview — admin-only; further limits visible tabs
-    const displayNavigationItems = navViewMode?.applyUserViewFilter(filteredNavigationItems)
-      ?? filteredNavigationItems;
+    const sectionGroups = buildNavSectionGroups(displayNavigationItems);
 
-    const dashboardItem = displayNavigationItems.find((item) => item.id === 'dashboard');
-    const promotedNavItems = buildPromotedSidebarNavItems(displayNavigationItems);
-    const sectionGroups = buildNavSectionGroups(
-      filterItemsForSidebarSections(displayNavigationItems),
-    );
-
-    const hasExpandableNavState =
-      expandedParents.size > 0 ||
-      sectionGroups.some(({ group }) => !collapsedSections.has(group));
+    const allSectionsCollapsed =
+      sectionGroups.length > 0 &&
+      sectionGroups.every(({ group }) => collapsedSections.has(group));
 
     const collapseAllNav = () => {
       setCollapsedSections(new Set(sectionGroups.map(({ group }) => group)));
-      setExpandedParents(new Set());
     };
 
-    // Toggle section collapse
+    const expandAllNav = () => {
+      setCollapsedSections(new Set());
+    };
+
     const toggleSection = (group: string) => {
-      const newCollapsed = new Set(collapsedSections);
-      if (newCollapsed.has(group)) {
-        newCollapsed.delete(group);
-      } else {
-        newCollapsed.add(group);
-      }
-      setCollapsedSections(newCollapsed);
+      const next = new Set(collapsedSections);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
+      setCollapsedSections(next);
     };
 
-    // Toggle parent item expansion
-    const toggleParent = (parentId: string) => {
-      const newExpanded = new Set(expandedParents);
-      if (newExpanded.has(parentId)) {
-        newExpanded.delete(parentId);
-      } else {
-        newExpanded.add(parentId);
-      }
-      setExpandedParents(newExpanded);
-    };
-
-    const isActive = (href: string | undefined) => {
-      // Guard against undefined href
-      if (!href) return false;
-      // Base section (everything before the query string) and the query portion.
-      // Sub-items that target a specific tab carry a query string in their href
-      // (e.g. "event-requests?tab=admin_overview"). Previously we stripped query
-      // params and only compared bases — which made the parent ("event-requests")
-      // and any same-page sub-item both light up when on the parent page. Now we
-      // compare the full href whenever a query is present so a sub-item only
-      // activates when the URL actually carries the matching tab.
-      const [baseHref, hrefQuery] = (() => {
-        const idx = href.indexOf('?');
-        if (idx === -1) return [href, ''];
-        return [href.slice(0, idx), href.slice(idx + 1)];
-      })();
-      const hrefHasQuery = hrefQuery.length > 0;
-
-      if (activeSection) {
-        if (baseHref === 'dashboard')
-          return activeSection === 'dashboard' || activeSection === '';
-        // When the sub-item targets a specific tab, require an exact match
-        // against the full activeSection (which carries the query when set).
-        if (hrefHasQuery) return activeSection === href;
-        // For tab-less items, only match when activeSection has no tab either —
-        // otherwise the parent would steal the highlight from its own sub-items.
-        return activeSection === baseHref;
-      }
-
-      if (baseHref === 'dashboard')
-        return location === '/' || location === '/dashboard';
-      // URL-fallback path: read the actual query string off window.location so
-      // tab-specific sub-items only match when the URL has the same tab param.
-      if (hrefHasQuery) {
-        if (typeof window === 'undefined') return false;
-        const currentSearch = window.location.search.startsWith('?')
-          ? window.location.search.slice(1)
-          : window.location.search;
-        return location === `/${baseHref}` && currentSearch === hrefQuery;
-      }
-      return location === `/${baseHref}`;
-    };
-
-    const getGroupLabel = (group: string) => {
-      return NAV_GROUP_LABELS[group] || group.toUpperCase();
-    };
-
-    const getGroupColors = (group: string) => {
-      const colorMap: Record<string, { bg: string; hover: string; border: string; gradient: string }> = {
-        'events': {
-          bg: 'bg-[#007E8C]',
-          hover: 'hover:bg-[#006270]',
-          border: 'border-l-[#47B3CB]',
-          gradient: 'from-[#007E8C] to-[#006270]'
-        },
-        'network': {
-          bg: 'bg-[#47B3CB]',
-          hover: 'hover:bg-[#3A9AB5]',
-          border: 'border-l-[#007E8C]',
-          gradient: 'from-[#47B3CB] to-[#3A9AB5]'
-        },
-        'communication': {
-          bg: 'bg-brand-primary',
-          hover: 'hover:bg-brand-primary-dark',
-          border: 'border-l-brand-orange',
-          gradient: 'from-brand-primary to-brand-primary-dark'
-        },
-        'resources': {
-          bg: 'bg-[#007E8C]',
-          hover: 'hover:bg-[#006270]',
-          border: 'border-l-[#47B3CB]',
-          gradient: 'from-[#007E8C] to-[#006270]'
-        },
-        'data': {
-          bg: 'bg-[#47B3CB]',
-          hover: 'hover:bg-[#3A9AB5]',
-          border: 'border-l-brand-orange',
-          gradient: 'from-[#47B3CB] to-[#3A9AB5]'
-        },
-        'settings': {
-          bg: 'bg-slate-600',
-          hover: 'hover:bg-slate-700',
-          border: 'border-l-slate-400',
-          gradient: 'from-slate-600 to-slate-700'
-        }
-      };
-      return colorMap[group] || colorMap['events'];
-    };
+    const siblingHrefs = displayNavigationItems.map((item) => item.href);
+    const isActive = (href: string | undefined) =>
+      isNavHrefActive(href, {
+        activeSection,
+        urlSearch: typeof window === 'undefined' ? '' : window.location.search,
+        siblingHrefs,
+      });
 
     const getBadgeCount = (itemId: string) => {
       switch (itemId) {
         case 'gmail-inbox':
-          return gmailUnreadCount;
         case 'inbox-consolidated':
-          // Project Threads uses the email system, so use gmail unread count
           return gmailUnreadCount;
         case 'chat':
-          // Show only room unread count on the parent item (DMs/groups have their own badges)
           return roomsUnread || 0;
         case 'chat-dms':
           return dmsUnread || 0;
@@ -333,7 +176,6 @@ export default function SimpleNav({
       }
     };
 
-    // Map nav item IDs to onboarding steps
     const getOnboardingStep = (itemId: string): OnboardingStep | null => {
       switch (itemId) {
         case 'gmail-inbox':
@@ -353,154 +195,52 @@ export default function SimpleNav({
       }
     };
 
-    // Track if we've shown the first badge intro
-    const { shouldShowStep, completeStep } = useOnboarding();
+    const { shouldShowStep } = useOnboarding();
     const [hasShownFirstBadge, setHasShownFirstBadge] = useState(false);
+    const firstItemWithBadge = displayNavigationItems.find((item) => getBadgeCount(item.id) > 0);
+    const showNavBadgeIntro =
+      firstItemWithBadge && shouldShowStep('nav-badge-intro') && !hasShownFirstBadge;
 
-    // Find the first item with a badge to show the intro tooltip
-    const firstItemWithBadge = displayNavigationItems.find(item => getBadgeCount(item.id) > 0);
-    const showNavBadgeIntro = firstItemWithBadge && shouldShowStep('nav-badge-intro') && !hasShownFirstBadge;
-
-    const renderSectionHeader = (group: string, key: string) => {
-      if (isCollapsed) return null;
-      const isCollapsedSection = collapsedSections.has(group);
-      const groupColors = getGroupColors(group);
-      return (
-        <div key={key} className="mt-4 mb-3">
-          <button
-            type="button"
-            onClick={() => toggleSection(group)}
-            className={`w-full rounded-lg px-3 py-2.5 mb-2 shadow-sm ${groupColors.bg} ${groupColors.hover} transition-colors cursor-pointer flex items-center justify-between group`}
-          >
-            <div className="font-bold text-white tracking-wide text-base flex-1 text-left">
-              {getGroupLabel(group)}
-            </div>
-            {isCollapsedSection ? (
-              <ChevronRight className="w-5 h-5 text-white/80 group-hover:scale-110 transition-transform" />
-            ) : (
-              <ChevronDown className="w-5 h-5 text-white/80 group-hover:scale-110 transition-transform" />
-            )}
-          </button>
-          <div className={`border-t ${groupColors.bg} opacity-30 mx-2`} />
-        </div>
-      );
-    };
+    const sectionContainsActive = (items: NavItem[]) => items.some((item) => isActive(item.href));
 
     const renderNavItem = (item: NavItem) => {
       const badgeCount = getBadgeCount(item.id);
-
       if (!item.href) {
         logger.warn('Navigation item missing href:', { id: item.id, label: item.label });
       }
 
       const active = isActive(item.href);
-      const itemColors = getGroupColors(item.group || 'events');
-
-      const isInCollapsedSection =
-        !isPromotedSidebarNavItem(item) &&
-        item.group &&
-        collapsedSections.has(item.group) &&
-        item.group !== 'dashboard';
-      if (isInCollapsedSection) {
-        return null;
-      }
-
-      const hasChildren = displayNavigationItems.some((navItem) => navItem.parentId === item.id);
-      const isExpanded = expandedParents.has(item.id);
-
-      if (item.isSubItem && item.parentId && !expandedParents.has(item.parentId)) {
-        return null;
-      }
-
+      const href = getNavHref(item);
+      const external = isExternalNavItem(item);
       const IconComponent = item.icon;
-      const iconSizeClass = item.isSubItem ? 'h-4 w-4' : 'h-5 w-5';
 
-      return (
-        <Button
-          key={item.id}
-          variant={active ? 'default' : 'ghost'}
-          data-nav-level={item.isSubItem ? 'child' : 'parent'}
-          className={`
-              w-full ${
-                isCollapsed
-                  ? 'justify-center px-2 h-12'
-                  : item.isSubItem
-                    ? 'justify-start pl-3 pr-2 ml-5 mr-1 border-l-2 border-slate-300/80 rounded-l-none rounded-r-md h-11'
-                    : 'justify-start px-3 sm:px-3.5 h-12'
-              } text-left touch-manipulation relative ${
-                item.isSubItem
-                  ? 'text-sm sm:text-base font-semibold text-slate-700'
-                  : 'text-base sm:text-[17px] font-bold text-slate-900'
-              }
-              ${
-                active
-                  ? `bg-gradient-to-r ${itemColors.gradient} hover:shadow-lg text-white shadow-md border-l-4 ${itemColors.border} rounded-lg transition-all duration-200`
-                  : item.highlighted
-                    ? 'hover:bg-[#006e7e]/10 text-[#006e7e] font-bold rounded-lg hover:shadow-sm transition-all duration-200'
-                    : item.accentColor
-                      ? 'hover:bg-gradient-to-br hover:from-[#007E8C]/5 hover:to-[#007E8C]/10 rounded-lg hover:shadow-sm transition-all duration-200 font-bold'
-                      : item.isSubItem
-                        ? 'hover:bg-slate-100/90 hover:border-slate-400/80 transition-all duration-200'
-                        : 'hover:bg-gradient-to-br hover:from-slate-50 hover:to-slate-100 text-slate-800 rounded-lg hover:shadow-sm transition-all duration-200 font-bold'
-              }
-            `}
-          style={!active && item.accentColor ? { color: item.accentColor } : undefined}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
+      const className = `
+        w-full flex items-center ${
+          isCollapsed ? 'justify-center px-2 h-12' : 'justify-start px-3 sm:px-3.5 h-12'
+        } text-left touch-manipulation relative text-base sm:text-[17px] font-bold rounded-lg transition-all duration-200
+        ${
+          active
+            ? 'bg-brand-primary text-white shadow-md border-l-4 border-brand-primary-dark'
+            : 'text-slate-800 hover:bg-slate-100 hover:shadow-sm'
+        }
+      `;
 
-            if (hasChildren) {
-              toggleParent(item.id);
-              if (!item.navigateAndExpand) {
-                return;
-              }
-            }
-
-            if (!item.href) return;
-
-            if (item.externalUrl) {
-              window.open(item.externalUrl, '_blank', 'noopener,noreferrer');
-              return;
-            }
-
-            if (item.external) {
-              setLocation(item.href);
-              return;
-            }
-
-            if (item.href.includes('?')) {
-              const [baseSection, queryString] = item.href.split('?');
-              setLocation(`/dashboard?section=${baseSection}&${queryString}`);
-            } else {
-              onSectionChange(item.href);
-            }
-
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
-          title={isCollapsed ? item.label : undefined}
-          data-nav-id={item.id}
-          data-testid={`nav-${item.id}`}
-        >
-          {item.customIcon ? (
-            <img
-              src={sandwich_logo}
-              alt={item.label}
-              className={`${iconSizeClass} flex-shrink-0 ${
-                isCollapsed ? '' : 'mr-2.5 sm:mr-3'
-              } ${item.highlighted && !active ? 'opacity-90' : ''}`}
-            />
-          ) : IconComponent ? (
+      const content = (
+        <>
+          {IconComponent ? (
             <IconComponent
-              className={`${iconSizeClass} flex-shrink-0 ${
-                isCollapsed ? '' : 'mr-2.5 sm:mr-3'
-              } ${item.highlighted && !active ? 'text-[#47B3CB]' : ''}`}
+              className={`h-5 w-5 flex-shrink-0 ${isCollapsed ? '' : 'mr-2.5 sm:mr-3'}`}
+              aria-hidden="true"
             />
           ) : null}
           {!isCollapsed && (
             <>
               <span className="flex-1 text-left font-bold leading-snug">{item.label}</span>
-              {item.externalUrl && (
-                <ExternalLink className={`h-3 w-3 flex-shrink-0 ml-1 ${active ? 'text-white/70' : 'text-slate-400'}`} />
+              {external && (
+                <ExternalLink
+                  className={`h-3 w-3 flex-shrink-0 ml-1 ${active ? 'text-white/70' : 'text-slate-400'}`}
+                  aria-hidden="true"
+                />
               )}
               {item.id === 'quick-tools' && shouldShowStep('toolkit-apps-intro') && (
                 <OnboardingTooltip
@@ -510,7 +250,7 @@ export default function SimpleNav({
                   delay={2000}
                   completeOnChildClick={true}
                 >
-                  <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[#47B3CB] text-white text-[9px] font-bold animate-bounce">
+                  <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-brand-light-blue text-white text-[9px] font-bold animate-bounce">
                     !
                   </span>
                 </OnboardingTooltip>
@@ -556,19 +296,42 @@ export default function SimpleNav({
                   )}
                 </>
               )}
-              {hasChildren && (
-                <div className="ml-2">
-                  {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                </div>
-              )}
             </>
           )}
-        </Button>
+        </>
+      );
+
+      const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+        if (external) return;
+        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+          return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        onSectionChange(item.href);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      };
+
+      return (
+        <a
+          key={item.id}
+          href={href}
+          className={className}
+          title={isCollapsed ? item.label : undefined}
+          data-nav-id={item.id}
+          data-testid={`nav-${item.id}`}
+          aria-current={active ? 'page' : undefined}
+          target={external ? '_blank' : undefined}
+          rel={external ? 'noopener noreferrer' : undefined}
+          onClick={handleClick}
+        >
+          {content}
+        </a>
       );
     };
 
     return (
-      <nav className="flex flex-col gap-2 p-3" data-tour="navigation">
+      <nav className="flex flex-col gap-2 p-3" data-tour="navigation" aria-label="Primary">
         {navViewMode?.isUserViewActive && !isCollapsed && (
           <div
             className="mx-1 mb-2 rounded-md border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs text-amber-900"
@@ -581,34 +344,78 @@ export default function SimpleNav({
           </div>
         )}
 
-        {!isCollapsed && hasExpandableNavState && (
+        {!isCollapsed && sectionGroups.length > 0 && (
           <button
             type="button"
-            onClick={collapseAllNav}
+            onClick={allSectionsCollapsed ? expandAllNav : collapseAllNav}
             className="mx-1 mb-1 flex w-[calc(100%-0.5rem)] items-center justify-center gap-1.5 rounded-md border border-slate-200 bg-white/90 px-2 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors"
             data-testid="nav-collapse-all"
           >
-            <ChevronsUp className="h-3.5 w-3.5" />
-            Collapse all
+            {allSectionsCollapsed ? (
+              <>
+                <ChevronsDown className="h-3.5 w-3.5" />
+                Expand all
+              </>
+            ) : (
+              <>
+                <ChevronsUp className="h-3.5 w-3.5" />
+                Collapse all
+              </>
+            )}
           </button>
         )}
 
-        {dashboardItem && renderNavItem(dashboardItem)}
+        {sectionGroups.map(({ group, items }) => {
+          const sectionId = `nav-section-${group}`;
+          const isSectionCollapsed = collapsedSections.has(group);
+          const containsActive = sectionContainsActive(items);
+          const headerActive = containsActive;
 
-        {promotedNavItems.map((item) => renderNavItem(item))}
-
-        {sectionGroups.map(({ group, items }) => (
-          <React.Fragment key={`nav-section-${group}`}>
-            {renderSectionHeader(group, `section-header-${group}`)}
-            {items.map((item) => renderNavItem(item))}
-          </React.Fragment>
-        ))}
+          return (
+            <div key={`nav-section-${group}`}>
+              {!isCollapsed && (
+                <div className="mt-4 mb-3">
+                  <button
+                    type="button"
+                    id={`nav-section-toggle-${group}`}
+                    onClick={() => toggleSection(group)}
+                    className={`w-full rounded-lg px-3 py-2.5 mb-2 shadow-sm transition-colors cursor-pointer flex items-center justify-between group ${
+                      headerActive
+                        ? 'bg-[#114154] hover:bg-[#0d3344]'
+                        : 'bg-brand-primary hover:bg-brand-primary-dark'
+                    }`}
+                    aria-expanded={!isSectionCollapsed}
+                    aria-controls={sectionId}
+                  >
+                    <div className="font-bold text-white tracking-wide text-base flex-1 text-left">
+                      {(NAV_GROUP_LABELS[group] || group).toUpperCase()}
+                    </div>
+                    {isSectionCollapsed ? (
+                      <ChevronRight className="w-5 h-5 text-white/80 group-hover:scale-110 transition-transform" />
+                    ) : (
+                      <ChevronDown className="w-5 h-5 text-white/80 group-hover:scale-110 transition-transform" />
+                    )}
+                  </button>
+                </div>
+              )}
+              <div
+                id={sectionId}
+                role="group"
+                aria-labelledby={`nav-section-toggle-${group}`}
+                hidden={!isCollapsed && isSectionCollapsed}
+                className={!isCollapsed && isSectionCollapsed ? 'hidden' : 'flex flex-col gap-1'}
+              >
+                {items.map((item) => renderNavItem(item))}
+              </div>
+            </div>
+          );
+        })}
       </nav>
     );
   } catch (error) {
     logger.error('SimpleNav rendering error:', error);
     return (
-      <nav className="flex flex-col gap-1 p-2">
+      <nav className="flex flex-col gap-1 p-2" aria-label="Primary">
         <div className="text-sm text-red-500">Navigation error</div>
       </nav>
     );

@@ -13,6 +13,7 @@ import { useMultiView, type ViewPanel } from '@/contexts/multi-view-context';
 import { useFloatingViews } from '@/contexts/floating-views-context';
 import { NAV_ITEMS } from '@/nav.config';
 import { cn } from '@/lib/utils';
+import { NAV_GROUP_LABELS } from '@shared/nav-catalog';
 
 interface ViewPanelHeaderProps {
   panel: ViewPanel;
@@ -40,7 +41,7 @@ function getGroupedNavItems() {
 
   NAV_ITEMS.forEach(item => {
     // Skip items without href or external items
-    if (!item.href || item.external || item.topNav) return;
+    if (!item.href || item.external || item.externalUrl || item.topNav) return;
 
     const group = item.group || 'other';
     if (!groups[group]) {
@@ -52,14 +53,7 @@ function getGroupedNavItems() {
   return groups;
 }
 
-const GROUP_LABELS: Record<string, string> = {
-  'dashboard': 'Dashboard',
-  'workspace': 'Workspace',
-  'logistics': 'Logistics',
-  'network': 'Network',
-  'operations': 'Operations',
-  'admin': 'Admin & Resources',
-};
+const GROUP_LABELS = NAV_GROUP_LABELS;
 
 export function ViewPanelHeader({ panel, onSectionChange }: ViewPanelHeaderProps) {
   const { panels, removePanel } = useMultiView();
