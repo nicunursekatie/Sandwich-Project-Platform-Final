@@ -231,8 +231,7 @@ function MultiViewSidebar({
     }
 
     if (isMultiViewEnabled) {
-      // In multi-view: navigate the focused panel directly (base section only)
-      navigateActivePanel(section.split('?')[0]);
+      navigateActivePanel(section);
     } else {
       dashboardSetActiveSection(section.split('?')[0]);
     }
@@ -539,7 +538,9 @@ export default function Dashboard({
   const renderContent = (sectionOverride?: string) => {
     const rawSection = sectionOverride || activeSection;
     // Use base path for switch (strip query string) so panels with e.g. event-requests?tab=admin_overview render correctly
-    const section = rawSection.includes('?') ? rawSection.split('?')[0] : rawSection;
+    const [section, sectionQuery = ''] = rawSection.split('?');
+    const sectionParams = new URLSearchParams(sectionQuery);
+    const sectionTab = sectionParams.get('tab') || urlParams.tab;
     // Extract project ID from section if it's a project detail page
     const projectIdMatch = section.match(/^project-(\d+)$/);
     const projectId =
@@ -614,7 +615,7 @@ export default function Dashboard({
         // channel list and active room stretching to the top.
         return (
           <div className="h-full min-h-0">
-            <StreamChatRooms defaultTab={urlParams.tab} />
+            <StreamChatRooms defaultTab={sectionTab} />
           </div>
         );
       case 'kudos':
@@ -711,7 +712,7 @@ export default function Dashboard({
             }
           >
             <EventRequestsManagement
-              initialTab={urlParams.tab}
+              initialTab={sectionTab}
               initialEventId={urlParams.eventId ? parseInt(urlParams.eventId) : undefined}
             />
           </ErrorBoundary>
@@ -867,7 +868,7 @@ export default function Dashboard({
         // Redirect to main Team Chat
         return (
           <div className="h-full min-h-0">
-            <StreamChatRooms defaultTab={urlParams.tab} />
+            <StreamChatRooms defaultTab={sectionTab} />
           </div>
         );
       case 'my-availability':

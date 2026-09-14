@@ -75,7 +75,8 @@ export const NAV_GROUP_LABELS: Record<string, string> = {
 
 /**
  * Pages that have a permission / CAM toggle but no sidebar entry.
- * Do not delete these permissions; they gate real routes.
+ * These stay in getNavigationTabEntries() so Component Access Manager can
+ * still assign them; they are not rendered in the sidebar.
  */
 export const NAV_GHOST_FEATURES = [
   {
@@ -593,6 +594,14 @@ export function getNavigationTabEntries(): Array<{
       label: item.permissionLabel || item.label,
     });
   }
+  for (const ghost of NAV_GHOST_FEATURES) {
+    if (seen.has(ghost.permissionKey)) continue;
+    seen.add(ghost.permissionKey);
+    entries.push({
+      permissionKey: ghost.permissionKey,
+      label: ghost.label,
+    });
+  }
   return entries;
 }
 
@@ -602,8 +611,9 @@ export function getNavigationTabPermissionKeys(): string[] {
 
 export function getNavLabelForPermission(permission: string): string | undefined {
   const match = NAV_CATALOG.find((item) => item.permissionKey === permission);
-  if (!match) return undefined;
-  return match.permissionLabel || match.label;
+  if (match) return match.permissionLabel || match.label;
+  const ghost = NAV_GHOST_FEATURES.find((item) => item.permissionKey === permission);
+  return ghost?.label;
 }
 
 export function isNavCatalogItemVisible(

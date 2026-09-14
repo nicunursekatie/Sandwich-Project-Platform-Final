@@ -28,6 +28,7 @@ export default function SimpleNav({
   isCollapsed = false,
 }: {
   navigationItems?: NavItem[];
+  /** Catalog href, including query strings (e.g. event-requests?tab=planning). Use getDashboardSectionUrl to navigate. */
   onSectionChange: (section: string) => void;
   activeSection?: string;
   isCollapsed?: boolean;
@@ -146,6 +147,10 @@ export default function SimpleNav({
 
     const isActive = (href: string | undefined) => {
       if (!href) return false;
+      // Panel-local destinations (multi-view) store the catalog href, including
+      // query strings, without writing them onto window.location.
+      if (activeSection === href) return true;
+
       const [baseHref, hrefQuery] = (() => {
         const idx = href.indexOf('?');
         if (idx === -1) return [href, ''];
@@ -168,22 +173,26 @@ export default function SimpleNav({
       const activeBase = (activeSection || '').split('?')[0];
       const sectionMatches =
         activeBase === baseHref ||
-        activeSection === href ||
         urlSection === baseHref;
 
       if (!sectionMatches) return false;
 
+      const queryOwnedBy = (candidateHref: string) => {
+        const queryIndex = candidateHref.indexOf('?');
+        if (queryIndex === -1) return false;
+        if (activeSection === candidateHref) return true;
+        const candidateQuery = candidateHref.slice(queryIndex + 1);
+        const candidateParams = new URLSearchParams(candidateQuery);
+        return [...candidateParams.entries()].every(([key, value]) => urlParams.get(key) === value);
+      };
+
       if (hrefQuery) {
-        const hrefParams = new URLSearchParams(hrefQuery);
-        return [...hrefParams.entries()].every(([key, value]) => urlParams.get(key) === value);
+        return queryOwnedBy(href);
       }
 
       const siblingOwnsQuery = displayNavigationItems.some((other) => {
-        if (other.id === href || other.href === href) return false;
-        if (!other.href.startsWith(`${baseHref}?`)) return false;
-        const otherQuery = other.href.slice(baseHref.length + 1);
-        const otherParams = new URLSearchParams(otherQuery);
-        return [...otherParams.entries()].every(([key, value]) => urlParams.get(key) === value);
+        if (other.href === href) return false;
+        return other.href.startsWith(`${baseHref}?`) && queryOwnedBy(other.href);
       });
       return !siblingOwnsQuery;
     };

@@ -8,6 +8,7 @@ import PaceComparisonAnalytics from '@/components/pace-comparison-analytics';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { usePageSession } from '@/hooks/usePageSession';
 import { NAV_ITEMS } from '@/nav.config';
+import { getDashboardSectionUrl } from '@shared/nav-catalog';
 import { useLocation } from 'wouter';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import { ResponsivePageLayout } from '@/components/layout/responsive-page-layout';
@@ -23,15 +24,9 @@ export default function AnalyticsPage() {
 
   const handleSectionChange = (section: string) => {
     if (section === 'analytics') {
-      // Already on analytics page
       return;
     }
-    // Navigate to dashboard with the selected section
-    if (section === 'dashboard') {
-      setLocation('/dashboard');
-    } else {
-      setLocation(`/dashboard?section=${section}`);
-    }
+    setLocation(getDashboardSectionUrl(section));
   };
 
   return (

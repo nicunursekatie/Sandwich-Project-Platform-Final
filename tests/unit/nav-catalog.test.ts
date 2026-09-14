@@ -7,6 +7,7 @@ import {
   isKnownPermissionKey,
   isExternalNavItem,
   getNavHref,
+  getDashboardSectionUrl,
 } from '../../shared/nav-catalog';
 import { PERMISSION_GROUPS } from '../../shared/permission-config';
 
@@ -22,11 +23,15 @@ describe('nav catalog', () => {
   });
 
   it('does not allow class names or colors in the catalog', () => {
+    const forbiddenStyle = /^(bg-|text-|from-|to-)|#[0-9A-Fa-f]{3,8}(?:\b|$)/;
+    expect('bg-red-500').toMatch(/^(bg-|text-|from-|to-)/);
+    expect('#007E8C').toMatch(/#[0-9A-Fa-f]{3,8}/);
+
     for (const item of NAV_CATALOG) {
       const values = Object.values(item);
       for (const value of values) {
         if (typeof value !== 'string') continue;
-        expect(value).not.toMatch(/^(bg-|text-|from-|to-|#[0-9A-Fa-f]{3,8})$/);
+        expect(value).not.toMatch(forbiddenStyle);
       }
     }
   });
@@ -47,7 +52,9 @@ describe('nav catalog', () => {
     expect(keys).toContain(PERMISSIONS.NAV_COLLECTIONS_LOG);
     expect(keys).toContain(PERMISSIONS.NAV_VOLUNTEER_HANDBOOK);
     expect(keys).toContain(PERMISSIONS.NAV_FLYERS);
-    expect(keys).not.toContain(PERMISSIONS.NAV_AUTO_FORM_FILLER);
+    expect(keys).toContain(PERMISSIONS.NAV_AUTO_FORM_FILLER);
+    expect(keys).toContain(PERMISSIONS.NAV_MY_ACTIONS);
+    expect(keys).toContain(PERMISSIONS.NAV_EVENT_REMINDERS);
     expect(new Set(keys).size).toBe(keys.length);
 
     const labels = getNavigationTabEntries().map((entry) => entry.label);
@@ -66,5 +73,13 @@ describe('nav catalog', () => {
   it('has unique ids', () => {
     const ids = NAV_CATALOG.map((item) => item.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it('normalizes catalog hrefs into dashboard URLs', () => {
+    expect(getDashboardSectionUrl('dashboard')).toBe('/dashboard');
+    expect(getDashboardSectionUrl('collections')).toBe('/dashboard?section=collections');
+    expect(getDashboardSectionUrl('event-requests?tab=planning')).toBe(
+      '/dashboard?section=event-requests&tab=planning',
+    );
   });
 });
