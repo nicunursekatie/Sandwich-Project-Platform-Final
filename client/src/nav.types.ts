@@ -1,23 +1,10 @@
 import { LucideIcon } from 'lucide-react';
+import type { NavCatalogItem } from '@shared/nav-catalog';
 
-export interface NavItem {
-  id: string;
-  label: string;
+export interface NavItem extends NavCatalogItem {
   icon?: LucideIcon;
-  customIcon?: string;
-  href: string;
+  /** @deprecated Use permissionKey. Kept so existing callers keep compiling. */
   permission?: string;
-  group?: string;
-  requiredRoles?: string[];
-  featureFlag?: string;
-  parentId?: string; // ID of parent nav item for nested structure
-  isSubItem?: boolean; // Flag to indicate this is a sub-item
-  highlighted?: boolean; // Flag to highlight important menu items with special color
-  topNav?: boolean; // Flag to indicate this item should appear in top nav instead of sidebar
-  navigateAndExpand?: boolean; // Flag to indicate this parent item should navigate AND expand (not just expand)
-  external?: boolean; // Flag to indicate this opens as an external page (not inside dashboard)
-  externalUrl?: string; // Opens this URL in a new tab instead of navigating in-app
-  accentColor?: string; // Custom text color for this nav item (e.g. '#007E8C')
 }
 
 export interface NavigationGroup {

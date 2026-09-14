@@ -10,7 +10,6 @@ export const NAV_USER_VIEW_DEFAULT_HIDDEN_IDS = [
   'user-management',
   'historical-import',
   'organizations-merge',
-  'settings',
   'admin-overview',
   'event-planning',
   'sandwich-destinations',
@@ -33,8 +32,6 @@ export const NAV_USER_VIEW_DEFAULT_HIDDEN_IDS = [
   'quick-sms-links',
   'expenses',
   'promotion',
-  'tools',
-  'documents',
   'inbox-consolidated',
 ] as const;
 

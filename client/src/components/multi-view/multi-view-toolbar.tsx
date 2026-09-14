@@ -31,24 +31,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { hasPermission } from '@shared/unified-auth-utils';
 import type { UserForPermissions } from '@shared/types';
 import type { NavItem } from '@/nav.types';
+import { NAV_GROUP_LABELS, isNavCatalogItemVisible } from '@shared/nav-catalog';
 
 interface MultiViewToolbarProps {
   currentSection: string;
   className?: string;
 }
 
-const GROUP_LABELS: Record<string, string> = {
-  'dashboard': 'Dashboard',
-  'workspace': 'Workspace',
-  'logistics': 'Logistics',
-  'network': 'Network',
-  'operations': 'Operations',
-  'admin': 'Admin & Resources',
-  'help': 'Help',
-  'communication': 'Communication',
-};
-
-// Build the same list the sidebar shows: permission-filtered, including topNav (Help, Suggestions)
+// Build the same list the sidebar shows: permission-filtered
 function getGroupedNavItemsForUser(user: unknown): Record<string, NavItem[]> {
   const u = user as { id: string; email?: string | null; role: string; permissions?: string[] | number | null; isActive?: boolean } | null | undefined;
   const userForPermissions: UserForPermissions | null | undefined = u ? {
@@ -59,23 +49,16 @@ function getGroupedNavItemsForUser(user: unknown): Record<string, NavItem[]> {
     isActive: u.isActive,
   } : null;
 
-  const permissionFiltered = NAV_ITEMS.filter(item => {
-    if (!item.href || item.external) return false;
-    if (!item.permission) return true;
-    return hasPermission(userForPermissions, item.permission);
-  });
-
-  // Hide parents that have no visible children (match SimpleNav behavior)
-  const filtered = permissionFiltered.filter(item => {
-    if (item.isSubItem) return true;
-    const hasChildrenInConfig = NAV_ITEMS.some(navItem => navItem.parentId === item.id);
-    if (!hasChildrenInConfig) return true;
-    const hasVisibleChildren = permissionFiltered.some(navItem => navItem.parentId === item.id);
-    return hasVisibleChildren;
+  const filtered = NAV_ITEMS.filter((item) => {
+    if (!item.href || item.externalUrl || item.topNav) return false;
+    return isNavCatalogItemVisible(item, {
+      isAuthenticated: Boolean(u),
+      hasPermission: hasPermission(userForPermissions, item.permissionKey),
+    });
   });
 
   const groups: Record<string, NavItem[]> = {};
-  filtered.forEach(item => {
+  filtered.forEach((item) => {
     const group = item.group || 'other';
     if (!groups[group]) {
       groups[group] = [];
@@ -155,7 +138,7 @@ export function MultiViewToolbar({ currentSection, className }: MultiViewToolbar
                   {Object.entries(groupedItems).map(([group, items]) => (
                     <React.Fragment key={group}>
                       <DropdownMenuLabel className="text-xs text-slate-500">
-                        {GROUP_LABELS[group] || group}
+                        {NAV_GROUP_LABELS[group] || group}
                       </DropdownMenuLabel>
                       {items.map(item => {
                         const Icon = item.icon;
@@ -166,9 +149,7 @@ export function MultiViewToolbar({ currentSection, className }: MultiViewToolbar
                             disabled={panels.some(p => p.section === item.href)}
                             className="flex items-center gap-2"
                           >
-                            {item.customIcon ? (
-                              <img src={item.customIcon} alt="" className="h-4 w-4 opacity-60 flex-shrink-0" />
-                            ) : Icon ? (
+                            {Icon ? (
                               <Icon className="h-4 w-4 opacity-60 flex-shrink-0" />
                             ) : null}
                             <span className="truncate">{item.label}</span>

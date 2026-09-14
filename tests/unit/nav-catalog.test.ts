@@ -1,0 +1,70 @@
+import { describe, it, expect } from '@jest/globals';
+import { PERMISSIONS } from '../../shared/auth-utils';
+import {
+  NAV_CATALOG,
+  getNavigationTabEntries,
+  getNavigationTabPermissionKeys,
+  isKnownPermissionKey,
+  isExternalNavItem,
+  getNavHref,
+} from '../../shared/nav-catalog';
+import { PERMISSION_GROUPS } from '../../shared/permission-config';
+
+describe('nav catalog', () => {
+  it('requires a permissionKey on every nav item', () => {
+    const missing = NAV_CATALOG.filter((item) => !item.permissionKey);
+    expect(missing).toEqual([]);
+  });
+
+  it('requires every permissionKey to exist on PERMISSIONS', () => {
+    const unknown = NAV_CATALOG.filter((item) => !isKnownPermissionKey(item.permissionKey));
+    expect(unknown.map((item) => `${item.id}:${item.permissionKey}`)).toEqual([]);
+  });
+
+  it('does not allow class names or colors in the catalog', () => {
+    for (const item of NAV_CATALOG) {
+      const values = Object.values(item);
+      for (const value of values) {
+        if (typeof value !== 'string') continue;
+        expect(value).not.toMatch(/^(bg-|text-|from-|to-|#[0-9A-Fa-f]{3,8})$/);
+      }
+    }
+  });
+
+  it('marks true external destinations with externalUrl', () => {
+    const handbook = NAV_CATALOG.find((item) => item.id === 'volunteer-handbook');
+    const signup = NAV_CATALOG.find((item) => item.id === 'signup-genius');
+    const sheet = NAV_CATALOG.find((item) => item.id === 'events');
+    expect(handbook && isExternalNavItem(handbook)).toBe(true);
+    expect(signup && isExternalNavItem(signup)).toBe(true);
+    expect(sheet && isExternalNavItem(sheet)).toBe(false);
+    expect(handbook && getNavHref(handbook).startsWith('http')).toBe(true);
+  });
+
+  it('generates Navigation Tabs from the catalog, not a hand-written list', () => {
+    const keys = getNavigationTabPermissionKeys();
+    expect(keys.length).toBeGreaterThan(0);
+    expect(keys).toContain(PERMISSIONS.NAV_COLLECTIONS_LOG);
+    expect(keys).toContain(PERMISSIONS.NAV_VOLUNTEER_HANDBOOK);
+    expect(keys).toContain(PERMISSIONS.NAV_FLYERS);
+    expect(keys).not.toContain(PERMISSIONS.NAV_AUTO_FORM_FILLER);
+    expect(new Set(keys).size).toBe(keys.length);
+
+    const labels = getNavigationTabEntries().map((entry) => entry.label);
+    expect(labels).toContain('Volunteers Directory');
+    expect(labels).toContain('Event Planning');
+    expect(PERMISSION_GROUPS.NAVIGATION.permissions).toEqual(keys);
+  });
+
+  it('is a two-level catalog (no parent/child nesting fields)', () => {
+    for (const item of NAV_CATALOG) {
+      expect(item).not.toHaveProperty('parentId');
+      expect(item).not.toHaveProperty('isSubItem');
+    }
+  });
+
+  it('has unique ids', () => {
+    const ids = NAV_CATALOG.map((item) => item.id);
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});

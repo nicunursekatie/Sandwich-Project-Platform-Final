@@ -11,21 +11,12 @@ import {
   ALL_NAV_IDS,
   getDefaultNavUserViewVisibleIds,
 } from '@/contexts/nav-view-mode-context';
+import { NAV_GROUP_LABELS } from '@shared/nav-catalog';
 
 interface NavUserViewConfigResponse {
   visibleNavIds: string[] | null;
   usesDefaults?: boolean;
 }
-
-const GROUP_LABELS: Record<string, string> = {
-  dashboard: 'Dashboard',
-  events: 'Events & Volunteers',
-  network: 'Network',
-  resources: 'Resources & Tools',
-  communication: 'Communication',
-  data: 'Data & Reports',
-  settings: 'Settings',
-};
 
 export function AdminNavUserViewConfig() {
   const { toast } = useToast();
@@ -150,7 +141,7 @@ export function AdminNavUserViewConfig() {
             className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm"
           >
             <h3 className="text-sm font-semibold text-gray-800 mb-3 uppercase tracking-wide">
-              {GROUP_LABELS[group] || group}
+              {NAV_GROUP_LABELS[group] || group}
             </h3>
             <ul className="space-y-2">
               {items.map((item) => {
@@ -158,9 +149,7 @@ export function AdminNavUserViewConfig() {
                 return (
                   <li
                     key={item.id}
-                    className={`flex items-start gap-3 rounded-md px-2 py-1.5 ${
-                      item.isSubItem ? 'ml-4 border-l-2 border-slate-200' : ''
-                    }`}
+                    className="flex items-start gap-3 rounded-md px-2 py-1.5"
                   >
                     <Checkbox
                       id={`nav-user-view-${item.id}`}
@@ -172,9 +161,6 @@ export function AdminNavUserViewConfig() {
                       className="text-sm font-normal leading-snug cursor-pointer"
                     >
                       {item.label}
-                      {item.isSubItem && (
-                        <span className="block text-xs text-muted-foreground">Sub-item</span>
-                      )}
                     </Label>
                   </li>
                 );

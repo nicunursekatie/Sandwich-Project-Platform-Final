@@ -28,9 +28,6 @@ import {
   Clock,
   Truck,
   FileImage,
-  Gift,
-  Copy,
-  ExternalLink,
   HelpCircle,
 } from 'lucide-react';
 import { useLocation, useRoute } from 'wouter';
@@ -63,6 +60,7 @@ import { queryClient } from '@/lib/queryClient';
 import { buildEventRequestsListQuery } from '@/components/event-requests/lib/eventRequestsListQuery';
 import SimpleNav from '@/components/simple-nav';
 import { NAV_ITEMS } from '@/nav.config';
+import { getDashboardSectionUrl } from '@shared/nav-catalog';
 import AnnouncementBanner from '@/components/announcement-banner';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import EnhancedNotifications from '@/components/enhanced-notifications';
@@ -233,20 +231,15 @@ function MultiViewSidebar({
     }
 
     if (isMultiViewEnabled) {
-      // In multi-view: navigate the focused panel directly
-      navigateActivePanel(section);
+      // In multi-view: navigate the focused panel directly (base section only)
+      navigateActivePanel(section.split('?')[0]);
     } else {
-      // Single view: use the dashboard-level state as before
-      dashboardSetActiveSection(section);
+      dashboardSetActiveSection(section.split('?')[0]);
     }
 
     onMobileClose();
 
-    // Update URL for back button support (reflects the navigated section)
-    const newUrl = section === 'dashboard'
-      ? '/dashboard'
-      : `/dashboard?section=${section}`;
-    window.history.pushState({}, '', newUrl);
+    window.history.pushState({}, '', getDashboardSectionUrl(section));
   }, [isMultiViewEnabled, activePanel, navigateActivePanel, dashboardSetActiveSection, effectiveActiveSection, onTrackNavigation, onMobileClose, setLocation]);
 
   return (
@@ -1012,11 +1005,17 @@ export default function Dashboard({
               <div className="flex items-center gap-0.5 bg-white/10 rounded-lg p-0.5">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button
-                      onClick={() => {
+                    <a
+                      href="/dashboard?section=chat"
+                      onClick={(event) => {
+                        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+                          return;
+                        }
+                        event.preventDefault();
                         logger.log('Team Chat button clicked');
                         trackButtonClick('chat', 'dashboard_header');
                         setActiveSection('chat');
+                        window.history.pushState({}, '', '/dashboard?section=chat');
                         setIsMobileMenuOpen(false);
                       }}
                       className={`flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 rounded-md transition-colors text-sm font-medium ${
@@ -1025,21 +1024,28 @@ export default function Dashboard({
                           : 'text-white/80 hover:bg-white/15 hover:text-white'
                       }`}
                       aria-label="Team Chat"
+                      aria-current={activeSection === 'chat' ? 'page' : undefined}
                     >
                       <Hash className="w-4 h-4" />
                       <span className="hidden lg:inline">Chat</span>
-                    </button>
+                    </a>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" sideOffset={8}>Team Chat</TooltipContent>
                 </Tooltip>
 
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <button
-                      onClick={() => {
+                    <a
+                      href="/dashboard?section=gmail-inbox"
+                      onClick={(event) => {
+                        if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) {
+                          return;
+                        }
+                        event.preventDefault();
                         logger.log('Project Threads button clicked');
                         trackButtonClick('project-threads', 'dashboard_header');
                         setActiveSection('gmail-inbox');
+                        window.history.pushState({}, '', '/dashboard?section=gmail-inbox');
                         setIsMobileMenuOpen(false);
                       }}
                       className={`flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 rounded-md transition-colors text-sm font-medium ${
@@ -1048,10 +1054,11 @@ export default function Dashboard({
                           : 'text-white/80 hover:bg-white/15 hover:text-white'
                       }`}
                       aria-label="Project Threads"
+                      aria-current={activeSection === 'gmail-inbox' ? 'page' : undefined}
                     >
                       <Inbox className="w-4 h-4" />
                       <span className="hidden lg:inline">Threads</span>
-                    </button>
+                    </a>
                   </TooltipTrigger>
                   <TooltipContent side="bottom" sideOffset={8}>Project Threads</TooltipContent>
                 </Tooltip>
@@ -1317,58 +1324,20 @@ export default function Dashboard({
                 onTrackNavigation={trackNavigation}
                 dashboardSetActiveSection={setActiveSection}
               />
+            </div>
 
-              {/* EIN Information - Always visible at bottom */}
-              {!isSidebarCollapsed && (
-                <div className="px-4 mt-6 pt-4 border-t border-amber-200 space-y-3">
-                  <div className="bg-gradient-to-r from-teal-50 to-teal-100 border border-teal-200 rounded-lg px-3 py-2">
-                    <div className="text-xs text-teal-700 font-medium uppercase tracking-wide">
-                      Organization EIN
-                    </div>
-                    <div className="text-sm font-bold text-teal-900 font-mono">
-                      87-0939484
-                    </div>
+            {!isSidebarCollapsed && (
+              <div className="px-4 py-3 border-t border-amber-200">
+                <div className="bg-gradient-to-r from-teal-50 to-teal-100 border border-teal-200 rounded-lg px-3 py-2">
+                  <div className="text-xs text-teal-700 font-medium uppercase tracking-wide">
+                    Organization EIN
                   </div>
-
-                  {/* Amazon Wishlist Quick Access */}
-                  <div className="bg-gradient-to-r from-[#47B3CB]/10 to-[#47B3CB]/20 border-2 border-[#47B3CB] rounded-lg px-3 py-2.5 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-1.5">
-                        <Gift className="w-4 h-4 text-[#006e7e]" />
-                        <div className="text-xs text-[#006e7e] font-bold uppercase tracking-wide">
-                          Amazon Wishlist
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-1.5">
-                      <a
-                        href="https://www.amazon.com/hz/wishlist/ls/XRSQ9EDIIIWV/ref=nav_wishlist_lists_4"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex-1 bg-[#47B3CB] hover:bg-[#3A9AB5] text-white text-xs font-medium px-2 py-1.5 rounded transition-colors flex items-center justify-center gap-1"
-                        title="Open Amazon Wishlist"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        Open on Amazon
-                      </a>
-                      <button
-                        onClick={async () => {
-                          try {
-                            await navigator.clipboard.writeText('https://www.amazon.com/hz/wishlist/ls/XRSQ9EDIIIWV/ref=nav_wishlist_lists_4');
-                          } catch (err) {
-                            logger.error('Copy failed:', err);
-                          }
-                        }}
-                        className="bg-[#006e7e]/10 hover:bg-[#006e7e]/20 text-[#006e7e] px-2 py-1.5 rounded transition-colors"
-                        title="Copy wishlist link to clipboard"
-                      >
-                        <Copy className="w-3 h-3" />
-                      </button>
-                    </div>
+                  <div className="text-sm font-bold text-teal-900 font-mono">
+                    87-0939484
                   </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </div>
 
           {/* Main Content */}
