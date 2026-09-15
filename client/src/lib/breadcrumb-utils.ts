@@ -7,7 +7,7 @@ import { NAV_GROUP_LABELS, getDashboardSectionUrl } from '@shared/nav-catalog';
  *
  * Produces trails like:
  *   Home → Admin → User Management
- *   Home → Events → Event Ops
+ *   Home → Events → Events Operations Dashboard
  */
 export function generateBreadcrumbs(
   sectionId: string,

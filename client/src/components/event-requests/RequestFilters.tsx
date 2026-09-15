@@ -26,6 +26,8 @@ import {
   AlertCircle,
   Ban,
   RefreshCw,
+  ClipboardList,
+  Truck,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -179,10 +181,23 @@ export default function RequestFilters({
     });
   }
 
-  // Planning and Sandwich Destinations live in the sidebar nav (deep-links
-  // to ?tab=planning and ?tab=sandwich_overview) so they don't crowd the
-  // tab bar — but if a user navigates directly to one of those tabs, the
-  // tab still renders. We just don't surface a tab button for it here.
+  if (hasAdminOverviewPermission && children.planning) {
+    navTabs.push({
+      value: 'planning',
+      label: 'Planning',
+      shortLabel: 'Plan',
+      icon: ClipboardList,
+    });
+  }
+
+  if (hasAdminOverviewPermission && children.sandwich_overview) {
+    navTabs.push({
+      value: 'sandwich_overview',
+      label: 'Sandwich Destinations',
+      shortLabel: 'Destinations',
+      icon: Truck,
+    });
+  }
 
   navTabs.push({
     value: 'my_assignments',

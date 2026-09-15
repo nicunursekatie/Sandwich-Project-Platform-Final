@@ -1138,7 +1138,7 @@ export default function EventMapView() {
       <div className="flex-shrink-0 p-4 bg-white border-b border-gray-200">
         <PageBreadcrumbs
           segments={[
-            { label: 'Event Planning', href: '/dashboard?section=event-requests' },
+            { label: 'Directory', href: '/dashboard?section=event-map' },
             { label: 'Event Requests Map' }
           ]}
         />

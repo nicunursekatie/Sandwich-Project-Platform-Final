@@ -2,6 +2,7 @@ import { describe, it, expect } from '@jest/globals';
 import { PERMISSIONS } from '../../shared/auth-utils';
 import {
   NAV_CATALOG,
+  NAV_SECTION_ORDER,
   getNavigationTabEntries,
   getNavigationTabPermissionKeys,
   isKnownPermissionKey,
@@ -61,7 +62,22 @@ describe('nav catalog', () => {
     const labels = getNavigationTabEntries().map((entry) => entry.label);
     expect(labels).toContain('Volunteers Directory');
     expect(labels).toContain('Event Planning');
+    expect(labels).not.toContain('Event Admin Overview');
     expect(PERMISSION_GROUPS.NAVIGATION.permissions).toEqual(keys);
+  });
+
+  it('places Home, Events, then Communication, and drops in-component event views from the sidebar', () => {
+    expect(NAV_SECTION_ORDER.slice(0, 3)).toEqual(['home', 'events', 'communication']);
+
+    const byId = Object.fromEntries(NAV_CATALOG.map((item) => [item.id, item]));
+    expect(byId['event-requests']?.group).toBe('home');
+    expect(byId['event-ops-dashboard']?.label).toBe('Events Operations Dashboard');
+    expect(byId['event-contacts-directory']?.group).toBe('directory');
+    expect(byId['event-impact-reports']?.group).toBe('data');
+    expect(byId['events']?.liveSheet).toBe(true);
+    expect(byId['event-planning']).toBeUndefined();
+    expect(byId['admin-overview']).toBeUndefined();
+    expect(byId['sandwich-destinations']).toBeUndefined();
   });
 
   it('is a two-level catalog (no parent/child nesting fields)', () => {
