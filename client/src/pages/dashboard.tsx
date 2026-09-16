@@ -302,7 +302,7 @@ export default function Dashboard({
     const sectionMap: Record<string, { section: string; page: string }> = {
       'dashboard': { section: 'Dashboard', page: 'Main Dashboard' },
       'collections': { section: 'Collections', page: 'Collections Log' },
-      'event-requests': { section: 'Home', page: 'Event Requests' },
+      'event-requests': { section: 'Events', page: 'Event Requests' },
       'event-ops-dashboard': { section: 'Events', page: 'Events Operations Dashboard' },
       'admin-overview': { section: 'Event Requests', page: 'Admin Overview' },
       'event-calendar': { section: 'Events', page: 'Event Calendar' },
