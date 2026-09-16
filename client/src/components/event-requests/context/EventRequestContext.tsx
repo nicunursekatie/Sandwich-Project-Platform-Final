@@ -141,7 +141,7 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
   });
   // Default to 'new' tab if no initialTab is provided, otherwise use initialTab or role default
   const getDefaultTab = () => {
-    if (initialTab && ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments', 'admin_overview'].includes(initialTab)) {
       return initialTab;
     }
     // Default to 'new' for event requests when no tab is specified
@@ -235,7 +235,7 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
 
   // Update activeTab when initialTab prop changes (for navigation)
   useEffect(() => {
-    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments', 'admin_overview', 'planning', 'sandwich_overview'];
+    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments', 'admin_overview', 'sandwich_overview'];
     if (initialTab && validTabs.includes(initialTab)) {
       logger.log('[EventRequestContext] Setting activeTab from initialTab:', initialTab);
       setActiveTab(initialTab);
@@ -253,7 +253,7 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     const urlParams = new URLSearchParams(window.location.search);
     const tabFromUrl = urlParams.get('tab');
     const sectionFromUrl = urlParams.get('section');
-    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments', 'admin_overview', 'planning', 'sandwich_overview'];
+    const validTabs = ['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments', 'admin_overview', 'sandwich_overview'];
 
     // Only update if we're on the event-requests section and there's a valid tab in the URL
     if (sectionFromUrl === 'event-requests' && tabFromUrl && validTabs.includes(tabFromUrl)) {
@@ -549,7 +549,7 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     if (['all', 'new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments'].includes(activeTab)) {
       setStatusFilter(activeTab);
     }
-    // For admin_overview and planning tabs, don't change statusFilter
+    // For admin_overview and sandwich_overview, don't change statusFilter
   }, [activeTab]);
 
   // Auto-sort by appropriate default for each tab (only when tab changes)
@@ -595,7 +595,7 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
 
   // Handle initial event ID - auto-open event details if specified
   useEffect(() => {
-    if (initialTab && ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments', 'admin_overview', 'planning'].includes(initialTab)) {
+    if (initialTab && ['new', 'in_process', 'scheduled', 'rescheduled', 'completed', 'declined', 'standby', 'stalled', 'non_event', 'my_assignments', 'admin_overview'].includes(initialTab)) {
       setActiveTab(initialTab);
     }
 

@@ -29,7 +29,7 @@ export default function SimpleNav({
   isCollapsed = false,
 }: {
   navigationItems?: NavItem[];
-  /** Catalog href, including query strings (e.g. event-requests?tab=planning). Use getDashboardSectionUrl to navigate. */
+  /** Catalog href, including query strings (e.g. chat?tab=dms). Use getDashboardSectionUrl to navigate. */
   onSectionChange: (section: string) => void;
   activeSection?: string;
   isCollapsed?: boolean;

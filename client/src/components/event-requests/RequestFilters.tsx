@@ -26,7 +26,6 @@ import {
   AlertCircle,
   Ban,
   RefreshCw,
-  ClipboardList,
   Truck,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -125,7 +124,6 @@ interface RequestFiltersProps {
     stalled: ReactNode;
     my_assignments: ReactNode;
     admin_overview?: ReactNode;
-    planning?: ReactNode;
     sandwich_overview?: ReactNode;
   };
 
@@ -178,15 +176,6 @@ export default function RequestFilters({
       label: 'Admin Overview',
       shortLabel: 'Admin',
       icon: BarChart3,
-    });
-  }
-
-  if (hasAdminOverviewPermission && children.planning) {
-    navTabs.push({
-      value: 'planning',
-      label: 'Planning',
-      shortLabel: 'Plan',
-      icon: ClipboardList,
     });
   }
 
