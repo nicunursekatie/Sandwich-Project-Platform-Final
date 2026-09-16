@@ -70,7 +70,8 @@ describe('nav catalog', () => {
     expect(NAV_SECTION_ORDER.slice(0, 3)).toEqual(['home', 'events', 'communication']);
 
     const byId = Object.fromEntries(NAV_CATALOG.map((item) => [item.id, item]));
-    expect(byId['event-requests']?.group).toBe('home');
+    expect(byId['event-requests']?.group).toBe('events');
+    expect(NAV_CATALOG.filter((item) => item.group === 'events')[0]?.id).toBe('event-requests');
     expect(byId['event-ops-dashboard']?.label).toBe('Events Operations Dashboard');
     expect(byId['event-contacts-directory']?.group).toBe('directory');
     expect(byId['event-impact-reports']?.group).toBe('data');
