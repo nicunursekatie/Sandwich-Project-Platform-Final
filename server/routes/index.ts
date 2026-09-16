@@ -86,6 +86,7 @@ import serviceHoursRouter from './service-hours';
 import { impactReportsRouter } from './impact-reports';
 import { predictionsRouter } from './predictions';
 import { aiChatRouter } from './ai-chat';
+import { aiAnalystRouter } from './ai-analyst';
 import { createAlertRequestsRouter, createAIAlertRouter } from './alert-requests';
 import { createAppSettingsRouter } from './app-settings';
 import { createNavUserViewRouter } from './nav-user-view';
@@ -768,6 +769,16 @@ export function createMainRoutes(deps: RouterDependencies) {
     aiChatRouter
   );
   router.use('/api/ai-chat', createErrorHandler('ai-chat'));
+
+  // AI Analyst is intentionally separate from the floating assistant. Its
+  // route enforces a dedicated permission and only builds fixed aggregates.
+  router.use(
+    '/api/ai-analyst',
+    deps.isAuthenticated,
+    ...createStandardMiddleware(),
+    aiAnalystRouter
+  );
+  router.use('/api/ai-analyst', createErrorHandler('ai-analyst'));
 
   // Email Templates routes - customizable email template sections
   const emailTemplatesRouter = createEmailTemplatesRouter();

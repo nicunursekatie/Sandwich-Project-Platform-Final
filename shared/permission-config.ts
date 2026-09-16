@@ -320,6 +320,7 @@ export const PERMISSION_GROUPS = {
     permissions: [
       PERMISSIONS.ANALYTICS_VIEW,
       PERMISSIONS.ANALYTICS_EXPORT,
+      PERMISSIONS.AI_ANALYST_VIEW,
     ],
   },
   DATA_MANAGEMENT: {
@@ -350,6 +351,7 @@ export function getPermissionLabel(permission: string): string {
     [PERMISSIONS.DRIVER_SIGNUP_APPROVE]: 'Approve Driver Signups',
     [PERMISSIONS.EVENT_CHECK_IN_ALERTS]: 'Event Check-In Alerts',
     [PERMISSIONS.MANAGE_EVENTS]: 'Push Events to Planning Sheet',
+    [PERMISSIONS.AI_ANALYST_VIEW]: 'AI Analyst: Ask Data Questions',
   };
 
   // Return custom label if exists
@@ -381,6 +383,7 @@ export function getPermissionDescription(permission: string): string {
     [PERMISSIONS.EVENT_REQUESTS_SEND_SMS]: 'Send event details via SMS to selected users',
     [PERMISSIONS.EVENT_CHECK_IN_ALERTS]: 'Configure intake check-in reminders (no-contact, stale event, date-approaching) in the profile Alerts tab',
     [PERMISSIONS.MANAGE_EVENTS]: 'Push scheduled events from the app to the official planning Google Sheet',
+    [PERMISSIONS.AI_ANALYST_VIEW]: 'Ask questions about approved aggregate analytics data; underlying dataset access is still required',
 
     // Chat room descriptions
     [PERMISSIONS.CHAT_GENERAL]: 'Access to general team chat',

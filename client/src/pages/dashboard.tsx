@@ -29,6 +29,7 @@ import {
   Truck,
   FileImage,
   HelpCircle,
+  Sparkles,
 } from 'lucide-react';
 import { useLocation, useRoute } from 'wouter';
 // Using optimized SVG for faster loading
@@ -107,6 +108,7 @@ const ProjectsManagement = lazyWithRetry(() => import('@/components/projects'));
 const ProjectDetailClean = lazyWithRetry(() => import('@/pages/project-detail-clean'));
 const Analytics = lazyWithRetry(() => import('@/pages/analytics'));
 const ImpactDashboard = lazyWithRetry(() => import('@/pages/impact-dashboard'));
+const AiAnalyst = lazyWithRetry(() => import('@/components/ai-analyst'));
 const PaceComparisonAnalytics = lazyWithRetry(() => import('@/components/pace-comparison-analytics'));
 const LowHighWeeksTab = lazyWithRetry(() => import('@/components/low-high-weeks-tab'));
 const DataManagement = lazyWithRetry(() => import('@/pages/data-management'));
@@ -767,6 +769,9 @@ export default function Dashboard({
       case 'cleanup-audit':
         return <CleanupAudit />;
       case 'analytics':
+        const canUseAiAnalyst =
+          hasPermission(user, PERMISSIONS.AI_ANALYST_VIEW) &&
+          hasPermission(user, PERMISSIONS.ANALYTICS_VIEW);
         return (
           <div className="p-6">
             <div className="mb-6">
@@ -778,7 +783,9 @@ export default function Dashboard({
               </p>
             </div>
             <Tabs value={analyticsTab} onValueChange={setAnalyticsTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-4 min-h-11 sm:min-h-12 bg-brand-primary/10 border-brand-primary/20">
+              <TabsList className={`grid w-full min-h-11 sm:min-h-12 bg-brand-primary/10 border-brand-primary/20 ${
+                canUseAiAnalyst ? 'grid-cols-2 sm:grid-cols-5' : 'grid-cols-2 sm:grid-cols-4'
+              }`}>
                 <TabsTrigger
                   value="pace"
                   className="text-sm sm:text-base data-[state=active]:bg-brand-primary data-[state=active]:text-white text-brand-primary"
@@ -807,6 +814,15 @@ export default function Dashboard({
                   <Users className="w-4 h-4 mr-2" />
                   Host Analytics
                 </TabsTrigger>
+                {canUseAiAnalyst && (
+                  <TabsTrigger
+                    value="ai-analyst"
+                    className="text-sm sm:text-base data-[state=active]:bg-brand-primary data-[state=active]:text-white text-[#646464]"
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    AI Analyst
+                  </TabsTrigger>
+                )}
               </TabsList>
               {/* Plain-language description of the active tab. Sits between
                   the tab row and content so a new user understands what
@@ -826,6 +842,8 @@ export default function Dashboard({
                   'Which weeks had the lowest and highest collection volume — useful for spotting seasonal patterns.'}
                 {analyticsTab === 'hosts' &&
                   'Breakdown of collection performance by individual host location.'}
+                {analyticsTab === 'ai-analyst' &&
+                  'Ask questions about approved aggregate data without exposing personal or operational detail.'}
               </p>
               <TabsContent value="pace" className="mt-6">
                 <PaceComparisonAnalytics />
@@ -842,6 +860,11 @@ export default function Dashboard({
                   onHostChange={setSelectedHost}
                 />
               </TabsContent>
+              {canUseAiAnalyst && (
+                <TabsContent value="ai-analyst" className="mt-6">
+                  <AiAnalyst />
+                </TabsContent>
+              )}
             </Tabs>
           </div>
         );
