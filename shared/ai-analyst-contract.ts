@@ -8,16 +8,27 @@ export const ANALYST_DATASETS = [
 export type AnalystDataset = (typeof ANALYST_DATASETS)[number];
 
 export const MAX_ANALYST_MESSAGE_LENGTH = 2_000;
+export const MAX_ANALYST_ASSISTANT_HISTORY_LENGTH = 6_000;
 export const MAX_ANALYST_HISTORY_MESSAGES = 12;
 
 export const aiAnalystRequestSchema = z.object({
   message: z.string().trim().min(1).max(MAX_ANALYST_MESSAGE_LENGTH),
   conversationHistory: z
     .array(
-      z.object({
-        role: z.enum(['user', 'assistant']),
-        content: z.string().trim().min(1).max(MAX_ANALYST_MESSAGE_LENGTH),
-      })
+      z.discriminatedUnion('role', [
+        z.object({
+          role: z.literal('user'),
+          content: z.string().trim().min(1).max(MAX_ANALYST_MESSAGE_LENGTH),
+        }),
+        z.object({
+          role: z.literal('assistant'),
+          content: z
+            .string()
+            .trim()
+            .min(1)
+            .max(MAX_ANALYST_ASSISTANT_HISTORY_LENGTH),
+        }),
+      ])
     )
     .max(MAX_ANALYST_HISTORY_MESSAGES)
     .default([]),

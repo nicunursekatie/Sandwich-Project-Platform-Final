@@ -3,11 +3,16 @@ import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '@shared/schema';
 import type { NeonHttpDatabase } from 'drizzle-orm/neon-http';
 import { logger } from './utils/production-safe-logger';
-import { getDatabaseUrl, getDatabaseBranch, isProduction, databaseInfo } from './db-url';
+import {
+  getDatabaseUrl,
+  getDatabaseBranch,
+  isProduction,
+  databaseInfo,
+} from './db-url';
 
 /**
  * DATABASE CONNECTION
- * 
+ *
  * Uses centralized database URL configuration from server/db-url.ts.
  * All database URL selection logic is in one place.
  */
@@ -16,24 +21,43 @@ const databaseUrl = getDatabaseUrl();
 const dbBranch = getDatabaseBranch();
 
 if (!databaseUrl) {
-  throw new Error('Database URL not configured. Please set DEV_DATABASE_URL for development or DATABASE_URL for production in Replit Secrets.');
+  throw new Error(
+    'Database URL not configured. Please set DEV_DATABASE_URL for development or DATABASE_URL for production in Replit Secrets.'
+  );
 }
+const configuredDatabaseUrl: string = databaseUrl;
 
 // Fix TypeScript union type issue by using a single concrete type
 // This prevents "expression is not callable" errors when using db.select/insert/update/delete
 type DB = NeonHttpDatabase<typeof schema>;
 
 // Clear startup log showing environment AND database branch
-logger.log(`🗄️ Running in ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} mode, connected to ${dbBranch} database`);
+logger.log(
+  `🗄️ Running in ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'} mode, connected to ${dbBranch} database`
+);
 
 // Re-export databaseInfo for backward compatibility
 export { databaseInfo };
 
+/**
+ * Creates an isolated HTTP client for callers that need request-specific fetch
+ * behavior, such as cancellation. Normal application queries use `db` below.
+ */
+export function createDbWithFetchOptions(
+  fetchOptions: Record<string, unknown>
+): DB {
+  const client = neon(configuredDatabaseUrl, { fetchOptions });
+  return drizzle(client, {
+    schema,
+    logger: false,
+  }) as DB;
+}
+
 // Use HTTP connection instead of WebSocket for better stability
-const sqlClient = neon(databaseUrl);
+const sqlClient = neon(configuredDatabaseUrl);
 const db = drizzle(sqlClient, {
   schema,
-  logger: false
+  logger: false,
 }) as DB;
 
 // Add execute method for raw SQL queries

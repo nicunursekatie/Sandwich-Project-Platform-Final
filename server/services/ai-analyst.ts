@@ -1,5 +1,5 @@
 import { desc, isNull, sql } from 'drizzle-orm';
-import { db } from '../db';
+import { createDbWithFetchOptions } from '../db';
 import {
   sandwichCollections,
   sandwichDistributions,
@@ -11,6 +11,7 @@ import {
   getRequestedAnalystDatasets,
   type AnalystDataset,
 } from '@shared/ai-analyst-contract';
+import { getReportableSandwichCount } from '@shared/sandwich-count-utils';
 
 const MAX_SOURCE_ROWS = 1_000;
 const MAX_MONTHS = 36;
@@ -116,29 +117,31 @@ function recentMonthlyTotals(
     .map(([month, value]) => ({ month, value }));
 }
 
-async function withinQueryTimeout<T>(operation: Promise<T>): Promise<T> {
-  let timeout: ReturnType<typeof setTimeout> | undefined;
+async function withinQueryTimeout<T>(
+  operation: (
+    queryDb: ReturnType<typeof createDbWithFetchOptions>
+  ) => Promise<T>
+): Promise<T> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), QUERY_TIMEOUT_MS);
+
   try {
-    return await Promise.race([
-      operation,
-      new Promise<T>((_, reject) => {
-        timeout = setTimeout(
-          () =>
-            reject(
-              new Error('The analytics query exceeded the allowed time limit.')
-            ),
-          QUERY_TIMEOUT_MS
-        );
-      }),
-    ]);
+    return await operation(
+      createDbWithFetchOptions({ signal: controller.signal })
+    );
+  } catch (error) {
+    if (controller.signal.aborted) {
+      throw new Error('The analytics query exceeded the allowed time limit.');
+    }
+    throw error;
   } finally {
-    if (timeout) clearTimeout(timeout);
+    clearTimeout(timeout);
   }
 }
 
 async function buildCollectionsSnapshot(): Promise<DatasetSnapshot> {
-  const rows = await withinQueryTimeout(
-    db
+  const rows = await withinQueryTimeout((queryDb) =>
+    queryDb
       .select({
         collectionDate: sandwichCollections.collectionDate,
         individualSandwiches: sandwichCollections.individualSandwiches,
@@ -181,16 +184,19 @@ async function buildCollectionsSnapshot(): Promise<DatasetSnapshot> {
 }
 
 async function buildEventsSnapshot(): Promise<DatasetSnapshot> {
-  const rows = await withinQueryTimeout(
-    db
+  const rows = await withinQueryTimeout((queryDb) =>
+    queryDb
       .select({
         status: eventRequests.status,
         organizationCategory: eventRequests.organizationCategory,
         scheduledEventDate: eventRequests.scheduledEventDate,
         desiredEventDate: eventRequests.desiredEventDate,
         estimatedSandwichCount: eventRequests.estimatedSandwichCount,
+        estimatedSandwichCountMin: eventRequests.estimatedSandwichCountMin,
+        estimatedSandwichCountMax: eventRequests.estimatedSandwichCountMax,
       })
       .from(eventRequests)
+      .where(isNull(eventRequests.deletedAt))
       .orderBy(
         sql`coalesce(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) desc nulls last`
       )
@@ -206,7 +212,9 @@ async function buildEventsSnapshot(): Promise<DatasetSnapshot> {
     statusCounts.set(status, (statusCounts.get(status) ?? 0) + 1);
     const category = row.organizationCategory || 'uncategorized';
     categoryCounts.set(category, (categoryCounts.get(category) ?? 0) + 1);
-    plannedSandwiches += asNonNegativeNumber(row.estimatedSandwichCount);
+    plannedSandwiches += getReportableSandwichCount(row, {
+      ignoreSuspiciousEstimatedCounts: true,
+    });
   }
 
   return {
@@ -238,8 +246,8 @@ async function buildEventsSnapshot(): Promise<DatasetSnapshot> {
 }
 
 async function buildDistributionsSnapshot(): Promise<DatasetSnapshot> {
-  const rows = await withinQueryTimeout(
-    db
+  const rows = await withinQueryTimeout((queryDb) =>
+    queryDb
       .select({
         distributionDate: sandwichDistributions.distributionDate,
         sandwichCount: sandwichDistributions.sandwichCount,

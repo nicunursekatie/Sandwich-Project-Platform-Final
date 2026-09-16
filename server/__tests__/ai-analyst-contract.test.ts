@@ -14,6 +14,17 @@ describe('AI Analyst contract', () => {
     ).toBe(false);
   });
 
+  it('permits a valid full-length assistant response in conversation history', () => {
+    expect(
+      aiAnalystRequestSchema.safeParse({
+        message: 'Can you expand on that?',
+        conversationHistory: [
+          { role: 'assistant', content: 'a'.repeat(6_000) },
+        ],
+      }).success
+    ).toBe(true);
+  });
+
   it('selects only the relevant approved dataset categories', () => {
     expect(
       getRequestedAnalystDatasets('How many sandwiches were distributed?')

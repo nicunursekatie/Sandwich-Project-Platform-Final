@@ -1,6 +1,7 @@
 import { Router, type Response } from 'express';
 import rateLimit from 'express-rate-limit';
 import OpenAI from 'openai';
+import { randomUUID } from 'crypto';
 import { checkPermission } from '@shared/unified-auth-utils';
 import { PERMISSIONS } from '@shared/auth-utils';
 import {
@@ -110,10 +111,11 @@ aiAnalystRouter.post(
       });
     }
 
+    const auditRecordId = randomUUID();
     await AuditLogger.log(
       'AI_ANALYST_QUERY',
       'ai_analyst',
-      req.user.id,
+      auditRecordId,
       null,
       {
         messageLength: parsedRequest.data.message.length,
@@ -150,9 +152,16 @@ aiAnalystRouter.post(
         reasoning_effort: 'minimal',
       });
       const content = completion.choices[0]?.message.content;
-      const parsedResponse = content
-        ? aiAnalystResponseSchema.safeParse(JSON.parse(content))
-        : { success: false as const };
+      let parsedResponse:
+        | ReturnType<typeof aiAnalystResponseSchema.safeParse>
+        | { success: false };
+      try {
+        parsedResponse = content
+          ? aiAnalystResponseSchema.safeParse(JSON.parse(content))
+          : { success: false };
+      } catch {
+        parsedResponse = { success: false };
+      }
 
       if (!parsedResponse.success) {
         logger.error('AI analyst returned an invalid structured response', {
