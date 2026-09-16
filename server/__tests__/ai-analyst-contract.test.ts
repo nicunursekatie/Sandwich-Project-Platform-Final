@@ -58,6 +58,12 @@ describe('AI Analyst contract', () => {
     expect(ANALYST_DATASET_CATALOG.collections.fields).not.toContain(
       'hostName'
     );
+    expect(ANALYST_DATASET_CATALOG.distributions.fields).not.toContain(
+      'hostId'
+    );
+    expect(ANALYST_DATASET_CATALOG.distributions.fields).not.toContain(
+      'recipientId'
+    );
     expect(ANALYST_DISPLAY_LIMITS.weeklyPeriods).toBe(104);
     expect(ANALYST_DISPLAY_LIMITS.dailyPeriods).toBe(400);
   });

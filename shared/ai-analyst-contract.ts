@@ -88,7 +88,7 @@ export const ANALYST_DATASET_CATALOG = {
     label: 'Sandwich distributions',
     requiredPermission: 'DISTRIBUTIONS_VIEW',
     population: 'All distribution records',
-    fields: ['distributionDate', 'sandwichCount', 'hostId', 'recipientId'],
+    fields: ['distributionDate', 'sandwichCount'],
   },
 } as const satisfies Record<
   AnalystDataset,
