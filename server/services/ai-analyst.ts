@@ -1,4 +1,4 @@
-import { and, desc, isNull } from 'drizzle-orm';
+import { desc, isNull, sql } from 'drizzle-orm';
 import { db } from '../db';
 import {
   sandwichCollections,
@@ -158,6 +158,10 @@ async function buildCollectionsSnapshot(): Promise<DatasetSnapshot> {
       value: collectionTotal(row),
     }))
   );
+  const totalSandwiches = included.reduce(
+    (sum, row) => sum + collectionTotal(row),
+    0
+  );
 
   return {
     dataset: 'collections',
@@ -166,9 +170,10 @@ async function buildCollectionsSnapshot(): Promise<DatasetSnapshot> {
     dataQualityNotes: [
       'Collection totals are actual logged sandwiches from non-deleted collection records.',
       'Group collection JSON counts take precedence; legacy group 1 and group 2 counts are used only when no group JSON is present.',
+      'Monthly series show the most recent 36 months; headline totals include all approved records selected for this snapshot.',
     ],
     metrics: {
-      totalSandwiches: monthlyTotals.reduce((sum, item) => sum + item.value, 0),
+      totalSandwiches,
       totalCollections: included.length,
       monthlySandwiches: monthlyTotals,
     },
@@ -186,7 +191,9 @@ async function buildEventsSnapshot(): Promise<DatasetSnapshot> {
         estimatedSandwichCount: eventRequests.estimatedSandwichCount,
       })
       .from(eventRequests)
-      .orderBy(desc(eventRequests.scheduledEventDate))
+      .orderBy(
+        sql`coalesce(${eventRequests.scheduledEventDate}, ${eventRequests.desiredEventDate}) desc nulls last`
+      )
       .limit(MAX_SOURCE_ROWS + 1)
   );
   const included = rows.slice(0, MAX_SOURCE_ROWS);
@@ -248,6 +255,10 @@ async function buildDistributionsSnapshot(): Promise<DatasetSnapshot> {
       value: asNonNegativeNumber(row.sandwichCount),
     }))
   );
+  const totalDistributedSandwiches = included.reduce(
+    (sum, row) => sum + asNonNegativeNumber(row.sandwichCount),
+    0
+  );
 
   return {
     dataset: 'distributions',
@@ -256,12 +267,10 @@ async function buildDistributionsSnapshot(): Promise<DatasetSnapshot> {
     dataQualityNotes: [
       'Distribution totals represent logged delivery records and may not equal collections because dates, partial deliveries, and data entry timing differ.',
       'Recipient and host identities are intentionally excluded from analyst context.',
+      'Monthly series show the most recent 36 months; headline totals include all approved records selected for this snapshot.',
     ],
     metrics: {
-      totalDistributedSandwiches: monthlyTotals.reduce(
-        (sum, item) => sum + item.value,
-        0
-      ),
+      totalDistributedSandwiches,
       totalDistributionRecords: included.length,
       monthlyDistributedSandwiches: monthlyTotals,
     },
