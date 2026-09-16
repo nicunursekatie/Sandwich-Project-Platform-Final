@@ -3,6 +3,7 @@ import { z } from 'zod';
 export const ANALYST_DATASETS = [
   'collections',
   'events',
+  'groups',
   'distributions',
 ] as const;
 export type AnalystDataset = (typeof ANALYST_DATASETS)[number];
@@ -10,6 +11,94 @@ export type AnalystDataset = (typeof ANALYST_DATASETS)[number];
 export const MAX_ANALYST_MESSAGE_LENGTH = 2_000;
 export const MAX_ANALYST_ASSISTANT_HISTORY_LENGTH = 6_000;
 export const MAX_ANALYST_HISTORY_MESSAGES = 12;
+export const ANALYST_DISPLAY_LIMITS = {
+  monthlyPeriods: 36,
+  weeklyPeriods: 104,
+  dailyPeriods: 400,
+  categoryRows: 20,
+  leadTimeYears: 12,
+} as const;
+
+/**
+ * This is the entire data contract available to AI Analyst operations.
+ * Fields not listed here, especially names, contact details, addresses, and
+ * free text, are default-denied even when a user can view them elsewhere.
+ */
+export const ANALYST_DATASET_CATALOG = {
+  collections: {
+    label: 'Sandwich collections',
+    requiredPermission: 'COLLECTIONS_VIEW',
+    population: 'All non-deleted collection-log records',
+    fields: [
+      'collectionDate',
+      'Friday–Thursday collection week (derived server-side)',
+      'individualSandwiches',
+      'individualDeli',
+      'individualTurkey',
+      'individualHam',
+      'individualPbj',
+      'individualGeneric',
+      'groupCollections.count',
+      'groupCollections.sandwichCount',
+      'groupCollections sandwich-type counts',
+      'group1Count',
+      'group2Count',
+      'eventRequestId',
+    ],
+  },
+  events: {
+    label: 'Event requests and events',
+    requiredPermission: 'EVENT_REQUESTS_VIEW',
+    population: 'All non-deleted event requests',
+    fields: [
+      'id (server-side correlation only)',
+      'status',
+      'statusChangedAt',
+      'createdAt (web-form lead-time analysis only)',
+      'desiredEventDate',
+      'scheduledEventDate',
+      'organizationCategory',
+      'schoolClassification',
+      'dateFlexible',
+      'isConfirmed',
+      'showOnVolunteerHub',
+      'estimatedSandwichCount',
+      'estimatedSandwichCountMin',
+      'estimatedSandwichCountMax',
+      'actualSandwichCount (reference coverage only)',
+      'actualAttendance',
+      'estimatedAttendance',
+    ],
+  },
+  groups: {
+    label: 'Group collection contributions',
+    requiredPermission: 'COLLECTIONS_VIEW',
+    population: 'All non-deleted collection-log group entries',
+    fields: [
+      'collectionDate',
+      'groupCollections.count',
+      'groupCollections.sandwichCount',
+      'groupCollections sandwich-type counts',
+      'group1Count',
+      'group2Count',
+      'eventRequestId (server-side correlation only)',
+    ],
+  },
+  distributions: {
+    label: 'Sandwich distributions',
+    requiredPermission: 'DISTRIBUTIONS_VIEW',
+    population: 'All distribution records',
+    fields: ['distributionDate', 'sandwichCount', 'hostId', 'recipientId'],
+  },
+} as const satisfies Record<
+  AnalystDataset,
+  {
+    label: string;
+    requiredPermission: string;
+    population: string;
+    fields: readonly string[];
+  }
+>;
 
 export const aiAnalystRequestSchema = z.object({
   message: z.string().trim().min(1).max(MAX_ANALYST_MESSAGE_LENGTH),
@@ -102,7 +191,13 @@ export function getRequestedAnalystDatasets(message: string): AnalystDataset[] {
   }
 
   if (
-    /\b(event|events|scheduled|schedule|organization|organizations|request|requests)\b/.test(
+    /\b(group|groups|group collection|group collections)\b/.test(normalized)
+  ) {
+    requested.add('groups');
+  }
+
+  if (
+    /\b(event|events|scheduled|schedule|completed|completion|organization|organizations|request|requests|lead time|lead-time|ahead)\b/.test(
       normalized
     )
   ) {

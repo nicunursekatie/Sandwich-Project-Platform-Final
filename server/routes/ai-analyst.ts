@@ -179,14 +179,9 @@ aiAnalystRouter.post(
         ...parsedResponse.data,
         datasets: snapshot.includedDatasets,
         unavailableDatasets: snapshot.unavailableDatasets,
-        dataQualityNotes: snapshot.datasets.flatMap((dataset) => [
-          ...dataset.dataQualityNotes,
-          ...(dataset.truncated
-            ? [
-                `${dataset.dataset} analysis is limited to the ${dataset.sourceRows} newest approved records.`,
-              ]
-            : []),
-        ]),
+        dataQualityNotes: snapshot.datasets.flatMap(
+          (dataset) => dataset.dataQualityNotes
+        ),
       });
     } catch (error) {
       if (error instanceof AnalystAccessError) {
