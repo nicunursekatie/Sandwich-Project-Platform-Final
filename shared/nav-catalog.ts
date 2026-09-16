@@ -127,16 +127,16 @@ export const NAV_CATALOG: NavCatalogItem[] = [
     permissionKey: PERMISSIONS.NAV_COLLECTIONS_LOG,
     group: 'home',
   },
+
+  // EVENTS
   {
     id: 'event-requests',
     label: 'Event Requests',
     href: 'event-requests',
     permissionKey: PERMISSIONS.NAV_EVENT_PLANNING,
-    group: 'home',
+    group: 'events',
     permissionLabel: 'Event Planning',
   },
-
-  // EVENTS
   {
     id: 'event-ops-dashboard',
     label: 'Events Operations Dashboard',
