@@ -29,7 +29,7 @@ export default function SimpleNav({
   isCollapsed = false,
 }: {
   navigationItems?: NavItem[];
-  /** Catalog href, including query strings (e.g. event-requests?tab=planning). Use getDashboardSectionUrl to navigate. */
+  /** Catalog href, including query strings (e.g. chat?tab=dms). Use getDashboardSectionUrl to navigate. */
   onSectionChange: (section: string) => void;
   activeSection?: string;
   isCollapsed?: boolean;
@@ -214,14 +214,19 @@ export default function SimpleNav({
       const external = isExternalNavItem(item);
       const IconComponent = item.icon;
 
+      const liveSheet = Boolean(item.liveSheet);
       const className = `
         w-full flex items-center ${
           isCollapsed ? 'justify-center px-2 h-12' : 'justify-start px-3 sm:px-3.5 h-12'
         } text-left touch-manipulation relative text-base sm:text-[17px] font-bold rounded-lg transition-all duration-200
         ${
-          active
-            ? 'bg-brand-primary text-white shadow-md border-l-4 border-brand-primary-dark'
-            : 'text-slate-800 hover:bg-slate-100 hover:shadow-sm'
+          liveSheet
+            ? active
+              ? 'bg-amber-800 text-white shadow-md border-l-4 border-amber-950'
+              : 'text-amber-950 bg-amber-50 hover:bg-amber-100 border border-amber-200'
+            : active
+              ? 'bg-brand-primary text-white shadow-md border-l-4 border-brand-primary-dark'
+              : 'text-slate-800 hover:bg-slate-100 hover:shadow-sm'
         }
       `;
 
@@ -236,6 +241,15 @@ export default function SimpleNav({
           {!isCollapsed && (
             <>
               <span className="flex-1 text-left font-bold leading-snug">{item.label}</span>
+              {liveSheet && (
+                <span
+                  className={`ml-1 shrink-0 rounded px-1 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                    active ? 'bg-white/20 text-white' : 'bg-amber-200/80 text-amber-950'
+                  }`}
+                >
+                  Sheet
+                </span>
+              )}
               {external && (
                 <ExternalLink
                   className={`h-3 w-3 flex-shrink-0 ml-1 ${active ? 'text-white/70' : 'text-slate-400'}`}
@@ -317,7 +331,15 @@ export default function SimpleNav({
           key={item.id}
           href={href}
           className={className}
-          title={isCollapsed ? item.label : undefined}
+          title={
+            isCollapsed
+              ? liveSheet
+                ? `${item.label} (live Google Sheet)`
+                : item.label
+              : liveSheet
+                ? 'Live Google Sheet — not stored in this app'
+                : undefined
+          }
           data-nav-id={item.id}
           data-testid={`nav-${item.id}`}
           aria-current={active ? 'page' : undefined}

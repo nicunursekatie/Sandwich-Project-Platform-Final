@@ -1091,7 +1091,7 @@ export const TOURS: Tour[] = [
       {
         id: 'driver-planning-nav',
         title: 'Open Driver Planning',
-        description: 'Find "Driver Planning" in the Event Planning section of the navigation menu.',
+        description: 'Find "Driver Planning" in the Events section of the navigation menu.',
         targetSelector: '[data-nav-id="driver-planning"]',
         position: 'right',
         navigationAction: {

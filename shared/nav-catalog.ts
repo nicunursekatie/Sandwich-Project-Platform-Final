@@ -44,15 +44,20 @@ export interface NavCatalogItem {
    */
   permissionLabel?: string;
   defaultGrant?: NavDefaultGrant;
+  /**
+   * In-app live view of an external document (e.g. Google Sheet).
+   * The renderer applies distinct styling; do not put colors here.
+   */
+  liveSheet?: boolean;
 }
 
 export const NAV_SECTION_ORDER: readonly NavGroupId[] = [
   'home',
   'events',
+  'communication',
   'calendars',
   'volunteer-resources',
   'directory',
-  'communication',
   'operations',
   'resources',
   'data',
@@ -106,7 +111,7 @@ const INVENTORY_CALCULATOR_URL =
   'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html';
 
 export const NAV_CATALOG: NavCatalogItem[] = [
-  // HOME (was unlabeled pinned items)
+  // HOME
   {
     id: 'dashboard',
     label: 'Dashboard',
@@ -122,39 +127,23 @@ export const NAV_CATALOG: NavCatalogItem[] = [
     permissionKey: PERMISSIONS.NAV_COLLECTIONS_LOG,
     group: 'home',
   },
-
-  // EVENTS
   {
     id: 'event-requests',
     label: 'Event Requests',
     href: 'event-requests',
     permissionKey: PERMISSIONS.NAV_EVENT_PLANNING,
-    group: 'events',
+    group: 'home',
     permissionLabel: 'Event Planning',
   },
-  {
-    id: 'event-planning',
-    label: 'Event Planning',
-    href: 'event-requests?tab=planning',
-    permissionKey: PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW,
-    group: 'events',
-    permissionLabel: 'Event Admin Overview',
-  },
+
+  // EVENTS
   {
     id: 'event-ops-dashboard',
-    label: 'Event Ops',
+    label: 'Events Operations Dashboard',
     href: 'event-ops-dashboard',
     permissionKey: PERMISSIONS.NAV_EVENT_PLANNING,
     group: 'events',
     permissionLabel: 'Event Planning',
-  },
-  {
-    id: 'admin-overview',
-    label: 'Event Admin Overview',
-    href: 'event-requests?tab=admin_overview',
-    permissionKey: PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW,
-    group: 'events',
-    permissionLabel: 'Event Admin Overview',
   },
   {
     id: 'driver-planning',
@@ -164,34 +153,12 @@ export const NAV_CATALOG: NavCatalogItem[] = [
     group: 'events',
   },
   {
-    id: 'sandwich-destinations',
-    label: 'Sandwich Destinations',
-    href: 'event-requests?tab=sandwich_overview',
-    permissionKey: PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW,
-    group: 'events',
-    permissionLabel: 'Event Admin Overview',
-  },
-  {
-    id: 'event-contacts-directory',
-    label: 'Event Contacts',
-    href: 'event-contacts-directory',
-    permissionKey: PERMISSIONS.NAV_HOSTS,
-    group: 'events',
-    permissionLabel: 'Hosts Directory',
-  },
-  {
     id: 'events',
     label: 'Events Google Sheet',
     href: 'events',
     permissionKey: PERMISSIONS.NAV_EVENTS_GOOGLE_SHEET,
     group: 'events',
-  },
-  {
-    id: 'event-impact-reports',
-    label: 'Event Impact Reports',
-    href: 'event-impact-reports',
-    permissionKey: PERMISSIONS.NAV_EVENT_IMPACT_REPORTS,
-    group: 'events',
+    liveSheet: true,
   },
 
   // CALENDARS (was a flyout under Events)
@@ -270,6 +237,14 @@ export const NAV_CATALOG: NavCatalogItem[] = [
     href: 'hosts',
     permissionKey: PERMISSIONS.NAV_HOSTS,
     group: 'directory',
+  },
+  {
+    id: 'event-contacts-directory',
+    label: 'Event Contacts',
+    href: 'event-contacts-directory',
+    permissionKey: PERMISSIONS.NAV_HOSTS,
+    group: 'directory',
+    permissionLabel: 'Hosts Directory',
   },
   {
     id: 'recipients',
@@ -467,6 +442,13 @@ export const NAV_CATALOG: NavCatalogItem[] = [
     label: 'Analytics',
     href: 'analytics',
     permissionKey: PERMISSIONS.NAV_ANALYTICS,
+    group: 'data',
+  },
+  {
+    id: 'event-impact-reports',
+    label: 'Event Impact Reports',
+    href: 'event-impact-reports',
+    permissionKey: PERMISSIONS.NAV_EVENT_IMPACT_REPORTS,
     group: 'data',
   },
   {

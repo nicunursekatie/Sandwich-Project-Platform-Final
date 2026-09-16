@@ -2620,7 +2620,7 @@ export default function DriverPlanningDashboard() {
       <div className="flex-shrink-0 p-4 bg-white border-b hidden lg:block">
         <PageBreadcrumbs
           segments={[
-            { label: 'Event Planning', href: '/dashboard?section=event-requests' },
+            { label: 'Events' },
             { label: 'Driver Planning' }
           ]}
         />
