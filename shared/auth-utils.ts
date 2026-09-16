@@ -205,6 +205,7 @@ export const PERMISSIONS = {
   ANALYTICS_VIEW: 'ANALYTICS_VIEW',
   ANALYTICS_EXPORT: 'ANALYTICS_EXPORT',
   ANALYTICS_ADVANCED: 'ANALYTICS_ADVANCED', // Access to advanced analytics features
+  AI_ANALYST_VIEW: 'AI_ANALYST_VIEW', // Ask questions of approved, aggregate analytics data
 
   // GRANT_METRICS - Grant reporting and metrics
   GRANT_METRICS_VIEW: 'GRANT_METRICS_VIEW',

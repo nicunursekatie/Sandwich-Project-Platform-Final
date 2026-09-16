@@ -14,36 +14,38 @@ export interface PermissionRiskInfo {
   icon: string;
 }
 
-export const RISK_LEVEL_INFO: Record<PermissionRiskLevel, PermissionRiskInfo> = {
-  safe: {
-    level: 'safe',
-    description: 'View-only or personal data. Low risk.',
-    color: 'text-green-700',
-    badgeColor: 'bg-green-100 text-green-800 border-green-300',
-    icon: '👁️',
-  },
-  moderate: {
-    level: 'moderate',
-    description: 'Can create/edit own content. Medium risk.',
-    color: 'text-blue-700',
-    badgeColor: 'bg-blue-100 text-blue-800 border-blue-300',
-    icon: '✏️',
-  },
-  elevated: {
-    level: 'elevated',
-    description: 'Can edit others\' data or manage resources. Higher risk.',
-    color: 'text-orange-700',
-    badgeColor: 'bg-orange-100 text-orange-800 border-orange-300',
-    icon: '⚠️',
-  },
-  critical: {
-    level: 'critical',
-    description: 'Can delete data, manage users, or access sensitive info. Highest risk.',
-    color: 'text-red-700',
-    badgeColor: 'bg-red-100 text-red-800 border-red-300',
-    icon: '🔥',
-  },
-};
+export const RISK_LEVEL_INFO: Record<PermissionRiskLevel, PermissionRiskInfo> =
+  {
+    safe: {
+      level: 'safe',
+      description: 'View-only or personal data. Low risk.',
+      color: 'text-green-700',
+      badgeColor: 'bg-green-100 text-green-800 border-green-300',
+      icon: '👁️',
+    },
+    moderate: {
+      level: 'moderate',
+      description: 'Can create/edit own content. Medium risk.',
+      color: 'text-blue-700',
+      badgeColor: 'bg-blue-100 text-blue-800 border-blue-300',
+      icon: '✏️',
+    },
+    elevated: {
+      level: 'elevated',
+      description: "Can edit others' data or manage resources. Higher risk.",
+      color: 'text-orange-700',
+      badgeColor: 'bg-orange-100 text-orange-800 border-orange-300',
+      icon: '⚠️',
+    },
+    critical: {
+      level: 'critical',
+      description:
+        'Can delete data, manage users, or access sensitive info. Highest risk.',
+      color: 'text-red-700',
+      badgeColor: 'bg-red-100 text-red-800 border-red-300',
+      icon: '🔥',
+    },
+  };
 
 export const PERMISSION_RISK_LEVELS: Record<string, PermissionRiskLevel> = {
   // SAFE - View-only permissions
@@ -66,6 +68,7 @@ export const PERMISSION_RISK_LEVELS: Record<string, PermissionRiskLevel> = {
   [PERMISSIONS.YEARLY_CALENDAR_VIEW]: 'safe',
   [PERMISSIONS.DOCUMENTS_VIEW]: 'safe',
   [PERMISSIONS.ANALYTICS_VIEW]: 'safe',
+  [PERMISSIONS.AI_ANALYST_VIEW]: 'safe',
   [PERMISSIONS.MEETINGS_VIEW]: 'safe',
   [PERMISSIONS.TOOLKIT_ACCESS]: 'safe',
   [PERMISSIONS.ORGANIZATIONS_VIEW]: 'safe',
@@ -218,7 +221,9 @@ export const PERMISSION_RISK_LEVELS: Record<string, PermissionRiskLevel> = {
 /**
  * Get the risk level for a permission
  */
-export function getPermissionRiskLevel(permission: string): PermissionRiskLevel {
+export function getPermissionRiskLevel(
+  permission: string
+): PermissionRiskLevel {
   return PERMISSION_RISK_LEVELS[permission] || 'moderate';
 }
 
@@ -233,7 +238,9 @@ export function getPermissionRiskInfo(permission: string): PermissionRiskInfo {
 /**
  * Count permissions by risk level
  */
-export function countPermissionsByRisk(permissions: string[]): Record<PermissionRiskLevel, number> {
+export function countPermissionsByRisk(
+  permissions: string[]
+): Record<PermissionRiskLevel, number> {
   const counts: Record<PermissionRiskLevel, number> = {
     safe: 0,
     moderate: 0,
@@ -241,7 +248,7 @@ export function countPermissionsByRisk(permissions: string[]): Record<Permission
     critical: 0,
   };
 
-  permissions.forEach(perm => {
+  permissions.forEach((perm) => {
     const level = getPermissionRiskLevel(perm);
     counts[level]++;
   });
