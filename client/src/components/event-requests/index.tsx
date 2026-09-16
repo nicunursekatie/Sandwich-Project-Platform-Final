@@ -19,7 +19,6 @@ import { RescheduledTab } from './tabs/RescheduledTab';
 import { MyAssignmentsTab } from './tabs/MyAssignmentsTab';
 import { AllEventsTab } from './tabs/AllEventsTab';
 import { AdminOverviewTab } from './tabs/AdminOverviewTab';
-import { PlanningTab } from './tabs/PlanningTab';
 import { SandwichDestinationOverview } from './tabs/SandwichDestinationOverview';
 import { VolunteerOpportunitiesTab } from './tabs/VolunteerOpportunitiesTab';
 import { Button } from '@/components/ui/button';
@@ -99,7 +98,7 @@ import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 
 // Tabs that render aggregate dashboards rather than a flat list of event
 // rows — the Export action (a row-level spreadsheet) doesn't apply to them.
-const EXPORT_EXCLUDED_TABS = ['admin_overview', 'planning', 'sandwich_overview'];
+const EXPORT_EXCLUDED_TABS = ['admin_overview', 'sandwich_overview'];
 
 // Main component that uses the context
 const EventRequestsManagementContent: React.FC = () => {
@@ -457,11 +456,9 @@ const EventRequestsManagementContent: React.FC = () => {
       tabs.admin_overview = <AdminOverviewTab eventRequests={eventRequests} />;
     }
 
-    // Add planning tab for users with admin overview permission (same permission)
     if (user?.permissions?.includes(PERMISSIONS.EVENT_REQUESTS_VIEW_ADMIN_OVERVIEW) ||
         user?.permissions?.includes('view_admin_overview') ||
         user?.role === 'super_admin') {
-      tabs.planning = <PlanningTab eventRequests={eventRequests} />;
       tabs.sandwich_overview = <SandwichDestinationOverview eventRequests={eventRequests} />;
     }
 
@@ -650,7 +647,7 @@ const EventRequestsManagementContent: React.FC = () => {
                   "virtual" tabs like My Assignments fetch all active events and
                   filter client-side — exporting the raw cache would leak every
                   active request. Hidden on the dashboard tabs (admin overview /
-                  planning / sandwich overview), which aren't flat row lists, and
+                  sandwich overview), which aren't flat row lists, and
                   in Calendar/Map views which render their own data. Lives in the
                   top-right action group with Add Event because it's a one-off
                   action that downloads a file, not a view. */}
