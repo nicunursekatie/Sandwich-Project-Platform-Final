@@ -20,9 +20,8 @@ export const ANALYST_DISPLAY_LIMITS = {
 } as const;
 
 /**
- * This is the entire data contract available to AI Analyst operations.
- * Fields not listed here, especially names, contact details, addresses, and
- * free text, are default-denied even when a user can view them elsewhere.
+ * Labels used by the Analyst UI. The full query-mode field contract is
+ * documented and enforced server-side in ai-analyst-query-runner.ts.
  */
 export const ANALYST_DATASET_CATALOG = {
   collections: {
@@ -43,7 +42,7 @@ export const ANALYST_DATASET_CATALOG = {
       'groupCollections sandwich-type counts',
       'group1Count',
       'group2Count',
-      'eventRequestId',
+      'eventRequestId (server-side correlation only)',
     ],
   },
   events: {
@@ -68,6 +67,8 @@ export const ANALYST_DATASET_CATALOG = {
       'actualSandwichCount (reference coverage only)',
       'actualAttendance',
       'estimatedAttendance',
+      'organizationName',
+      'department',
     ],
   },
   groups: {
@@ -82,6 +83,7 @@ export const ANALYST_DATASET_CATALOG = {
       'group1Count',
       'group2Count',
       'eventRequestId (server-side correlation only)',
+      'group and host names',
     ],
   },
   distributions: {
