@@ -57,6 +57,11 @@ describe('AI Analyst SQL guard', () => {
     ).toMatchObject({ ok: false });
     expect(
       guardAnalystSql(
+        'SELECT * FROM analyst_events ae JOIN event_requests er ON ae.id = er.id'
+      )
+    ).toMatchObject({ ok: false });
+    expect(
+      guardAnalystSql(
         "SELECT query_to_xml('SELECT password FROM users', true, true, '') FROM analyst_events"
       )
     ).toMatchObject({ ok: false });
@@ -70,6 +75,11 @@ describe('AI Analyst SQL guard', () => {
     ).toMatchObject({ ok: false });
     expect(
       guardAnalystSql('SELECT * FROM analyst_events FOR UPDATE')
+    ).toMatchObject({ ok: false });
+    expect(
+      guardAnalystSql(
+        'SELECT * FROM analyst_events WHERE id IN (WITH RECURSIVE chain AS (SELECT 1) SELECT * FROM chain)'
+      )
     ).toMatchObject({ ok: false });
   });
 

@@ -241,6 +241,11 @@ function extractRelations(skeleton: string): {
           index += 1;
           continue;
         }
+        if (joinWords.has(normalized)) {
+          expectsRelation = true;
+          index += 1;
+          continue;
+        }
         if (normalized === 'as') {
           index += 2;
           continue;
@@ -323,7 +328,7 @@ export function guardAnalystSql(rawSql: unknown): AnalystSqlGuardResult {
       error: 'Only a single read-only SELECT or WITH query is allowed.',
     };
   }
-  if (/^\s*with\s+recursive\b/i.test(skeleton)) {
+  if (/\bwith\s+recursive\b/i.test(skeleton)) {
     return {
       ok: false,
       error: 'Recursive queries are not available to the Analyst.',
