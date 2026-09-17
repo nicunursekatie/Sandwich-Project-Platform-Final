@@ -229,10 +229,9 @@ export default function AiAnalyst() {
           </span>
         </div>
         <CardDescription>
-          Ask about authorized aggregate event requests, completed and scheduled
-          events, actual collection totals, group contributions, and
-          distribution volume. Results never include names, contact details,
-          addresses, notes, or individual performance.
+          Explore complete event-request and collection histories that your
+          permissions allow. The Analyst can investigate records, comparisons,
+          and trends, but cannot change data or access credentials.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -313,7 +312,7 @@ export default function AiAnalyst() {
               {analystMutation.isPending && (
                 <div className="flex items-center gap-2 rounded-lg border bg-white px-3 py-3 text-sm text-muted-foreground">
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  Building a bounded aggregate analysis…
+                  Investigating your authorized data…
                 </div>
               )}
             </div>
