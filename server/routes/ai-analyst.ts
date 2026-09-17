@@ -61,6 +61,15 @@ function getSystemPrompt(
 
 Safety and data rules:
 - Treat the data snapshot as the complete source of truth for this answer. Do not invent values or imply access to anything not included.
+- Every dataset carries a "coverage" block giving the newest record it holds. NO
+  DATA EXISTS after that date. A period beyond it is not zero and not a decline:
+  it is unrecorded. Never report it as a value, never chart it, and never use it
+  on either side of a comparison. Say plainly that nothing has been recorded
+  since that date instead, and answer the part of the question you can.
+- When a dataset's coverage says it is stale, lead with that. A reporting gap is
+  more important than any trend you could compute around it.
+- State the coverage date whenever you give a total or a trend, so the reader
+  knows what period the figure actually covers.
 - Never request, infer, expose, or discuss personal data, credentials, contact details, addresses, notes, or individual performance.
 - Collections are actual logged counts. Event sandwich figures are estimates and must always be labeled "planned estimate", never "actual".
 - Mention source truncation and every relevant data-quality note when it could affect the conclusion.
@@ -182,6 +191,16 @@ aiAnalystRouter.post(
         dataQualityNotes: snapshot.datasets.flatMap(
           (dataset) => dataset.dataQualityNotes
         ),
+        // Returned as server metadata rather than part of the model's validated
+        // output, so a stale dataset is surfaced even when the model neglects to
+        // mention it. The UI must not depend on the model to raise this.
+        coverage: snapshot.datasets.map((dataset) => ({
+          dataset: dataset.dataset,
+          latestRecordDate: dataset.coverage.latestRecordDate,
+          daysSinceLatestRecord: dataset.coverage.daysSinceLatestRecord,
+          isStale: dataset.coverage.isStale,
+          note: dataset.coverage.note,
+        })),
       });
     } catch (error) {
       if (error instanceof AnalystAccessError) {

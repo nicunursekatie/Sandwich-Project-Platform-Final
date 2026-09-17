@@ -15,7 +15,14 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { BarChart3, Loader2, Send, ShieldCheck, Sparkles } from 'lucide-react';
+import {
+  AlertTriangle,
+  BarChart3,
+  Loader2,
+  Send,
+  ShieldCheck,
+  Sparkles,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -40,8 +47,17 @@ interface AnalystMessage {
   chart?: AiAnalystChart;
   table?: AiAnalystTable;
   dataQualityNotes?: string[];
+  coverage?: AnalystCoverage[];
   unavailableDatasets?: AnalystDataset[];
   datasets?: AnalystDataset[];
+}
+
+interface AnalystCoverage {
+  dataset: string;
+  latestRecordDate: string | null;
+  daysSinceLatestRecord: number | null;
+  isStale: boolean;
+  note: string;
 }
 
 interface AiAnalystApiResponse {
@@ -51,6 +67,7 @@ interface AiAnalystApiResponse {
   datasets: AnalystDataset[];
   unavailableDatasets: AnalystDataset[];
   dataQualityNotes: string[];
+  coverage?: AnalystCoverage[];
 }
 
 const CHART_COLORS = [
@@ -192,6 +209,7 @@ export default function AiAnalyst() {
           chart: data.chart,
           table: data.table,
           dataQualityNotes: data.dataQualityNotes,
+          coverage: data.coverage,
           unavailableDatasets: data.unavailableDatasets,
           datasets: data.datasets,
         },
@@ -294,6 +312,35 @@ export default function AiAnalyst() {
                           {message.unavailableDatasets.join(', ')}.
                         </p>
                       )}
+                    {/*
+                      Rendered from server metadata, not from the model's answer.
+                      A stale dataset must surface even when the model omits it:
+                      an unrecorded period looks exactly like a zero, and a zero
+                      presented as fact reads as a collapse that never happened.
+                    */}
+                    {message.coverage
+                      ?.filter((entry) => entry.isStale)
+                      .map((entry) => (
+                        <div
+                          key={entry.dataset}
+                          role="alert"
+                          className="mt-3 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900"
+                        >
+                          <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                          <span>
+                            <strong className="font-semibold">
+                              {entry.dataset} data stops at{' '}
+                              {entry.latestRecordDate ?? 'no records'}
+                            </strong>
+                            {entry.daysSinceLatestRecord !== null && (
+                              <> ({entry.daysSinceLatestRecord} days ago)</>
+                            )}
+                            . Nothing after that date has been recorded, so any
+                            later period is unknown rather than zero.
+                          </span>
+                        </div>
+                      ))}
+
                     {message.dataQualityNotes &&
                       message.dataQualityNotes.length > 0 && (
                         <details className="mt-3 text-xs text-muted-foreground">

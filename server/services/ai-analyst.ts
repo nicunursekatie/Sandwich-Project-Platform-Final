@@ -4,12 +4,20 @@ import { checkPermission } from '@shared/unified-auth-utils';
 import { PERMISSIONS } from '@shared/auth-utils';
 import {
   ANALYST_DATASET_CATALOG,
+  daysSince,
   ANALYST_DISPLAY_LIMITS,
   getRequestedAnalystDatasets,
   type AnalystDataset,
 } from '@shared/ai-analyst-contract';
 
 const QUERY_TIMEOUT_MS = 8_000;
+
+/**
+ * How far behind "today" a dataset's newest record can fall before we treat the
+ * dataset as stale. Collections are logged roughly weekly, so a gap beyond this
+ * means records are missing rather than simply not due yet.
+ */
+const STALE_AFTER_DAYS = 21;
 const LEAD_TIME_RELIABILITY_START_DATE = '2025-08-25';
 
 const DATASET_PERMISSIONS: Record<AnalystDataset, string> = {
@@ -27,9 +35,28 @@ interface AnalystUser {
   isActive?: boolean | null;
 }
 
+/**
+ * How current a dataset is.
+ *
+ * Without this the model cannot tell "we collected nothing in that period" from
+ * "nobody logged anything in that period". Both look like zero, and a zero
+ * reported as a real figure turns a data-entry gap into an apparent collapse.
+ */
+interface DatasetCoverage {
+  /** Newest record date in the dataset, or null when it has no records. */
+  latestRecordDate: string | null;
+  /** Whole days between latestRecordDate and today, Eastern time. */
+  daysSinceLatestRecord: number | null;
+  /** True when the newest record is older than STALE_AFTER_DAYS. */
+  isStale: boolean;
+  /** Plain-language statement of what this dataset can and cannot answer. */
+  note: string;
+}
+
 interface DatasetSnapshot {
   dataset: AnalystDataset;
   population: string;
+  coverage: DatasetCoverage;
   dataQualityNotes: string[];
   metrics: Record<string, unknown>;
 }
@@ -102,6 +129,57 @@ async function withinQueryTimeout<T>(
   } finally {
     clearTimeout(timeout);
   }
+}
+
+/**
+ * Resolve how current a dataset is from a query returning a single
+ * latest_date column (text, ISO YYYY-MM-DD, or NULL).
+ *
+ * `subject` names what the date means, so the note reads correctly for a
+ * collection date ("collected") versus a record timestamp ("recorded").
+ */
+async function buildCoverage(
+  query: SQL,
+  subject: string
+): Promise<DatasetCoverage> {
+  const rows = await runAggregateQuery(query);
+  const latestRecordDate = rows[0]?.latest_date
+    ? String(rows[0].latest_date).slice(0, 10)
+    : null;
+
+  if (!latestRecordDate) {
+    return {
+      latestRecordDate: null,
+      daysSinceLatestRecord: null,
+      isStale: true,
+      note: `This dataset contains no records, so no ${subject} figure can be reported for any period.`,
+    };
+  }
+
+  const daysSinceLatestRecord = daysSince(latestRecordDate);
+
+  // A date we cannot parse is treated as stale rather than current. The column
+  // is free text, so an unreadable value means we genuinely do not know how
+  // fresh the data is -- and "unknown" must never read as "up to date".
+  if (daysSinceLatestRecord === null) {
+    return {
+      latestRecordDate,
+      daysSinceLatestRecord: null,
+      isStale: true,
+      note: `The newest ${subject} record has an unreadable date (${latestRecordDate}), so how current this dataset is cannot be established. Treat any period-based figure as unverified.`,
+    };
+  }
+
+  const isStale = daysSinceLatestRecord > STALE_AFTER_DAYS;
+
+  return {
+    latestRecordDate,
+    daysSinceLatestRecord,
+    isStale,
+    note: isStale
+      ? `Nothing has been ${subject} since ${latestRecordDate} (${daysSinceLatestRecord} days ago). Any period after that date has NO DATA -- it is not a zero, and must never be reported as one or used in a comparison.`
+      : `Data is current through ${latestRecordDate}. Periods after that date have no data yet.`,
+  };
 }
 
 async function runAggregateQuery(query: SQL): Promise<QueryRow[]> {
@@ -235,8 +313,19 @@ async function buildCollectionsSnapshot(): Promise<DatasetSnapshot> {
   ]);
   const summary = summaryRows[0];
 
+  const coverage = await buildCoverage(
+    sql`
+      SELECT MAX(collection_date) AS latest_date
+      FROM sandwich_collections
+      WHERE deleted_at IS NULL
+        AND collection_date ~ '^\\d{4}-\\d{2}-\\d{2}$'
+    `,
+    'collected'
+  );
+
   return {
     dataset: 'collections',
+    coverage,
     population: ANALYST_DATASET_CATALOG.collections.population,
     dataQualityNotes: [
       'All non-deleted collection records contribute to headline totals; no collection-row cap is applied.',
@@ -282,8 +371,19 @@ async function buildGroupsSnapshot(): Promise<DatasetSnapshot> {
   ]);
   const summary = summaryRows[0];
 
+  const coverage = await buildCoverage(
+    sql`
+      SELECT MAX(collection_date) AS latest_date
+      FROM sandwich_collections
+      WHERE deleted_at IS NULL
+        AND collection_date ~ '^\\d{4}-\\d{2}-\\d{2}$'
+    `,
+    'collected'
+  );
+
   return {
     dataset: 'groups',
+    coverage,
     population: ANALYST_DATASET_CATALOG.groups.population,
     dataQualityNotes: [
       'Group analysis uses all non-deleted collection-log group entries, not a capped sample.',
@@ -466,8 +566,18 @@ async function buildEventsSnapshot(): Promise<DatasetSnapshot> {
   const summary = summaryRows[0];
   const leadSummary = leadSummaryRows[0];
 
+  const coverage = await buildCoverage(
+    sql`
+      SELECT TO_CHAR(MAX(created_at), 'YYYY-MM-DD') AS latest_date
+      FROM event_requests
+      WHERE deleted_at IS NULL
+    `,
+    'recorded as an event request'
+  );
+
   return {
     dataset: 'events',
+    coverage,
     population: ANALYST_DATASET_CATALOG.events.population,
     dataQualityNotes: [
       'All non-deleted event requests contribute to event totals; no event-row cap is applied.',
@@ -557,8 +667,18 @@ async function buildDistributionsSnapshot(): Promise<DatasetSnapshot> {
   ]);
   const summary = summaryRows[0];
 
+  const coverage = await buildCoverage(
+    sql`
+      SELECT MAX(distribution_date) AS latest_date
+      FROM sandwich_distributions
+      WHERE distribution_date ~ '^\\d{4}-\\d{2}-\\d{2}$'
+    `,
+    'distributed'
+  );
+
   return {
     dataset: 'distributions',
+    coverage,
     population: ANALYST_DATASET_CATALOG.distributions.population,
     dataQualityNotes: [
       'All distribution records contribute to headline totals; no distribution-row cap is applied.',

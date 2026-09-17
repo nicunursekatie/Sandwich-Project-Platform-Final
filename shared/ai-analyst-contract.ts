@@ -216,3 +216,26 @@ export function getRequestedAnalystDatasets(message: string): AnalystDataset[] {
   // the caller is independently authorized to use.
   return requested.size > 0 ? [...requested] : [...ANALYST_DATASETS];
 }
+
+/**
+ * Whole days between an ISO date and today.
+ *
+ * Both sides are compared as calendar dates in Eastern time. The app operates
+ * in Atlanta, and after 8pm local a UTC "today" has already rolled to the next
+ * day, which would report a gap one day larger than it is. Exported for tests.
+ *
+ * Returns null for an unparseable date, and never returns a negative number:
+ * a record dated in the future is "0 days ago", not "-5".
+ */
+export function daysSince(
+  isoDate: string,
+  today: string = new Date().toLocaleDateString('en-CA', {
+    timeZone: 'America/New_York',
+  })
+): number | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return null;
+  const from = Date.parse(`${isoDate}T00:00:00Z`);
+  const to = Date.parse(`${today}T00:00:00Z`);
+  if (Number.isNaN(from) || Number.isNaN(to)) return null;
+  return Math.max(0, Math.round((to - from) / 86_400_000));
+}
