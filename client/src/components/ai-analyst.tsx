@@ -32,6 +32,7 @@ import type {
   AiAnalystTable,
   AnalystDataset,
 } from '@shared/ai-analyst-contract';
+import { ANALYST_DATASET_CATALOG } from '@shared/ai-analyst-contract';
 
 interface AnalystMessage {
   role: 'user' | 'assistant';
@@ -40,6 +41,7 @@ interface AnalystMessage {
   table?: AiAnalystTable;
   dataQualityNotes?: string[];
   unavailableDatasets?: AnalystDataset[];
+  datasets?: AnalystDataset[];
 }
 
 interface AiAnalystApiResponse {
@@ -62,8 +64,9 @@ const CHART_COLORS = [
 const SUGGESTED_QUESTIONS = [
   'How are actual sandwich collections trending over the last 12 months?',
   'What is the current event status breakdown and what does it suggest?',
-  'Compare planned event estimates with logged collection totals, keeping the difference clear.',
-  'Show monthly distribution volume and note any data limitations.',
+  'How far ahead of the completed event date is an event request usually received?',
+  'How much of our actual collection volume comes from group contributions?',
+  'Compare September 2025 and September 2026 week by week.',
 ];
 
 function renderChart(chart: AiAnalystChart) {
@@ -190,6 +193,7 @@ export default function AiAnalyst() {
           table: data.table,
           dataQualityNotes: data.dataQualityNotes,
           unavailableDatasets: data.unavailableDatasets,
+          datasets: data.datasets,
         },
       ]);
     },
@@ -225,9 +229,10 @@ export default function AiAnalyst() {
           </span>
         </div>
         <CardDescription>
-          Ask about authorized aggregate collections, events, and distribution
-          data. Results never include contact details, addresses, notes, or
-          individual performance.
+          Ask about authorized aggregate event requests, completed and scheduled
+          events, actual collection totals, group contributions, and
+          distribution volume. Results never include names, contact details,
+          addresses, notes, or individual performance.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -271,6 +276,17 @@ export default function AiAnalyst() {
                     </p>
                     {message.table && renderTable(message.table)}
                     {message.chart && renderChart(message.chart)}
+                    {message.datasets && message.datasets.length > 0 && (
+                      <p className="mt-3 text-xs text-muted-foreground">
+                        Sources used:{' '}
+                        {message.datasets
+                          .map(
+                            (dataset) => ANALYST_DATASET_CATALOG[dataset].label
+                          )
+                          .join(', ')}
+                        .
+                      </p>
+                    )}
                     {message.unavailableDatasets &&
                       message.unavailableDatasets.length > 0 && (
                         <p className="mt-3 text-xs text-amber-700">
@@ -334,7 +350,10 @@ export default function AiAnalyst() {
         </div>
         <p className="text-xs text-muted-foreground">
           Press Cmd/Ctrl+Enter to analyze. Collection counts are actual logged
-          totals; event sandwich counts are planning estimates.
+          totals; event sandwich counts are planning estimates. Headline metrics
+          use all authorized eligible records. The Analyst also has recent daily
+          and Friday–Thursday weekly collection series for time-bounded
+          comparisons.
         </p>
       </CardContent>
     </Card>
