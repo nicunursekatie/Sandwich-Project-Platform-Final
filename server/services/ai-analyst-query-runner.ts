@@ -1,5 +1,5 @@
-import { sql, type SQL } from 'drizzle-orm';
-import { createDbWithFetchOptions } from '../db';
+import { neon } from '@neondatabase/serverless';
+import { getDatabaseUrl } from '../db-url';
 import {
   guardAnalystSql,
   MAX_ANALYST_QUERY_ROWS,
@@ -19,8 +19,13 @@ export interface AnalystQueryResult {
   durationMs?: number;
 }
 
-const ANALYST_RELATIONS = `
-  WITH analyst_events AS (
+function buildAnalystRelations(
+  allowedRelations: ReadonlySet<AnalystRelation>
+): string {
+  const relations: string[] = [];
+  if (allowedRelations.has('analyst_events')) {
+    relations.push(`
+    analyst_events AS (
     SELECT
       e.id,
       e.organization_name,
@@ -52,8 +57,11 @@ const ANALYST_RELATIONS = `
       e.deleted_at
     FROM event_requests e
     WHERE e.deleted_at IS NULL
-  ),
-  analyst_collections AS (
+    )`);
+  }
+  if (allowedRelations.has('analyst_collections')) {
+    relations.push(`
+    analyst_collections AS (
     SELECT
       sc.id,
       sc.collection_date,
@@ -75,8 +83,10 @@ const ANALYST_RELATIONS = `
       sc.deleted_at
     FROM sandwich_collections sc
     WHERE sc.deleted_at IS NULL
-  )
-`;
+    )`);
+  }
+  return `WITH ${relations.join(',')}`;
+}
 
 function asRows(value: unknown): Array<Record<string, unknown>> {
   if (Array.isArray(value)) {
@@ -95,12 +105,15 @@ function asRows(value: unknown): Array<Record<string, unknown>> {
   throw new Error('The database returned an unexpected query result.');
 }
 
-function combineWithAnalystRelations(query: string): SQL {
+function combineWithAnalystRelations(
+  query: string,
+  allowedRelations: ReadonlySet<AnalystRelation>
+): string {
   const normalized = query.trim();
   const queryBody = /^with\b/i.test(normalized)
     ? `,${normalized.replace(/^with\b/i, '')}`
     : normalized;
-  return sql.raw(`${ANALYST_RELATIONS} ${queryBody}`);
+  return `${buildAnalystRelations(allowedRelations)} ${queryBody}`;
 }
 
 export async function runAnalystQuery(
@@ -124,20 +137,26 @@ export async function runAnalystQuery(
   const started = Date.now();
 
   try {
-    const queryDb = createDbWithFetchOptions({ signal: controller.signal });
-    const result = await queryDb.execute(
-      combineWithAnalystRelations(guard.sql)
+    const databaseUrl = getDatabaseUrl();
+    if (!databaseUrl) {
+      throw new Error('Database URL is not configured.');
+    }
+    const client = neon(databaseUrl, {
+      fullResults: true,
+      fetchOptions: { signal: controller.signal },
+    });
+    const results = await client.transaction(
+      [client(combineWithAnalystRelations(guard.sql, allowedRelations), [])],
+      { readOnly: true, fullResults: true }
     );
-    const rows = asRows(result);
+    const rows = asRows(results[0]);
 
     return {
       ok: true,
       rows: rows.slice(0, MAX_ANALYST_QUERY_ROWS),
       relations: guard.relations,
       rowCount: rows.length,
-      truncated:
-        rows.length > MAX_ANALYST_QUERY_ROWS ||
-        (guard.limitApplied && rows.length >= MAX_ANALYST_QUERY_ROWS),
+      truncated: rows.length >= MAX_ANALYST_QUERY_ROWS,
       durationMs: Date.now() - started,
     };
   } catch (error) {

@@ -108,6 +108,80 @@ const FORBIDDEN_KEYWORDS = [
   'pg_ls_dir',
 ] as const;
 
+const SAFE_FUNCTIONS = new Set([
+  'abs',
+  'array_agg',
+  'avg',
+  'bool_and',
+  'bool_or',
+  'cast',
+  'ceil',
+  'coalesce',
+  'count',
+  'date_part',
+  'date_trunc',
+  'dense_rank',
+  'extract',
+  'first_value',
+  'floor',
+  'greatest',
+  'jsonb_array_elements',
+  'jsonb_array_length',
+  'jsonb_each',
+  'jsonb_each_text',
+  'jsonb_extract_path_text',
+  'jsonb_typeof',
+  'lag',
+  'last_value',
+  'lead',
+  'least',
+  'length',
+  'lower',
+  'max',
+  'min',
+  'nullif',
+  'ntile',
+  'percentile_cont',
+  'percentile_disc',
+  'rank',
+  'round',
+  'row_number',
+  'string_agg',
+  'substring',
+  'sum',
+  'to_char',
+  'to_date',
+  'trim',
+  'upper',
+]);
+
+const NON_FUNCTION_PARENS = new Set([
+  'as',
+  'case',
+  'exists',
+  'filter',
+  'from',
+  'in',
+  'join',
+  'on',
+  'over',
+  'select',
+  'when',
+  'where',
+  'with',
+]);
+
+function findUnsafeFunction(skeleton: string): string | null {
+  const functionPattern = /\b([a-z_][a-z0-9_$]*)\s*\(/gi;
+  let match: RegExpExecArray | null;
+  while ((match = functionPattern.exec(skeleton)) !== null) {
+    const name = match[1].toLowerCase();
+    if (NON_FUNCTION_PARENS.has(name)) continue;
+    if (!SAFE_FUNCTIONS.has(name)) return name;
+  }
+  return null;
+}
+
 function extractRelations(skeleton: string): {
   relations: string[];
   cteNames: Set<string>;
@@ -164,6 +238,14 @@ function extractRelations(skeleton: string): {
       if (!expectsRelation) {
         if (current === ',') {
           expectsRelation = true;
+          index += 1;
+          continue;
+        }
+        if (normalized === 'as') {
+          index += 2;
+          continue;
+        }
+        if (/^[a-z_][a-z0-9_$]*$/i.test(current)) {
           index += 1;
           continue;
         }
@@ -262,12 +344,33 @@ export function guardAnalystSql(rawSql: unknown): AnalystSqlGuardResult {
         'PostgreSQL administrative functions are not available to the Analyst.',
     };
   }
+  if (/\bselect\b[\s\S]*\binto\b/i.test(skeleton)) {
+    return {
+      ok: false,
+      error: 'SELECT INTO is not allowed in read-only Analyst queries.',
+    };
+  }
+  if (
+    /\bfor\s+(?:no\s+key\s+)?(?:update|share|key\s+share)\b/i.test(skeleton)
+  ) {
+    return {
+      ok: false,
+      error: 'Row-locking clauses are not allowed in Analyst queries.',
+    };
+  }
 
   for (const keyword of FORBIDDEN_KEYWORDS) {
     if (new RegExp(`\\b${keyword}\\b`, 'i').test(skeleton)) {
       return {
         ok: false,
         error: `"${keyword.toUpperCase()}" is not allowed in read-only Analyst queries.`,
+      };
+    }
+    const unsafeFunction = findUnsafeFunction(skeleton);
+    if (unsafeFunction) {
+      return {
+        ok: false,
+        error: `Function "${unsafeFunction}" is not in the Analyst read-only function allowlist.`,
       };
     }
   }
@@ -293,13 +396,10 @@ export function guardAnalystSql(rawSql: unknown): AnalystSqlGuardResult {
     };
   }
 
-  const limitApplied = !/\blimit\s+\d+\b/i.test(skeleton);
   return {
     ok: true,
-    sql: limitApplied
-      ? `SELECT * FROM (${sql}) AS analyst_result LIMIT ${MAX_ANALYST_QUERY_ROWS}`
-      : sql,
+    sql: `SELECT * FROM (${sql}) AS analyst_result LIMIT ${MAX_ANALYST_QUERY_ROWS}`,
     relations: physicalRelations as AnalystRelation[],
-    limitApplied,
+    limitApplied: true,
   };
 }

@@ -248,11 +248,8 @@ aiAnalystRouter.post(
         | ReturnType<typeof aiAnalystResponseSchema.safeParse>
         | { success: false } = { success: false };
 
-      for (
-        let iteration = 0;
-        iteration < MAX_ANALYST_QUERY_ITERATIONS;
-        iteration += 1
-      ) {
+      let queryAttempts = 0;
+      while (queryAttempts < MAX_ANALYST_QUERY_ITERATIONS) {
         const completion = await client.chat.completions.create({
           model: 'gpt-5',
           messages,
@@ -306,6 +303,7 @@ aiAnalystRouter.post(
           parsedTool.data.sql,
           allowedRelations
         );
+        queryAttempts += 1;
         queryLog.push({
           purpose: parsedTool.data.purpose,
           relations: queryResult.relations ?? [],
@@ -326,6 +324,23 @@ aiAnalystRouter.post(
         });
       }
 
+      if (
+        !finalResponse.success &&
+        queryAttempts === MAX_ANALYST_QUERY_ITERATIONS
+      ) {
+        const completion = await client.chat.completions.create({
+          model: 'gpt-5',
+          messages,
+          tools: ANALYST_TOOLS,
+          tool_choice: 'none',
+          max_completion_tokens: 4_000,
+          reasoning_effort: 'minimal',
+        });
+        finalResponse = parseFinalResponse(
+          completion.choices[0]?.message.content ?? null
+        );
+      }
+
       if (!finalResponse.success) {
         return res.status(502).json({
           error:
@@ -334,9 +349,14 @@ aiAnalystRouter.post(
         });
       }
 
+      const successfulRelations = new Set(
+        queryLog.filter((query) => query.ok).flatMap((query) => query.relations)
+      );
       const datasets = [
-        ...(allowedRelations.has('analyst_events') ? ['events'] : []),
-        ...(allowedRelations.has('analyst_collections') ? ['collections'] : []),
+        ...(successfulRelations.has('analyst_events') ? ['events'] : []),
+        ...(successfulRelations.has('analyst_collections')
+          ? ['collections']
+          : []),
       ] as AnalystDataset[];
       await AuditLogger.log(
         'AI_ANALYST_QUERY',
