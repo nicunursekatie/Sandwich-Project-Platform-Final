@@ -44,6 +44,19 @@ function buildAnalystRelations(
       e.estimated_sandwich_count,
       e.estimated_sandwich_count_min,
       e.estimated_sandwich_count_max,
+      CASE
+        WHEN e.estimated_sandwich_count > 0 THEN e.estimated_sandwich_count
+        WHEN e.estimated_sandwich_count_min > 0
+          AND e.estimated_sandwich_count_max > 0
+          THEN ROUND(
+            (e.estimated_sandwich_count_min + e.estimated_sandwich_count_max) / 2.0
+          )
+        WHEN e.estimated_sandwich_count_min > 0
+          THEN e.estimated_sandwich_count_min
+        WHEN e.estimated_sandwich_count_max > 0
+          THEN e.estimated_sandwich_count_max
+        ELSE 0
+      END AS planned_sandwich_estimate,
       e.actual_sandwich_count,
       e.actual_attendance,
       e.estimated_attendance,

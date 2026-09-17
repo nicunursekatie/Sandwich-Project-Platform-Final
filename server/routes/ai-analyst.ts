@@ -24,6 +24,7 @@ import { logger } from '../utils/production-safe-logger';
 import type { AuthenticatedRequest } from '../types/express';
 
 const MAX_ANALYST_QUERY_ITERATIONS = 12;
+const MAX_ANALYST_MODEL_TURNS = MAX_ANALYST_QUERY_ITERATIONS;
 
 const queryToolInputSchema = z.object({
   sql: z.string().trim().min(1).max(12_000),
@@ -118,7 +119,7 @@ function getSystemPrompt(
 You may query only these approved read-only relations: ${sources.join(', ') || '(none)'}.
 
 analyst_events contains all non-deleted event requests. Useful fields:
-id, organization_name, department, organization_category, school_classification, status, created_at, status_changed_at, desired_event_date, scheduled_event_date, effective_event_date, date_flexible, is_confirmed, show_on_volunteer_hub, estimated_sandwich_count, estimated_sandwich_count_min, estimated_sandwich_count_max, actual_sandwich_count, actual_attendance, estimated_attendance, drivers_needed, volunteers_needed, has_refrigeration, self_transport, previously_hosted, manual_entry_source, external_id.
+id, organization_name, department, organization_category, school_classification, status, created_at, status_changed_at, desired_event_date, scheduled_event_date, effective_event_date, date_flexible, is_confirmed, show_on_volunteer_hub, estimated_sandwich_count, estimated_sandwich_count_min, estimated_sandwich_count_max, planned_sandwich_estimate, actual_sandwich_count, actual_attendance, estimated_attendance, drivers_needed, volunteers_needed, has_refrigeration, self_transport, previously_hosted, manual_entry_source, external_id.
 
 analyst_collections contains all non-deleted collection log entries. Useful fields:
 id, collection_date, host_name, individual_sandwiches, individual_deli, individual_turkey, individual_ham, individual_pbj, individual_generic, group1_name, group1_count, group2_name, group2_count, group_collections, event_request_id, submission_method, submitted_at.
@@ -131,7 +132,7 @@ Query rules:
 
 Data semantics:
 - Sandwich collection totals are actuals. Calculate a row total as individual_sandwiches + group contribution total. Prefer a non-empty group_collections JSON array (accept count or sandwichCount per group); otherwise use group1_count + group2_count. Do not use actual_sandwich_count on an event as a reporting sandwich total.
-- Event estimated_sandwich_count values and range bounds are plans, not actual collection results. Label them as estimates.
+- Event estimated_sandwich_count values and range bounds are plans, not actual collection results. Use planned_sandwich_estimate when totaling plans: it uses a positive exact estimate, otherwise the midpoint of two positive range bounds, otherwise the one positive bound. Label it as an estimate.
 - The effective event date is scheduled_event_date when present, otherwise desired_event_date. The platform uses America/New_York for date-only comparisons.
 - Exclude soft-deleted records automatically; both relations already do this.
 - For request lead time, only treat created_at as reliable for web-form records created on or after 2025-08-25 Eastern time. Exclude external_id beginning planning-sheet: or manual-, and non-null manual_entry_source. The schema has no separate actual-event-date field, so completed-event analysis uses effective_event_date.
@@ -248,8 +249,9 @@ aiAnalystRouter.post(
         | ReturnType<typeof aiAnalystResponseSchema.safeParse>
         | { success: false } = { success: false };
 
-      let queryAttempts = 0;
-      while (queryAttempts < MAX_ANALYST_QUERY_ITERATIONS) {
+      let modelTurns = 0;
+      while (modelTurns < MAX_ANALYST_MODEL_TURNS) {
+        modelTurns += 1;
         const completion = await client.chat.completions.create({
           model: 'gpt-5',
           messages,
@@ -303,7 +305,6 @@ aiAnalystRouter.post(
           parsedTool.data.sql,
           allowedRelations
         );
-        queryAttempts += 1;
         queryLog.push({
           purpose: parsedTool.data.purpose,
           relations: queryResult.relations ?? [],
@@ -324,10 +325,7 @@ aiAnalystRouter.post(
         });
       }
 
-      if (
-        !finalResponse.success &&
-        queryAttempts === MAX_ANALYST_QUERY_ITERATIONS
-      ) {
+      if (!finalResponse.success) {
         const completion = await client.chat.completions.create({
           model: 'gpt-5',
           messages,
