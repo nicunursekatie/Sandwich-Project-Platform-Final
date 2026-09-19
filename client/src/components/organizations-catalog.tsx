@@ -2106,7 +2106,7 @@ export default function GroupCatalog({
         open={showEventDetailsDialog}
         onOpenChange={setShowEventDetailsDialog}
       >
-        <DialogContent className="max-w-6xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-6xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-gray-900 dark:text-gray-100">
               Organization History:{' '}

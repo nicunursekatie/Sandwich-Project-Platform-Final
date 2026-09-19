@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface ViewPanel {
   id: string;
@@ -101,6 +102,10 @@ export function MultiViewProvider({
   const [splitLayout, setSplitLayout] = useState<'horizontal' | 'vertical'>(() =>
     persisted?.splitLayout ?? 'horizontal'
   );
+  const isPhoneLayout = useIsMobile();
+  // Keep the stored preference, but do not render split panes on phones —
+  // the toolbar that turns multi-view off is hidden below md.
+  const isMultiViewActive = isMultiViewEnabled && !isPhoneLayout;
 
   // After we've handled mount, the URL→primary sync should run as normal.
   // But on the FIRST render after a reload-with-restored-state, we skip that
@@ -119,20 +124,23 @@ export function MultiViewProvider({
     setPanels(prev => {
       const primary = prev.find(p => p.id === 'primary');
       if (primary && primary.section !== initialSection) {
-        // In multi-view mode, update the active panel instead of primary
-        if (isMultiViewEnabled && activePanel && activePanel !== 'primary') {
+        // In multi-view mode, update the active panel instead of primary.
+        // Use the phone-aware flag: on phones split view is suppressed and
+        // MultiViewContainer shows panels[0], so URL nav must update that
+        // visible pane — not a hidden secondary panel still marked active.
+        if (isMultiViewActive && activePanel && activePanel !== 'primary') {
           return prev.map(p =>
             p.id === activePanel ? { ...p, section: initialSection } : p
           );
         }
-        // In single-view or when primary is active, update primary panel
+        // In single-view, on phones, or when primary is active, update primary
         return prev.map(p =>
           p.id === 'primary' ? { ...p, section: initialSection } : p
         );
       }
       return prev;
     });
-  }, [initialSection, isMultiViewEnabled, activePanel]);
+  }, [initialSection, isMultiViewActive, activePanel]);
 
   // Persist whenever any piece of multi-view state changes. Cheap (small
   // payload, sessionStorage is sync but fast) and runs after render so it
@@ -236,7 +244,7 @@ export function MultiViewProvider({
     updatePanelSection,
     setActivePanel,
     canAddPanel,
-    isMultiViewEnabled,
+    isMultiViewEnabled: isMultiViewActive,
     setMultiViewEnabled,
     splitLayout,
     setSplitLayout,
@@ -248,7 +256,7 @@ export function MultiViewProvider({
     removePanel,
     updatePanelSection,
     canAddPanel,
-    isMultiViewEnabled,
+    isMultiViewActive,
     splitLayout,
     navigateActivePanel,
   ]);

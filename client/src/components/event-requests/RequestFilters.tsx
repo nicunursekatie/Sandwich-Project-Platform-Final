@@ -283,7 +283,7 @@ export default function RequestFilters({
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#007E8C] w-4 h-4" />
           <Input
             id="event-requests-search"
-            placeholder="Search by organization, name, email, date, location, TSP contact, or volunteer..."
+            placeholder="Search events…"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             className="pl-10 w-full"
@@ -360,6 +360,12 @@ export default function RequestFilters({
             ))}
           </SelectContent>
         </Select>
+        {STATUS_TAB_TIPS[activeTab] && (
+          <div className="flex items-start gap-2 px-3 py-2 mt-2 rounded-md bg-[#007E8C]/8 border border-[#007E8C]/20 text-[13px] text-[#236383] leading-snug">
+            <Info className="w-4 h-4 mt-0.5 shrink-0 text-[#007E8C]" aria-hidden="true" />
+            <p>{STATUS_TAB_TIPS[activeTab]}</p>
+          </div>
+        )}
       </div>
 
       {/* Desktop: Tab Bar - Hidden on mobile */}
@@ -529,7 +535,7 @@ export default function RequestFilters({
 
       {/* Bottom Pagination - Shown on all screen sizes when there are multiple pages */}
       {totalPages > 1 && (
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t mr-16 sm:mr-0">
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 pt-4 border-t">
           <div className="flex items-center space-x-2">
             <span className="text-sm text-gray-600">Items per page:</span>
             <Select

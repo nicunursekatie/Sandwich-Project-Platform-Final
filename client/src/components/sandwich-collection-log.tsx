@@ -1137,7 +1137,7 @@ export default function SandwichCollectionLog() {
 
         {/* Right side - Page navigation with individual page numbers */}
         {effectiveTotalPages > 1 && (
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 max-w-full overflow-x-auto">
             {/* Previous button */}
             <Button
               variant="outline"
@@ -2732,7 +2732,7 @@ export default function SandwichCollectionLog() {
               </div>
             )}
 
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div className="flex items-center gap-4">
                 <p className="text-base text-slate-500 font-medium">
                   {hasActiveFilters
@@ -2758,7 +2758,7 @@ export default function SandwichCollectionLog() {
 
             {/* Statistics Display */}
             <div
-              className={`flex justify-center gap-8 rounded-xl py-4 px-6 border shadow-sm ${
+              className={`flex justify-center gap-4 sm:gap-8 rounded-xl py-4 px-4 sm:px-6 border shadow-sm ${
                 hasActiveFilters
                   ? 'bg-gradient-to-r from-blue-50 to-indigo-50 border-brand-primary-border'
                   : 'bg-gradient-to-r from-teal-50 to-yellow-50 border-yellow-200'
@@ -2935,7 +2935,7 @@ export default function SandwichCollectionLog() {
 
       {/* Filter Panel */}
       {showFilters && (
-        <div className="px-6 py-4 border-b border-slate-200 bg-slate-50">
+        <div className="px-3 sm:px-6 py-4 border-b border-slate-200 bg-slate-50">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
             <div>
               <Label
@@ -3238,7 +3238,7 @@ export default function SandwichCollectionLog() {
                       content drives height. A record with only Individual or
                       only Group Event no longer carries dead air in the other
                       column. Saves roughly 64-88px on any single-type card. */}
-                  <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[160px_minmax(280px,1fr)] md:gap-4 items-start ml-4 sm:ml-20 md:ml-28 lg:ml-32">
+                  <div className="flex flex-col gap-2 md:grid md:grid-cols-[160px_minmax(0,1fr)] md:gap-4 items-start ml-0 sm:ml-4 md:ml-12 lg:ml-20">
                     {/* Individual — render only when there's a value */}
                     {collection.individualSandwiches > 0 && (
                       <div className="w-full sm:min-w-[160px] sm:pl-3 md:pl-4">
@@ -3318,7 +3318,7 @@ export default function SandwichCollectionLog() {
                   </div>
 
                   {/* Third Row: Total & Actions */}
-                  <div className="grid grid-cols-[1fr_auto_auto] items-center gap-3 lg:gap-4 ml-4 sm:ml-20 md:ml-28 lg:ml-32">
+                  <div className="flex flex-col gap-2 sm:grid sm:grid-cols-[1fr_auto] sm:items-center gap-3 lg:gap-4 ml-0 sm:ml-4 md:ml-12 lg:ml-20">
                     {/* Total — slightly downsized so the card height drops
                         without sacrificing legibility. text-xl on mobile,
                         text-xl on desktop (down from text-2xl). */}
@@ -3334,7 +3334,7 @@ export default function SandwichCollectionLog() {
                         send recognition to the submitter, comment =
                         message, pencil = edit, trash = delete). */}
                     <TooltipProvider delayDuration={200}>
-                      <div className="flex items-center gap-1.5 shrink-0 justify-self-end">
+                      <div className="flex flex-wrap items-center gap-1.5 shrink-0 justify-self-end">
                         {/* Star = personal "notable" bookmark. Distinct
                             from the kudos icon: this stays on the entry
                             for the current user, not on the submitter. */}
@@ -3360,7 +3360,7 @@ export default function SandwichCollectionLog() {
                                   }
                                   aria-pressed={isFavorited}
                                   data-testid={`button-favorite-${collection.id}`}
-                                  className={`h-8 w-8 p-0 bg-white border-gray-300 ${
+                                  className={`h-11 w-11 sm:h-8 sm:w-8 p-0 bg-white border-gray-300 ${
                                     isFavorited
                                       ? 'text-amber-500 hover:text-amber-600'
                                       : 'text-gray-500 hover:text-amber-500'
@@ -3393,7 +3393,7 @@ export default function SandwichCollectionLog() {
                                     size="sm"
                                     variant="outline"
                                     iconOnly={true}
-                                    className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
+                                    className="h-11 w-11 sm:h-8 sm:w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-orange-600 hover:text-orange-700 hover:bg-orange-50"
                                   />
                                 </span>
                               </TooltipTrigger>
@@ -3409,7 +3409,7 @@ export default function SandwichCollectionLog() {
                               size="sm"
                               onClick={() => setMessageCollection(collection)}
                               aria-label="Message about this collection"
-                              className="h-8 w-8 p-0"
+                              className="h-11 w-11 sm:h-8 sm:w-8 p-0"
                             >
                               <MessageCircle className="w-4 h-4" />
                             </Button>
@@ -3426,7 +3426,7 @@ export default function SandwichCollectionLog() {
                                 size="sm"
                                 onClick={() => handleEdit(collection)}
                                 aria-label="Edit this entry"
-                                className="h-8 w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
+                                className="h-11 w-11 sm:h-8 sm:w-8 p-0 bg-white border-gray-300 hover:bg-gray-50 text-gray-700"
                               >
                                 <Edit className="w-4 h-4" />
                               </Button>
@@ -3443,7 +3443,7 @@ export default function SandwichCollectionLog() {
                                     variant="outline"
                                     size="sm"
                                     aria-label="Delete this entry"
-                                    className="h-8 w-8 p-0 text-gray-600 hover:text-[#A31C41] hover:bg-red-50 bg-white border-gray-300"
+                                    className="h-11 w-11 sm:h-8 sm:w-8 p-0 text-gray-600 hover:text-[#A31C41] hover:bg-red-50 bg-white border-gray-300"
                                   >
                                     <Trash2 className="w-4 h-4" />
                                   </Button>
@@ -4151,7 +4151,7 @@ export default function SandwichCollectionLog() {
                   </EditCalculatorPopover>
                 </div>
               ) : (
-                <div className="grid grid-cols-3 gap-2 mt-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2">
                   <div>
                     <Label htmlFor="edit-deli" className="text-sm">Deli</Label>
                     <div className="flex gap-1 items-center">
@@ -4519,7 +4519,7 @@ export default function SandwichCollectionLog() {
                     {/* Type breakdown fields for group when enabled */}
                     {group.hasTypeBreakdown && (
                       <>
-                        <div className="grid grid-cols-3 gap-2 bg-gray-50 p-2 rounded">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 bg-gray-50 p-2 rounded">
                           <div>
                             <Label className="text-xs">Deli</Label>
                             <div className="flex gap-1 items-center">
@@ -4730,7 +4730,7 @@ export default function SandwichCollectionLog() {
               </div>
             </div>
 
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4">
               <Button
                 variant="outline"
                 onClick={() => setEditingCollection(null)}
@@ -4818,7 +4818,7 @@ export default function SandwichCollectionLog() {
 
       {/* Data Management Dialog */}
       <Dialog open={showDataManagement} onOpenChange={setShowDataManagement}>
-        <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Data Management Center</DialogTitle>
           </DialogHeader>

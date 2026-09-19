@@ -622,7 +622,7 @@ export default function UserManagementFinal() {
               <CardDescription>Click a row to edit user details</CardDescription>
             </CardHeader>
             <CardContent className="overflow-x-auto">
-              <div className="rounded-md border min-w-[800px] sm:min-w-0">
+              <div className="rounded-md border">
                 <Table>
                   <TableHeader>
                     <TableRow>

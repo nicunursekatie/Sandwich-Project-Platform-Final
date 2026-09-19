@@ -22,7 +22,7 @@ export function NavViewModeToggle() {
         <button
           type="button"
           onClick={() => setViewMode(viewMode === 'admin' ? 'user' : 'admin')}
-          className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wide transition-colors border ${
+          className={`inline-flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-semibold uppercase tracking-wide transition-colors border ${
             isUserViewActive
               ? 'bg-amber-400/90 text-amber-950 border-amber-300 shadow-sm'
               : 'bg-white/10 text-white/90 border-white/20 hover:bg-white/15'

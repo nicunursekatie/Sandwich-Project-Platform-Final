@@ -471,7 +471,7 @@ export const ScheduledTab: React.FC = () => {
         {isLoading ? 'Loading...' : `${scheduledRequests.length} scheduled event${scheduledRequests.length !== 1 ? 's' : ''}`}
       </div>
 
-      {viewMode === 'spreadsheet' ? (
+      {!isMobile && viewMode === 'spreadsheet' ? (
         <ScheduledSpreadsheetView
           onEventDateClick={(event) => {
             setSelectedEventRequest(event);
@@ -510,7 +510,7 @@ export const ScheduledTab: React.FC = () => {
         </div>
       ) : (
         <EventListBatchProviders events={scheduledRequests}>
-          <div className="space-y-4 max-w-7xl mx-auto px-4">
+          <div className="space-y-4 max-w-7xl mx-auto px-2 sm:px-4">
             {scheduledRequests.map((request) => (
               <div key={request.id} className="w-full" data-event-id={request.id}>
                 <ScheduledCardEnhanced
