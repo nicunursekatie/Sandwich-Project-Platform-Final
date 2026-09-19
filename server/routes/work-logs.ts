@@ -8,6 +8,7 @@ import {
   requirePermission,
   requireOwnershipPermission,
 } from '../middleware/auth';
+import { storage } from '../storage';
 import { logger } from '../utils/production-safe-logger';
 
 // Default and maximum limits for pagination to prevent unbounded queries
@@ -20,11 +21,13 @@ const router = Router();
 // Zod schema for validation
 const insertWorkLogSchema = z.object({
   description: z.string().min(1),
-  hours: z.number().int().min(0),
+  hours: z.number().int().min(0).max(24),
   minutes: z.number().int().min(0).max(59),
   workDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Invalid date format',
   }),
+}).refine((data) => data.hours < 24 || data.minutes === 0, {
+  message: 'Minutes must be 0 when hours is 24',
 });
 
 const startTimerSchema = z.object({
@@ -387,7 +390,26 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ error: 'Work log not found' });
     }
 
-    if (!canEditWorkLog(req.user, currentLog)) {
+    let currentUser = req.user;
+    if (req.user.id) {
+      try {
+        const freshUser = await storage.getUser(req.user.id);
+        if (freshUser && freshUser.isActive) {
+          currentUser = freshUser;
+        } else {
+          return res
+            .status(401)
+            .json({ error: 'User account not found or inactive' });
+        }
+      } catch (dbError) {
+        logger.error('Database error verifying work log edit permissions:', dbError);
+        return res
+          .status(500)
+          .json({ error: 'Unable to verify user permissions' });
+      }
+    }
+
+    if (!canEditWorkLog(currentUser, currentLog)) {
       return res
         .status(403)
         .json({ error: 'Insufficient permissions to edit this work log' });

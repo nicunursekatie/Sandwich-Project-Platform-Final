@@ -13,6 +13,14 @@ const mockTimerRows: any[] = [];
 const mockWorkLogRows: any[] = [];
 let mockNextId = 1;
 let failTimerStop = false;
+let mockFreshUser: any = {
+  id: 'user-1',
+  email: 'katie@example.org',
+  role: 'volunteer',
+  permissions: ['WORK_LOGS_ADD'],
+  isActive: true,
+};
+let mockGetUserError: Error | null = null;
 
 function mockRowsFor(table: any): any[] {
   if (table === workLogTimers) return mockTimerRows;
@@ -61,6 +69,19 @@ const mockDb = {
       promise.returning = () => Promise.resolve(removed);
       return promise;
     },
+  }),
+  update: (table: any) => ({
+    set: (values: any) => ({
+      where: () => ({
+        returning: () => {
+          const rows = mockRowsFor(table);
+          const row = rows[0];
+          if (!row) return Promise.resolve([]);
+          Object.assign(row, values);
+          return Promise.resolve([row]);
+        },
+      }),
+    }),
   }),
 };
 
@@ -117,6 +138,17 @@ jest.mock('../../server/middleware/auth', () => ({
   requireOwnershipPermission: () => (_req: any, _res: any, next: any) => next(),
 }));
 
+jest.mock('../../server/storage', () => ({
+  get storage() {
+    return {
+      getUser: (_id: string) => {
+        if (mockGetUserError) return Promise.reject(mockGetUserError);
+        return Promise.resolve(mockFreshUser);
+      },
+    };
+  },
+}));
+
 import workLogsRouter from '../../server/routes/work-logs';
 
 function makeApp() {
@@ -136,6 +168,14 @@ describe('work log timer routes', () => {
     mockWorkLogRows.length = 0;
     mockNextId = 1;
     failTimerStop = false;
+    mockGetUserError = null;
+    mockFreshUser = {
+      id: 'user-1',
+      email: 'katie@example.org',
+      role: 'volunteer',
+      permissions: ['WORK_LOGS_ADD'],
+      isActive: true,
+    };
   });
 
   it('reports no running timer by default', async () => {
@@ -236,5 +276,107 @@ describe('work log timer routes', () => {
 
     const badId = await request(app).delete('/api/work-logs/not-a-number');
     expect(badId.status).toBe(400);
+  });
+});
+
+const validUpdate = {
+  description: 'Updated work',
+  hours: 2,
+  minutes: 15,
+  workDate: '2026-09-16T12:00:00',
+};
+
+function seedWorkLog(overrides: Record<string, unknown> = {}) {
+  const row = {
+    id: mockNextId++,
+    userId: 'user-1',
+    description: 'Work logged',
+    hours: 1,
+    minutes: 30,
+    workDate: new Date('2026-09-16T12:00:00'),
+    ...overrides,
+  };
+  mockWorkLogRows.push(row);
+  return row;
+}
+
+describe('work log update route', () => {
+  beforeEach(() => {
+    mockTimerRows.length = 0;
+    mockWorkLogRows.length = 0;
+    mockNextId = 1;
+    mockGetUserError = null;
+    mockFreshUser = {
+      id: 'user-1',
+      email: 'katie@example.org',
+      role: 'volunteer',
+      permissions: ['WORK_LOGS_ADD'],
+      isActive: true,
+    };
+  });
+
+  it('lets an owner with WORK_LOGS_ADD update their entry', async () => {
+    const log = seedWorkLog();
+    const res = await request(makeApp())
+      .put(`/api/work-logs/${log.id}`)
+      .send(validUpdate);
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      id: log.id,
+      description: 'Updated work',
+      hours: 2,
+      minutes: 15,
+    });
+  });
+
+  it('lets an owner with WORK_LOGS_EDIT_OWN update their entry', async () => {
+    mockFreshUser.permissions = ['WORK_LOGS_EDIT_OWN'];
+    const log = seedWorkLog();
+    const res = await request(makeApp())
+      .put(`/api/work-logs/${log.id}`)
+      .send(validUpdate);
+    expect(res.status).toBe(200);
+    expect(res.body.description).toBe('Updated work');
+  });
+
+  it('rejects a non-owner without edit-all permission', async () => {
+    const log = seedWorkLog({ userId: 'other-user' });
+    const res = await request(makeApp())
+      .put(`/api/work-logs/${log.id}`)
+      .send(validUpdate);
+    expect(res.status).toBe(403);
+    expect(log.description).toBe('Work logged');
+  });
+
+  it('lets WORK_LOGS_EDIT_ALL update another user\'s entry', async () => {
+    mockFreshUser.permissions = ['WORK_LOGS_EDIT_ALL'];
+    const log = seedWorkLog({ userId: 'other-user' });
+    const res = await request(makeApp())
+      .put(`/api/work-logs/${log.id}`)
+      .send(validUpdate);
+    expect(res.status).toBe(200);
+    expect(res.body.description).toBe('Updated work');
+  });
+
+  it('lets a super admin update another user\'s entry', async () => {
+    mockFreshUser.role = 'super_admin';
+    mockFreshUser.permissions = [];
+    const log = seedWorkLog({ userId: 'other-user' });
+    const res = await request(makeApp())
+      .put(`/api/work-logs/${log.id}`)
+      .send(validUpdate);
+    expect(res.status).toBe(200);
+    expect(res.body.description).toBe('Updated work');
+  });
+
+  it('fails closed when the fresh-user lookup errors', async () => {
+    mockGetUserError = new Error('database unavailable');
+    const log = seedWorkLog();
+    const res = await request(makeApp())
+      .put(`/api/work-logs/${log.id}`)
+      .send(validUpdate);
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Unable to verify user permissions');
+    expect(log.description).toBe('Work logged');
   });
 });

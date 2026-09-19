@@ -22,6 +22,7 @@ import { useResourcePermissions, usePermissions } from '@/hooks/useResourcePermi
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import { useToast } from '@/hooks/use-toast';
 import type { WorkLog } from '@shared/schema';
+import { APP_TIMEZONE } from '@/lib/date-utils';
 
 function formatElapsed(totalSeconds: number) {
   const safeSeconds = Math.max(0, totalSeconds);
@@ -32,21 +33,14 @@ function formatElapsed(totalSeconds: number) {
 }
 
 function todayDateInputValue() {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, '0');
-  const day = String(today.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return new Date().toLocaleDateString('en-CA', { timeZone: APP_TIMEZONE });
 }
 
 function toDateInputValue(value: string | Date | null | undefined) {
   if (!value) return todayDateInputValue();
   const parsed = new Date(value);
   if (Number.isNaN(parsed.getTime())) return todayDateInputValue();
-  const year = parsed.getFullYear();
-  const month = String(parsed.getMonth() + 1).padStart(2, '0');
-  const day = String(parsed.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return parsed.toLocaleDateString('en-CA', { timeZone: APP_TIMEZONE });
 }
 
 export default function WorkLogPage() {
@@ -619,10 +613,14 @@ export default function WorkLogPage() {
             className="space-y-4"
           >
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label
+                htmlFor="edit-work-date"
+                className="block text-sm font-medium text-gray-700 mb-1.5"
+              >
                 Work Date
               </label>
               <Input
+                id="edit-work-date"
                 type="date"
                 value={editWorkDate}
                 onChange={(e) => setEditWorkDate(e.target.value)}
@@ -632,47 +630,59 @@ export default function WorkLogPage() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <p className="block text-sm font-medium text-gray-700 mb-1.5">
                 Time Spent
-              </label>
+              </p>
               <div className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50">
                 <div className="flex items-center gap-2">
                   <Input
+                    id="edit-hours"
                     type="number"
                     min={0}
-                    max={23}
+                    max={24}
                     value={editHours}
-                    onChange={(e) => setEditHours(Number(e.target.value))}
+                    onChange={(e) => {
+                      const nextHours = Number(e.target.value);
+                      setEditHours(nextHours);
+                      if (nextHours >= 24) setEditMinutes(0);
+                    }}
                     required
+                    aria-label="Hours"
                     className="w-16 text-center bg-white"
                   />
-                  <span className="text-sm text-gray-600 font-medium">
+                  <label htmlFor="edit-hours" className="text-sm text-gray-600 font-medium">
                     hours
-                  </span>
+                  </label>
                 </div>
                 <div className="flex items-center gap-2">
                   <Input
+                    id="edit-minutes"
                     type="number"
                     min={0}
-                    max={59}
+                    max={editHours >= 24 ? 0 : 59}
                     value={editMinutes}
                     onChange={(e) => setEditMinutes(Number(e.target.value))}
                     required
+                    aria-label="Minutes"
                     className="w-16 text-center bg-white"
                   />
-                  <span className="text-sm text-gray-600 font-medium">
+                  <label htmlFor="edit-minutes" className="text-sm text-gray-600 font-medium">
                     minutes
-                  </span>
+                  </label>
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label
+                htmlFor="edit-work-description"
+                className="block text-sm font-medium text-gray-700 mb-1.5"
+              >
                 Work Description{' '}
                 <span className="text-gray-500 font-normal">(optional)</span>
               </label>
               <Textarea
+                id="edit-work-description"
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
                 placeholder="Describe what you worked on (optional)..."
