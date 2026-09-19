@@ -7,20 +7,17 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import express from 'express';
 import request from 'supertest';
+import { workLogs, workLogTimers } from '../../shared/schema';
 
 const mockTimerRows: any[] = [];
 const mockWorkLogRows: any[] = [];
 let mockNextId = 1;
+let failTimerStop = false;
 
 function mockRowsFor(table: any): any[] {
-  // Drizzle exposes the SQL table name on a well-known symbol; fall back to a
-  // string match so this keeps working if the symbol name changes.
-  const name = String(
-    Object.getOwnPropertySymbols(table)
-      .map((s) => (table as any)[s])
-      .find((v) => typeof v === 'string' && v.includes('work_log')) ?? ''
-  );
-  return name === 'work_log_timers' ? mockTimerRows : mockWorkLogRows;
+  if (table === workLogTimers) return mockTimerRows;
+  if (table === workLogs) return mockWorkLogRows;
+  throw new Error('Unexpected table in work log timer test');
 }
 
 const mockDb = {
@@ -65,6 +62,41 @@ const mockDb = {
       return promise;
     },
   }),
+  execute: (query: any) => {
+    if (failTimerStop) {
+      return Promise.reject(new Error('Unable to write work log'));
+    }
+
+    const timer = mockTimerRows[0];
+    if (!timer) {
+      return Promise.resolve({ rows: [] });
+    }
+
+    const stringParams = query.queryChunks.filter(
+      (chunk: unknown): chunk is string => typeof chunk === 'string'
+    );
+    const stopDescription = stringParams.find((value) => value !== 'user-1')?.trim();
+    const elapsedSeconds = Math.max(
+      0,
+      Math.round((Date.now() - new Date(timer.startedAt).getTime()) / 1000)
+    );
+    const rawMinutes = Math.max(1, Math.round(elapsedSeconds / 60));
+    const totalMinutes = Math.min(rawMinutes, 24 * 60);
+    const log = {
+      id: mockNextId++,
+      userId: timer.userId,
+      description: stopDescription || timer.description || 'Work logged',
+      hours: Math.floor(totalMinutes / 60),
+      minutes: totalMinutes % 60,
+      workDate: timer.startedAt,
+    };
+
+    mockWorkLogRows.push(log);
+    mockTimerRows.splice(0, 1);
+    return Promise.resolve({
+      rows: [{ log, elapsedSeconds, capped: rawMinutes > 24 * 60 }],
+    });
+  },
 };
 
 // A getter, because jest hoists this factory above the imports and `mockDb` is
@@ -98,6 +130,7 @@ describe('work log timer routes', () => {
     mockTimerRows.length = 0;
     mockWorkLogRows.length = 0;
     mockNextId = 1;
+    failTimerStop = false;
   });
 
   it('reports no running timer by default', async () => {
@@ -167,6 +200,17 @@ describe('work log timer routes', () => {
   it('returns 404 when stopping with no timer running', async () => {
     const stop = await request(makeApp()).post('/api/work-logs/timer/stop').send({});
     expect(stop.status).toBe(404);
+    expect(mockWorkLogRows).toHaveLength(0);
+  });
+
+  it('keeps the timer running when creating the work log fails', async () => {
+    const app = makeApp();
+    await request(app).post('/api/work-logs/timer/start').send({});
+    failTimerStop = true;
+
+    const stop = await request(app).post('/api/work-logs/timer/stop').send({});
+    expect(stop.status).toBe(500);
+    expect(mockTimerRows).toHaveLength(1);
     expect(mockWorkLogRows).toHaveLength(0);
   });
 

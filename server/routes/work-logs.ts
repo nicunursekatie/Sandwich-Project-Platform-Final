@@ -9,7 +9,6 @@ import {
   requireOwnershipPermission,
 } from '../middleware/auth';
 import { logger } from '../utils/production-safe-logger';
-import { elapsedToDuration, easternWorkDate } from '../utils/work-log-timer';
 
 // Default and maximum limits for pagination to prevent unbounded queries
 // Default is set high (1000) to maintain backwards compatibility since client doesn't paginate yet
@@ -250,39 +249,77 @@ router.post(
       return res.status(400).json({ error: result.error.message });
 
     try {
-      // Delete-and-return so two rapid stop clicks can't produce two entries.
-      const [timer] = await db
-        .delete(workLogTimers)
-        .where(eq(workLogTimers.userId, req.user.id))
-        .returning();
-      if (!timer) {
+      // The Neon HTTP driver has no interactive transactions. This one statement
+      // locks the active timer, writes its log entry, and removes the timer
+      // atomically, so an insert failure can never discard tracked time.
+      const queryResult = await db.execute(sql`
+        WITH active_timer AS (
+          SELECT id, started_at, description
+          FROM work_log_timers
+          WHERE user_id = ${req.user.id}
+          FOR UPDATE
+        ),
+        timer_duration AS (
+          SELECT
+            id,
+            started_at,
+            description,
+            GREATEST(
+              0,
+              ROUND(EXTRACT(EPOCH FROM NOW() - started_at))
+            )::integer AS elapsed_seconds,
+            GREATEST(
+              1,
+              ROUND(EXTRACT(EPOCH FROM NOW() - started_at) / 60.0)
+            )::integer AS raw_minutes
+          FROM active_timer
+        ),
+        created_log AS (
+          INSERT INTO work_logs (
+            user_id,
+            description,
+            hours,
+            minutes,
+            work_date
+          )
+          SELECT
+            ${req.user.id},
+            COALESCE(
+              NULLIF(BTRIM(${result.data.description ?? ''}), ''),
+              NULLIF(BTRIM(description), ''),
+              'Work logged'
+            ),
+            (LEAST(1440, raw_minutes) / 60)::integer,
+            (LEAST(1440, raw_minutes) % 60)::integer,
+            date_trunc(
+              'day',
+              started_at AT TIME ZONE 'America/New_York'
+            ) + INTERVAL '12 hours'
+          FROM timer_duration
+          RETURNING *
+        ),
+        deleted_timer AS (
+          DELETE FROM work_log_timers
+          WHERE id IN (SELECT id FROM timer_duration)
+          RETURNING id
+        )
+        SELECT
+          row_to_json(created_log) AS log,
+          timer_duration.elapsed_seconds AS "elapsedSeconds",
+          (timer_duration.raw_minutes > 1440) AS capped
+        FROM created_log
+        CROSS JOIN timer_duration
+      `);
+      const rows = Array.isArray(queryResult)
+        ? queryResult
+        : queryResult.rows;
+      const [timerResult] = rows;
+
+      if (!timerResult) {
         return res.status(404).json({ error: 'No timer is running' });
       }
 
-      const startedAt = new Date(timer.startedAt);
-      const elapsedSeconds = Math.max(
-        0,
-        Math.round((Date.now() - startedAt.getTime()) / 1000)
-      );
-      const { hours, minutes, capped } = elapsedToDuration(elapsedSeconds);
-
-      const description =
-        result.data.description?.trim() ||
-        timer.description?.trim() ||
-        'Work logged';
-
-      const [log] = await db
-        .insert(workLogs)
-        .values({
-          userId: req.user.id,
-          description,
-          hours,
-          minutes,
-          workDate: easternWorkDate(startedAt),
-        })
-        .returning();
-
-      res.status(201).json({ log, elapsedSeconds, capped });
+      res.status(201).json(timerResult);
     } catch (error) {
       logger.error('Error stopping work log timer:', error);
       res.status(500).json({ error: 'Failed to stop work log timer' });
