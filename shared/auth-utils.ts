@@ -1284,22 +1284,29 @@ export function canEditWorkLog(
   user: UserForPermissions | null | undefined,
   workLog: WorkLogResource | null | undefined
 ): boolean {
+  if (!user) return false;
   const userPermissions = getPermissionList(user);
-  if (!user || userPermissions.length === 0) return false;
 
-  // Super admins and users with EDIT_ALL_WORK_LOGS can edit all work logs
+  // Super admins and users with EDIT_ALL can edit all work logs
   if (
     user.role === 'super_admin' ||
     userPermissions.includes(PERMISSIONS.WORK_LOGS_EDIT_ALL)
   )
     return true;
 
-  // Users with CREATE_WORK_LOGS can edit work logs they created
+  if (userPermissions.length === 0) return false;
+
+  const isOwner =
+    workLog?.createdBy === user.id ||
+    workLog?.created_by === user.id ||
+    workLog?.userId === user.id;
+
+  // Owners can edit with the dedicated own-edit permission or with add
+  // (add is treated as including edit/delete of the user's own entries)
   if (
-    userPermissions.includes(PERMISSIONS.WORK_LOGS_ADD) &&
-    (workLog?.createdBy === user.id ||
-      workLog?.created_by === user.id ||
-      workLog?.userId === user.id)
+    isOwner &&
+    (userPermissions.includes(PERMISSIONS.WORK_LOGS_EDIT_OWN) ||
+      userPermissions.includes(PERMISSIONS.WORK_LOGS_ADD))
   )
     return true;
 
@@ -1311,22 +1318,28 @@ export function canDeleteWorkLog(
   user: UserForPermissions | null | undefined,
   workLog: WorkLogResource | null | undefined
 ): boolean {
+  if (!user) return false;
   const userPermissions = getPermissionList(user);
-  if (!user || userPermissions.length === 0) return false;
 
-  // Super admins and users with DELETE_ALL_WORK_LOGS can delete all work logs
+  // Super admins and users with DELETE_ALL can delete all work logs
   if (
     user.role === 'super_admin' ||
     userPermissions.includes(PERMISSIONS.WORK_LOGS_DELETE_ALL)
   )
     return true;
 
-  // Users with CREATE_WORK_LOGS can delete work logs they created
+  if (userPermissions.length === 0) return false;
+
+  const isOwner =
+    workLog?.createdBy === user.id ||
+    workLog?.created_by === user.id ||
+    workLog?.userId === user.id;
+
+  // Owners can delete with the dedicated own-delete permission or with add
   if (
-    userPermissions.includes(PERMISSIONS.WORK_LOGS_ADD) &&
-    (workLog?.createdBy === user.id ||
-      workLog?.created_by === user.id ||
-      workLog?.userId === user.id)
+    isOwner &&
+    (userPermissions.includes(PERMISSIONS.WORK_LOGS_DELETE_OWN) ||
+      userPermissions.includes(PERMISSIONS.WORK_LOGS_ADD))
   )
     return true;
 

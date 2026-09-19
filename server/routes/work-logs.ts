@@ -3,11 +3,12 @@ import { z } from 'zod';
 import { eq, desc, sql } from 'drizzle-orm';
 import { workLogs, workLogTimers } from '@shared/schema';
 import { db, executeRawSql } from '../db';
-import { PERMISSIONS } from '@shared/auth-utils';
+import { canEditWorkLog, PERMISSIONS } from '@shared/auth-utils';
 import {
   requirePermission,
   requireOwnershipPermission,
 } from '../middleware/auth';
+import { storage } from '../storage';
 import { logger } from '../utils/production-safe-logger';
 
 // Default and maximum limits for pagination to prevent unbounded queries
@@ -20,11 +21,13 @@ const router = Router();
 // Zod schema for validation
 const insertWorkLogSchema = z.object({
   description: z.string().min(1),
-  hours: z.number().int().min(0),
+  hours: z.number().int().min(0).max(24),
   minutes: z.number().int().min(0).max(59),
   workDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Invalid date format',
   }),
+}).refine((data) => data.hours < 24 || data.minutes === 0, {
+  message: 'Minutes must be 0 when hours is 24',
 });
 
 const startTimerSchema = z.object({
@@ -62,16 +65,23 @@ router.get('/', async (req, res) => {
     );
 
     // Check if user has any work log permissions
-    const canCreate = req.user?.permissions?.includes(PERMISSIONS.WORK_LOGS_ADD);
-    const canViewAll = req.user?.permissions?.includes(PERMISSIONS.WORK_LOGS_VIEW_ALL);
+    const permissions = Array.isArray(req.user?.permissions)
+      ? req.user.permissions
+      : [];
+    const canCreate = permissions.includes(PERMISSIONS.WORK_LOGS_ADD);
+    const canViewOwn =
+      canCreate ||
+      permissions.includes(PERMISSIONS.WORK_LOGS_VIEW) ||
+      permissions.includes(PERMISSIONS.WORK_LOGS_EDIT_OWN) ||
+      permissions.includes(PERMISSIONS.WORK_LOGS_DELETE_OWN);
+    const canViewAll = permissions.includes(PERMISSIONS.WORK_LOGS_VIEW_ALL);
     const isAdmin = isSuperAdmin(req) || userEmail === 'mdlouza@gmail.com';
 
     logger.log(
-      `[WORK LOGS] Permissions - canCreate: ${canCreate}, canViewAll: ${canViewAll}, isAdmin: ${isAdmin}`
+      `[WORK LOGS] Permissions - canCreate: ${canCreate}, canViewOwn: ${canViewOwn}, canViewAll: ${canViewAll}, isAdmin: ${isAdmin}`
     );
 
-    // User must have at least WORK_LOGS_ADD permission to access work logs
-    if (!canCreate && !canViewAll && !isAdmin) {
+    if (!canViewOwn && !canViewAll && !isAdmin) {
       return res
         .status(403)
         .json({ error: 'Insufficient permissions to view work logs' });
@@ -364,44 +374,70 @@ router.delete(
   }
 );
 
-// Update a work log (own or any if super admin)
-router.put(
-  '/:id',
-  requireOwnershipPermission(
-    PERMISSIONS.WORK_LOGS_EDIT_OWN,
-    PERMISSIONS.WORK_LOGS_EDIT_ALL,
-    async (req) => {
-      const logId = parseInt(req.params.id);
-      const log = await db
-        .select()
-        .from(workLogs)
-        .where(eq(workLogs.id, logId));
-      return log[0]?.userId || null;
-    }
-  ),
-  async (req, res) => {
-    const logId = parseInt(req.params.id);
-    if (isNaN(logId)) return res.status(400).json({ error: 'Invalid log ID' });
-    const result = insertWorkLogSchema.safeParse(req.body);
-    if (!result.success)
-      return res.status(400).json({ error: result.error.message });
-    try {
-      const updated = await db
-        .update(workLogs)
-        .set({
-          description: result.data.description,
-          hours: result.data.hours,
-          minutes: result.data.minutes,
-          workDate: new Date(result.data.workDate),
-        })
-        .where(eq(workLogs.id, logId))
-        .returning();
-      res.json(updated[0]);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to update work log' });
-    }
+// Update a work log (own entries, or any if the user has edit-all)
+router.put('/:id', async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
   }
-);
+
+  const logId = parseInt(req.params.id);
+  if (isNaN(logId)) return res.status(400).json({ error: 'Invalid log ID' });
+
+  const result = insertWorkLogSchema.safeParse(req.body);
+  if (!result.success)
+    return res.status(400).json({ error: result.error.message });
+
+  try {
+    const existing = await db
+      .select()
+      .from(workLogs)
+      .where(eq(workLogs.id, logId));
+    const currentLog = existing[0];
+    if (!currentLog) {
+      return res.status(404).json({ error: 'Work log not found' });
+    }
+
+    let currentUser = req.user;
+    if (req.user.id) {
+      try {
+        const freshUser = await storage.getUser(req.user.id);
+        if (freshUser && freshUser.isActive) {
+          currentUser = freshUser;
+        } else {
+          return res
+            .status(401)
+            .json({ error: 'User account not found or inactive' });
+        }
+      } catch (dbError) {
+        logger.error('Database error verifying work log edit permissions:', dbError);
+        return res
+          .status(500)
+          .json({ error: 'Unable to verify user permissions' });
+      }
+    }
+
+    if (!canEditWorkLog(currentUser, currentLog)) {
+      return res
+        .status(403)
+        .json({ error: 'Insufficient permissions to edit this work log' });
+    }
+
+    const updated = await db
+      .update(workLogs)
+      .set({
+        description: result.data.description,
+        hours: result.data.hours,
+        minutes: result.data.minutes,
+        workDate: new Date(result.data.workDate),
+      })
+      .where(eq(workLogs.id, logId))
+      .returning();
+    res.json(updated[0]);
+  } catch (error) {
+    logger.error('Error updating work log:', error);
+    res.status(500).json({ error: 'Failed to update work log' });
+  }
+});
 
 // Delete a work log (own or any if super admin)
 router.delete(

@@ -1,18 +1,28 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { useAuth } from '@/hooks/useAuth';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { PERMISSIONS } from '@shared/auth-utils';
+import { canDeleteWorkLog, canEditWorkLog } from '@shared/auth-utils';
+import type { UserForPermissions } from '@shared/types';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
-import { useEffect } from 'react';
 import { logger } from '@/lib/logger';
 import { useResourcePermissions, usePermissions } from '@/hooks/useResourcePermissions';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import { useToast } from '@/hooks/use-toast';
+import type { WorkLog } from '@shared/schema';
+import { APP_TIMEZONE } from '@/lib/date-utils';
 
 function formatElapsed(totalSeconds: number) {
   const safeSeconds = Math.max(0, totalSeconds);
@@ -22,10 +32,22 @@ function formatElapsed(totalSeconds: number) {
   return [hh, mm, ss].map((part) => String(part).padStart(2, '0')).join(':');
 }
 
+function todayDateInputValue() {
+  return new Date().toLocaleDateString('en-CA', { timeZone: APP_TIMEZONE });
+}
+
+function toDateInputValue(value: string | Date | null | undefined) {
+  if (!value) return todayDateInputValue();
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return todayDateInputValue();
+  return parsed.toLocaleDateString('en-CA', { timeZone: APP_TIMEZONE });
+}
+
 export default function WorkLogPage() {
   const { user } = useAuth();
-  const { trackView, trackFormSubmit } = useActivityTracker();
+  const { trackView, trackUpdate } = useActivityTracker();
   const { toast } = useToast();
+  const permissionUser = user as UserForPermissions | undefined;
 
   useEffect(() => {
     trackView(
@@ -47,11 +69,12 @@ export default function WorkLogPage() {
   const [description, setDescription] = useState('');
   const [hours, setHours] = useState(0);
   const [minutes, setMinutes] = useState(0);
-  const [workDate, setWorkDate] = useState(() => {
-    // Default to today's date in YYYY-MM-DD format
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  });
+  const [workDate, setWorkDate] = useState(todayDateInputValue);
+  const [editingLog, setEditingLog] = useState<WorkLog | null>(null);
+  const [editDescription, setEditDescription] = useState('');
+  const [editHours, setEditHours] = useState(0);
+  const [editMinutes, setEditMinutes] = useState(0);
+  const [editWorkDate, setEditWorkDate] = useState(todayDateInputValue);
 
   const {
     data: logsResponse,
@@ -90,14 +113,70 @@ export default function WorkLogPage() {
       setDescription('');
       setHours(0);
       setMinutes(0);
-      setWorkDate(() => {
-        const today = new Date();
-        return today.toISOString().split('T')[0];
-      });
+      setWorkDate(todayDateInputValue());
       queryClient.invalidateQueries({ queryKey: ['/api/work-logs'] });
       refetch(); // Force refetch to update the list immediately
     },
   });
+
+  const updateLog = useMutation({
+    mutationFn: async () => {
+      if (!editingLog?.id) {
+        throw new Error('No work log selected');
+      }
+      return apiRequest('PUT', `/api/work-logs/${editingLog.id}`, {
+        description: editDescription || 'Work logged',
+        hours: editHours,
+        minutes: editMinutes,
+        workDate: editWorkDate + 'T12:00:00',
+      });
+    },
+    onSuccess: () => {
+      const editedId = editingLog?.id;
+      setEditingLog(null);
+      setEditDescription('');
+      setEditHours(0);
+      setEditMinutes(0);
+      setEditWorkDate(todayDateInputValue());
+      queryClient.invalidateQueries({ queryKey: ['/api/work-logs'] });
+      refetch();
+      toast({
+        title: 'Work log updated',
+        description: 'Your changes have been saved.',
+      });
+      if (editedId) {
+        trackUpdate(
+          'Work Log Entry',
+          'Work Log',
+          'Time Tracking',
+          String(editedId)
+        );
+      }
+    },
+    onError: (err: any) => {
+      toast({
+        title: 'Could not update work log',
+        description: err?.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  const closeEditDialog = () => {
+    if (updateLog.isPending) return;
+    setEditingLog(null);
+    updateLog.reset();
+  };
+
+  const openEditDialog = (log: WorkLog) => {
+    if (updateLog.isPending) return;
+    setEditingLog(log);
+    setEditDescription(log.description || '');
+    setEditHours(log.hours || 0);
+    setEditMinutes(log.minutes || 0);
+    setEditWorkDate(toDateInputValue(log.workDate || log.createdAt));
+    updateLog.reset();
+  };
 
   const deleteLog = useMutation({
     mutationFn: async (id: number) => {
@@ -480,19 +559,34 @@ export default function WorkLogPage() {
                       )}
                     </div>
 
-                    {/* Delete button - subtle and less aggressive */}
-                    {((canDeleteOwnLogs && log?.userId === (user as any)?.id) ||
-                      canDeleteAllLogs) && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteLog.mutate(log?.id)}
-                        disabled={deleteLog.isPending}
-                        className="text-gray-400 hover:text-red-600 hover:bg-red-50 text-xs px-2 py-1"
-                      >
-                        Remove
-                      </Button>
-                    )}
+                    <div className="flex items-center gap-1">
+                      {(canEditWorkLog(permissionUser, log) ||
+                        (canEditOwnLogs && log?.userId === (user as any)?.id) ||
+                        canEditAllLogs) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openEditDialog(log)}
+                          disabled={updateLog.isPending}
+                          className="text-gray-500 hover:text-brand-primary hover:bg-brand-primary-lighter text-xs px-2 py-1"
+                        >
+                          Edit
+                        </Button>
+                      )}
+                      {(canDeleteWorkLog(permissionUser, log) ||
+                        (canDeleteOwnLogs && log?.userId === (user as any)?.id) ||
+                        canDeleteAllLogs) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => deleteLog.mutate(log?.id)}
+                          disabled={deleteLog.isPending}
+                          className="text-gray-400 hover:text-red-600 hover:bg-red-50 text-xs px-2 py-1"
+                        >
+                          Remove
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
@@ -500,6 +594,134 @@ export default function WorkLogPage() {
           )}
         </CardContent>
       </Card>
+
+      <Dialog
+        open={!!editingLog}
+        onOpenChange={(open) => {
+          if (!open) closeEditDialog();
+        }}
+      >
+        <DialogContent
+          className="sm:max-w-md"
+          onPointerDownOutside={(event) => {
+            if (updateLog.isPending) event.preventDefault();
+          }}
+          onEscapeKeyDown={(event) => {
+            if (updateLog.isPending) event.preventDefault();
+          }}
+        >
+          <DialogHeader>
+            <DialogTitle>Edit Work Log</DialogTitle>
+            <DialogDescription>
+              Update the date, time spent, or description for this entry.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              updateLog.mutate();
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <label
+                htmlFor="edit-work-date"
+                className="block text-sm font-medium text-gray-700 mb-1.5"
+              >
+                Work Date
+              </label>
+              <Input
+                id="edit-work-date"
+                type="date"
+                value={editWorkDate}
+                onChange={(e) => setEditWorkDate(e.target.value)}
+                required
+                className="w-full sm:w-48"
+              />
+            </div>
+
+            <div>
+              <p className="block text-sm font-medium text-gray-700 mb-1.5">
+                Time Spent
+              </p>
+              <div className="flex items-center gap-3 p-3 border rounded-lg bg-gray-50">
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="edit-hours"
+                    type="number"
+                    min={0}
+                    max={24}
+                    value={editHours}
+                    onChange={(e) => {
+                      const nextHours = Number(e.target.value);
+                      setEditHours(nextHours);
+                      if (nextHours >= 24) setEditMinutes(0);
+                    }}
+                    required
+                    aria-label="Hours"
+                    className="w-16 text-center bg-white"
+                  />
+                  <label htmlFor="edit-hours" className="text-sm text-gray-600 font-medium">
+                    hours
+                  </label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="edit-minutes"
+                    type="number"
+                    min={0}
+                    max={editHours >= 24 ? 0 : 59}
+                    value={editMinutes}
+                    onChange={(e) => setEditMinutes(Number(e.target.value))}
+                    required
+                    aria-label="Minutes"
+                    className="w-16 text-center bg-white"
+                  />
+                  <label htmlFor="edit-minutes" className="text-sm text-gray-600 font-medium">
+                    minutes
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label
+                htmlFor="edit-work-description"
+                className="block text-sm font-medium text-gray-700 mb-1.5"
+              >
+                Work Description{' '}
+                <span className="text-gray-500 font-normal">(optional)</span>
+              </label>
+              <Textarea
+                id="edit-work-description"
+                value={editDescription}
+                onChange={(e) => setEditDescription(e.target.value)}
+                placeholder="Describe what you worked on (optional)..."
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={closeEditDialog}
+                disabled={updateLog.isPending}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={updateLog.isPending}
+                className="bg-brand-orange hover:bg-brand-orange-dark text-white"
+              >
+                {updateLog.isPending ? 'Saving...' : 'Save Changes'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
