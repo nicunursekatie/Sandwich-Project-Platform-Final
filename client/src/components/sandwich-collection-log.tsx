@@ -3360,7 +3360,7 @@ export default function SandwichCollectionLog() {
                                   }
                                   aria-pressed={isFavorited}
                                   data-testid={`button-favorite-${collection.id}`}
-                                  className={`h-11 w-11 sm:h-8 sm:w-8 p-0 bg-white border-gray-300 ${}
+                                  className={`h-11 w-11 sm:h-8 sm:w-8 p-0 bg-white border-gray-300 ${
                                     isFavorited
                                       ? 'text-amber-500 hover:text-amber-600'
                                       : 'text-gray-500 hover:text-amber-500'

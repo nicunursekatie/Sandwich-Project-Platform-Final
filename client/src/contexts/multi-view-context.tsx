@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 export interface ViewPanel {
   id: string;
@@ -101,6 +102,10 @@ export function MultiViewProvider({
   const [splitLayout, setSplitLayout] = useState<'horizontal' | 'vertical'>(() =>
     persisted?.splitLayout ?? 'horizontal'
   );
+  const isPhoneLayout = useIsMobile();
+  // Keep the stored preference, but do not render split panes on phones —
+  // the toolbar that turns multi-view off is hidden below md.
+  const isMultiViewActive = isMultiViewEnabled && !isPhoneLayout;
 
   // After we've handled mount, the URL→primary sync should run as normal.
   // But on the FIRST render after a reload-with-restored-state, we skip that
@@ -236,7 +241,7 @@ export function MultiViewProvider({
     updatePanelSection,
     setActivePanel,
     canAddPanel,
-    isMultiViewEnabled,
+    isMultiViewEnabled: isMultiViewActive,
     setMultiViewEnabled,
     splitLayout,
     setSplitLayout,
@@ -248,7 +253,7 @@ export function MultiViewProvider({
     removePanel,
     updatePanelSection,
     canAddPanel,
-    isMultiViewEnabled,
+    isMultiViewActive,
     splitLayout,
     navigateActivePanel,
   ]);

@@ -20,6 +20,7 @@
 import { useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation } from 'wouter';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import {
   Search,
   X,
@@ -171,6 +172,7 @@ export function UnifiedTopSearch() {
     () => typeof window !== 'undefined' && window.innerWidth < 640,
   );
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileResultsEl, setMobileResultsEl] = useState<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
@@ -522,50 +524,66 @@ export function UnifiedTopSearch() {
           <Search className="w-5 h-5" />
         </button>
       )}
-      {isCompact && mobileOpen && createPortal(
-        <div className="fixed inset-0 z-[10010] flex flex-col">
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/50"
-            aria-label="Close search"
-            onClick={closeMobileSearch}
-          />
-          <div
-            className="relative bg-[#007E8C] px-3 pb-3"
-            style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
-          >
-            <div className="flex items-center gap-2">
-              <div className="flex-1 min-w-0">{searchField}</div>
-              <button
-                type="button"
-                onClick={closeMobileSearch}
-                className="shrink-0 text-white text-sm font-medium px-2 py-2"
-              >
-                Cancel
-              </button>
+      {isCompact && (
+        <Dialog
+          open={mobileOpen}
+          onOpenChange={(open) => {
+            if (open) {
+              setMobileOpen(true);
+              setIsOpen(true);
+            } else {
+              closeMobileSearch();
+            }
+          }}
+        >
+          <DialogContent className="left-0 top-0 z-[10010] flex h-[100dvh] w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 p-0 sm:max-w-none [&>button.absolute]:hidden">
+            <DialogTitle className="sr-only">Search</DialogTitle>
+            <div
+              className="relative bg-[#007E8C] px-3 pb-3"
+              style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+            >
+              <div className="flex items-center gap-2">
+                <div className="flex-1 min-w-0">{searchField}</div>
+                <button
+                  type="button"
+                  onClick={closeMobileSearch}
+                  className="shrink-0 text-white text-sm font-medium px-2 py-2"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
-          </div>
-        </div>,
-        document.body,
+            <div
+              ref={setMobileResultsEl}
+              className="min-h-0 flex-1 overflow-y-auto bg-white"
+            />
+          </DialogContent>
+        </Dialog>
       )}
       {!isCompact && searchField}
 
       {/* Results dropdown — portaled to document.body with position:fixed
           so it can never be clipped by ancestor containers with
           overflow:hidden or lower stacking contexts in the top nav. */}
-      {isOpen && dropdownPos && createPortal(
+      {isOpen && (mobileOpen ? mobileResultsEl : dropdownPos) && createPortal(
         <div
           id="unified-top-search-results"
           role="listbox"
-          style={{
-            position: 'fixed',
-            top: dropdownPos.top,
-            left: dropdownPos.left,
-            width: dropdownPos.width,
-          }}
-          className={`bg-white rounded-lg border border-slate-200 shadow-xl overflow-y-auto ${
-            mobileOpen ? 'z-[10020] max-h-[70vh]' : 'z-[10000] max-h-[420px]'
-          }`}
+          style={
+            mobileOpen || !dropdownPos
+              ? undefined
+              : {
+                  position: 'fixed',
+                  top: dropdownPos.top,
+                  left: dropdownPos.left,
+                  width: dropdownPos.width,
+                }
+          }
+          className={
+            mobileOpen
+              ? 'bg-white'
+              : 'bg-white rounded-lg border border-slate-200 shadow-xl overflow-y-auto z-[10000] max-h-[420px]'
+          }
         >
           {query.trim().length < 2 ? (
             <div className="p-4 text-center text-gray-500 text-sm">
@@ -751,7 +769,7 @@ export function UnifiedTopSearch() {
             </div>
           )}
         </div>,
-        document.body,
+        mobileOpen && mobileResultsEl ? mobileResultsEl : document.body,
       )}
     </div>
   );
