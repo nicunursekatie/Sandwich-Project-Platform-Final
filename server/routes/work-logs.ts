@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { eq, desc, sql } from 'drizzle-orm';
 import { workLogs, workLogTimers } from '@shared/schema';
 import { db, executeRawSql } from '../db';
-import { PERMISSIONS } from '@shared/auth-utils';
+import { canEditWorkLog, PERMISSIONS } from '@shared/auth-utils';
 import {
   requirePermission,
   requireOwnershipPermission,
@@ -364,44 +364,51 @@ router.delete(
   }
 );
 
-// Update a work log (own or any if super admin)
-router.put(
-  '/:id',
-  requireOwnershipPermission(
-    PERMISSIONS.WORK_LOGS_EDIT_OWN,
-    PERMISSIONS.WORK_LOGS_EDIT_ALL,
-    async (req) => {
-      const logId = parseInt(req.params.id);
-      const log = await db
-        .select()
-        .from(workLogs)
-        .where(eq(workLogs.id, logId));
-      return log[0]?.userId || null;
-    }
-  ),
-  async (req, res) => {
-    const logId = parseInt(req.params.id);
-    if (isNaN(logId)) return res.status(400).json({ error: 'Invalid log ID' });
-    const result = insertWorkLogSchema.safeParse(req.body);
-    if (!result.success)
-      return res.status(400).json({ error: result.error.message });
-    try {
-      const updated = await db
-        .update(workLogs)
-        .set({
-          description: result.data.description,
-          hours: result.data.hours,
-          minutes: result.data.minutes,
-          workDate: new Date(result.data.workDate),
-        })
-        .where(eq(workLogs.id, logId))
-        .returning();
-      res.json(updated[0]);
-    } catch (error) {
-      res.status(500).json({ error: 'Failed to update work log' });
-    }
+// Update a work log (own entries, or any if the user has edit-all)
+router.put('/:id', async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Authentication required' });
   }
-);
+
+  const logId = parseInt(req.params.id);
+  if (isNaN(logId)) return res.status(400).json({ error: 'Invalid log ID' });
+
+  const result = insertWorkLogSchema.safeParse(req.body);
+  if (!result.success)
+    return res.status(400).json({ error: result.error.message });
+
+  try {
+    const existing = await db
+      .select()
+      .from(workLogs)
+      .where(eq(workLogs.id, logId));
+    const currentLog = existing[0];
+    if (!currentLog) {
+      return res.status(404).json({ error: 'Work log not found' });
+    }
+
+    if (!canEditWorkLog(req.user, currentLog)) {
+      return res
+        .status(403)
+        .json({ error: 'Insufficient permissions to edit this work log' });
+    }
+
+    const updated = await db
+      .update(workLogs)
+      .set({
+        description: result.data.description,
+        hours: result.data.hours,
+        minutes: result.data.minutes,
+        workDate: new Date(result.data.workDate),
+      })
+      .where(eq(workLogs.id, logId))
+      .returning();
+    res.json(updated[0]);
+  } catch (error) {
+    logger.error('Error updating work log:', error);
+    res.status(500).json({ error: 'Failed to update work log' });
+  }
+});
 
 // Delete a work log (own or any if super admin)
 router.delete(
