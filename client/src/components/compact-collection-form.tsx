@@ -799,7 +799,7 @@ export default function CompactCollectionForm({
                   <p className="text-xs text-blue-700 mt-1">
                     Collections typically happen on Wednesdays. Setting the correct collection date helps keep our records accurate.
                   </p>
-                  <div className="flex gap-2 mt-2">
+                  <div className="flex flex-wrap gap-2 mt-2">
                     <Button
                       type="button"
                       size="sm"

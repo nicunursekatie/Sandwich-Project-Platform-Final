@@ -68,7 +68,7 @@ export const InfoBadge: React.FC<InfoBadgeProps> = ({
     <Badge
       variant="outline"
       className={cn(
-        'whitespace-nowrap gap-1',
+        'whitespace-normal sm:whitespace-nowrap gap-1',
         interactive && 'cursor-pointer',
         badgeTone[tone],
         className

@@ -86,7 +86,7 @@ export function MultiViewToolbar({ currentSection, className }: MultiViewToolbar
 
   return (
     <div className={cn(
-      'flex items-center gap-2 px-4 py-2 bg-white border-b border-slate-200',
+      'flex items-center gap-2 px-4 py-2 bg-white border-b border-slate-200 hidden md:flex',
       className
     )}>
       {/* Multi-View Toggle */}

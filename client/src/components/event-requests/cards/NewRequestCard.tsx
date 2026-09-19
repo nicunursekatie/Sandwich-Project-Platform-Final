@@ -702,7 +702,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
   return (
     <div className="bg-gray-50 rounded-lg p-3 space-y-3">
       {/* Primary Contact */}
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="space-y-1 min-w-0 flex-1">
           {hasBackupContact && (
             <div className="text-xs font-semibold text-gray-500 uppercase mb-1">Primary Contact</div>
@@ -749,7 +749,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
             </div>
           )}
         </div>
-        <div className="flex flex-col gap-2 flex-shrink-0">
+        <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-shrink-0">
           {request.phone && (
             <>
               {onIntakeCall && (
@@ -757,10 +757,11 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
                   size="sm"
                   variant="default"
                   onClick={onIntakeCall}
-                  className="text-sm h-8 bg-[#007E8C] hover:bg-[#236383] text-white"
+                  className="text-sm h-10 sm:h-8 w-full sm:w-auto bg-[#007E8C] hover:bg-[#236383] text-white"
                 >
                   <Phone className="w-4 h-4 mr-1" />
-                  Intake Call Notes Form
+                  <span className="sm:hidden">Intake Call</span>
+                  <span className="hidden sm:inline">Intake Call Notes Form</span>
                 </Button>
               )}
               {onCall && (
@@ -768,7 +769,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
                   size="sm"
                   variant="outline"
                   onClick={onCall}
-                  className="text-sm h-8"
+                  className="text-sm h-10 sm:h-8 w-full sm:w-auto"
                 >
                   <Phone className="w-4 h-4 mr-1" />
                   Call
@@ -781,7 +782,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               size="sm"
               variant="outline"
               onClick={onContact}
-              className="text-sm h-8"
+              className="text-sm h-10 sm:h-8 w-full sm:w-auto"
             >
               <Mail className="w-4 h-4 mr-1" />
               Email

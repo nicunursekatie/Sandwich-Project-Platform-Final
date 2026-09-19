@@ -1008,7 +1008,97 @@
 }
 
 /* ==========================================
-   20. NARROW MOBILE (360px) SPECIFIC FIXES
+   20. PHONE LAYOUT SAFETY NET (≤767px)
+   Catches un-prefixed grids, squeezed tab bars, oversized dialogs,
+   and raw tables across the whole app. More conservative than the
+   ≤360px emergency rules: calendars, calculator keypads, and side
+   sheets are left alone.
+   ========================================== */
+@media (max-width: 767px) {
+  /* Tab bars with 3+ equal columns: scroll horizontally instead of
+     squeezing labels into unreadable strips. 2-column tab bars stay. */
+  [role="tablist"].grid.grid-cols-3,
+  [role="tablist"].grid.grid-cols-4,
+  [role="tablist"].grid.grid-cols-5,
+  [role="tablist"].grid.grid-cols-6,
+  [role="tablist"].grid.grid-cols-7,
+  [role="tablist"].grid.grid-cols-8 {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    justify-content: flex-start !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  [role="tablist"].grid > [role="tab"] {
+    flex: 0 0 auto;
+    white-space: nowrap;
+  }
+
+  /* Centered modal dialogs only (left/top 50% + translate).
+     Do NOT target sheets/drawers, which also have role="dialog". */
+  [role="dialog"].left-\[50\%\],
+  [role="alertdialog"].left-\[50\%\] {
+    width: calc(100vw - 1.5rem) !important;
+    max-width: calc(100vw - 1.5rem) !important;
+    max-height: min(90vh, 100dvh - 1.5rem) !important;
+  }
+
+  /* Popovers/dropdowns with hardcoded w-[400px] etc. */
+  [data-radix-popper-content-wrapper],
+  [data-radix-popper-content-wrapper] > * {
+    max-width: calc(100vw - 1.5rem) !important;
+  }
+
+  /* Raw <table> (not the shadcn Table wrapper) can scroll instead of
+     blowing out the page. Nested overflow-x-auto parents still win. */
+  *:has(> table) {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Dense content grids stack. Exclusions:
+       .grid-cols-7  — week calendars
+       .gap-1 / .gap-1.5 — calculator / number-pad keypads
+       .keep-cols — explicit opt-out
+       [role="tablist"] — handled above as a scrolling flex row */
+  .grid.grid-cols-3:not(.gap-1):not(.gap-1\.5):not(.keep-cols):not([role="tablist"]),
+  .grid.grid-cols-4:not(.gap-1):not(.gap-1\.5):not(.keep-cols):not([role="tablist"]),
+  .grid.grid-cols-5:not(.keep-cols):not([role="tablist"]),
+  .grid.grid-cols-6:not(.keep-cols):not([role="tablist"]),
+  .grid.grid-cols-8:not(.keep-cols):not([role="tablist"]),
+  .grid.grid-cols-9:not(.keep-cols):not([role="tablist"]),
+  .grid.grid-cols-10:not(.keep-cols):not([role="tablist"]),
+  .grid.grid-cols-11:not(.keep-cols):not([role="tablist"]),
+  .grid.grid-cols-12:not(.keep-cols):not([role="tablist"]) {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Page-level min-widths that force horizontal overflow.
+     Leave min-w on <table> itself so wide tables scroll inside a wrapper. */
+  .min-w-\[800px\]:not(table),
+  .min-w-\[600px\]:not(table) {
+    min-width: 0 !important;
+  }
+}
+
+/* Touch devices have no hover. Event-request cards hide inline-edit
+   controls behind group-hover; without this they are unreachable. */
+@media (hover: none) {
+  .group-hover\:opacity-100 {
+    opacity: 1 !important;
+  }
+
+  .group-hover\:inline-flex {
+    display: inline-flex !important;
+  }
+}
+
+/* ==========================================
+   21. NARROW MOBILE (360px) SPECIFIC FIXES
    Critical fixes for the smallest supported devices
    Target: 360px width and below (iPhone SE, older devices)
    ========================================== */
@@ -1107,12 +1197,11 @@
     flex-wrap: wrap !important;
   }
 
-  /* Make dialogs use full width minus small margin */
-  [role="dialog"],
-  [data-state="open"][role="dialog"] {
+  /* Centered modals only — sheets/drawers also use role="dialog". */
+  [role="dialog"].left-\[50\%\],
+  [role="alertdialog"].left-\[50\%\] {
     width: calc(100vw - 1rem) !important;
     max-width: calc(100vw - 1rem) !important;
-    margin: 0.5rem !important;
   }
 
   /* Ensure popups/tooltips don't overflow */
@@ -1164,7 +1253,7 @@
 }
 
 /* ==========================================
-   21. EXTRA NARROW MOBILE (320px and below) EMERGENCY FIXES
+   22. EXTRA NARROW MOBILE (320px and below) EMERGENCY FIXES
    For extremely narrow viewports (0-320px)
    ========================================== */
 @media (max-width: 320px) {

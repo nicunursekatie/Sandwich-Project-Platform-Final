@@ -1006,8 +1006,8 @@ export default function Dashboard({
             </h1>
           </div>
 
-          {/* Center: universal search — primary navigation affordance */}
-          <div className="hidden sm:flex flex-1 justify-center px-2 sm:px-4 min-w-0 max-w-xl mx-auto">
+          {/* Center: universal search — icon on phones, full bar from sm up */}
+          <div className="flex flex-1 justify-end sm:justify-center px-1 sm:px-4 min-w-0 sm:max-w-xl mx-auto">
             <UnifiedTopSearch />
           </div>
 
@@ -1045,7 +1045,7 @@ export default function Dashboard({
                         window.history.pushState({}, '', '/dashboard?section=chat');
                         setIsMobileMenuOpen(false);
                       }}
-                      className={`flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 rounded-md transition-colors text-sm font-medium ${
+                      className={`hidden sm:flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 rounded-md transition-colors text-sm font-medium ${
                         activeSection === 'chat'
                           ? 'bg-white text-brand-primary shadow-sm'
                           : 'text-white/80 hover:bg-white/15 hover:text-white'
@@ -1075,7 +1075,7 @@ export default function Dashboard({
                         window.history.pushState({}, '', '/dashboard?section=gmail-inbox');
                         setIsMobileMenuOpen(false);
                       }}
-                      className={`flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 rounded-md transition-colors text-sm font-medium ${
+                      className={`hidden sm:flex items-center gap-1.5 p-1.5 sm:px-2.5 sm:py-2 rounded-md transition-colors text-sm font-medium ${
                         activeSection === 'gmail-inbox'
                           ? 'bg-white text-brand-primary shadow-sm'
                           : 'text-white/80 hover:bg-white/15 hover:text-white'

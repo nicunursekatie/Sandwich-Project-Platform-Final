@@ -292,13 +292,20 @@
       font-size: 14px;
     }
 
-    /* Dialog and modal optimizations */
-    [role="dialog"],
-    [data-radix-dialog-content] {
+    /* Centered modals only. Sheets/drawers also have role="dialog"
+       and must keep their edge-anchored layout. */
+    [role="dialog"].left-\[50\%\],
+    [role="alertdialog"].left-\[50\%\] {
       max-width: 95vw;
       max-height: 90vh;
-      margin: 5vh auto;
       overflow-y: auto;
+    }
+
+    /* Don't inflate the dashboard header — 44px min on every header
+       icon is what makes the top bar wrap/overflow on phones. */
+    .mobile-header-fix button {
+      min-height: 36px;
+      min-width: 36px;
     }
 
     /* Table responsive behavior */

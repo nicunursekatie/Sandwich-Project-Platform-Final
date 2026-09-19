@@ -26,13 +26,7 @@
 
 .leaflet-popup.volunteer-map-event-popup .leaflet-popup-content {
   margin: 14px;
-  width: 360px !important;
-}
-
-@media (max-width: 480px) {
-  .leaflet-popup.volunteer-map-event-popup .leaflet-popup-content {
-    width: calc(100vw - 3rem) !important;
-  }
+  width: min(360px, calc(100vw - 3rem)) !important;
 }
 
 /* Fix for horizontal scroll issues */

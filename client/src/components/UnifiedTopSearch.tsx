@@ -167,6 +167,10 @@ export function UnifiedTopSearch() {
     left: number;
     width: number;
   } | null>(null);
+  const [isCompact, setIsCompact] = useState(
+    () => typeof window !== 'undefined' && window.innerWidth < 640,
+  );
+  const [mobileOpen, setMobileOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
@@ -290,8 +294,18 @@ export function UnifiedTopSearch() {
   };
 
   // ── Result selection ──────────────────────────────────────────────────
+  const closeMobileSearch = useCallback(() => {
+    setMobileOpen(false);
+    setIsOpen(false);
+    setQuery('');
+    setPageResults([]);
+    setPersonResults([]);
+    setCollectionResults([]);
+  }, []);
+
   const navigateToResult = (result: UnifiedResult) => {
     setIsOpen(false);
+    setMobileOpen(false);
     setQuery('');
     setPageResults([]);
     setPersonResults([]);
@@ -313,6 +327,10 @@ export function UnifiedTopSearch() {
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       e.preventDefault();
+      if (mobileOpen) {
+        closeMobileSearch();
+        return;
+      }
       setIsOpen(false);
       inputRef.current?.blur();
       return;
@@ -337,17 +355,44 @@ export function UnifiedTopSearch() {
     }
   };
 
+  // ── Compact (phone) vs full search bar ────────────────────────────────
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 639px)');
+    const onChange = () => {
+      const compact = mql.matches;
+      setIsCompact(compact);
+      if (!compact) setMobileOpen(false);
+    };
+    mql.addEventListener('change', onChange);
+    return () => mql.removeEventListener('change', onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const id = window.setTimeout(() => inputRef.current?.focus(), 0);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.clearTimeout(id);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileOpen]);
+
   // ── Cmd/Ctrl+K focus shortcut ─────────────────────────────────────────
   useEffect(() => {
     const handleGlobalKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        inputRef.current?.focus();
+        if (isCompact) {
+          setMobileOpen(true);
+        } else {
+          inputRef.current?.focus();
+        }
       }
     };
     document.addEventListener('keydown', handleGlobalKey);
     return () => document.removeEventListener('keydown', handleGlobalKey);
-  }, []);
+  }, [isCompact]);
 
   // ── Click outside closes ──────────────────────────────────────────────
   // The dropdown is portaled to document.body, so a naive check on
@@ -360,13 +405,14 @@ export function UnifiedTopSearch() {
         containerRef.current && containerRef.current.contains(e.target as Node);
       const dropdownEl = document.getElementById('unified-top-search-results');
       const insideDropdown = dropdownEl && dropdownEl.contains(e.target as Node);
+      if (mobileOpen) return;
       if (!insideContainer && !insideDropdown) {
         setIsOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  }, [mobileOpen]);
 
   // ── Recompute dropdown position ───────────────────────────────────────
   // Whenever the dropdown is open, keep its position anchored to the
@@ -381,6 +427,14 @@ export function UnifiedTopSearch() {
     const update = () => {
       if (!inputRef.current) return;
       const rect = inputRef.current.getBoundingClientRect();
+      if (mobileOpen) {
+        setDropdownPos({
+          top: rect.bottom + 8,
+          left: 12,
+          width: Math.max(window.innerWidth - 24, 0),
+        });
+        return;
+      }
       setDropdownPos({
         top: rect.bottom + 4,
         left: rect.left,
@@ -394,7 +448,7 @@ export function UnifiedTopSearch() {
       window.removeEventListener('scroll', update, true);
       window.removeEventListener('resize', update);
     };
-  }, [isOpen]);
+  }, [isOpen, mobileOpen]);
 
   useEffect(() => {
     return () => {
@@ -407,52 +461,94 @@ export function UnifiedTopSearch() {
   // across the two grouped sections.
   let rowIdx = -1;
 
-  return (
-    <div ref={containerRef} className="relative w-full">
-      {/* Compact dark-friendly search input designed for the top nav bar. */}
-      <div className="relative">
-        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60 pointer-events-none" />
-        <input
-          ref={inputRef}
-          type="search"
-          placeholder="Search pages, people, events, collections…"
-          value={query}
-          onChange={(e) => handleQueryChange(e.target.value)}
-          onKeyDown={handleKeyDown}
-          onFocus={() => setIsOpen(true)}
-          className="top-nav-search w-full h-9 pl-8 pr-16 rounded-md text-sm border border-white/15 focus:outline-none focus:border-white/30 transition-colors"
-          aria-label="Universal search"
-          aria-expanded={isOpen}
-          aria-controls="unified-top-search-results"
-          autoComplete="off"
-          data-testid="unified-top-search"
-        />
-        {/* Trailing affordance: clear button when typing, Cmd+K hint otherwise. */}
-        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-          {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-white/60" />}
-          {query ? (
-            <button
-              type="button"
-              onClick={() => {
-                setQuery('');
-                setPageResults([]);
-                setPersonResults([]);
-                setCollectionResults([]);
-                setIsOpen(false);
-                inputRef.current?.focus();
-              }}
-              className="p-0.5 rounded hover:bg-white/15 text-white/60 hover:text-white/90"
-              aria-label="Clear search"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          ) : (
-            <span className="hidden md:inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] font-mono text-white/40 border border-white/15">
-              ⌘K
-            </span>
-          )}
-        </div>
+  const searchField = (
+    <div className="relative w-full">
+      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-white/60 pointer-events-none" />
+      <input
+        ref={inputRef}
+        type="search"
+        placeholder="Search pages, people, events, collections…"
+        value={query}
+        onChange={(e) => handleQueryChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        onFocus={() => setIsOpen(true)}
+        className="top-nav-search w-full h-9 pl-8 pr-16 rounded-md text-sm border border-white/15 focus:outline-none focus:border-white/30 transition-colors"
+        aria-label="Universal search"
+        aria-expanded={isOpen}
+        aria-controls="unified-top-search-results"
+        autoComplete="off"
+        data-testid="unified-top-search"
+      />
+      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
+        {isLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-white/60" />}
+        {query ? (
+          <button
+            type="button"
+            onClick={() => {
+              setQuery('');
+              setPageResults([]);
+              setPersonResults([]);
+              setCollectionResults([]);
+              setIsOpen(false);
+              inputRef.current?.focus();
+            }}
+            className="p-0.5 rounded hover:bg-white/15 text-white/60 hover:text-white/90"
+            aria-label="Clear search"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        ) : (
+          <span className="hidden md:inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[10px] font-mono text-white/40 border border-white/15">
+            ⌘K
+          </span>
+        )}
       </div>
+    </div>
+  );
+
+  return (
+    <div ref={containerRef} className={isCompact ? 'flex items-center' : 'relative w-full'}>
+      {isCompact && !mobileOpen && (
+        <button
+          type="button"
+          onClick={() => {
+            setMobileOpen(true);
+            setIsOpen(true);
+          }}
+          className="flex items-center justify-center w-9 h-9 rounded-md text-white/80 hover:bg-white/15 hover:text-white"
+          aria-label="Search"
+          data-testid="unified-top-search-mobile"
+        >
+          <Search className="w-5 h-5" />
+        </button>
+      )}
+      {isCompact && mobileOpen && createPortal(
+        <div className="fixed inset-0 z-[10010] flex flex-col">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/50"
+            aria-label="Close search"
+            onClick={closeMobileSearch}
+          />
+          <div
+            className="relative bg-[#007E8C] px-3 pb-3"
+            style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+          >
+            <div className="flex items-center gap-2">
+              <div className="flex-1 min-w-0">{searchField}</div>
+              <button
+                type="button"
+                onClick={closeMobileSearch}
+                className="shrink-0 text-white text-sm font-medium px-2 py-2"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body,
+      )}
+      {!isCompact && searchField}
 
       {/* Results dropdown — portaled to document.body with position:fixed
           so it can never be clipped by ancestor containers with
@@ -467,7 +563,9 @@ export function UnifiedTopSearch() {
             left: dropdownPos.left,
             width: dropdownPos.width,
           }}
-          className="bg-white rounded-lg border border-slate-200 shadow-xl max-h-[420px] overflow-y-auto z-[10000]"
+          className={`bg-white rounded-lg border border-slate-200 shadow-xl overflow-y-auto ${
+            mobileOpen ? 'z-[10020] max-h-[70vh]' : 'z-[10000] max-h-[420px]'
+          }`}
         >
           {query.trim().length < 2 ? (
             <div className="p-4 text-center text-gray-500 text-sm">

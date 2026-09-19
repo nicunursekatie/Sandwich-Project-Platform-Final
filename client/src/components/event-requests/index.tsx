@@ -576,7 +576,7 @@ const EventRequestsManagementContent: React.FC = () => {
       <div className="space-y-4 premium-gradient-subtle min-h-screen p-2 sm:p-4" data-event-requests-root>
         {/* Header — title left, admin actions right */}
         <div className="premium-card p-4 sm:p-6">
-          <div className="flex items-start justify-between gap-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex items-center gap-2">
                 <h1 className="premium-text-h1">Event Requests Management</h1>
@@ -717,12 +717,12 @@ const EventRequestsManagementContent: React.FC = () => {
         )}
 
         {/* Controls toolbar — view controls (primary, left) + filters & tools (right) */}
-        <div className="flex flex-wrap items-center gap-2 px-2 sm:px-0">
+        <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center px-2 sm:px-0">
           {/* Primary: View mode controls. Labeled with "View as:" so users
               notice this is a view picker — without the label the segmented
               control reads as decoration and users miss the calendar/map
               options entirely. */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             <span className="text-xs font-semibold uppercase tracking-wide text-[#236383] hidden sm:inline">
               View as:
             </span>
@@ -741,30 +741,30 @@ const EventRequestsManagementContent: React.FC = () => {
                   localStorage.setItem('scheduledTabViewMode', 'card');
                 }
               }}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && (activeTab !== 'scheduled' || scheduledViewMode === 'card') ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+              className={`min-h-11 px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && (activeTab !== 'scheduled' || scheduledViewMode === 'card') ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
             >
               <LayoutGrid className="w-4 h-4" />
-              {!isMobile && 'Cards'}
+              Cards
             </button>
-            {activeTab === 'scheduled' ? (
+            {!isMobile && activeTab === 'scheduled' ? (
               <button
                 onClick={() => { setViewMode('list'); setScheduledViewMode('spreadsheet'); localStorage.setItem('scheduledTabViewMode', 'spreadsheet'); }}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'spreadsheet' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+                className={`min-h-11 px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'list' && scheduledViewMode === 'spreadsheet' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
               >
                 <Table2 className="w-4 h-4" />
-                {!isMobile && 'Spreadsheet'}
+                Spreadsheet
               </button>
-            ) : (
+            ) : !isMobile ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="inline-flex">
                     <button
                       disabled
                       aria-disabled="true"
-                      className="px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 text-gray-400 opacity-60 cursor-not-allowed"
+                      className="min-h-11 px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium flex items-center gap-1.5 text-gray-400 opacity-60 cursor-not-allowed"
                     >
                       <Table2 className="w-4 h-4" />
-                      {!isMobile && 'Spreadsheet'}
+                      {isMobile ? 'Sheet' : 'Spreadsheet'}
                     </button>
                   </span>
                 </TooltipTrigger>
@@ -772,21 +772,21 @@ const EventRequestsManagementContent: React.FC = () => {
                   <p>Spreadsheet view is only available on the Scheduled tab</p>
                 </TooltipContent>
               </Tooltip>
-            )}
+            ) : null}
             <button
               data-tour="calendar-tab"
               onClick={() => setViewMode('calendar')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'calendar' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+              className={`min-h-11 px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'calendar' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
             >
               <Calendar className="w-4 h-4" />
-              {!isMobile && 'Calendar'}
+              {isMobile ? 'Cal' : 'Calendar'}
             </button>
             <button
               onClick={() => setViewMode('map')}
-              className={`px-3 py-1.5 rounded-md text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'map' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
+              className={`min-h-11 px-2 sm:px-3 py-1.5 rounded-md text-xs sm:text-sm font-medium flex items-center gap-1.5 transition-colors ${viewMode === 'map' ? 'bg-white shadow-sm text-[#007E8C]' : 'text-gray-600 hover:text-gray-900'}`}
             >
               <MapPin className="w-4 h-4" />
-              {!isMobile && 'Map'}
+              Map
             </button>
           </div>
           </div>
@@ -796,12 +796,12 @@ const EventRequestsManagementContent: React.FC = () => {
               top-right header action group near Add Event so the view toggles
               read consistently as "ways to view data." */}
 
-          {/* Driver Planning Map link */}
+          {/* Driver Planning Map link — desktop/tablet only; not a phone workflow */}
           <ButtonTooltip
             explanation="Opens the Driver Planning Map to match upcoming events with volunteer drivers. See events, nearby hosts and recipients, and suggested drivers on one map. Start the full walkthrough anytime from the help button (bottom-right)."
             size="md"
           >
-            <Link href="/driver-planning">
+            <Link href="/driver-planning" className="hidden sm:inline-flex">
               <Button
                 variant="outline"
                 size="sm"
@@ -1619,19 +1619,19 @@ const EventRequestsManagementContent: React.FC = () => {
           onOpenChange={setShowVolunteerOpportunities}
         >
           <DialogContent className="!w-[calc(100vw-2rem)] !max-w-[calc(100vw-2rem)] !h-[88vh] flex flex-col overflow-hidden p-0">
-            <div className="px-8 pt-6 pb-4 flex-shrink-0">
+            <div className="px-4 sm:px-8 pt-6 pb-4 flex-shrink-0">
               <DialogHeader>
-                <DialogTitle className="text-3xl font-bold flex items-center gap-4 mb-2" style={{ color: '#007E8C' }}>
-                  <Users className="w-8 h-8" />
+                <DialogTitle className="text-xl sm:text-3xl font-bold flex items-center gap-2 sm:gap-4 mb-2" style={{ color: '#007E8C' }}>
+                  <Users className="w-6 h-6 sm:w-8 sm:h-8" />
                   Volunteer Opportunities
                 </DialogTitle>
-                <DialogDescription className="text-lg font-medium">
+                <DialogDescription className="text-sm sm:text-lg font-medium">
                   Sign up to speak or volunteer at upcoming events
                 </DialogDescription>
               </DialogHeader>
             </div>
 
-            <div className="flex-1 min-h-0 overflow-y-auto px-8 pb-8">
+            <div className="flex-1 min-h-0 overflow-y-auto px-4 sm:px-8 pb-8">
               <VolunteerOpportunitiesTab />
             </div>
           </DialogContent>

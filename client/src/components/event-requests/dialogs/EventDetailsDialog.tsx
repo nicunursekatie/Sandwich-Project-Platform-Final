@@ -87,17 +87,17 @@ export function EventDetailsDialog({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader className="space-y-3">
-          <div className="flex items-start justify-between gap-4">
-            <DialogTitle className="text-2xl font-bold text-[#236383] flex-1">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <DialogTitle className="text-xl sm:text-2xl font-bold text-[#236383] flex-1 min-w-0 break-words">
               {event.organizationName}
             </DialogTitle>
             <Button
               onClick={onEdit}
               variant="outline"
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 w-full sm:w-auto"
             >
               <Edit2 className="h-4 w-4" />
               Edit

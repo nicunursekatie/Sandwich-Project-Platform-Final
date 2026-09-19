@@ -170,7 +170,7 @@ function AddressLink({
       aria-label={`Open ${addressText} in Google Maps`}
     >
       <MapPin className={iconClassName} />
-      <span>{addressText}</span>
+      <span className="min-w-0 break-words">{addressText}</span>
     </a>
   );
 }
@@ -486,9 +486,9 @@ function EventCard({
         </div>
 
         {/* Date & Time — single line when possible */}
-        <div className="flex items-center gap-2 text-sm">
-          <Calendar className="w-4 h-4 shrink-0 text-[#007e8c]" />
-          <span className="font-medium">
+        <div className="flex items-start gap-2 text-sm min-w-0">
+          <Calendar className="w-4 h-4 shrink-0 text-[#007e8c] mt-0.5" />
+          <span className="font-medium min-w-0 break-words">
             {formattedDate}
             <span className="font-normal text-muted-foreground">
               {' · '}{formatEventTime(event.eventStartTime, event.eventEndTime)}
@@ -573,7 +573,7 @@ function EventCard({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 border-[#A31C41]/30 text-[#A31C41] hover:bg-[#A31C41]/10"
+                  className="h-10 border-[#A31C41]/30 text-[#A31C41] hover:bg-[#A31C41]/10"
                   onClick={() => onUnavailable(event.id)}
                 >
                   Update Note
@@ -581,7 +581,7 @@ function EventCard({
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-8 border-[#007e8c]/30 text-[#236383] hover:bg-[#007e8c]/10"
+                  className="h-10 border-[#007e8c]/30 text-[#236383] hover:bg-[#007e8c]/10"
                   onClick={() => onClearUnavailable(event.id)}
                 >
                   Available Again
@@ -721,7 +721,7 @@ function MapEventPopupContent({
       )
     : undefined;
   return (
-    <div className="w-[360px] max-w-[calc(100vw-3rem)] space-y-3">
+    <div className="w-full max-w-[calc(100vw-3rem)] space-y-3">
       {distanceMiles !== undefined && (
         <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50 px-3 py-2 text-sm font-medium text-blue-700">
           <Navigation className="w-4 h-4 shrink-0" />
@@ -2431,7 +2431,7 @@ export default function VolunteerEventHub() {
         </div>
 
         {/* Filters & View Toggle */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex flex-col lg:flex-row lg:items-center gap-3">
           {['calendar', 'list', 'map'].includes(view) && (
             <>
               <div className="relative w-full sm:max-w-sm">
@@ -2447,7 +2447,7 @@ export default function VolunteerEventHub() {
               <div className="flex items-center gap-2">
                 <Filter className="w-4 h-4 text-muted-foreground" />
                 <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger className="w-[160px]">
+                  <SelectTrigger className="w-full sm:w-[160px]">
                     <SelectValue placeholder="Filter by role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -3230,7 +3230,7 @@ export default function VolunteerEventHub() {
                               </div>
                             </div>
                           </Tooltip>
-                          <Popup minWidth={380} maxWidth={420} className="volunteer-map-event-popup">
+                          <Popup minWidth={260} maxWidth={360} className="volunteer-map-event-popup">
                             <MapEventPopupContent
                               event={event}
                               onSignupClick={handleSignupClick}
@@ -3339,7 +3339,7 @@ export default function VolunteerEventHub() {
                 <div className="flex items-center gap-2">
                   <Filter className="w-4 h-4 text-muted-foreground" />
                   <Select value={mySignupsRoleFilter} onValueChange={setMySignupsRoleFilter}>
-                    <SelectTrigger className="w-[160px]">
+                    <SelectTrigger className="w-full sm:w-[160px]">
                       <SelectValue placeholder="Filter by role" />
                     </SelectTrigger>
                     <SelectContent>

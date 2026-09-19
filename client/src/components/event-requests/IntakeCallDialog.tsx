@@ -1339,19 +1339,19 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
       <DialogContent className="w-[95vw] max-w-5xl max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-6 pt-6 pb-4 border-b flex-shrink-0">
-          <div className="flex items-center justify-between">
-            <div>
-              <DialogTitle className="flex items-center gap-2 text-2xl text-[#236383]">
-                <Phone className="w-6 h-6" />
+        <DialogHeader className="px-4 sm:px-6 pt-6 pb-4 border-b flex-shrink-0">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <DialogTitle className="flex items-center gap-2 text-xl sm:text-2xl text-[#236383]">
+                <Phone className="w-5 h-5 sm:w-6 sm:h-6 shrink-0" />
                 Intake Call Guide
               </DialogTitle>
-              <DialogDescription className="mt-2 text-base">
+              <DialogDescription className="mt-2 text-sm sm:text-base break-words">
                 {eventRequest?.organizationName} • {eventRequest?.firstName}{' '}
                 {eventRequest?.lastName}
               </DialogDescription>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <Badge
                 variant="outline"
                 className="text-sm px-3 py-1"
@@ -2143,8 +2143,8 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         </div>
 
         {/* Footer Actions */}
-        <div className="px-6 py-4 border-t flex items-center justify-between flex-shrink-0 bg-gray-50">
-          <div className="text-sm text-gray-600 flex items-center gap-3">
+        <div className="px-4 sm:px-6 py-4 border-t flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between flex-shrink-0 bg-gray-50">
+          <div className="text-sm text-gray-600 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
             {checkedRequiredCount === requiredCount ? (
               <span className="text-green-600 font-medium">
                 ✓ All required items completed
@@ -2161,15 +2161,15 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
               </span>
             )}
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={onClose} disabled={isSaving}>
+          <div className="flex flex-col-reverse sm:flex-row gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={onClose} disabled={isSaving} className="w-full sm:w-auto">
               Close
             </Button>
             <Button
               variant="outline"
               onClick={handleSaveAndClose}
               disabled={isSaving}
-              className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+              className="border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10 w-full sm:w-auto"
             >
               {isSaving ? 'Saving...' : 'Close & Save'}
             </Button>
@@ -2181,7 +2181,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
                 trigger={
                   <Button
                     variant="outline"
-                    className="border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41]/10"
+                    className="border-[#A31C41] text-[#A31C41] hover:bg-[#A31C41]/10 w-full sm:w-auto"
                     disabled={isSaving}
                   >
                     Move to Non-Event
@@ -2197,7 +2197,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
             )}
             <Button
               onClick={handleComplete}
-              className="bg-[#007E8C] hover:bg-[#236383] text-white"
+              className="bg-[#007E8C] hover:bg-[#236383] text-white w-full sm:w-auto"
               disabled={isSaving}
             >
               {isSaving ? 'Saving...' : 'Mark Call Complete'}
