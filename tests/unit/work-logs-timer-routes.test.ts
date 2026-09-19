@@ -32,13 +32,13 @@ const mockDb = {
   select: () => ({
     from: (table: any) => {
       const settle = () => Promise.resolve(mockRowsFor(table).slice());
-      const chain: any = {
-        where: settle,
-        orderBy: () => chain,
-        limit: () => chain,
-        offset: () => chain,
-        then: (onOk: any, onErr: any) => settle().then(onOk, onErr),
-      };
+    const chain: any = {
+      where: () => chain,
+      orderBy: () => chain,
+      limit: () => chain,
+      offset: () => chain,
+      then: (onOk: any, onErr: any) => settle().then(onOk, onErr),
+    };
       return chain;
     },
   }),
@@ -151,11 +151,16 @@ jest.mock('../../server/storage', () => ({
 
 import workLogsRouter from '../../server/routes/work-logs';
 
-function makeApp() {
+function makeApp(user?: Record<string, unknown>) {
   const app = express();
   app.use(express.json());
   app.use((req: any, _res, next) => {
-    req.user = { id: 'user-1', email: 'katie@example.org', role: 'volunteer' };
+    req.user = {
+      id: 'user-1',
+      email: 'katie@example.org',
+      role: 'volunteer',
+      ...user,
+    };
     next();
   });
   app.use('/api/work-logs', workLogsRouter);
@@ -378,5 +383,29 @@ describe('work log update route', () => {
     expect(res.status).toBe(500);
     expect(res.body.error).toBe('Unable to verify user permissions');
     expect(log.description).toBe('Work logged');
+  });
+
+  it('lets a WORK_LOGS_VIEW + WORK_LOGS_EDIT_OWN user load their logs', async () => {
+    seedWorkLog();
+    const res = await request(
+      makeApp({ permissions: ['WORK_LOGS_VIEW', 'WORK_LOGS_EDIT_OWN'] })
+    ).get('/api/work-logs');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+  });
+
+  it('lets WORK_LOGS_EDIT_OWN load own logs without ADD', async () => {
+    seedWorkLog();
+    const res = await request(
+      makeApp({ permissions: ['WORK_LOGS_EDIT_OWN'] })
+    ).get('/api/work-logs');
+    expect(res.status).toBe(200);
+    expect(res.body.data).toHaveLength(1);
+  });
+
+  it('rejects list access without view or edit-own permission', async () => {
+    seedWorkLog();
+    const res = await request(makeApp({ permissions: [] })).get('/api/work-logs');
+    expect(res.status).toBe(403);
   });
 });

@@ -770,7 +770,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/volunteers/${editingVolunteer.id} | 1 | client/src/components/volunteer-management.tsx |
 | /api/volunteers/${id} | 1 | client/src/components/volunteer-management.tsx |
 | /api/volunteers/export | 1 | client/src/components/volunteer-management.tsx |
-| /api/work-logs | 8 | client/src/pages/work-log.tsx<br>tests/unit/work-logs-timer-routes.test.ts |
+| /api/work-logs | 11 | client/src/pages/work-log.tsx<br>tests/unit/work-logs-timer-routes.test.ts |
 | /api/work-logs/${editingLog.id} | 1 | client/src/pages/work-log.tsx |
 | /api/work-logs/${id} | 1 | client/src/pages/work-log.tsx |
 | /api/work-logs/${log.id} | 6 | tests/unit/work-logs-timer-routes.test.ts |

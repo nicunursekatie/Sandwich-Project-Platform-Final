@@ -163,11 +163,13 @@ export default function WorkLogPage() {
   });
 
   const closeEditDialog = () => {
+    if (updateLog.isPending) return;
     setEditingLog(null);
     updateLog.reset();
   };
 
   const openEditDialog = (log: WorkLog) => {
+    if (updateLog.isPending) return;
     setEditingLog(log);
     setEditDescription(log.description || '');
     setEditHours(log.hours || 0);
@@ -565,6 +567,7 @@ export default function WorkLogPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => openEditDialog(log)}
+                          disabled={updateLog.isPending}
                           className="text-gray-500 hover:text-brand-primary hover:bg-brand-primary-lighter text-xs px-2 py-1"
                         >
                           Edit
@@ -598,7 +601,15 @@ export default function WorkLogPage() {
           if (!open) closeEditDialog();
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent
+          className="sm:max-w-md"
+          onPointerDownOutside={(event) => {
+            if (updateLog.isPending) event.preventDefault();
+          }}
+          onEscapeKeyDown={(event) => {
+            if (updateLog.isPending) event.preventDefault();
+          }}
+        >
           <DialogHeader>
             <DialogTitle>Edit Work Log</DialogTitle>
             <DialogDescription>

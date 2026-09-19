@@ -65,16 +65,23 @@ router.get('/', async (req, res) => {
     );
 
     // Check if user has any work log permissions
-    const canCreate = req.user?.permissions?.includes(PERMISSIONS.WORK_LOGS_ADD);
-    const canViewAll = req.user?.permissions?.includes(PERMISSIONS.WORK_LOGS_VIEW_ALL);
+    const permissions = Array.isArray(req.user?.permissions)
+      ? req.user.permissions
+      : [];
+    const canCreate = permissions.includes(PERMISSIONS.WORK_LOGS_ADD);
+    const canViewOwn =
+      canCreate ||
+      permissions.includes(PERMISSIONS.WORK_LOGS_VIEW) ||
+      permissions.includes(PERMISSIONS.WORK_LOGS_EDIT_OWN) ||
+      permissions.includes(PERMISSIONS.WORK_LOGS_DELETE_OWN);
+    const canViewAll = permissions.includes(PERMISSIONS.WORK_LOGS_VIEW_ALL);
     const isAdmin = isSuperAdmin(req) || userEmail === 'mdlouza@gmail.com';
 
     logger.log(
-      `[WORK LOGS] Permissions - canCreate: ${canCreate}, canViewAll: ${canViewAll}, isAdmin: ${isAdmin}`
+      `[WORK LOGS] Permissions - canCreate: ${canCreate}, canViewOwn: ${canViewOwn}, canViewAll: ${canViewAll}, isAdmin: ${isAdmin}`
     );
 
-    // User must have at least WORK_LOGS_ADD permission to access work logs
-    if (!canCreate && !canViewAll && !isAdmin) {
+    if (!canViewOwn && !canViewAll && !isAdmin) {
       return res
         .status(403)
         .json({ error: 'Insufficient permissions to view work logs' });
