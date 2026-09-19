@@ -241,7 +241,8 @@ export default function WorkLogPage() {
                   className={`font-mono text-3xl tabular-nums ${
                     activeTimer ? 'text-brand-orange' : 'text-gray-400'
                   }`}
-                  aria-live="polite"
+                  role="timer"
+                  aria-label="Elapsed work time"
                 >
                   {formatElapsed(activeTimer ? elapsedSeconds : 0)}
                 </div>
@@ -287,11 +288,15 @@ export default function WorkLogPage() {
             </div>
 
             <div className="mt-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1.5">
+              <label
+                htmlFor="timer-description"
+                className="block text-sm font-medium text-gray-700 mb-1.5"
+              >
                 What are you working on?{' '}
                 <span className="text-gray-500 font-normal">(optional)</span>
               </label>
               <Textarea
+                id="timer-description"
                 value={timerDescription}
                 onChange={(e) => setTimerDescription(e.target.value)}
                 placeholder={

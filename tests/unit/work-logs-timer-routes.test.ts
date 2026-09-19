@@ -62,14 +62,16 @@ const mockDb = {
       return promise;
     },
   }),
-  execute: (query: any) => {
+};
+
+const executeRawSql = (query: any) => {
     if (failTimerStop) {
       return Promise.reject(new Error('Unable to write work log'));
     }
 
     const timer = mockTimerRows[0];
     if (!timer) {
-      return Promise.resolve({ rows: [] });
+      return Promise.resolve(null);
     }
 
     const stringParams = query.queryChunks.filter(
@@ -94,10 +96,11 @@ const mockDb = {
     mockWorkLogRows.push(log);
     mockTimerRows.splice(0, 1);
     return Promise.resolve({
-      rows: [{ log, elapsedSeconds, capped: rawMinutes > 24 * 60 }],
+      log,
+      elapsedSeconds,
+      capped: rawMinutes > 24 * 60,
     });
-  },
-};
+  };
 
 // A getter, because jest hoists this factory above the imports and `mockDb` is
 // not initialized until the test module body runs.
@@ -105,6 +108,8 @@ jest.mock('../../server/db', () => ({
   get db() {
     return mockDb;
   },
+  executeRawSql: (query: any) =>
+    executeRawSql(query).then((result) => (result ? [result] : [])),
 }));
 
 jest.mock('../../server/middleware/auth', () => ({

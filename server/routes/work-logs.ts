@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { eq, desc, sql } from 'drizzle-orm';
 import { workLogs, workLogTimers } from '@shared/schema';
-import { db } from '../db';
+import { db, executeRawSql } from '../db';
 import { PERMISSIONS } from '@shared/auth-utils';
 import {
   requirePermission,
@@ -177,21 +177,25 @@ router.post(
 // Declared before the '/:id' handlers so '/timer' isn't swallowed by the param route.
 
 // Get the caller's running timer (null when nothing is running)
-router.get('/timer', async (req, res) => {
-  if (!req.user?.id) {
-    return res.status(401).json({ error: 'Authentication required' });
+router.get(
+  '/timer',
+  requirePermission(PERMISSIONS.WORK_LOGS_ADD),
+  async (req, res) => {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    try {
+      const [timer] = await db
+        .select()
+        .from(workLogTimers)
+        .where(eq(workLogTimers.userId, req.user.id));
+      res.json({ timer: timer || null });
+    } catch (error) {
+      logger.error('Error fetching work log timer:', error);
+      res.status(500).json({ error: 'Failed to fetch work log timer' });
+    }
   }
-  try {
-    const [timer] = await db
-      .select()
-      .from(workLogTimers)
-      .where(eq(workLogTimers.userId, req.user.id));
-    res.json({ timer: timer || null });
-  } catch (error) {
-    logger.error('Error fetching work log timer:', error);
-    res.status(500).json({ error: 'Failed to fetch work log timer' });
-  }
-});
+);
 
 // Start the clock
 router.post(
@@ -252,7 +256,11 @@ router.post(
       // The Neon HTTP driver has no interactive transactions. This one statement
       // locks the active timer, writes its log entry, and removes the timer
       // atomically, so an insert failure can never discard tracked time.
-      const queryResult = await db.execute(sql`
+      const [timerResult] = await executeRawSql<{
+        log: typeof workLogs.$inferSelect;
+        elapsedSeconds: number;
+        capped: boolean;
+      }>(sql`
         WITH active_timer AS (
           SELECT id, started_at, description
           FROM work_log_timers
@@ -304,16 +312,27 @@ router.post(
           RETURNING id
         )
         SELECT
-          row_to_json(created_log) AS log,
+          json_build_object(
+            'id', created_log.id,
+            'userId', created_log.user_id,
+            'description', created_log.description,
+            'hours', created_log.hours,
+            'minutes', created_log.minutes,
+            'workDate', created_log.work_date,
+            'createdAt', created_log.created_at,
+            'status', created_log.status,
+            'approvedBy', created_log.approved_by,
+            'approvedAt', created_log.approved_at,
+            'visibility', created_log.visibility,
+            'sharedWith', created_log.shared_with,
+            'department', created_log.department,
+            'teamId', created_log.team_id
+          ) AS log,
           timer_duration.elapsed_seconds AS "elapsedSeconds",
           (timer_duration.raw_minutes > 1440) AS capped
         FROM created_log
         CROSS JOIN timer_duration
       `);
-      const rows = Array.isArray(queryResult)
-        ? queryResult
-        : queryResult.rows;
-      const [timerResult] = rows;
 
       if (!timerResult) {
         return res.status(404).json({ error: 'No timer is running' });

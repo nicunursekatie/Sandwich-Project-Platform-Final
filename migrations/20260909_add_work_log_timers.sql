@@ -1,6 +1,7 @@
 -- Backing table for the "Start Work / Stop Work" stopwatch on the Work Log page,
--- served by GET/POST/DELETE /api/work-logs/timer. Matches the workLogTimers
--- definition in shared/schema.ts. A row exists only while a timer is running;
+-- served by GET /api/work-logs/timer, POST /api/work-logs/timer/start,
+-- POST /api/work-logs/timer/stop, and DELETE /api/work-logs/timer. Matches
+-- the workLogTimers definition in shared/schema.ts. A row exists only while a timer is running;
 -- stopping the timer writes a work_logs row and deletes the row here.
 -- Idempotent: safe to run against both the dev and production branches.
 
