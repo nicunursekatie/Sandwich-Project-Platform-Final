@@ -124,20 +124,23 @@ export function MultiViewProvider({
     setPanels(prev => {
       const primary = prev.find(p => p.id === 'primary');
       if (primary && primary.section !== initialSection) {
-        // In multi-view mode, update the active panel instead of primary
-        if (isMultiViewEnabled && activePanel && activePanel !== 'primary') {
+        // In multi-view mode, update the active panel instead of primary.
+        // Use the phone-aware flag: on phones split view is suppressed and
+        // MultiViewContainer shows panels[0], so URL nav must update that
+        // visible pane — not a hidden secondary panel still marked active.
+        if (isMultiViewActive && activePanel && activePanel !== 'primary') {
           return prev.map(p =>
             p.id === activePanel ? { ...p, section: initialSection } : p
           );
         }
-        // In single-view or when primary is active, update primary panel
+        // In single-view, on phones, or when primary is active, update primary
         return prev.map(p =>
           p.id === 'primary' ? { ...p, section: initialSection } : p
         );
       }
       return prev;
     });
-  }, [initialSection, isMultiViewEnabled, activePanel]);
+  }, [initialSection, isMultiViewActive, activePanel]);
 
   // Persist whenever any piece of multi-view state changes. Cheap (small
   // payload, sessionStorage is sync but fast) and runs after render so it

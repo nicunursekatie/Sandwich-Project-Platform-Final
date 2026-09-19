@@ -536,7 +536,7 @@ export function UnifiedTopSearch() {
             }
           }}
         >
-          <DialogContent className="left-0 top-0 z-[10010] flex h-[100dvh] w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 rounded-none border-0 p-0 sm:max-w-none [&>button.absolute]:hidden">
+          <DialogContent className="left-0 top-0 z-[10010] flex h-[100dvh] max-h-[100dvh] md:max-h-[100dvh] w-screen max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-none border-0 p-0 sm:max-w-none [&>button.absolute]:hidden">
             <DialogTitle className="sr-only">Search</DialogTitle>
             <div
               className="relative bg-[#007E8C] px-3 pb-3"
