@@ -1,4 +1,6 @@
 import { neon } from '@neondatabase/serverless';
+import { sql, type SQL } from 'drizzle-orm';
+import { PgDialect } from 'drizzle-orm/pg-core';
 import { drizzle } from 'drizzle-orm/neon-http';
 import * as schema from '@shared/schema';
 import type { NeonHttpDatabase } from 'drizzle-orm/neon-http';
@@ -55,14 +57,26 @@ export function createDbWithFetchOptions(
 
 // Use HTTP connection instead of WebSocket for better stability
 const sqlClient = neon(configuredDatabaseUrl);
+const pgDialect = new PgDialect();
 const db = drizzle(sqlClient, {
   schema,
   logger: false,
 }) as DB;
 
-// Add execute method for raw SQL queries
+// Preserve the legacy raw-query helper used by existing callers.
 (db as any).execute = async (query: any) => {
   return await sqlClient(query);
 };
+
+/**
+ * Execute a Drizzle SQL expression through Neon's parameterized query API.
+ * The Neon client does not accept Drizzle SQL objects directly.
+ */
+export async function executeRawSql<T extends Record<string, unknown>>(
+  query: SQL
+): Promise<T[]> {
+  const compiled = pgDialect.sqlToQuery(query);
+  return sqlClient(compiled.sql, compiled.params) as Promise<T[]>;
+}
 
 export { db };

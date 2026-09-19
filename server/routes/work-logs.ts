@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { eq, desc, sql } from 'drizzle-orm';
-import { workLogs } from '@shared/schema';
-import { db } from '../db';
+import { workLogs, workLogTimers } from '@shared/schema';
+import { db, executeRawSql } from '../db';
 import { PERMISSIONS } from '@shared/auth-utils';
 import {
   requirePermission,
@@ -25,6 +25,14 @@ const insertWorkLogSchema = z.object({
   workDate: z.string().refine((date) => !isNaN(Date.parse(date)), {
     message: 'Invalid date format',
   }),
+});
+
+const startTimerSchema = z.object({
+  description: z.string().max(2000).optional(),
+});
+
+const stopTimerSchema = z.object({
+  description: z.string().max(2000).optional(),
 });
 
 // Middleware to check if user is super admin or admin
@@ -161,6 +169,197 @@ router.post(
     } catch (error) {
       logger.error('Error creating work log:', error);
       res.status(500).json({ error: 'Failed to create work log' });
+    }
+  }
+);
+
+// --- Start/stop stopwatch ---------------------------------------------------
+// Declared before the '/:id' handlers so '/timer' isn't swallowed by the param route.
+
+// Get the caller's running timer (null when nothing is running)
+router.get(
+  '/timer',
+  requirePermission(PERMISSIONS.WORK_LOGS_ADD),
+  async (req, res) => {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    try {
+      const [timer] = await db
+        .select()
+        .from(workLogTimers)
+        .where(eq(workLogTimers.userId, req.user.id));
+      res.json({ timer: timer || null });
+    } catch (error) {
+      logger.error('Error fetching work log timer:', error);
+      res.status(500).json({ error: 'Failed to fetch work log timer' });
+    }
+  }
+);
+
+// Start the clock
+router.post(
+  '/timer/start',
+  requirePermission(PERMISSIONS.WORK_LOGS_ADD),
+  async (req, res) => {
+    if (!req.user?.id) {
+      return res.status(400).json({ error: 'User context missing' });
+    }
+    const result = startTimerSchema.safeParse(req.body ?? {});
+    if (!result.success)
+      return res.status(400).json({ error: result.error.message });
+
+    try {
+      // Let the unique index on user_id decide the winner, so two tabs clicking
+      // "Start Work" at once can't create two timers.
+      const [timer] = await db
+        .insert(workLogTimers)
+        .values({
+          userId: req.user.id,
+          startedAt: new Date(),
+          description: result.data.description?.trim() || null,
+        })
+        .onConflictDoNothing({ target: workLogTimers.userId })
+        .returning();
+
+      if (!timer) {
+        const [existing] = await db
+          .select()
+          .from(workLogTimers)
+          .where(eq(workLogTimers.userId, req.user.id));
+        return res
+          .status(409)
+          .json({ error: 'A timer is already running', timer: existing || null });
+      }
+
+      res.status(201).json({ timer });
+    } catch (error) {
+      logger.error('Error starting work log timer:', error);
+      res.status(500).json({ error: 'Failed to start work log timer' });
+    }
+  }
+);
+
+// Stop the clock and turn the elapsed time into a work log entry
+router.post(
+  '/timer/stop',
+  requirePermission(PERMISSIONS.WORK_LOGS_ADD),
+  async (req, res) => {
+    if (!req.user?.id) {
+      return res.status(400).json({ error: 'User context missing' });
+    }
+    const result = stopTimerSchema.safeParse(req.body ?? {});
+    if (!result.success)
+      return res.status(400).json({ error: result.error.message });
+
+    try {
+      // The Neon HTTP driver has no interactive transactions. This one statement
+      // locks the active timer, writes its log entry, and removes the timer
+      // atomically, so an insert failure can never discard tracked time.
+      const [timerResult] = await executeRawSql<{
+        log: typeof workLogs.$inferSelect;
+        elapsedSeconds: number;
+        capped: boolean;
+      }>(sql`
+        WITH active_timer AS (
+          SELECT id, started_at, description
+          FROM work_log_timers
+          WHERE user_id = ${req.user.id}
+          FOR UPDATE
+        ),
+        timer_duration AS (
+          SELECT
+            id,
+            started_at,
+            description,
+            GREATEST(
+              0,
+              ROUND(EXTRACT(EPOCH FROM NOW() - started_at))
+            )::integer AS elapsed_seconds,
+            GREATEST(
+              1,
+              ROUND(EXTRACT(EPOCH FROM NOW() - started_at) / 60.0)
+            )::integer AS raw_minutes
+          FROM active_timer
+        ),
+        created_log AS (
+          INSERT INTO work_logs (
+            user_id,
+            description,
+            hours,
+            minutes,
+            work_date
+          )
+          SELECT
+            ${req.user.id},
+            COALESCE(
+              NULLIF(BTRIM(${result.data.description ?? ''}), ''),
+              NULLIF(BTRIM(description), ''),
+              'Work logged'
+            ),
+            (LEAST(1440, raw_minutes) / 60)::integer,
+            (LEAST(1440, raw_minutes) % 60)::integer,
+            date_trunc(
+              'day',
+              started_at AT TIME ZONE 'America/New_York'
+            ) + INTERVAL '12 hours'
+          FROM timer_duration
+          RETURNING *
+        ),
+        deleted_timer AS (
+          DELETE FROM work_log_timers
+          WHERE id IN (SELECT id FROM timer_duration)
+          RETURNING id
+        )
+        SELECT
+          json_build_object(
+            'id', created_log.id,
+            'userId', created_log.user_id,
+            'description', created_log.description,
+            'hours', created_log.hours,
+            'minutes', created_log.minutes,
+            'workDate', created_log.work_date,
+            'createdAt', created_log.created_at,
+            'status', created_log.status,
+            'approvedBy', created_log.approved_by,
+            'approvedAt', created_log.approved_at,
+            'visibility', created_log.visibility,
+            'sharedWith', created_log.shared_with,
+            'department', created_log.department,
+            'teamId', created_log.team_id
+          ) AS log,
+          timer_duration.elapsed_seconds AS "elapsedSeconds",
+          (timer_duration.raw_minutes > 1440) AS capped
+        FROM created_log
+        CROSS JOIN timer_duration
+      `);
+
+      if (!timerResult) {
+        return res.status(404).json({ error: 'No timer is running' });
+      }
+
+      res.status(201).json(timerResult);
+    } catch (error) {
+      logger.error('Error stopping work log timer:', error);
+      res.status(500).json({ error: 'Failed to stop work log timer' });
+    }
+  }
+);
+
+// Throw away a running timer without logging anything
+router.delete(
+  '/timer',
+  requirePermission(PERMISSIONS.WORK_LOGS_ADD),
+  async (req, res) => {
+    if (!req.user?.id) {
+      return res.status(400).json({ error: 'User context missing' });
+    }
+    try {
+      await db.delete(workLogTimers).where(eq(workLogTimers.userId, req.user.id));
+      res.status(204).send();
+    } catch (error) {
+      logger.error('Error discarding work log timer:', error);
+      res.status(500).json({ error: 'Failed to discard work log timer' });
     }
   }
 );

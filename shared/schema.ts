@@ -3654,6 +3654,25 @@ export const workLogs = pgTable('work_logs', {
 export type WorkLog = typeof workLogs.$inferSelect;
 export type InsertWorkLog = typeof workLogs.$inferInsert;
 
+// Running "start work / stop work" stopwatch. A row exists only while a timer is
+// running; stopping it converts the elapsed time into a work_logs row and deletes
+// the row here. The unique index enforces at most one running timer per user.
+export const workLogTimers = pgTable(
+  'work_log_timers',
+  {
+    id: serial('id').primaryKey(),
+    userId: varchar('user_id').notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    description: text('description'), // optional note captured when the timer started
+  },
+  (table) => [uniqueIndex('work_log_timers_user_unique').on(table.userId)]
+);
+
+export type WorkLogTimer = typeof workLogTimers.$inferSelect;
+export type InsertWorkLogTimer = typeof workLogTimers.$inferInsert;
+
 // Suggestions portal for user feedback and feature requests
 export const suggestions = pgTable('suggestions', {
   id: serial('id').primaryKey(),
