@@ -35,12 +35,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { usePageSession } from '@/hooks/usePageSession';
+import { useAuth } from '@/hooks/useAuth';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 import type { EventContactDetail } from '@shared/schema';
 
 export default function EventContactDetailPage() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  const canViewEventRequests =
+    !!user && hasPermission(user, PERMISSIONS.NAV_EVENT_PLANNING);
 
   // Edit dialog state
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -327,8 +333,9 @@ export default function EventContactDetailPage() {
                   {contact.events.map((event) => (
                     <TableRow
                       key={`${event.eventId}-${event.contactRole}`}
-                      className="cursor-pointer hover:bg-slate-50"
+                      className={canViewEventRequests ? 'cursor-pointer hover:bg-slate-50' : ''}
                       onClick={() => {
+                        if (!canViewEventRequests) return;
                         setLocation(`/dashboard?section=event-requests&eventId=${event.eventId}`);
                       }}
                     >

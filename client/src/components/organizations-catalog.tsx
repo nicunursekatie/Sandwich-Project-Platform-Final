@@ -208,6 +208,7 @@ export default function GroupCatalog({
 
   // Check if user has permission to edit categories
   const canEditCategories = user && hasPermission(user as UserForPermissions, PERMISSIONS.ADMIN_PANEL_ACCESS);
+  const canViewEventRequests = user && hasPermission(user as UserForPermissions, PERMISSIONS.NAV_EVENT_PLANNING);
 
   // Fetch groups data
   const {
@@ -417,9 +418,10 @@ export default function GroupCatalog({
 
   // Function to navigate to event request for editing
   const handleEditEventRequest = (eventId: number) => {
-    // Close the dialog
+    if (!user || !hasPermission(user as UserForPermissions, PERMISSIONS.NAV_EVENT_PLANNING)) {
+      return;
+    }
     setShowEventDetailsDialog(false);
-    // Navigate to event requests page with the event ID
     setLocation(`/dashboard?section=event-requests&eventId=${eventId}`);
   };
 
@@ -2308,7 +2310,7 @@ export default function GroupCatalog({
                               </div>
 
                               {/* Edit button for event requests */}
-                              {event.type === 'event_request' && event.id && (
+                              {canViewEventRequests && event.type === 'event_request' && event.id && (
                                 <div className="ml-4 flex-shrink-0">
                                   <Button
                                     onClick={() => handleEditEventRequest(event.id)}

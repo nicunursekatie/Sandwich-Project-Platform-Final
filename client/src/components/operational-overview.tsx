@@ -25,6 +25,9 @@ import {
 import { format, isValid, formatDistanceToNowStrict } from 'date-fns';
 import { parseDateOnly } from '@shared/date-utils';
 import { formatSandwichTypesDisplay } from '@/lib/sandwich-utils';
+import { useAuth } from '@/hooks/useAuth';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 
 interface UpcomingDeadline {
   id: number;
@@ -489,6 +492,8 @@ function MyAssignmentsView({
   onNavigate: (section: string) => void;
   drillToEvents: (tab: string, filter?: string) => void;
 }) {
+  const { user } = useAuth();
+  const canViewVolunteerHub = !!user && hasPermission(user, PERMISSIONS.NAV_VOLUNTEER_HUB);
   const [expandedStatus, setExpandedStatus] = useState<AssignmentStatusKey | null>(null);
   const newRequestsRef = useRef<HTMLDivElement>(null);
   const staleFollowupRef = useRef<HTMLDivElement>(null);
@@ -864,14 +869,16 @@ function MyAssignmentsView({
             <Calendar className="w-4 h-4 mr-2" />
             Open Event Requests
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => onNavigate('volunteer-hub')}
-            className="border-2 border-[#007E8C] text-[#007E8C] font-bold hover:bg-[#007E8C] hover:text-white"
-          >
-            <Users className="w-4 h-4 mr-2" />
-            Volunteer Hub
-          </Button>
+          {canViewVolunteerHub && (
+            <Button
+              variant="outline"
+              onClick={() => onNavigate('volunteer-hub')}
+              className="border-2 border-[#007E8C] text-[#007E8C] font-bold hover:bg-[#007E8C] hover:text-white"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Volunteer Hub
+            </Button>
+          )}
         </div>
       </div>
     </div>
@@ -879,6 +886,9 @@ function MyAssignmentsView({
 }
 
 export default function OperationalOverview({ onNavigate }: OperationalOverviewProps) {
+  const { user } = useAuth();
+  const canViewVolunteerHub = !!user && hasPermission(user, PERMISSIONS.NAV_VOLUNTEER_HUB);
+
   const { data: stats, isLoading, isError, error, refetch } = useQuery<OperationalStats | null>({
     queryKey: ['/api/event-requests/operational-stats'],
     queryFn: async ({ signal }) => {
@@ -1161,14 +1171,16 @@ export default function OperationalOverview({ onNavigate }: OperationalOverviewP
             <Car className="w-4 h-4 mr-2" />
             Assign Drivers
           </Button>
-          <Button
-            variant="outline"
-            onClick={() => onNavigate('volunteer-hub')}
-            className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white"
-          >
-            <Users className="w-4 h-4 mr-2" />
-            Volunteer Hub
-          </Button>
+          {canViewVolunteerHub && (
+            <Button
+              variant="outline"
+              onClick={() => onNavigate('volunteer-hub')}
+              className="border-brand-primary text-brand-primary hover:bg-brand-primary hover:text-white"
+            >
+              <Users className="w-4 h-4 mr-2" />
+              Volunteer Hub
+            </Button>
+          )}
           <Button
             variant="outline"
             onClick={() => onNavigate('collections')}

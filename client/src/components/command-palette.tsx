@@ -33,8 +33,11 @@ import {
   HelpCircle,
   ArrowRight,
   Gauge,
+  HandHeart,
 } from 'lucide-react';
-import { NAV_ITEMS } from '@/nav.config';
+import { useAuth } from '@/hooks/useAuth';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
 
 interface CommandPaletteProps {
   open: boolean;
@@ -63,6 +66,16 @@ const QUICK_NAV_SHORTCUTS: Record<string, { label: string; href: string; icon: R
 
 // Navigation items organized by category
 // Routes must match App.tsx - most pages are dashboard sections accessed via /dashboard?section=X
+const EVENT_PLANNING_HREFS = new Set([
+  '/event-requests',
+  '/dashboard?section=event-requests',
+  '/dashboard?section=event-ops-dashboard',
+]);
+
+function isEventPlanningHref(href: string): boolean {
+  return EVENT_PLANNING_HREFS.has(href) || href.includes('section=event-requests');
+}
+
 const NAV_CATEGORIES = [
   {
     label: 'Quick Access',
@@ -110,13 +123,44 @@ const NAV_CATEGORIES = [
 export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState('');
+  const { user } = useAuth();
+  const canViewEventRequests = !!user && hasPermission(user, PERMISSIONS.NAV_EVENT_PLANNING);
+  const canViewVolunteerHub = !!user && hasPermission(user, PERMISSIONS.NAV_VOLUNTEER_HUB);
 
-  // Filter items based on search
+  const permissionFilteredCategories = useMemo(() => {
+    return NAV_CATEGORIES.map((category) => {
+      const items = category.items.filter(
+        (item) => !isEventPlanningHref(item.href) || canViewEventRequests,
+      );
+      if (category.label === 'Quick Access' && canViewVolunteerHub) {
+        items.push({
+          label: 'Volunteer Hub',
+          href: '/volunteer-hub',
+          icon: HandHeart,
+          shortcut: canViewEventRequests ? undefined : 'E',
+        } as (typeof category.items)[number]);
+      }
+      return { ...category, items };
+    }).filter((category) => category.items.length > 0);
+  }, [canViewEventRequests, canViewVolunteerHub]);
+
+  const shortcuts = useMemo(() => {
+    const next: typeof QUICK_NAV_SHORTCUTS = {};
+    for (const [key, item] of Object.entries(QUICK_NAV_SHORTCUTS)) {
+      if (isEventPlanningHref(item.href) && !canViewEventRequests) continue;
+      next[key] = item;
+    }
+    if (canViewVolunteerHub && !canViewEventRequests) {
+      next.e = { label: 'Volunteer Hub', href: '/volunteer-hub', icon: HandHeart };
+    }
+    return next;
+  }, [canViewEventRequests, canViewVolunteerHub]);
+
   const filteredCategories = useMemo(() => {
-    if (!search) return NAV_CATEGORIES;
+    if (!search) return permissionFilteredCategories;
 
     const lowerSearch = search.toLowerCase();
-    return NAV_CATEGORIES.map((category) => ({
+    return permissionFilteredCategories.map((category) => ({
       ...category,
       items: category.items.filter(
         (item) =>
@@ -124,7 +168,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
           item.href.toLowerCase().includes(lowerSearch)
       ),
     })).filter((category) => category.items.length > 0);
-  }, [search]);
+  }, [search, permissionFilteredCategories]);
 
   // Handle navigation
   const navigateTo = useCallback(
@@ -143,7 +187,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
     const handleKeyDown = (e: KeyboardEvent) => {
       // If search is empty and user presses a shortcut key, navigate directly
       if (search === '' && !e.metaKey && !e.ctrlKey && !e.altKey) {
-        const shortcut = QUICK_NAV_SHORTCUTS[e.key.toLowerCase()];
+        const shortcut = shortcuts[e.key.toLowerCase()];
         if (shortcut) {
           e.preventDefault();
           navigateTo(shortcut.href);
@@ -153,7 +197,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, search, navigateTo]);
+  }, [open, search, navigateTo, shortcuts]);
 
   // Reset search when closing
   useEffect(() => {
@@ -183,7 +227,7 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
               <div className="px-3 py-2 text-xs text-muted-foreground bg-muted/30">
                 <span className="font-medium">Quick shortcuts:</span>{' '}
                 <span className="inline-flex gap-1 flex-wrap">
-                  {Object.entries(QUICK_NAV_SHORTCUTS).slice(0, 6).map(([key, { label }]) => (
+                  {Object.entries(shortcuts).slice(0, 6).map(([key, { label }]) => (
                     <span key={key} className="inline-flex items-center">
                       <kbd className="px-1.5 py-0.5 text-[10px] font-semibold bg-muted rounded border">{key.toUpperCase()}</kbd>
                       <span className="ml-0.5 mr-2">{label}</span>
@@ -245,6 +289,9 @@ export function CommandPalette({ open, onOpenChange }: CommandPaletteProps) {
 export function useCommandPalette() {
   const [open, setOpen] = useState(false);
   const [, setLocation] = useLocation();
+  const { user } = useAuth();
+  const canViewEventRequests = !!user && hasPermission(user, PERMISSIONS.NAV_EVENT_PLANNING);
+  const canViewVolunteerHub = !!user && hasPermission(user, PERMISSIONS.NAV_VOLUNTEER_HUB);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -260,12 +307,14 @@ export function useCommandPalette() {
       // Cmd+/ or Ctrl+/ for quick search in event requests (focus search)
       if ((e.metaKey || e.ctrlKey) && e.key === '/') {
         e.preventDefault();
-        // Navigate to event requests and trigger search focus
-        setLocation('/event-requests');
-        // Dispatch custom event to focus search
-        setTimeout(() => {
-          window.dispatchEvent(new CustomEvent('focus-event-search'));
-        }, 100);
+        if (canViewEventRequests) {
+          setLocation('/event-requests');
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('focus-event-search'));
+          }, 100);
+        } else if (canViewVolunteerHub) {
+          setLocation('/volunteer-hub');
+        }
       }
 
       // Escape to close
@@ -276,7 +325,7 @@ export function useCommandPalette() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [open, setLocation]);
+  }, [open, setLocation, canViewEventRequests, canViewVolunteerHub]);
 
   return { open, setOpen };
 }

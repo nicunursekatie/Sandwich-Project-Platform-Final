@@ -87,6 +87,8 @@ import { QuickCalculator } from '@/components/QuickCalculator';
 import { UnifiedTopSearch } from '@/components/UnifiedTopSearch';
 import { NavViewModeProvider } from '@/contexts/nav-view-mode-context';
 import { NavViewModeToggle } from '@/components/nav-view-mode-toggle';
+import { PermissionDenied } from '@/components/permission-denied';
+import { Button } from '@/components/ui/button';
 
 // Lazy load all page/section components with automatic retry on failure
 const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
@@ -265,6 +267,32 @@ const HELP_BUTTON_HIDDEN_SECTIONS = [
   'inbox',
   'gmail-inbox',
 ];
+
+function EventPlanningDenied({
+  canViewVolunteerHub,
+  onOpenVolunteerHub,
+}: {
+  canViewVolunteerHub: boolean;
+  onOpenVolunteerHub: () => void;
+}) {
+  return (
+    <div className="p-6 max-w-xl mx-auto space-y-4">
+      <PermissionDenied
+        action="view Event Requests"
+        requiredPermission={PERMISSIONS.NAV_EVENT_PLANNING}
+        message="Event Requests is for the event management team. Volunteer sign-ups live in Volunteer Hub."
+      />
+      {canViewVolunteerHub && (
+        <Button
+          onClick={onOpenVolunteerHub}
+          className="w-full bg-[#007E8C] hover:bg-[#236383] text-white"
+        >
+          Open Volunteer Hub
+        </Button>
+      )}
+    </div>
+  );
+}
 
 function GuidedTourGate({ activeSection }: { activeSection: string }) {
   const { panels, activePanel, isMultiViewEnabled } = useMultiView();
@@ -466,13 +494,15 @@ export default function Dashboard({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const { user, isLoading } = useAuth();
+  const canViewEventRequests = !!user && hasPermission(user, PERMISSIONS.NAV_EVENT_PLANNING);
+  const canViewVolunteerHub = !!user && hasPermission(user, PERMISSIONS.NAV_VOLUNTEER_HUB);
   const { trackNavigation, trackButtonClick } = useAnalytics();
   const { openReportDialog } = useIssueReport();
 
-  // Prefetch event requests data for faster navigation.
-  // IMPORTANT: Keep cache keys aligned with EventRequestContext so we actually reuse warmed cache.
+  // Prefetch event requests data only for people who can open Event Requests.
   React.useEffect(() => {
-    // Prefetch status counts (lightweight, always useful)
+    if (!canViewEventRequests) return;
+
     queryClient.prefetchQuery({
       queryKey: ['/api/event-requests/status-counts'],
       queryFn: async () => {
@@ -485,8 +515,6 @@ export default function Dashboard({
       staleTime: 2 * 60 * 1000, // 2 minutes
     });
 
-    // Prefetch the event list for the user's role default tab.
-    // (Admins default to 'scheduled', drivers/volunteers default to 'my_assignments', etc.)
     if (user?.role) {
       const defaults = getEventRequestDefaults(user.role, user.id);
       const { queryKey, listUrl } = buildEventRequestsListQuery(defaults.defaultTab, null);
@@ -501,7 +529,7 @@ export default function Dashboard({
         staleTime: 5 * 60 * 1000, // 5 minutes
       });
     }
-  }, [user?.role, user?.id]);
+  }, [canViewEventRequests, user?.role, user?.id]);
 
   // Preload commonly used component chunks after initial render
   // This helps prevent "reload" errors by ensuring chunks are ready before navigation
@@ -513,7 +541,8 @@ export default function Dashboard({
       const preloadImports = [
         () => import('@/components/dashboard-overview'),
         () => import('@/components/sandwich-collection-log'),
-        () => import('@/components/event-requests'),
+        ...(canViewEventRequests ? [() => import('@/components/event-requests')] : []),
+        ...(canViewVolunteerHub ? [() => import('@/pages/volunteer-event-hub')] : []),
         () => import('@/components/stream-chat-rooms'),
         () => import('@/pages/my-availability'),
       ];
@@ -529,7 +558,7 @@ export default function Dashboard({
     }, 1000); // Wait 1 second after mount before preloading
 
     return () => clearTimeout(preloadTimeout);
-  }, []);
+  }, [canViewEventRequests, canViewVolunteerHub]);
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections((prev) =>
@@ -683,7 +712,21 @@ export default function Dashboard({
       case 'driver-planning':
         return <DriverPlanningDashboard />;
       case 'volunteer-hub':
-        return <VolunteerEventHub />;
+        if (!canViewVolunteerHub) {
+          return (
+            <div className="p-6 max-w-xl mx-auto">
+              <PermissionDenied
+                action="open the Volunteer Hub"
+                requiredPermission={PERMISSIONS.NAV_VOLUNTEER_HUB}
+              />
+            </div>
+          );
+        }
+        return (
+          <VolunteerEventHub
+            initialView={sectionParams.get('view') || urlParams.view}
+          />
+        );
       case 'host-resources':
         return <HostResources />;
       case 'recipients':
@@ -695,6 +738,14 @@ export default function Dashboard({
       case 'directory':
         return <Directory />;
       case 'event-requests':
+        if (!canViewEventRequests) {
+          return (
+            <EventPlanningDenied
+              canViewVolunteerHub={canViewVolunteerHub}
+              onOpenVolunteerHub={() => setActiveSection('volunteer-hub')}
+            />
+          );
+        }
         return (
           <ErrorBoundary
             fallback={
@@ -723,6 +774,14 @@ export default function Dashboard({
           </ErrorBoundary>
         );
       case 'event-ops-dashboard':
+        if (!canViewEventRequests) {
+          return (
+            <EventPlanningDenied
+              canViewVolunteerHub={canViewVolunteerHub}
+              onOpenVolunteerHub={() => setActiveSection('volunteer-hub')}
+            />
+          );
+        }
         return <EventOperationalDashboard />;
       case 'event-reminders':
         return <EventRemindersManagement />;
@@ -731,7 +790,9 @@ export default function Dashboard({
       case 'groups-catalog':
         return (
           <GroupCatalog
-            onNavigateToEventPlanning={() => setActiveSection('event-requests')}
+            onNavigateToEventPlanning={
+              canViewEventRequests ? () => setActiveSection('event-requests') : undefined
+            }
           />
         );
       case 'groups-insights':

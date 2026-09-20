@@ -176,6 +176,17 @@ function AddressLink({
 }
 
 // Types
+type HubView = 'list' | 'calendar' | 'map' | 'my_signups' | 'pending_approvals' | 'coverage';
+
+function resolveVolunteerHubView(
+  raw: string | null | undefined,
+  canApprove: boolean,
+): HubView | null {
+  if (raw === 'list' || raw === 'calendar' || raw === 'map' || raw === 'my_signups') return raw;
+  if ((raw === 'pending_approvals' || raw === 'coverage') && canApprove) return raw;
+  return null;
+}
+
 interface AvailableEvent {
   id: number;
   organizationName: string;
@@ -1570,13 +1581,46 @@ function ManageSignupDialog({
 }
 
 // Main component
-export default function VolunteerEventHub() {
+export default function VolunteerEventHub({
+  initialView = null,
+}: {
+  initialView?: string | null;
+} = {}) {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // View state
-  const [view, setView] = useState<'list' | 'calendar' | 'map' | 'my_signups' | 'pending_approvals' | 'coverage'>('calendar');
+  const canAssignOthers =
+    user?.role === 'super_admin' ||
+    (Array.isArray(user?.permissions) &&
+      (user.permissions as string[]).includes('EVENT_REQUESTS_ASSIGN_OTHERS'));
+
+  const canApproveSignups =
+    !!user && hasPermission(user, PERMISSIONS.VOLUNTEER_SIGNUP_APPROVE);
+
+  const canSelfSignup = !!user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP);
+
+  const [view, setViewState] = useState<HubView>(
+    () => resolveVolunteerHubView(initialView, canApproveSignups) ?? 'calendar',
+  );
+
+  const setView = (next: HubView) => {
+    setViewState(next);
+    try {
+      const url = new URL(window.location.href);
+      url.searchParams.set('section', 'volunteer-hub');
+      url.searchParams.set('view', next);
+      window.history.replaceState({}, '', `${url.pathname}?${url.searchParams.toString()}`);
+    } catch {
+      // ignore unavailable history
+    }
+  };
+
+  useEffect(() => {
+    const next = resolveVolunteerHubView(initialView, canApproveSignups);
+    if (next) setViewState(next);
+  }, [initialView, canApproveSignups]);
+
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<AvailableEvent | null>(null);
@@ -1591,19 +1635,6 @@ export default function VolunteerEventHub() {
   const [manageSignup, setManageSignup] = useState<any | null>(null);
   const [manageMode, setManageMode] = useState<'change_role' | 'remove' | null>(null);
   const [manageDialogOpen, setManageDialogOpen] = useState(false);
-
-  // Can this user assign OTHERS to events (not just self-signup)?
-  const canAssignOthers =
-    user?.role === 'super_admin' ||
-    (Array.isArray(user?.permissions) &&
-      (user.permissions as string[]).includes('EVENT_REQUESTS_ASSIGN_OTHERS'));
-
-  const canApproveSignups =
-    user?.role === 'super_admin' ||
-    (Array.isArray(user?.permissions) &&
-      (user.permissions as string[]).includes('VOLUNTEER_SIGNUP_APPROVE'));
-
-  const canSelfSignup = !!user && hasPermission(user, PERMISSIONS.EVENT_REQUESTS_SELF_SIGNUP);
 
   // Filters
   const [roleFilter, setRoleFilter] = useState<string>('all');
