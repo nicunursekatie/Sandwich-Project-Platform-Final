@@ -28,6 +28,7 @@ export interface EventFormData {
   driversNeeded: number;
   selfTransport: boolean;
   vanDriverNeeded: boolean;
+  vanNeededFor: '' | 'transport' | 'refrigeration';
   assignedVanDriverId: string;
   isDhlVan: boolean;
   volunteersNeeded: number;

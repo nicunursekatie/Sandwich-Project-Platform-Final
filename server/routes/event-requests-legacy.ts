@@ -608,6 +608,14 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
       data['Waiting On']
     );
 
+    const vanNeededForCell = (data['Van needed for?'] || '').trim().toLowerCase();
+    const vanNeededFor =
+      vanNeededForCell.startsWith('refrig')
+        ? 'refrigeration' as const
+        : vanNeededForCell.startsWith('transport')
+          ? 'transport' as const
+          : null;
+
     // Determine status
     const isCancelled = data['Cancelled']?.toLowerCase() === 'yes' ||
                         data['Cancelled']?.toLowerCase() === 'cancelled' ||
@@ -654,7 +662,8 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
       driversNeeded: staffing.driversNeeded,
       speakersNeeded: staffing.speakersNeeded,
       volunteersNeeded: staffing.volunteersNeeded,
-      vanDriverNeeded: staffing.vanDriverNeeded,
+      vanDriverNeeded: staffing.vanDriverNeeded || !!vanNeededFor,
+      vanNeededFor,
 
       // Staffing assignments
       assignedDriverIds: assignedDriverIds.length > 0 ? assignedDriverIds : null,
@@ -1640,6 +1649,7 @@ router.get(
         volunteersNeeded: event.volunteersNeeded,
         assignedVolunteerIds: event.assignedVolunteerIds,
         vanDriverNeeded: event.vanDriverNeeded,
+        vanNeededFor: event.vanNeededFor,
         assignedVanDriverId: event.assignedVanDriverId,
         isDhlVan: event.isDhlVan,
         tentativeDriverIds: event.tentativeDriverIds,
@@ -3382,9 +3392,11 @@ router.put(
         processedUpdates.vanDriverNeeded = false;
         processedUpdates.assignedVanDriverId = null;
         processedUpdates.isDhlVan = false;
+        processedUpdates.vanNeededFor = null;
       }
       if (processedUpdates.vanDriverNeeded === false) {
         processedUpdates.isDhlVan = false;
+        processedUpdates.vanNeededFor = null;
       }
 
       // Process comprehensive scheduling data if status is scheduled
@@ -4031,6 +4043,7 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
       updateData.isDhlVan = !!isDhlVan;
     if (vanDriverNeeded === false) {
       updateData.isDhlVan = false;
+      updateData.vanNeededFor = null;
       if (assignedVanDriverId === undefined) {
         updateData.assignedVanDriverId = null;
       }

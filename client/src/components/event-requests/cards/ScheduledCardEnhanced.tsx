@@ -1429,6 +1429,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               simpleToggle
               mode="badge"
             />
+            {request.vanDriverNeeded && request.vanNeededFor === 'transport' && (
+              <span className="text-xs text-[#236383]">Transport</span>
+            )}
+            {request.vanDriverNeeded && request.vanNeededFor === 'refrigeration' && (
+              <span className="text-xs text-[#236383]">Refrigeration</span>
+            )}
           </div>
         )}
 

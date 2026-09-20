@@ -16,6 +16,7 @@ function makeRow(overrides: Partial<PlanningSheetRow> = {}): PlanningSheetRow {
     pickUpNextDay: '',
     allDetails: '',
     vanBooked: '',
+    vanNeededFor: '',
     staffing: '',
     staffingParsed: {
       driver: { needed: false, assigned: null, isVanDriver: false },
@@ -77,5 +78,20 @@ describe('buildImportedEventRecord', () => {
   it('stores the fingerprint as externalId', () => {
     const record = buildImportedEventRecord(makeCandidate());
     expect(record.externalId).toBe('planning-sheet:2026-03-14:test group');
+  });
+
+  it('maps Van needed for? into vanNeededFor and marks the van as needed', () => {
+    const record = buildImportedEventRecord({
+      ...makeCandidate(),
+      row: makeRow({ vanNeededFor: 'Refrigeration' }),
+    });
+    expect(record.vanNeededFor).toBe('refrigeration');
+    expect(record.vanDriverNeeded).toBe(true);
+  });
+
+  it('leaves van fields unset when the new column is blank', () => {
+    const record = buildImportedEventRecord(makeCandidate());
+    expect(record.vanNeededFor).toBeNull();
+    expect(record.vanDriverNeeded).toBeUndefined();
   });
 });

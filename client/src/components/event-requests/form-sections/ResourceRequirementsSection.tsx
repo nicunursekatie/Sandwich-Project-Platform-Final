@@ -65,6 +65,7 @@ export const ResourceRequirementsSection: React.FC<ResourceRequirementsSectionPr
                   // Clear driver fields when self-transport is enabled
                   driversNeeded: e.target.checked ? 0 : prev.driversNeeded,
                   vanDriverNeeded: e.target.checked ? false : prev.vanDriverNeeded,
+                  vanNeededFor: e.target.checked ? '' : prev.vanNeededFor,
                   isDhlVan: e.target.checked ? false : prev.isDhlVan,
                 }))}
               />
@@ -100,6 +101,7 @@ export const ResourceRequirementsSection: React.FC<ResourceRequirementsSectionPr
                     onChange={(e) => setFormData(prev => ({
                       ...prev,
                       vanDriverNeeded: e.target.checked,
+                      vanNeededFor: e.target.checked ? prev.vanNeededFor : '',
                       isDhlVan: e.target.checked ? prev.isDhlVan : false,
                       // Default to no additional regular drivers when van driver is checked
                       driversNeeded: e.target.checked ? 0 : prev.driversNeeded
@@ -107,6 +109,26 @@ export const ResourceRequirementsSection: React.FC<ResourceRequirementsSectionPr
                   />
                   <Label htmlFor="vanDriverNeeded">Van driver needed?</Label>
                 </div>
+                {formData.vanDriverNeeded && (
+                  <div>
+                    <Label htmlFor="vanNeededFor">Van needed for?</Label>
+                    <Select
+                      value={formData.vanNeededFor || undefined}
+                      onValueChange={(value) => setFormData(prev => ({
+                        ...prev,
+                        vanNeededFor: value as 'transport' | 'refrigeration' | '',
+                      }))}
+                    >
+                      <SelectTrigger id="vanNeededFor">
+                        <SelectValue placeholder="Transport or refrigeration…" />
+                      </SelectTrigger>
+                      <SelectContent className="z-[200]" position="popper" sideOffset={5}>
+                        <SelectItem value="transport">Transport</SelectItem>
+                        <SelectItem value="refrigeration">Refrigeration during event</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </>
             )}
 

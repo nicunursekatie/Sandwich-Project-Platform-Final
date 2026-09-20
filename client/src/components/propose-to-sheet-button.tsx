@@ -49,24 +49,25 @@ const COLUMN_LABELS: Record<number, string> = {
   6: 'Pick Up Next Day?',
   7: 'All Details',
   8: 'Van Booked?',
-  9: 'Staffing',
-  10: 'Estimate # Sandwiches',
-  11: 'Deli or PBJ?',
-  12: 'Final # Sandwiches',
-  13: 'Total in App?',
-  14: 'Social Post',
-  15: 'Sent Toolkit?',
-  16: 'Contact Name',
-  17: 'Email',
-  18: 'Phone',
-  19: 'TSP Contact',
-  20: 'Address',
-  21: 'Recipient/Host',
-  22: 'After Event Notes',
-  23: 'Cancelled',
-  24: 'Notes',
-  25: "Add'l Notes",
-  26: 'Waiting On',
+  9: 'Van needed for?',
+  10: 'Staffing',
+  11: 'Estimate # Sandwiches',
+  12: 'Deli or PBJ?',
+  13: 'Final # Sandwiches',
+  14: 'Total in App?',
+  15: 'Social Post',
+  16: 'Sent Toolkit?',
+  17: 'Contact Name',
+  18: 'Email',
+  19: 'Phone',
+  20: 'TSP Contact',
+  21: 'Address',
+  22: 'Recipient/Host',
+  23: 'After Event Notes',
+  24: 'Cancelled',
+  25: 'Notes',
+  26: "Add'l Notes",
+  27: 'Waiting On',
 };
 
 // Keep ProposeToSheetButton as an alias for backward compatibility
@@ -107,8 +108,9 @@ export function PushToSheetButton({
     if (!previewData?.rawData || !previewData?.existingRawData) return [];
 
     const result: ColumnConflict[] = [];
-    // 27 columns (0..26) — the sheet runs through AA/"Waiting On" at index 26.
-    for (let i = 0; i < 27; i++) {
+    // Sheet columns through AB/"Waiting On" (index 27).
+    const columnCount = Object.keys(COLUMN_LABELS).length;
+    for (let i = 0; i < columnCount; i++) {
       const appValue = (previewData.rawData[i] || '').trim();
       const sheetValue = (previewData.existingRawData[i] || '').trim();
       if (appValue !== sheetValue) {
@@ -202,16 +204,16 @@ export function PushToSheetButton({
   const getKeyFields = (rawData: string[]) => [
     { label: 'Date', value: rawData[0] },
     { label: 'Group', value: rawData[2] },
-    { label: 'Staffing', value: rawData[9] },
-    { label: 'Est. Sandwiches', value: rawData[10] },
-    { label: 'Contact', value: rawData[16] },
+    { label: 'Staffing', value: rawData[10] },
+    { label: 'Est. Sandwiches', value: rawData[11] },
+    { label: 'Contact', value: rawData[17] },
   ].filter(f => f.value);
 
   const setDecision = (columnIndex: number, decision: MergeDecision) => {
     setMergeDecisions(prev => ({ ...prev, [columnIndex]: decision }));
   };
 
-  const unchangedCount = hasExistingRawData ? 27 - conflicts.length : 0;
+  const unchangedCount = hasExistingRawData ? Object.keys(COLUMN_LABELS).length - conflicts.length : 0;
   const allMatch = hasExistingRow && hasExistingRawData && conflicts.length === 0;
 
   return (
@@ -439,7 +441,7 @@ export function PushToSheetButton({
                                 <div className="px-3 py-2 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
                                   Unchanged columns
                                 </div>
-                                {Array.from({ length: 27 }, (_, i) => i)
+                                {Array.from({ length: Object.keys(COLUMN_LABELS).length }, (_, i) => i)
                                   .filter(i => {
                                     const appVal = (previewData.rawData[i] || '').trim();
                                     const sheetVal = (previewData.existingRawData[i] || '').trim();

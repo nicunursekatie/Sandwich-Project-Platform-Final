@@ -942,6 +942,7 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         // ≥500 + insufficient refrigeration → van offered. Flip the flag
         // and queue the team-consult to-do.
         updates.vanDriverNeeded = true;
+        updates.vanNeededFor = 'refrigeration';
         followUpBlocks.push(
           [
             'Van needed for this event — confirm with Christine/Marcy before promising it to the group.',
