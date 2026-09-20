@@ -853,7 +853,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
             </div>
           )}
         </div>
-        <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-shrink-0">
+        <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:flex-col sm:w-auto sm:flex-shrink-0">
           {request.phone && onIntakeCall && (
             <Button
               size="sm"
@@ -1032,6 +1032,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
   return (
     <Card
       id={`event-card-${request.id}`}
+      data-event-card
       className={`min-w-0 overflow-hidden transition-all duration-200 hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] border-l-[4px] bg-[#FFF4E5] shadow-[0_1px_4px_rgba(0,0,0,0.08)] border-[#D8DEE2] rounded-xl ${
         isStale ? 'border-l-[#A31C41]' : ''
       }`}
@@ -1689,12 +1690,12 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
         {/* Communication & Notes Section */}
         {request.id && (
           <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowComments(!showComments)}
-                className="flex-1 justify-between text-gray-700 hover:text-gray-700 hover:bg-gray-50 font-medium p-2 h-auto"
+                className="flex-1 justify-between text-gray-700 hover:text-gray-700 hover:bg-gray-50 font-medium p-2 h-auto min-w-0"
               >
                 <div className="flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-gray-600" />
@@ -1711,7 +1712,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                 size="sm"
                 variant="outline"
                 onClick={() => setShowComments(true)}
-                className="ml-2 border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
+                className="sm:ml-2 w-full sm:w-auto border-[#007E8C] text-[#007E8C] hover:bg-[#007E8C]/10"
               >
                 <MessageSquare className="w-4 h-4 mr-1" />
                 Add Comment
@@ -1748,7 +1749,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                   className="bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
                 >
                   <Calendar className="w-4 h-4 mr-1" />
-                  Mark Scheduled
+                  <span className="sm:hidden">Schedule</span>
+                  <span className="hidden sm:inline">Mark Scheduled</span>
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -1789,7 +1791,17 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                  
                 >
                   <Phone className="w-4 h-4 mr-1" />
-                  {request.scheduledCallDate ? 'Reschedule Call' : 'Schedule Call'}
+                  {request.scheduledCallDate ? (
+                    <>
+                      <span className="sm:hidden">Reschedule</span>
+                      <span className="hidden sm:inline">Reschedule Call</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="sm:hidden">Call</span>
+                      <span className="hidden sm:inline">Schedule Call</span>
+                    </>
+                  )}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -1839,7 +1851,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                     className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
                   >
                     <UserPlus className="w-4 h-4 mr-1" />
-                    Assign TSP Contact
+                    <span className="sm:hidden">Assign TSP</span>
+                    <span className="hidden sm:inline">Assign TSP Contact</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -1880,7 +1893,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                     data-testid="button-ai-suggest-date"
                   >
                     <Sparkles className="w-4 h-4 mr-1" />
-                    AI Date Suggest
+                    <span className="sm:hidden">AI Dates</span>
+                    <span className="hidden sm:inline">AI Date Suggest</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -1901,7 +1915,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                     data-testid="button-ai-intake-assist"
                   >
                     <Sparkles className="w-4 h-4 mr-1" />
-                    AI Intake Check
+                    <span className="sm:hidden">AI Intake</span>
+                    <span className="hidden sm:inline">AI Intake Check</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -1968,7 +1983,7 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                     aria-label="Duplicate event"
                   >
                     <Copy className="w-4 h-4 mr-1.5" />
-                    <span className="hidden sm:inline">Duplicate</span>
+                    Duplicate
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -1988,7 +2003,8 @@ export const InProcessCard: React.FC<InProcessCardProps> = ({
                           className="text-red-600 hover:text-red-700 h-8"
                           data-testid="button-delete-request"
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-4 h-4 mr-1.5 sm:mr-0" />
+                          <span className="sm:hidden">Delete</span>
                         </Button>
                       }
                       title="Delete In-Process Event"

@@ -105,7 +105,12 @@ export const CardActionRow: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
 }) => (
   <div
     className={cn(
-      'flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-gray-200',
+      'mt-4 pt-4 border-t border-gray-200 grid grid-cols-2 gap-2',
+      'sm:flex sm:flex-wrap sm:items-center',
+      '[&>*]:min-w-0 [&>*]:w-full sm:[&>*]:w-auto',
+      '[&_button]:min-h-11 [&_button]:w-full sm:[&_button]:min-h-8 sm:[&_button]:w-auto',
+      '[&>.h-6.w-px]:hidden sm:[&>.h-6.w-px]:block',
+      '[&>.self-stretch]:hidden sm:[&>.self-stretch]:block',
       className
     )}
     {...rest}
@@ -115,7 +120,9 @@ export const CardActionRow: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({
 );
 
 /** Pushes everything after it to the right edge of a CardActionRow. */
-export const ActionRowSpacer: React.FC = () => <div className="flex-1" />;
+export const ActionRowSpacer: React.FC = () => (
+  <div className="hidden sm:block flex-1" />
+);
 
 /**
  * Shared spacing tokens so vertical rhythm matches across cards. Use these

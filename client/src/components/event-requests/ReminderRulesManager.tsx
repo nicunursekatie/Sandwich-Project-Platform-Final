@@ -369,7 +369,7 @@ export function ReminderRulesManager({
               <span className="text-xs">Paused</span>
             ) : isEffectivelyActive ? (
               <>
-                <span className="hidden sm:inline text-xs">Reminders</span>
+                <span className="text-xs">Reminders</span>
                 {hasPerEventRules && activeRuleCount > 0 && (
                   <Badge variant="secondary" className="ml-1 h-4 min-w-4 px-1 text-[10px] bg-[#007E8C] text-white hover:bg-[#007E8C]">
                     {activeRuleCount}
@@ -377,7 +377,7 @@ export function ReminderRulesManager({
                 )}
               </>
             ) : (
-              <span className="hidden sm:inline text-xs">Reminders</span>
+              <span className="text-xs">Reminders</span>
             )}
           </Button>
         </PopoverTrigger>

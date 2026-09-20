@@ -665,6 +665,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
 
   return (
     <Card 
+      data-event-card
       className="w-full min-w-0 overflow-hidden bg-[#E4EFF6] border-l-[4px] shadow-[0_1px_4px_rgba(0,0,0,0.08)] hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] transition-all border-[#D8DEE2] rounded-xl"
       style={{ borderLeftColor: '#236383' }}
     >
@@ -2520,7 +2521,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 {/* Drivers */}
                 {request.selfTransport ? (
                   // Organization is transporting sandwiches themselves
-                  <div className="flex items-center justify-between py-1 pb-3 border-b border-gray-200">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between py-1 pb-3 border-b border-gray-200">
                     <Badge variant="outline" className="bg-[#FBAD3F]/20 text-[#D68319] border-[#FBAD3F] font-semibold text-sm py-1.5 px-3">
                       <Car className="w-4 h-4 mr-1.5" />
                       Organization Self-Transport
@@ -2546,9 +2547,9 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     {/* Van Driver Section - Show if vanDriverNeeded is true OR van driver is already assigned */}
                     {(request.vanDriverNeeded || request.assignedVanDriverId || request.isDhlVan) && (
                       <div>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-base font-bold text-gray-900 flex items-center gap-1">
-                            <Truck className="w-5 h-5 text-amber-600" />
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
+                          <span className="text-base font-bold text-gray-900 flex items-center gap-1 min-w-0">
+                            <Truck className="w-5 h-5 text-amber-600 shrink-0" />
                             Van Driver
                             {request.assignedVanDriverId || request.isDhlVan ? ' (Assigned)' : ' (Needed)'}
                           </span>
@@ -2613,7 +2614,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                     {/* Regular Drivers Section - Show if driversNeeded > 0 */}
                     {(driverNeeded > 0 || (isEditingThisCard && editingField === 'driversNeeded')) && (
                       <div>
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
                           {isEditingThisCard && editingField === 'driversNeeded' ? (
                             <div className="flex items-center gap-2 flex-1">
                               <Car className="w-4 h-4 text-[#236383]" />
@@ -3065,7 +3066,7 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 {/* Volunteers */}
                 {showVolunteerSection && (
                   <div className="pb-3 border-b border-gray-200">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
                       {isEditingThisCard && editingField === 'volunteersNeeded' ? (
                         <div className="flex items-center gap-2 flex-1">
                           <Users className="w-4 h-4 text-[#236383]" />
@@ -3790,9 +3791,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         <TooltipProvider>
           <CardActionRow className="mb-4">
             {/* Group 1 — Organizer outreach */}
-            <Button onClick={onContact}>
+            <Button onClick={onContact} size="sm">
               <Mail className="w-4 h-4 mr-2" />
-              Contact Organizer
+              <span className="sm:hidden">Contact</span>
+              <span className="hidden sm:inline">Contact Organizer</span>
             </Button>
             <Button size="sm" variant="outline" onClick={onLogContact}>
               <MessageSquare className="w-4 h-4 mr-1" />
@@ -3870,7 +3872,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 className="border-[#FBAD3F]/30 text-[#FBAD3F] hover:bg-[#FBAD3F]/10"
               >
                 <UserPlus className="w-4 h-4 mr-1" />
-                Assign TSP Contact
+                <span className="sm:hidden">Assign TSP</span>
+                <span className="hidden sm:inline">Assign TSP Contact</span>
               </Button>
             )}
 
@@ -3883,7 +3886,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 data-testid="button-ai-intake-check"
               >
                 <Sparkles className="w-4 h-4 mr-1" />
-                AI Intake Check
+                <span className="sm:hidden">AI Intake</span>
+                <span className="hidden sm:inline">AI Intake Check</span>
               </Button>
             )}
 
@@ -3920,7 +3924,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             {onDuplicate && (
               <Button size="sm" variant="outline" onClick={onDuplicate}>
                 <Copy className="w-4 h-4 mr-1" />
-                Duplicate Event
+                <span className="sm:hidden">Duplicate</span>
+                <span className="hidden sm:inline">Duplicate Event</span>
               </Button>
             )}
 
@@ -3945,7 +3950,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 className="border-[#236383]/30 text-[#236383] hover:bg-[#236383]/10"
               >
                 <Calendar className="w-4 h-4 mr-1" />
-                Manually Added to Google Sheet
+                <span className="sm:hidden">Added to Sheet</span>
+                <span className="hidden sm:inline">Manually Added to Google Sheet</span>
               </Button>
             )}
 
@@ -3985,7 +3991,8 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                             aria-label="Delete event"
                             data-testid="button-delete-event"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-4 h-4 mr-1.5 sm:mr-0" />
+                            <span className="sm:hidden">Delete</span>
                           </Button>
                         }
                         title="Delete Event"
@@ -4008,12 +4015,12 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         {/* Team Comments Section */}
         {request.id && (
           <div className="bg-white rounded-lg p-4 mb-4 border border-gray-200">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between mb-2">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowComments(!showComments)}
-                className="flex-1 justify-between text-gray-700 hover:text-gray-700 hover:bg-gray-50 font-medium p-2 h-auto"
+                className="flex-1 justify-between text-gray-700 hover:text-gray-700 hover:bg-gray-50 font-medium p-2 h-auto min-w-0"
               >
                 <div className="flex items-center gap-2">
                   <MessageSquare className="w-4 h-4 text-gray-600" />

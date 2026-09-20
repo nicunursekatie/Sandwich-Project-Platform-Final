@@ -1097,6 +1097,18 @@
   }
 }
 
+/* Event-request cards: assignment steppers, remove-X, and icon-only
+   assign buttons are 28px on desktop. Make them thumb-sized on phones. */
+@media (max-width: 767px) {
+  [data-event-card] button.h-5,
+  [data-event-card] button.h-6,
+  [data-event-card] button.h-7,
+  [data-event-card] .h-7.w-7 {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+}
+
 /* ==========================================
    21. NARROW MOBILE (360px) SPECIFIC FIXES
    Critical fixes for the smallest supported devices

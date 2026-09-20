@@ -749,7 +749,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
             </div>
           )}
         </div>
-        <div className="flex flex-col gap-2 w-full sm:w-auto sm:flex-shrink-0">
+        <div className="grid grid-cols-2 gap-2 w-full sm:flex sm:flex-col sm:w-auto sm:flex-shrink-0">
           {request.phone && (
             <>
               {onIntakeCall && (
@@ -805,7 +805,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               size="sm"
               variant="default"
               onClick={onSendToolkit}
-              className="text-sm h-8 bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
+              className="text-sm h-10 sm:h-8 w-full sm:w-auto bg-[#FBAD3F] hover:bg-[#e89a2d] text-white"
               data-testid="button-send-toolkit"
             >
               <Mail className="w-4 h-4 mr-1" />
@@ -817,7 +817,7 @@ const CardContactInfo: React.FC<CardContactInfoProps> = ({
               size="sm"
               variant="outline"
               onClick={onToolkit}
-              className="text-sm h-8 border-[#FBAD3F]/40 text-[#92400E] hover:bg-[#FBAD3F]/10"
+              className="text-sm h-10 sm:h-8 w-full sm:w-auto border-[#FBAD3F]/40 text-[#92400E] hover:bg-[#FBAD3F]/10"
               data-testid="button-mark-toolkit-sent"
             >
               <Package className="w-4 h-4 mr-1" />
@@ -986,6 +986,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
   );
   return (
     <Card
+      data-event-card
       className={`min-w-0 overflow-hidden transition-all duration-200 hover:shadow-[0_2px_6px_rgba(0,0,0,0.10)] border-l-[4px] bg-[#E2F5F6] shadow-[0_1px_4px_rgba(0,0,0,0.08)] border-[#D8DEE2] rounded-xl`}
       style={{ borderLeftColor: statusBorderColors.new }}
     >
@@ -1319,7 +1320,8 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                     className="border-yellow-500 text-yellow-700 hover:bg-yellow-50"
                   >
                     <UserPlus className="w-4 h-4 mr-1" />
-                    Assign TSP Contact
+                    <span className="sm:hidden">Assign TSP</span>
+                    <span className="hidden sm:inline">Assign TSP Contact</span>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -1329,7 +1331,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
             )}
 
             {/* SECONDARY actions — labeled, visually de-emphasized (ghost) */}
-            <div className="flex flex-wrap items-center gap-1">
+            <div className="contents sm:flex sm:flex-wrap sm:items-center sm:gap-1">
               {/* AI Date Suggestion */}
               {(request.desiredEventDate || request.backupDates?.length) && onAiSuggest && (
                 <Tooltip>
@@ -1469,7 +1471,7 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                     aria-label="Duplicate event"
                   >
                     <Copy className="w-4 h-4 mr-1.5" />
-                    <span className="hidden sm:inline">Duplicate</span>
+                    Duplicate
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -1487,7 +1489,8 @@ export const NewRequestCard: React.FC<NewRequestCardProps> = ({
                     data-testid="button-delete-request"
                     title="Delete this event request"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-4 h-4 sm:mr-0 mr-1.5" />
+                    <span className="sm:hidden">Delete</span>
                   </Button>
                 }
                 title="Delete Event Request"
