@@ -62,6 +62,24 @@ export const PLANNING_SHEET_LAST_COLUMN = planningSheetColumnLetter(
   PLANNING_SHEET_COLUMN_COUNT - 1
 );
 
+/** Pre-J layout was A:AA (27 cells). Inserting J made A:AB (28 cells). */
+export const LEGACY_PLANNING_SHEET_COLUMN_COUNT = 27;
+
+/**
+ * Shift a queued create_row proposal from the pre-J 27-column layout to the
+ * current map by inserting an empty "Van needed for?" cell at index 9.
+ * Already-migrated (28+) rows are returned unchanged.
+ */
+export function migrateProposedPlanningRow(
+  row: string[] | null | undefined
+): string[] | null {
+  if (!row || !Array.isArray(row)) return row ?? null;
+  if (row.length !== LEGACY_PLANNING_SHEET_COLUMN_COUNT) return row;
+  const next = row.slice();
+  next.splice(PLANNING_SHEET_COLUMNS.VAN_NEEDED_FOR, 0, '');
+  return next;
+}
+
 export type VanNeededFor = 'transport' | 'refrigeration';
 
 /** Parse the planning-sheet "Van needed for?" cell into the DB enum. */
@@ -1320,9 +1338,24 @@ export class PlanningSheetSyncService {
    * proposal at the bottom of the sheet regardless of its date.)
    */
   private async applyNewRow(proposal: any): Promise<{ success: boolean; message: string }> {
-    const rowData = proposal.proposedRowData as string[];
+    const originalRow = proposal.proposedRowData as string[];
+    const rowData = migrateProposedPlanningRow(originalRow);
     if (!rowData || !Array.isArray(rowData)) {
       return { success: false, message: 'Invalid row data in proposal' };
+    }
+    if (originalRow && rowData.length !== originalRow.length) {
+      try {
+        await db
+          .update(proposedSheetChanges)
+          .set({ proposedRowData: rowData, updatedAt: new Date() })
+          .where(eq(proposedSheetChanges.id, proposal.id));
+      } catch (error) {
+        logger.warn(
+          `Could not persist migrated proposal row for ${proposal.id}: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
     }
 
     const rowDate = this.parseSheetDate(rowData[PLANNING_SHEET_COLUMNS.DATE] || '');

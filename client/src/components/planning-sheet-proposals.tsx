@@ -112,15 +112,26 @@ function getStatusBadge(status: string) {
   }
 }
 
+function migrateLegacyPlanningRow(row: string[]): string[] {
+  // Pre-J layout was 27 cells (A:AA). J insertion shifted Staffing to 10
+  // and sandwiches to 11. Insert an empty purpose cell so old queued rows
+  // preview against the current map.
+  if (row.length === 27) {
+    return [...row.slice(0, 9), '', ...row.slice(9)];
+  }
+  return row;
+}
+
 function ProposalRowPreview({ rowData }: { rowData: string[] }) {
   const [expanded, setExpanded] = useState(false);
+  const cells = migrateLegacyPlanningRow(rowData);
 
   // Show key fields in collapsed view
   const keyFields = [
-    { label: 'Date', value: rowData[0] },
-    { label: 'Group', value: rowData[2] },
-    { label: 'Staffing', value: rowData[9] },
-    { label: 'Sandwiches', value: rowData[10] },
+    { label: 'Date', value: cells[0] },
+    { label: 'Group', value: cells[2] },
+    { label: 'Staffing', value: cells[10] },
+    { label: 'Sandwiches', value: cells[11] },
   ].filter(f => f.value);
 
   return (
@@ -143,7 +154,7 @@ function ProposalRowPreview({ rowData }: { rowData: string[] }) {
       </Button>
       {expanded && (
         <div className="grid grid-cols-2 gap-1 text-xs bg-gray-50 p-2 rounded mt-2">
-          {rowData.map((value, idx) => (
+          {cells.map((value, idx) => (
             value && (
               <div key={idx} className="flex">
                 <span className="font-medium text-gray-600 mr-1">{COLUMN_LABELS[idx] || `Col ${idx}`}:</span>
@@ -490,7 +501,7 @@ export function PlanningSheetProposals() {
                 <div>
                   <label className="text-sm font-medium text-gray-500 mb-2 block">Proposed Row Data</label>
                   <div className="bg-gray-50 p-4 rounded space-y-2">
-                    {previewProposal.proposedRowData.map((value, idx) => (
+                    {migrateLegacyPlanningRow(previewProposal.proposedRowData).map((value, idx) => (
                       value && (
                         <div key={idx} className="flex border-b border-gray-200 pb-1">
                           <span className="font-medium text-gray-600 w-40">{COLUMN_LABELS[idx] || `Column ${idx}`}</span>
