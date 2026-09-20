@@ -6,6 +6,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import {
   getPlanningSheetService,
   PLANNING_SHEET_COLUMNS,
+  migrateProposedPlanningRow,
   type SheetPlacement,
 } from '../planning-sheet-sync-service';
 import { logger } from '../utils/production-safe-logger';
@@ -86,6 +87,9 @@ export function createPlanningSheetProposalsRouter(
 
       const enrichedProposals = proposals.map(p => ({
         ...p,
+        proposedRowData: Array.isArray(p.proposedRowData)
+          ? migrateProposedPlanningRow(p.proposedRowData as string[])
+          : p.proposedRowData,
         proposedByName: p.proposedBy ? userNames[p.proposedBy] : null,
         reviewedByName: p.reviewedBy ? userNames[p.reviewedBy] : null,
       }));
@@ -369,7 +373,15 @@ export function createPlanningSheetProposalsRouter(
         eventDetails = event;
       }
 
-      res.json({ proposal, eventDetails });
+      res.json({
+        proposal: {
+          ...proposal,
+          proposedRowData: Array.isArray(proposal.proposedRowData)
+            ? migrateProposedPlanningRow(proposal.proposedRowData as string[])
+            : proposal.proposedRowData,
+        },
+        eventDetails,
+      });
     } catch (error) {
       logger.error('Error fetching proposal:', error);
       res.status(500).json({ error: 'Failed to fetch proposal' });

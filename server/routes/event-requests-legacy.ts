@@ -28,6 +28,44 @@ import { EmailNotificationService } from '../services/email-notification-service
 import { logger } from '../middleware/logger';
 import type { AuthenticatedRequest } from '../types/express';
 import { emitEventRequestUpdate } from '../socket-chat';
+
+function normalizeVanNeededForField(
+  value: unknown
+): { ok: true; value: 'transport' | 'refrigeration' | null } | { ok: false } {
+  if (value === null || value === '') return { ok: true, value: null };
+  if (value === 'transport' || value === 'refrigeration') return { ok: true, value };
+  if (typeof value === 'string') {
+    const v = value.trim().toLowerCase();
+    if (v.startsWith('refrig')) return { ok: true, value: 'refrigeration' };
+    if (v.startsWith('transport')) return { ok: true, value: 'transport' };
+  }
+  return { ok: false };
+}
+
+/** Keep van flags + purpose consistent, and reject values outside the enum. */
+function applyVanPurposeNormalization(updates: Record<string, any>): { error?: string } {
+  if (updates.vanNeededFor !== undefined) {
+    const parsed = normalizeVanNeededForField(updates.vanNeededFor);
+    if (!parsed.ok) {
+      return { error: 'vanNeededFor must be "transport", "refrigeration", or null' };
+    }
+    updates.vanNeededFor = parsed.value;
+  }
+  if (updates.selfTransport === true || updates.selfTransport === 'true') {
+    updates.vanDriverNeeded = false;
+    updates.assignedVanDriverId = null;
+    updates.isDhlVan = false;
+    updates.vanNeededFor = null;
+    updates.vanNeededLikely = false;
+  }
+  if (updates.vanDriverNeeded === false || updates.vanDriverNeeded === 'false') {
+    updates.vanDriverNeeded = false;
+    updates.isDhlVan = false;
+    updates.vanNeededFor = null;
+    updates.vanNeededLikely = false;
+  }
+  return {};
+}
 import { safeJsonParse } from '../utils/safe-json';
 import { getUndefinedColumn, dropColumnKey, classifyDbError, parsePgError } from '../utils/pg-error-utils';
 import { geocodeAddress } from '../utils/geocoding';
@@ -608,6 +646,14 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
       data['Waiting On']
     );
 
+    const vanNeededForCell = (data['Van needed for?'] || '').trim().toLowerCase();
+    const vanNeededFor =
+      vanNeededForCell.startsWith('refrig')
+        ? 'refrigeration' as const
+        : vanNeededForCell.startsWith('transport')
+          ? 'transport' as const
+          : null;
+
     // Determine status
     const isCancelled = data['Cancelled']?.toLowerCase() === 'yes' ||
                         data['Cancelled']?.toLowerCase() === 'cancelled' ||
@@ -654,7 +700,8 @@ router.post('/import-from-sheets', validateSheetsApiKey, async (req, res) => {
       driversNeeded: staffing.driversNeeded,
       speakersNeeded: staffing.speakersNeeded,
       volunteersNeeded: staffing.volunteersNeeded,
-      vanDriverNeeded: staffing.vanDriverNeeded,
+      vanDriverNeeded: staffing.vanDriverNeeded || !!vanNeededFor,
+      vanNeededFor,
 
       // Staffing assignments
       assignedDriverIds: assignedDriverIds.length > 0 ? assignedDriverIds : null,
@@ -1640,6 +1687,7 @@ router.get(
         volunteersNeeded: event.volunteersNeeded,
         assignedVolunteerIds: event.assignedVolunteerIds,
         vanDriverNeeded: event.vanDriverNeeded,
+        vanNeededFor: event.vanNeededFor,
         assignedVanDriverId: event.assignedVanDriverId,
         isDhlVan: event.isDhlVan,
         tentativeDriverIds: event.tentativeDriverIds,
@@ -2929,6 +2977,11 @@ router.patch(
         }
       }
 
+      const vanNorm = applyVanPurposeNormalization(processedUpdates);
+      if (vanNorm.error) {
+        return res.status(400).json({ message: vanNorm.error, field: 'vanNeededFor' });
+      }
+
       // Always update the updatedAt timestamp
       logger.info(`[PATCH /:id] Saving to database. Processed updates:`, JSON.stringify(processedUpdates, null, 2));
 
@@ -3377,14 +3430,9 @@ router.put(
         }
       });
 
-      // Keep van-related flags in sync when transport changes
-      if (processedUpdates.selfTransport === true) {
-        processedUpdates.vanDriverNeeded = false;
-        processedUpdates.assignedVanDriverId = null;
-        processedUpdates.isDhlVan = false;
-      }
-      if (processedUpdates.vanDriverNeeded === false) {
-        processedUpdates.isDhlVan = false;
+      const vanNorm = applyVanPurposeNormalization(processedUpdates);
+      if (vanNorm.error) {
+        return res.status(400).json({ message: vanNorm.error, field: 'vanNeededFor' });
       }
 
       // Process comprehensive scheduling data if status is scheduled
@@ -4031,6 +4079,7 @@ router.patch('/:id/drivers', isAuthenticated, async (req, res) => {
       updateData.isDhlVan = !!isDhlVan;
     if (vanDriverNeeded === false) {
       updateData.isDhlVan = false;
+      updateData.vanNeededFor = null;
       if (assignedVanDriverId === undefined) {
         updateData.assignedVanDriverId = null;
       }

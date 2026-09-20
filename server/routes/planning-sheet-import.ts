@@ -7,6 +7,7 @@ import { PERMISSIONS } from '@shared/auth-utils';
 import { parseSandwichCountInput } from '@shared/sandwich-count-utils';
 import {
   getPlanningSheetService,
+  parseVanNeededForCell,
   type PlanningSheetRow,
 } from '../planning-sheet-sync-service';
 import { logger } from '../utils/production-safe-logger';
@@ -175,6 +176,7 @@ function buildPlanningNotes(row: PlanningSheetRow): string {
   add('Pick-up time', row.pickUpTime);
   add('Pick-up next day', row.pickUpNextDay);
   add('Van booked', row.vanBooked);
+  add('Van needed for', row.vanNeededFor);
   add('Staffing (from sheet)', row.staffing);
   add('Deli or PBJ', row.deliOrPbj);
   add('Recipient/Host', row.recipientHost);
@@ -211,6 +213,7 @@ export function buildImportedEventRecord(
   const firstName = contactParts[0] || null;
   const lastName =
     contactParts.length > 1 ? contactParts.slice(1).join(' ') : null;
+  const vanNeededFor = parseVanNeededForCell(c.row.vanNeededFor);
 
   return {
     organizationName: c.row.groupName.trim(),
@@ -234,6 +237,8 @@ export function buildImportedEventRecord(
         ? c.row.cancelled?.trim() || 'Marked cancelled on the planning sheet'
         : null,
     planningNotes: buildPlanningNotes(c.row),
+    vanNeededFor,
+    ...(vanNeededFor ? { vanDriverNeeded: true } : {}),
     externalId: c.fingerprint,
     googleSheetRowId: null,
     // This event came directly FROM the official planning sheet, so it

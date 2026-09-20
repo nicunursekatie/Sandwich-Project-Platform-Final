@@ -92,6 +92,7 @@ export const DEFAULT_FORM_DATA = {
   driversNeeded: 0,
   selfTransport: false,
   vanDriverNeeded: false,
+  vanNeededFor: '',
   assignedVanDriverId: '',
   isDhlVan: false,
   volunteersNeeded: 0,

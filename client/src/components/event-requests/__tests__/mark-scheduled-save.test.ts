@@ -92,6 +92,36 @@ describe('Mark Scheduled status handling (full-form save)', () => {
     expect(payload).toHaveProperty('vanDriverNeeded');
     expect(payload).toHaveProperty('isDhlVan');
     expect(payload).toHaveProperty('selfTransport');
+    expect(payload).toHaveProperty('vanNeededFor');
+    expect(payload.vanNeededFor).toBeNull();
+  });
+
+  it('sends vanNeededFor only when a van is actually needed', () => {
+    const withVan = buildEventDataForServer(
+      { ...baseFormData, vanDriverNeeded: true, vanNeededFor: 'refrigeration' },
+      {
+        mode: 'schedule',
+        hasEventRequest: true,
+        eventRequestStatus: 'in_process',
+        sandwichMode: 'total',
+        actualSandwichMode: 'total',
+      }
+    );
+    expect(withVan.vanDriverNeeded).toBe(true);
+    expect(withVan.vanNeededFor).toBe('refrigeration');
+
+    const selfTransport = buildEventDataForServer(
+      { ...baseFormData, selfTransport: true, vanDriverNeeded: true, vanNeededFor: 'transport' },
+      {
+        mode: 'schedule',
+        hasEventRequest: true,
+        eventRequestStatus: 'in_process',
+        sandwichMode: 'total',
+        actualSandwichMode: 'total',
+      }
+    );
+    expect(selfTransport.vanDriverNeeded).toBe(false);
+    expect(selfTransport.vanNeededFor).toBeNull();
   });
 });
 

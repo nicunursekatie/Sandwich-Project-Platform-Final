@@ -9,6 +9,9 @@ import { getEffectiveEventDate } from '../shared/event-validation-utils';
 /**
  * Planning Sheet Column Mapping
  * Maps the Google Sheet columns to app fields
+ *
+ * If a column is inserted, bump every index after the insertion point and
+ * PLANNING_SHEET_COLUMN_COUNT / LAST_COLUMN will follow automatically.
  */
 export const PLANNING_SHEET_COLUMNS = {
   DATE: 0,                    // A - Date
@@ -20,25 +23,84 @@ export const PLANNING_SHEET_COLUMNS = {
   PICK_UP_NEXT_DAY: 6,        // G - Pick up next day?
   ALL_DETAILS: 7,             // H - ALL DETAILS
   VAN_BOOKED: 8,              // I - Van Booked?
-  STAFFING: 9,                // J - Staffing (special format: D: Name, S: Name, V: Name)
-  ESTIMATE_SANDWICHES: 10,    // K - Estimate # sandwiches
-  DELI_OR_PBJ: 11,            // L - Deli or PBJ?
-  FINAL_SANDWICHES: 12,       // M - Final # sandwiches made
-  TOTAL_IN_APP: 13,           // N - Total in app? (manually maintained in the sheet; app leaves blank on new rows)
-  SOCIAL_POST: 14,            // O - Social Post
-  SENT_TOOLKIT: 15,           // P - Sent toolkit?
-  CONTACT_NAME: 16,           // Q - Contact Name
-  EMAIL: 17,                  // R - Email Address
-  PHONE: 18,                  // S - Contact Cell Number
-  TSP_CONTACT: 19,            // T - TSP Contact
-  ADDRESS: 20,                // U - Address
-  RECIPIENT_HOST: 21,         // V - Planned Recipient/Host Home
-  AFTER_EVENT_NOTES: 22,      // W - After Event Notes
-  CANCELLED: 23,              // X - Cancelled
-  NOTES: 24,                  // Y - Notes
-  ADDL_NOTES: 25,             // Z - Add'l Notes
-  WAITING_ON: 26,             // AA - Waiting On
+  VAN_NEEDED_FOR: 9,          // J - Van needed for? (Transport / Refrigeration)
+  STAFFING: 10,               // K - Staffing (special format: D: Name, S: Name, V: Name)
+  ESTIMATE_SANDWICHES: 11,    // L - Estimate # sandwiches
+  DELI_OR_PBJ: 12,            // M - Deli or PBJ?
+  FINAL_SANDWICHES: 13,       // N - Final # sandwiches made
+  TOTAL_IN_APP: 14,           // O - Total in app? (manually maintained in the sheet; app leaves blank on new rows)
+  SOCIAL_POST: 15,            // P - Social Post
+  SENT_TOOLKIT: 16,           // Q - Sent toolkit?
+  CONTACT_NAME: 17,           // R - Contact Name
+  EMAIL: 18,                  // S - Email Address
+  PHONE: 19,                  // T - Contact Cell Number
+  TSP_CONTACT: 20,            // U - TSP Contact
+  ADDRESS: 21,                // V - Address
+  RECIPIENT_HOST: 22,         // W - Planned Recipient/Host Home
+  AFTER_EVENT_NOTES: 23,      // X - After Event Notes
+  CANCELLED: 24,              // Y - Cancelled
+  NOTES: 25,                  // Z - Notes
+  ADDL_NOTES: 26,             // AA - Add'l Notes
+  WAITING_ON: 27,             // AB - Waiting On
 } as const;
+
+/** Convert a 0-based column index to a spreadsheet letter (0 → A, 26 → AA, 27 → AB). */
+export function planningSheetColumnLetter(index: number): string {
+  let n = index;
+  let s = '';
+  do {
+    s = String.fromCharCode(65 + (n % 26)) + s;
+    n = Math.floor(n / 26) - 1;
+  } while (n >= 0);
+  return s;
+}
+
+export const PLANNING_SHEET_COLUMN_COUNT =
+  Math.max(...Object.values(PLANNING_SHEET_COLUMNS)) + 1;
+
+export const PLANNING_SHEET_LAST_COLUMN = planningSheetColumnLetter(
+  PLANNING_SHEET_COLUMN_COUNT - 1
+);
+
+/** Pre-J layout was A:AA (27 cells). Inserting J made A:AB (28 cells). */
+export const LEGACY_PLANNING_SHEET_COLUMN_COUNT = 27;
+
+/**
+ * Shift a queued create_row proposal from the pre-J 27-column layout to the
+ * current map by inserting an empty "Van needed for?" cell at index 9.
+ * Already-migrated (28+) rows are returned unchanged.
+ */
+export function migrateProposedPlanningRow(
+  row: string[] | null | undefined
+): string[] | null {
+  if (!row || !Array.isArray(row)) return row ?? null;
+  if (row.length !== LEGACY_PLANNING_SHEET_COLUMN_COUNT) return row;
+  const next = row.slice();
+  next.splice(PLANNING_SHEET_COLUMNS.VAN_NEEDED_FOR, 0, '');
+  return next;
+}
+
+export type VanNeededFor = 'transport' | 'refrigeration';
+
+/** Parse the planning-sheet "Van needed for?" cell into the DB enum. */
+export function parseVanNeededForCell(
+  cell: string | undefined | null
+): VanNeededFor | null {
+  const v = (cell || '').trim().toLowerCase();
+  if (!v) return null;
+  if (v.startsWith('refrig')) return 'refrigeration';
+  if (v.startsWith('transport')) return 'transport';
+  return null;
+}
+
+/** Format the DB enum for the planning-sheet "Van needed for?" cell. */
+export function formatVanNeededForCell(
+  value: string | null | undefined
+): string {
+  if (value === 'transport') return 'Transport';
+  if (value === 'refrigeration') return 'Refrigeration';
+  return '';
+}
 
 /**
  * Staffing format parser and generator
@@ -204,6 +266,7 @@ export interface PlanningSheetRow {
   pickUpNextDay: string;
   allDetails: string;
   vanBooked: string;
+  vanNeededFor: string;
   staffing: string;
   staffingParsed: StaffingInfo;
   estimateSandwiches: string;
@@ -847,7 +910,7 @@ export class PlanningSheetSyncService {
 
     const response = await this.sheets.spreadsheets.values.get({
       spreadsheetId: this.spreadsheetId,
-      range: this.getSheetRange('A2:AA'), // Skip header row
+      range: this.getSheetRange(`A2:${PLANNING_SHEET_LAST_COLUMN}`), // Skip header row
     });
 
     const rows = response.data.values || [];
@@ -866,6 +929,7 @@ export class PlanningSheetSyncService {
         pickUpNextDay: row[PLANNING_SHEET_COLUMNS.PICK_UP_NEXT_DAY] || '',
         allDetails: row[PLANNING_SHEET_COLUMNS.ALL_DETAILS] || '',
         vanBooked: row[PLANNING_SHEET_COLUMNS.VAN_BOOKED] || '',
+        vanNeededFor: row[PLANNING_SHEET_COLUMNS.VAN_NEEDED_FOR] || '',
         staffing: staffingStr,
         staffingParsed: parseStaffingColumn(staffingStr),
         estimateSandwiches: row[PLANNING_SHEET_COLUMNS.ESTIMATE_SANDWICHES] || '',
@@ -1020,7 +1084,7 @@ export class PlanningSheetSyncService {
       : '';
 
     // Build the row array matching column order
-    const row: string[] = new Array(27).fill('');
+    const row: string[] = new Array(PLANNING_SHEET_COLUMN_COUNT).fill('');
     row[PLANNING_SHEET_COLUMNS.DATE] = dateStr;
     row[PLANNING_SHEET_COLUMNS.DAY_OF_WEEK] = dayOfWeek;
     row[PLANNING_SHEET_COLUMNS.GROUP_NAME] = e.organizationName || '';
@@ -1030,6 +1094,7 @@ export class PlanningSheetSyncService {
     row[PLANNING_SHEET_COLUMNS.PICK_UP_NEXT_DAY] = e.overnightHoldingLocation ? 'Yes' : '';
     row[PLANNING_SHEET_COLUMNS.ALL_DETAILS] = e.message || '';
     row[PLANNING_SHEET_COLUMNS.VAN_BOOKED] = e.vanDriverNeeded ? 'Yes' : '';
+    row[PLANNING_SHEET_COLUMNS.VAN_NEEDED_FOR] = formatVanNeededForCell(e.vanNeededFor);
     row[PLANNING_SHEET_COLUMNS.STAFFING] = formatStaffingColumn(staffing);
     row[PLANNING_SHEET_COLUMNS.ESTIMATE_SANDWICHES] = e.estimatedSandwichCount?.toString() || '';
     row[PLANNING_SHEET_COLUMNS.DELI_OR_PBJ] = deliOrPbj;
@@ -1273,9 +1338,24 @@ export class PlanningSheetSyncService {
    * proposal at the bottom of the sheet regardless of its date.)
    */
   private async applyNewRow(proposal: any): Promise<{ success: boolean; message: string }> {
-    const rowData = proposal.proposedRowData as string[];
+    const originalRow = proposal.proposedRowData as string[];
+    const rowData = migrateProposedPlanningRow(originalRow);
     if (!rowData || !Array.isArray(rowData)) {
       return { success: false, message: 'Invalid row data in proposal' };
+    }
+    if (originalRow && rowData.length !== originalRow.length) {
+      try {
+        await db
+          .update(proposedSheetChanges)
+          .set({ proposedRowData: rowData, updatedAt: new Date() })
+          .where(eq(proposedSheetChanges.id, proposal.id));
+      } catch (error) {
+        logger.warn(
+          `Could not persist migrated proposal row for ${proposal.id}: ${
+            error instanceof Error ? error.message : String(error)
+          }`
+        );
+      }
     }
 
     const rowDate = this.parseSheetDate(rowData[PLANNING_SHEET_COLUMNS.DATE] || '');
@@ -1373,17 +1453,7 @@ export class PlanningSheetSyncService {
     }
 
     // Convert 0-based column index → spreadsheet letter (A, B, ..., Z, AA, AB, ...).
-    // String.fromCharCode(65 + index) only works for single letters (0–25); we now have
-    // columns past Z (WAITING_ON is at index 26 = AA) so a small loop is required.
-    const columnLetter = (() => {
-      let n = columnIndex;
-      let s = '';
-      do {
-        s = String.fromCharCode(65 + (n % 26)) + s;
-        n = Math.floor(n / 26) - 1;
-      } while (n >= 0);
-      return s;
-    })();
+    const columnLetter = planningSheetColumnLetter(columnIndex);
     const range = this.getSheetRange(`${columnLetter}${proposal.targetRowIndex}`);
 
     await this.sheets.spreadsheets.values.update({
@@ -1563,7 +1633,7 @@ export class PlanningSheetSyncService {
   ): Promise<number | undefined> {
     const response = await this.sheets.spreadsheets.values.append({
       spreadsheetId: this.spreadsheetId,
-      range: this.getSheetRange('A:AA'),
+      range: this.getSheetRange(`A:${PLANNING_SHEET_LAST_COLUMN}`),
       valueInputOption: 'USER_ENTERED',
       insertDataOption: 'INSERT_ROWS',
       resource: { values: [rowData] },
@@ -1612,14 +1682,14 @@ export class PlanningSheetSyncService {
                 startRowIndex: sourceRow - 1,
                 endRowIndex: sourceRow,
                 startColumnIndex: 0,
-                endColumnIndex: 27, // A:AA
+                endColumnIndex: PLANNING_SHEET_COLUMN_COUNT,
               },
               destination: {
                 sheetId,
                 startRowIndex: destinationRow - 1,
                 endRowIndex: destinationRow,
                 startColumnIndex: 0,
-                endColumnIndex: 27,
+                endColumnIndex: PLANNING_SHEET_COLUMN_COUNT,
               },
               pasteType: 'PASTE_FORMAT',
             },
@@ -1674,14 +1744,14 @@ export class PlanningSheetSyncService {
             startRowIndex: source - 1,
             endRowIndex: source,
             startColumnIndex: 0,
-            endColumnIndex: 27, // A:AA
+            endColumnIndex: PLANNING_SHEET_COLUMN_COUNT,
           },
           destination: {
             sheetId,
             startRowIndex: rowIndex - 1,
             endRowIndex: rowIndex,
             startColumnIndex: 0,
-            endColumnIndex: 27,
+            endColumnIndex: PLANNING_SHEET_COLUMN_COUNT,
           },
           pasteType: 'PASTE_FORMAT',
         },
@@ -1695,7 +1765,7 @@ export class PlanningSheetSyncService {
 
     await this.sheets.spreadsheets.values.update({
       spreadsheetId: this.spreadsheetId,
-      range: this.getSheetRange(`A${rowIndex}:AA${rowIndex}`),
+      range: this.getSheetRange(`A${rowIndex}:${PLANNING_SHEET_LAST_COLUMN}${rowIndex}`),
       valueInputOption: 'USER_ENTERED',
       resource: { values: [rowData] },
     });
@@ -1726,6 +1796,7 @@ export class PlanningSheetSyncService {
     raw[C.PICK_UP_NEXT_DAY] = row.pickUpNextDay;
     raw[C.ALL_DETAILS] = row.allDetails;
     raw[C.VAN_BOOKED] = row.vanBooked;
+    raw[C.VAN_NEEDED_FOR] = row.vanNeededFor;
     raw[C.STAFFING] = row.staffing;
     raw[C.ESTIMATE_SANDWICHES] = row.estimateSandwiches;
     raw[C.DELI_OR_PBJ] = row.deliOrPbj;
@@ -1817,7 +1888,7 @@ export class PlanningSheetSyncService {
         }
 
         // Update existing row
-        const range = this.getSheetRange(`A${existingRow.rowIndex}:AA${existingRow.rowIndex}`);
+        const range = this.getSheetRange(`A${existingRow.rowIndex}:${PLANNING_SHEET_LAST_COLUMN}${existingRow.rowIndex}`);
         await this.sheets.spreadsheets.values.update({
           spreadsheetId: this.spreadsheetId,
           range,

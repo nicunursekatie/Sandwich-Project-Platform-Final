@@ -1411,24 +1411,34 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
         </div>
 
         {/* Van status — dedicated prominent row so the badge doesn't get lost in the
-            pills wrap. Hidden once a van driver is actually assigned (or DHL is set),
-            and also hidden when no van flag is set at all (the "Mark Van Needed"
-            toggle lives in the Team Assignments box, next to the driver controls).
-            Only renders when there's an actual badge state to show. */}
-        {!request.selfTransport && !request.assignedVanDriverId && !request.isDhlVan && (request.vanDriverNeeded || (request as any).vanNeededLikely) && (
-          <div className="mb-3 flex items-center gap-2">
+            pills wrap. The "Van Needed" badge hides once a van driver is assigned
+            (or DHL is set); the Transport/Refrigeration purpose stays visible
+            because it still matters after the van is covered. */}
+        {!request.selfTransport && (
+          (!request.assignedVanDriverId && !request.isDhlVan && (request.vanDriverNeeded || (request as any).vanNeededLikely))
+          || request.vanNeededFor
+        ) && (
+          <div className="mb-3 flex items-center gap-2 flex-wrap">
             <span className="text-xs uppercase font-bold tracking-wide text-[#236383]/70">
               Van:
             </span>
-            <VanNeededBadgeAndButton
-              eventRequestId={request.id}
-              vanDriverNeeded={request.vanDriverNeeded}
-              vanNeededLikely={(request as any).vanNeededLikely}
-              eventDate={displayDate}
-              canEdit={!!canEdit}
-              simpleToggle
-              mode="badge"
-            />
+            {!request.assignedVanDriverId && !request.isDhlVan && (request.vanDriverNeeded || (request as any).vanNeededLikely) && (
+              <VanNeededBadgeAndButton
+                eventRequestId={request.id}
+                vanDriverNeeded={request.vanDriverNeeded}
+                vanNeededLikely={(request as any).vanNeededLikely}
+                eventDate={displayDate}
+                canEdit={!!canEdit}
+                simpleToggle
+                mode="badge"
+              />
+            )}
+            {(request.vanDriverNeeded || request.assignedVanDriverId || request.isDhlVan) && request.vanNeededFor === 'transport' && (
+              <span className="text-xs text-[#236383]">Transport</span>
+            )}
+            {(request.vanDriverNeeded || request.assignedVanDriverId || request.isDhlVan) && request.vanNeededFor === 'refrigeration' && (
+              <span className="text-xs text-[#236383]">Refrigeration</span>
+            )}
           </div>
         )}
 

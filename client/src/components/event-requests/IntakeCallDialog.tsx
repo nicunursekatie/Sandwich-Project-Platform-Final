@@ -942,6 +942,8 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
         // ≥500 + insufficient refrigeration → van offered. Flip the flag
         // and queue the team-consult to-do.
         updates.vanDriverNeeded = true;
+        updates.vanNeededLikely = false;
+        updates.vanNeededFor = 'refrigeration';
         followUpBlocks.push(
           [
             'Van needed for this event — confirm with Christine/Marcy before promising it to the group.',
@@ -952,10 +954,26 @@ const IntakeCallDialog: React.FC<IntakeCallDialogProps> = ({
             'Also check the calendar for other van-needed events on this date.',
           ].join('\n')
         );
-      } else if (refrigChoice === 'special_exemption') {
-        followUpBlocks.push(
-          `Refrigeration special-exemption request — confirm with Christine/Marcy. Event ${eventLocation} on ${eventDateStr}, ${sandwichCountStr} sandwiches.`
-        );
+      } else if (
+        refrigChoice === 'yes' ||
+        refrigChoice === 'no_make_more_or_pbj' ||
+        refrigChoice === 'special_exemption'
+      ) {
+        // A later intake call can replace a refrigeration-derived van with
+        // "has refrigeration" / "make more or PBJ" / exemption. Clear that
+        // refrigeration-purpose van only — leave a transport-purpose van.
+        const existingPurpose = (eventRequest as { vanNeededFor?: string | null } | undefined)
+          ?.vanNeededFor;
+        if (existingPurpose === 'refrigeration') {
+          updates.vanDriverNeeded = false;
+          updates.vanNeededLikely = false;
+          updates.vanNeededFor = null;
+        }
+        if (refrigChoice === 'special_exemption') {
+          followUpBlocks.push(
+            `Refrigeration special-exemption request — confirm with Christine/Marcy. Event ${eventLocation} on ${eventDateStr}, ${sandwichCountStr} sandwiches.`
+          );
+        }
       }
 
       // (e) Young children + PBJ — exception request.

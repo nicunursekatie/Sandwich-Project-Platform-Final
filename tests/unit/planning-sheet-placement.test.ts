@@ -2,6 +2,12 @@ import {
   computeSheetPlacement,
   parsePlanningSheetDate,
   parsePlanningSheetTime,
+  parseVanNeededForCell,
+  formatVanNeededForCell,
+  planningSheetColumnLetter,
+  PLANNING_SHEET_COLUMNS,
+  PLANNING_SHEET_COLUMN_COUNT,
+  PLANNING_SHEET_LAST_COLUMN,
   PlanningSheetSyncService,
   type PlanningSheetRow,
 } from '../../server/planning-sheet-sync-service';
@@ -22,6 +28,7 @@ function makeRow(
     pickUpNextDay: '',
     allDetails: '',
     vanBooked: '',
+    vanNeededFor: '',
     staffing: '',
     staffingParsed: {
       driver: { needed: false, assigned: null, isVanDriver: false },
@@ -506,7 +513,7 @@ describe('writing a row into the sheet', () => {
             return {};
           },
           append: async () => ({
-            data: { updates: { updatedRange: `'${WORKSHEET}'!A480:AA480` } },
+            data: { updates: { updatedRange: `'${WORKSHEET}'!A480:AB480` } },
           }),
         },
       },
@@ -583,5 +590,27 @@ describe('writing a row into the sheet', () => {
     });
 
     await expect(service.appendRow(row, 446)).resolves.toBe(480);
+  });
+});
+
+describe('planning sheet column map (van needed for insertion)', () => {
+  it('puts Van needed for? at J and shifts Staffing through Waiting On one column right', () => {
+    expect(PLANNING_SHEET_COLUMNS.VAN_BOOKED).toBe(8);
+    expect(PLANNING_SHEET_COLUMNS.VAN_NEEDED_FOR).toBe(9);
+    expect(PLANNING_SHEET_COLUMNS.STAFFING).toBe(10);
+    expect(PLANNING_SHEET_COLUMNS.WAITING_ON).toBe(27);
+    expect(PLANNING_SHEET_COLUMN_COUNT).toBe(28);
+    expect(PLANNING_SHEET_LAST_COLUMN).toBe('AB');
+    expect(planningSheetColumnLetter(9)).toBe('J');
+    expect(planningSheetColumnLetter(27)).toBe('AB');
+  });
+
+  it('round-trips Transport / Refrigeration cell values', () => {
+    expect(parseVanNeededForCell('Transport')).toBe('transport');
+    expect(parseVanNeededForCell('refrigeration during event')).toBe('refrigeration');
+    expect(parseVanNeededForCell('')).toBeNull();
+    expect(formatVanNeededForCell('transport')).toBe('Transport');
+    expect(formatVanNeededForCell('refrigeration')).toBe('Refrigeration');
+    expect(formatVanNeededForCell(null)).toBe('');
   });
 });

@@ -2555,6 +2555,7 @@ export const eventRequests = pgTable(
     // Van driver assignment
     vanDriverNeeded: boolean('van_driver_needed').default(false), // Whether a van driver is required (confirmed)
     vanNeededLikely: boolean('van_needed_likely').notNull().default(false), // Soft flag set during in-process; user is told to confirm or clear when scheduling. When vanDriverNeeded becomes true, this is cleared.
+    vanNeededFor: varchar('van_needed_for'), // 'transport' | 'refrigeration' | null — why the van is needed; only meaningful when vanDriverNeeded is true. Maps to planning-sheet column J.
     assignedVanDriverId: text('assigned_van_driver_id'), // Van driver ID from database
     customVanDriverName: text('custom_van_driver_name'), // Custom van driver name (text entry)
     vanDriverNotes: text('van_driver_notes'), // Special notes for van driver
@@ -3205,6 +3206,14 @@ export const insertEventRequestSchema = createInsertSchema(eventRequests)
     attendanceNotes: z.string().nullable().optional(),
     driversArranged: z.boolean().nullable().optional(),
     selfTransport: z.boolean().nullable().optional(), // Organization transporting sandwiches themselves
+    vanNeededFor: z
+      .union([
+        z.enum(['transport', 'refrigeration']),
+        z.literal('').transform(() => null),
+        z.null(),
+      ])
+      .nullable()
+      .optional(),
     driverDetails: z.any().nullable().optional(), // JSONB field
     speakerDetails: z.any().nullable().optional(), // JSONB field
     volunteerDetails: z.any().nullable().optional(), // JSONB field
@@ -3481,6 +3490,7 @@ export const importFromSheetsSchema = z.object({
   'TSP Contact': z.string().optional(),
   'Address': z.string().optional(),
   'Van Booked?': z.string().optional(),
+  'Van needed for?': z.string().optional(),
 
   // Notes
   'Notes': z.string().optional(),

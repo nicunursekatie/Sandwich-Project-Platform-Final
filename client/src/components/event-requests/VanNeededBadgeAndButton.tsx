@@ -171,7 +171,7 @@ export function VanNeededBadgeAndButton({
   };
 
   const clearVan = () => {
-    updateMutation.mutate({ vanDriverNeeded: false, vanNeededLikely: false });
+    updateMutation.mutate({ vanDriverNeeded: false, vanNeededLikely: false, vanNeededFor: null });
   };
 
   // ── Simple toggle mode (scheduled cards): no dialog, no "likely" tier.

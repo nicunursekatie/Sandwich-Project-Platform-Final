@@ -1552,6 +1552,19 @@ export const ScheduledSpreadsheetView: React.FC<ScheduledSpreadsheetViewProps> =
       center: true,
       render: (event) => event.isDhlVan ? 'DHL' : event.vanDriverNeeded ? 'Yes' : 'No',
     },
+    {
+      id: 'vanNeededFor',
+      label: 'Van for?',
+      width: '90px',
+      hideOnMobile: true,
+      center: true,
+      render: (event) => {
+        if (!event.vanDriverNeeded && !event.isDhlVan) return '';
+        if (event.vanNeededFor === 'transport') return 'Transport';
+        if (event.vanNeededFor === 'refrigeration') return 'Refrigeration';
+        return '';
+      },
+    },
     // 11. Contact name, #, and email for organization
     {
       id: 'contactName',

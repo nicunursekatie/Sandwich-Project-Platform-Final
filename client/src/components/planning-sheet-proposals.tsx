@@ -74,24 +74,25 @@ const COLUMN_LABELS: Record<number, string> = {
   6: 'Pick Up Next Day?',
   7: 'All Details',
   8: 'Van Booked?',
-  9: 'Staffing',
-  10: 'Estimate # Sandwiches',
-  11: 'Deli or PBJ?',
-  12: 'Final # Sandwiches',
-  13: 'Total in App?',
-  14: 'Social Post',
-  15: 'Sent Toolkit?',
-  16: 'Contact Name',
-  17: 'Email',
-  18: 'Phone',
-  19: 'TSP Contact',
-  20: 'Address',
-  21: 'Recipient/Host',
-  22: 'After Event Notes',
-  23: 'Cancelled',
-  24: 'Notes',
-  25: "Add'l Notes",
-  26: 'Waiting On',
+  9: 'Van needed for?',
+  10: 'Staffing',
+  11: 'Estimate # Sandwiches',
+  12: 'Deli or PBJ?',
+  13: 'Final # Sandwiches',
+  14: 'Total in App?',
+  15: 'Social Post',
+  16: 'Sent Toolkit?',
+  17: 'Contact Name',
+  18: 'Email',
+  19: 'Phone',
+  20: 'TSP Contact',
+  21: 'Address',
+  22: 'Recipient/Host',
+  23: 'After Event Notes',
+  24: 'Cancelled',
+  25: 'Notes',
+  26: "Add'l Notes",
+  27: 'Waiting On',
 };
 
 function getStatusBadge(status: string) {
@@ -111,15 +112,26 @@ function getStatusBadge(status: string) {
   }
 }
 
+function migrateLegacyPlanningRow(row: string[]): string[] {
+  // Pre-J layout was 27 cells (A:AA). J insertion shifted Staffing to 10
+  // and sandwiches to 11. Insert an empty purpose cell so old queued rows
+  // preview against the current map.
+  if (row.length === 27) {
+    return [...row.slice(0, 9), '', ...row.slice(9)];
+  }
+  return row;
+}
+
 function ProposalRowPreview({ rowData }: { rowData: string[] }) {
   const [expanded, setExpanded] = useState(false);
+  const cells = migrateLegacyPlanningRow(rowData);
 
   // Show key fields in collapsed view
   const keyFields = [
-    { label: 'Date', value: rowData[0] },
-    { label: 'Group', value: rowData[2] },
-    { label: 'Staffing', value: rowData[9] },
-    { label: 'Sandwiches', value: rowData[10] },
+    { label: 'Date', value: cells[0] },
+    { label: 'Group', value: cells[2] },
+    { label: 'Staffing', value: cells[10] },
+    { label: 'Sandwiches', value: cells[11] },
   ].filter(f => f.value);
 
   return (
@@ -142,7 +154,7 @@ function ProposalRowPreview({ rowData }: { rowData: string[] }) {
       </Button>
       {expanded && (
         <div className="grid grid-cols-2 gap-1 text-xs bg-gray-50 p-2 rounded mt-2">
-          {rowData.map((value, idx) => (
+          {cells.map((value, idx) => (
             value && (
               <div key={idx} className="flex">
                 <span className="font-medium text-gray-600 mr-1">{COLUMN_LABELS[idx] || `Col ${idx}`}:</span>
@@ -489,7 +501,7 @@ export function PlanningSheetProposals() {
                 <div>
                   <label className="text-sm font-medium text-gray-500 mb-2 block">Proposed Row Data</label>
                   <div className="bg-gray-50 p-4 rounded space-y-2">
-                    {previewProposal.proposedRowData.map((value, idx) => (
+                    {migrateLegacyPlanningRow(previewProposal.proposedRowData).map((value, idx) => (
                       value && (
                         <div key={idx} className="flex border-b border-gray-200 pb-1">
                           <span className="font-medium text-gray-600 w-40">{COLUMN_LABELS[idx] || `Column ${idx}`}</span>

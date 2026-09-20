@@ -173,6 +173,9 @@ function buildFormDataFromEventRequest(
     driversNeeded: eventRequest?.driversNeeded || 0,
     selfTransport: eventRequest?.selfTransport || false,
     vanDriverNeeded: eventRequest?.vanDriverNeeded || false,
+    vanNeededFor: (eventRequest as any)?.vanNeededFor === 'transport' || (eventRequest as any)?.vanNeededFor === 'refrigeration'
+      ? (eventRequest as any).vanNeededFor
+      : '',
     vanNeededLikely: (eventRequest as any)?.vanNeededLikely || false,
     volunteersNeeded: eventRequest?.volunteersNeeded || 0,
     tspContact: eventRequest?.tspContact || '',
@@ -289,7 +292,7 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
     eventAddress: '', deliveryDestination: '', holdingOvernight: false,
     overnightHoldingLocation: '', overnightPickupTime: '',
     sandwichTypes: [] as Array<{type: string, quantity: number}>,
-    hasRefrigeration: '', driversNeeded: 0, selfTransport: false, vanDriverNeeded: false, vanNeededLikely: false,
+    hasRefrigeration: '', driversNeeded: 0, selfTransport: false, vanDriverNeeded: false, vanNeededLikely: false, vanNeededFor: '',
     assignedVanDriverId: '', isDhlVan: false, volunteersNeeded: 0,
     tspContact: '', customTspContact: '', message: '', schedulingNotes: '',
     planningNotes: '', nextAction: '', driverInstructions: '', volunteerInstructions: '',

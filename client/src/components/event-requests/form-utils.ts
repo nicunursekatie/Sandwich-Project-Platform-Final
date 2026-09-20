@@ -95,6 +95,12 @@ export function buildEventDataForServer(
     driversNeeded: formData.selfTransport ? 0 : (parseInt(formData.driversNeeded?.toString() || '0') || 0),
     selfTransport: formData.selfTransport || false,
     vanDriverNeeded: formData.selfTransport ? false : ((formData.vanDriverNeeded || false) || formData.isDhlVan),
+    vanNeededFor: (() => {
+      const vanNeeded = !formData.selfTransport && ((formData.vanDriverNeeded || false) || formData.isDhlVan);
+      return vanNeeded && (formData.vanNeededFor === 'transport' || formData.vanNeededFor === 'refrigeration')
+        ? formData.vanNeededFor
+        : null;
+    })(),
     volunteersNeeded: parseInt(formData.volunteersNeeded?.toString() || '0') || 0,
     estimatedAttendance: parseInt(formData.estimatedAttendance?.toString() || '0') || null,
 

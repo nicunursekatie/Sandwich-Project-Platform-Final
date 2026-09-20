@@ -124,6 +124,7 @@ export class AuditLogger {
 
     // Van driver
     vanDriverNeeded: 'Van Driver Needed',
+    vanNeededFor: 'Van Needed For',
     assignedVanDriverId: 'Assigned Van Driver',
     customVanDriverName: 'Custom Van Driver',
     vanDriverNotes: 'Van Driver Notes',
