@@ -496,6 +496,10 @@ export default function Dashboard({
   const { user, isLoading } = useAuth();
   const canViewEventRequests = !!user && hasPermission(user, PERMISSIONS.NAV_EVENT_PLANNING);
   const canViewVolunteerHub = !!user && hasPermission(user, PERMISSIONS.NAV_VOLUNTEER_HUB);
+  const openVolunteerHub = () => {
+    window.history.pushState({}, '', getDashboardSectionUrl('volunteer-hub'));
+    setActiveSection('volunteer-hub');
+  };
   const { trackNavigation, trackButtonClick } = useAnalytics();
   const { openReportDialog } = useIssueReport();
 
@@ -742,7 +746,7 @@ export default function Dashboard({
           return (
             <EventPlanningDenied
               canViewVolunteerHub={canViewVolunteerHub}
-              onOpenVolunteerHub={() => setActiveSection('volunteer-hub')}
+              onOpenVolunteerHub={openVolunteerHub}
             />
           );
         }
@@ -778,7 +782,7 @@ export default function Dashboard({
           return (
             <EventPlanningDenied
               canViewVolunteerHub={canViewVolunteerHub}
-              onOpenVolunteerHub={() => setActiveSection('volunteer-hub')}
+              onOpenVolunteerHub={openVolunteerHub}
             />
           );
         }

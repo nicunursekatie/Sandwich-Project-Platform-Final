@@ -17,7 +17,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { format, isValid } from 'date-fns';
-import { parseDateOnly } from '@shared/date-utils';
+import { getTodayString, parseDateOnly } from '@shared/date-utils';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { useAuth } from '@/hooks/useAuth';
 import { PERMISSIONS } from '@shared/auth-utils';
@@ -64,14 +64,15 @@ function isThisWeek(dateString: string | null): boolean {
   const date = parseDateOnly(dateString);
   if (!date || !isValid(date)) return false;
 
-  const today = new Date();
-  const startOfWeek = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const today = parseDateOnly(getTodayString());
+  if (!today || !isValid(today)) return false;
+
+  const startOfWeek = new Date(today);
   const dayOfWeek = startOfWeek.getDay();
   const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
   startOfWeek.setDate(startOfWeek.getDate() - daysToMonday);
   const endOfWeek = new Date(startOfWeek);
   endOfWeek.setDate(endOfWeek.getDate() + 6);
-  endOfWeek.setHours(23, 59, 59, 999);
   return date >= startOfWeek && date <= endOfWeek;
 }
 
@@ -103,7 +104,6 @@ export default function VolunteerNeedsOverview({ onNavigate }: VolunteerNeedsOve
         credentials: 'include',
         signal,
       });
-      if (res.status === 403 || res.status === 401) return [];
       if (!res.ok) throw new Error('Failed to load volunteer needs');
       const data = await res.json();
       return Array.isArray(data) ? data : [];

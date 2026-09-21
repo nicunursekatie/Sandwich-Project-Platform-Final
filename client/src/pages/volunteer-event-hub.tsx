@@ -1617,8 +1617,18 @@ export default function VolunteerEventHub({
   };
 
   useEffect(() => {
-    const next = resolveVolunteerHubView(initialView, canApproveSignups);
-    if (next) setViewState(next);
+    const next = resolveVolunteerHubView(initialView, canApproveSignups) ?? 'calendar';
+    setViewState(next);
+    if (initialView && initialView !== next) {
+      try {
+        const url = new URL(window.location.href);
+        url.searchParams.set('section', 'volunteer-hub');
+        url.searchParams.set('view', next);
+        window.history.replaceState({}, '', `${url.pathname}?${url.searchParams.toString()}`);
+      } catch {
+        // ignore unavailable history
+      }
+    }
   }, [initialView, canApproveSignups]);
 
   const [currentMonth, setCurrentMonth] = useState(new Date());

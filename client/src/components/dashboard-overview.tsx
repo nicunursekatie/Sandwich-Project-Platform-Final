@@ -950,8 +950,9 @@ export default function DashboardOverview({
                 </div>
               </div>
             ) : canViewVolunteerHub ? (
-              <div
-                className="premium-card premium-interactive p-4 group cursor-pointer"
+              <button
+                type="button"
+                className="premium-card premium-interactive p-4 group cursor-pointer w-full h-full text-left"
                 onClick={() => onSectionChange?.('volunteer-hub')}
               >
                 <div className="w-12 h-12 bg-brand-teal rounded-lg flex items-center justify-center mb-3">
@@ -964,7 +965,7 @@ export default function DashboardOverview({
                 <div className="text-brand-primary font-medium text-sm flex items-center">
                   Open Volunteer Hub →
                 </div>
-              </div>
+              </button>
             ) : null}
 
             <div
