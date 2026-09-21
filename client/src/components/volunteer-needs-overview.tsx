@@ -125,12 +125,27 @@ export default function VolunteerNeedsOverview({ onNavigate }: VolunteerNeedsOve
     const thisWeekCount = needingHelp.filter((event) =>
       isThisWeek(getEffectiveEventDate(event)),
     ).length;
+    const upcoming = [...needingHelp]
+      .sort((a, b) => {
+        const dateA = getEffectiveEventDate(a);
+        const dateB = getEffectiveEventDate(b);
+        if (dateA && dateB) {
+          const parsedA = parseDateOnly(dateA);
+          const parsedB = parseDateOnly(dateB);
+          if (parsedA && parsedB) return parsedA.getTime() - parsedB.getTime();
+        }
+        if (dateA) return -1;
+        if (dateB) return 1;
+        return (a.organizationName || '').localeCompare(b.organizationName || '');
+      })
+      .slice(0, 5);
+
     return {
       eventsNeedingHelp: needingHelp.length,
       volunteerSlots,
       driverSlots,
       thisWeekCount,
-      upcoming: needingHelp.slice(0, 5),
+      upcoming,
     };
   }, [events]);
 
