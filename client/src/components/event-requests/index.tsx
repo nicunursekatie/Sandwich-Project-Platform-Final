@@ -1,6 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'wouter';
 import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
+import { PermissionDenied } from '@/components/permission-denied';
 import { useOnboardingTracker } from '@/hooks/useOnboardingTracker';
 import {
   EventRequestProvider,
@@ -1821,6 +1823,19 @@ export default function EventRequestsManagementV2({
   initialTab?: string | null;
   initialEventId?: number;
 } = {}) {
+  const { user } = useAuth();
+  if (!user || !hasPermission(user, PERMISSIONS.NAV_EVENT_PLANNING)) {
+    return (
+      <div className="p-6 max-w-xl mx-auto">
+        <PermissionDenied
+          action="view Event Requests"
+          requiredPermission={PERMISSIONS.NAV_EVENT_PLANNING}
+          message="Event Requests is for the event management team. Volunteer sign-ups live in Volunteer Hub."
+        />
+      </div>
+    );
+  }
+
   return (
     <EventRequestProvider
       initialTab={initialTab}

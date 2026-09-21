@@ -41,6 +41,10 @@ import sandwichLogo from '@assets/LOGOS/Copy of TSP_transparent.png';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 import { parseEventDate } from '@/lib/date-utils';
+import { useAuth } from '@/hooks/useAuth';
+import { PERMISSIONS } from '@shared/auth-utils';
+import { hasPermission } from '@shared/unified-auth-utils';
+import { PermissionDenied } from '@/components/permission-denied';
 
 interface AttentionItem {
   id: number;
@@ -170,6 +174,22 @@ const DATE_RANGE_OPTIONS = [
 ];
 
 export default function EventOperationalDashboard() {
+  const { user } = useAuth();
+  if (!user || !hasPermission(user, PERMISSIONS.NAV_EVENT_PLANNING)) {
+    return (
+      <div className="p-6 max-w-xl mx-auto">
+        <PermissionDenied
+          action="view the Events Operations Dashboard"
+          requiredPermission={PERMISSIONS.NAV_EVENT_PLANNING}
+        />
+      </div>
+    );
+  }
+
+  return <EventOperationalDashboardContent />;
+}
+
+function EventOperationalDashboardContent() {
   const [, setLocation] = useLocation();
   const [volumeDateRange, setVolumeDateRange] = useState<string>('30');
   // Post-event data section: defaults to the last 90 days so the badge

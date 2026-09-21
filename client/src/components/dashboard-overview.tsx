@@ -24,6 +24,7 @@ import {
   Package,
   MessageSquare,
   BookOpen,
+  HandHeart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -63,6 +64,7 @@ import { RecentlyAccessedResources } from '@/components/recently-accessed-resour
 // (/api/people/search) is now used by the unified bar.
 import { VolunteerOpportunitiesSpotlight } from '@/components/volunteer-opportunities-spotlight';
 import OperationalOverview from '@/components/operational-overview';
+import VolunteerNeedsOverview from '@/components/volunteer-needs-overview';
 import { LowVolumeAlert } from '@/components/low-volume-alert';
 import { WEEK_OFFSET_TO_SCOPE } from '@/components/event-requests/lib/eventRequestsListQuery';
 import { adminDocuments } from '@/pages/important-documents';
@@ -173,11 +175,21 @@ export default function DashboardOverview({
   onSectionChange?: (section: string) => void;
 }) {
   const { user } = useAuth();
-  const { COLLECTIONS_ADD, COLLECTIONS_EDIT_OWN, ADMIN_ACCESS } = usePermissions([
+  const {
+    COLLECTIONS_ADD,
+    COLLECTIONS_EDIT_OWN,
+    ADMIN_ACCESS,
+    NAV_EVENT_PLANNING,
+    NAV_VOLUNTEER_HUB,
+  } = usePermissions([
     'COLLECTIONS_ADD',
     'COLLECTIONS_EDIT_OWN',
     'ADMIN_ACCESS',
+    'NAV_EVENT_PLANNING',
+    'NAV_VOLUNTEER_HUB',
   ]);
+  const canViewEventRequests = Boolean(NAV_EVENT_PLANNING);
+  const canViewVolunteerHub = Boolean(NAV_VOLUNTEER_HUB);
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const annualSandwichGoal = useAnnualSandwichGoal();
@@ -809,8 +821,11 @@ export default function DashboardOverview({
         {/* ── TODAY: the things that need attention right now ── */}
         <SectionHeader label="Today" hint="What needs your attention right now" />
 
-        {/* Operational Overview - Key metrics and urgent items */}
-        <OperationalOverview onNavigate={onSectionChange || (() => {})} />
+        {canViewEventRequests ? (
+          <OperationalOverview onNavigate={onSectionChange || (() => {})} />
+        ) : canViewVolunteerHub ? (
+          <VolunteerNeedsOverview onNavigate={onSectionChange || (() => {})} />
+        ) : null}
 
         {/* My Action Tracker widget removed from the dashboard per user
             request. The component is still imported by other places if
@@ -918,21 +933,40 @@ export default function DashboardOverview({
               </div>
             </div>
 
-            <div
-              className="premium-card premium-interactive p-4 group cursor-pointer"
-              onClick={() => onSectionChange?.('event-requests')}
-            >
-              <div className="w-12 h-12 bg-brand-teal rounded-lg flex items-center justify-center mb-3">
-                <Calendar className="w-6 h-6 text-white" />
+            {canViewEventRequests ? (
+              <div
+                className="premium-card premium-interactive p-4 group cursor-pointer"
+                onClick={() => onSectionChange?.('event-requests')}
+              >
+                <div className="w-12 h-12 bg-brand-teal rounded-lg flex items-center justify-center mb-3">
+                  <Calendar className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="premium-text-body font-semibold text-brand-primary mb-1">
+                  Event Requests
+                </h3>
+                <p className="premium-text-body-sm text-gray-600 mb-3">Manage events</p>
+                <div className="text-brand-primary font-medium text-sm flex items-center">
+                  Open Event Requests →
+                </div>
               </div>
-              <h3 className="premium-text-body font-semibold text-brand-primary mb-1">
-                Event Requests
-              </h3>
-              <p className="premium-text-body-sm text-gray-600 mb-3">Manage events</p>
-              <div className="text-brand-primary font-medium text-sm flex items-center">
-                Open Event Requests →
-              </div>
-            </div>
+            ) : canViewVolunteerHub ? (
+              <button
+                type="button"
+                className="premium-card premium-interactive p-4 group cursor-pointer w-full h-full text-left"
+                onClick={() => onSectionChange?.('volunteer-hub')}
+              >
+                <div className="w-12 h-12 bg-brand-teal rounded-lg flex items-center justify-center mb-3">
+                  <HandHeart className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="premium-text-body font-semibold text-brand-primary mb-1">
+                  Volunteer Hub
+                </h3>
+                <p className="premium-text-body-sm text-gray-600 mb-3">Sign up for events</p>
+                <div className="text-brand-primary font-medium text-sm flex items-center">
+                  Open Volunteer Hub →
+                </div>
+              </button>
+            ) : null}
 
             <div
               className="premium-card premium-interactive p-4 group cursor-pointer"
@@ -1243,32 +1277,29 @@ export default function DashboardOverview({
           </div>
         </div>
 
-        {/* ── VOLUNTEERS ── */}
-        <SectionHeader label="Volunteers" hint="Upcoming events that need people" />
-
-        {/* Volunteer Opportunities Spotlight */}
-        <VolunteerOpportunitiesSpotlight onNavigate={onSectionChange || (() => {})} />
-
-        {/* ── GROUP EVENT FORECAST ── */}
-        <SectionHeader label="Group Event Forecast" />
-
-        {/* Group Event Forecast - current week progress and upcoming weeks */}
-        <div className="mx-4">
-          <LowVolumeAlert
-            onNavigateToWeek={(weekOffset) => {
-              const weekScope = WEEK_OFFSET_TO_SCOPE[weekOffset] ?? 'current';
-              try {
-                sessionStorage.setItem(
-                  'eventRequests.pendingFilter',
-                  JSON.stringify({ tab: 'all', weekScope }),
-                );
-              } catch {
-                // ignore unavailable sessionStorage
-              }
-              onSectionChange?.('event-requests');
-            }}
-          />
-        </div>
+        {canViewEventRequests && (
+          <>
+            <SectionHeader label="Volunteers" hint="Upcoming events that need people" />
+            <VolunteerOpportunitiesSpotlight onNavigate={onSectionChange || (() => {})} />
+            <SectionHeader label="Group Event Forecast" />
+            <div className="mx-4">
+              <LowVolumeAlert
+                onNavigateToWeek={(weekOffset) => {
+                  const weekScope = WEEK_OFFSET_TO_SCOPE[weekOffset] ?? 'current';
+                  try {
+                    sessionStorage.setItem(
+                      'eventRequests.pendingFilter',
+                      JSON.stringify({ tab: 'all', weekScope }),
+                    );
+                  } catch {
+                    // ignore unavailable sessionStorage
+                  }
+                  onSectionChange?.('event-requests');
+                }}
+              />
+            </div>
+          </>
+        )}
 
         {/* ── TOOLS ── */}
         <SectionHeader label="Tools" hint="Calculators, toolkits, and TSP apps" />
