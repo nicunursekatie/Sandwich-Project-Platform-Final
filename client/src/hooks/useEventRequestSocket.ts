@@ -6,7 +6,6 @@ import { useToast } from './use-toast';
 import {
   invalidateEventRequestQueries,
   applyEventRequestUpdateById,
-  refreshEventRequestListAndCounts,
 } from '@/lib/queryClient';
 
 /**
@@ -14,8 +13,8 @@ import {
  * (already used by apiRequest's X-Socket-Id echo skip).
  *
  * Safe to mount from Dashboard and Event Requests at the same time — listeners
- * attach once. Also refetches list + counts when the tab becomes visible again
- * so a phone that missed socket events while backgrounded catches up.
+ * attach once. Visibility/focus refetch is left to EVENT_REQUEST_LIST_FRESHNESS
+ * so waking a phone does not fire this helper and TanStack Query together.
  */
 let attachCount = 0;
 let detachListeners: (() => void) | null = null;
@@ -53,25 +52,14 @@ function attachEventRequestSocketListeners(
     invalidateEventRequestQueries(queryClient);
   };
 
-  let lastVisibilityRefresh = 0;
-  const handleVisibility = () => {
-    if (document.visibilityState !== 'visible') return;
-    const now = Date.now();
-    if (now - lastVisibilityRefresh < 2000) return;
-    lastVisibilityRefresh = now;
-    void refreshEventRequestListAndCounts(queryClient);
-  };
-
   socket.on('event_request_created', handleEventCreated);
   socket.on('event_request_updated', handleEventUpdated);
   socket.on('event_request_deleted', handleEventDeleted);
-  document.addEventListener('visibilitychange', handleVisibility);
 
   return () => {
     socket.off('event_request_created', handleEventCreated);
     socket.off('event_request_updated', handleEventUpdated);
     socket.off('event_request_deleted', handleEventDeleted);
-    document.removeEventListener('visibilitychange', handleVisibility);
   };
 }
 

@@ -307,7 +307,7 @@ export function findEventInListCaches(
   return undefined;
 }
 
-/** Invalidate + refetch list queries and tab status-counts (not volunteer hub / map). */
+/** Mark list + status-count queries stale and refetch only the ones that are mounted. */
 export async function refreshEventRequestListAndCounts(qc: QueryClient): Promise<void> {
   const predicate = (query: { queryKey: unknown }) => {
     const key = query.queryKey;
@@ -315,8 +315,10 @@ export async function refreshEventRequestListAndCounts(qc: QueryClient): Promise
     return key[0] === EVENT_LIST_QUERY_PREFIX || key[0] === EVENT_STATUS_COUNTS_KEY;
   };
 
+  // invalidateQueries already refetches active matches (refetchType: 'active').
+  // A second refetchQueries would double-fetch the open tab and wake every
+  // cached inactive tab.
   await qc.invalidateQueries({ predicate });
-  await qc.refetchQueries({ predicate });
 }
 
 async function invalidateVolunteerHubQueries(qc: QueryClient): Promise<void> {

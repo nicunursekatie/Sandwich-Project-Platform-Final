@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Users, Package, HelpCircle, Calendar, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download, Filter, ChevronDown, FileSpreadsheet } from 'lucide-react';
-import { WEEK_SCOPE_LABELS, EVENT_REQUEST_LIST_FRESHNESS } from './lib/eventRequestsListQuery';
+import { WEEK_SCOPE_LABELS } from './lib/eventRequestsListQuery';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
@@ -75,7 +75,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEventRequestSocket } from '@/hooks/useEventRequestSocket';
 
 // Import dialogs
@@ -219,21 +219,6 @@ const EventRequestsManagementContent: React.FC = () => {
     openDialog,
     closeDialog,
   } = useEventDialogState();
-
-  // Fetch ALL active events (scheduled + in_process + rescheduled) for dashboard cards
-  // This query is independent of the active tab, ensuring driver counts are always accurate
-  const { data: allActiveEvents = [] } = useQuery({
-    queryKey: ['/api/event-requests/list', 'active-events-for-dashboard'],
-    queryFn: async () => {
-      const response = await fetch('/api/event-requests/list?status=scheduled,in_process,rescheduled', {
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to fetch active events');
-      return response.json();
-    },
-    staleTime: 5 * 60 * 1000,
-    ...EVENT_REQUEST_LIST_FRESHNESS,
-  });
 
   const {
     markToolkitSentMutation,

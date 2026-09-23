@@ -233,7 +233,7 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: 'always',
-    refetchOnReconnect: true,
+    refetchOnReconnect: 'always',
   });
 
   // Update activeTab when initialTab prop changes (for navigation)

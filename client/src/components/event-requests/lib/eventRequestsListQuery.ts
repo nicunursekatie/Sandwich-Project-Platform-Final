@@ -157,7 +157,7 @@ export function buildEventRequestsListQuery(
  */
 export const EVENT_REQUEST_LIST_FRESHNESS = {
   refetchOnWindowFocus: 'always' as const,
-  refetchOnReconnect: true,
+  refetchOnReconnect: 'always' as const,
   refetchOnMount: 'always' as const,
   refetchInterval: 45_000,
   refetchIntervalInBackground: false,
