@@ -14,11 +14,12 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, Marker, Popup, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths, parseISO, isAfter, startOfDay } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
+import { BaseMapTiles } from '@/components/maps/BaseMapTiles';
 import {
   isEligibleForRole,
   getEligibleEventRoles,
@@ -3225,10 +3226,7 @@ export default function VolunteerEventHub({
                     zoom={11}
                     style={{ height: '100%', width: '100%' }}
                   >
-                    <TileLayer
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                      url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                    />
+                    <BaseMapTiles />
                     <MapCenterSetter center={userLocation ? [userLocation.lat, userLocation.lng] : mapCenter} />
 
                     {/* User location marker */}

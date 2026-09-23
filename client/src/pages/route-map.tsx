@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
+import { MapContainer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import {
   MapPin, Search, AlertCircle, Phone, Mail, Building2, List, ChevronRight, ChevronLeft,
   Users, Package, Loader2, X, Navigation, ExternalLink
@@ -9,6 +9,7 @@ import { useActivityTracker } from '@/hooks/useActivityTracker';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
+import { BaseMapTiles } from '@/components/maps/BaseMapTiles';
 
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -1001,10 +1002,7 @@ export default function LocationsMapView() {
             <MapController center={mapCenter} zoom={mapZoom} selectedId={selectedId} flyKey={flyKey} markerRefs={markerRefs} />
             <FitBoundsOnLoad hosts={filteredHosts} />
             <MapClickHandler onMapClick={() => setSelectedId(null)} />
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-            />
+            <BaseMapTiles />
 
             {/* Host Markers */}
             {showHosts && filteredHosts.map(contact => (

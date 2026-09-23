@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -10,6 +10,7 @@ import {
   Search, Loader2, X, Navigation, MapPin, Building2, Heart, Car, Users, Route, Filter,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { BaseMapTiles } from '@/components/maps/BaseMapTiles';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -554,10 +555,7 @@ function EventMapView({ onEventClick }: EventMapViewProps) {
           style={{ height: '100%', width: '100%' }}
           scrollWheelZoom={true}
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          />
+          <BaseMapTiles />
           <InvalidateSizeOnMount />
           <FitBoundsOnLoad points={allPoints} />
           <MapController center={mapCenter} zoom={mapZoom} flyKey={flyKey} />
