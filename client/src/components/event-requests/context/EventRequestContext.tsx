@@ -5,7 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { getEventRequestDefaults } from '@shared/role-view-defaults';
 import { logger } from '@/lib/logger';
 import { useLocation } from 'wouter';
-import { buildEventRequestsListQuery, type EventRequestsWeekScope } from '../lib/eventRequestsListQuery';
+import { buildEventRequestsListQuery, EVENT_REQUEST_LIST_FRESHNESS, type EventRequestsWeekScope } from '../lib/eventRequestsListQuery';
 import { EventDialogProvider, useEventDialogState } from './EventDialogContext';
 import { useIssueReport } from '@/contexts/issue-report-context';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
@@ -192,10 +192,10 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
       }
       return response.json();
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes - balance between freshness and performance
-    refetchOnWindowFocus: false, // Disable auto-refetch to reduce server load - users can manually refresh if needed
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes before garbage collection
-    placeholderData: (previousData) => previousData, // Stale-while-revalidate: show old data while fetching
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    placeholderData: (previousData) => previousData,
+    ...EVENT_REQUEST_LIST_FRESHNESS,
   });
 
   // Fetch status counts separately (for tab badges)
@@ -221,16 +221,19 @@ const EventRequestProviderInner: React.FC<EventRequestProviderProps> = ({
       if (!response.ok) throw new Error('Failed to fetch status counts');
       return response.json();
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes - refresh counts more frequently
+    staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
+    ...EVENT_REQUEST_LIST_FRESHNESS,
   });
 
   // Fetch event volunteers data for assignment checking
   const { data: eventVolunteers = [] } = useQuery<EventVolunteer[]>({
     queryKey: ['/api/event-requests/my-volunteers'],
     enabled: !!user?.id,
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
+    staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: 'always',
+    refetchOnReconnect: 'always',
   });
 
   // Update activeTab when initialTab prop changes (for navigation)

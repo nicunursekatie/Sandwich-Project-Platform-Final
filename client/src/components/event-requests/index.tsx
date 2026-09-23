@@ -75,7 +75,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAnalytics } from '@/hooks/useAnalytics';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEventRequestSocket } from '@/hooks/useEventRequestSocket';
 
 // Import dialogs
@@ -92,7 +92,7 @@ import NextActionDialog from './NextActionDialog';
 import { StatusDefinitionsPanel } from './StatusDefinitionsPanel';
 import { OnboardingTooltip } from '@/components/ui/onboarding-tooltip';
 import { logger } from '@/lib/logger';
-import { apiRequest, queryClient, invalidateEventRequestQueries } from '@/lib/queryClient';
+import { apiRequest, queryClient, invalidateEventRequestQueries, refreshEventRequestListAndCounts } from '@/lib/queryClient';
 import { getRoleViewDescription } from '@shared/role-view-defaults';
 import { Info } from 'lucide-react';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
@@ -219,21 +219,6 @@ const EventRequestsManagementContent: React.FC = () => {
     openDialog,
     closeDialog,
   } = useEventDialogState();
-
-  // Fetch ALL active events (scheduled + in_process + rescheduled) for dashboard cards
-  // This query is independent of the active tab, ensuring driver counts are always accurate
-  const { data: allActiveEvents = [] } = useQuery({
-    queryKey: ['/api/event-requests/list', 'active-events-for-dashboard'],
-    queryFn: async () => {
-      const response = await fetch('/api/event-requests/list?status=scheduled,in_process,rescheduled', {
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to fetch active events');
-      return response.json();
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
-  });
 
   const {
     markToolkitSentMutation,
@@ -791,6 +776,19 @@ const EventRequestsManagementContent: React.FC = () => {
               Map
             </button>
           </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="min-h-11"
+            onClick={() => {
+              void refreshEventRequestListAndCounts(queryClient);
+            }}
+            title="Refresh event list"
+          >
+            <RefreshCw className="w-4 h-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">Refresh</span>
+          </Button>
           </div>
 
           {/* Export was previously slotted here between Map and Driver Planning,

@@ -7,6 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import type { EventRequest } from '@shared/schema';
 import { logger } from '@/lib/logger';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { EVENT_REQUEST_LIST_FRESHNESS } from '@/components/event-requests/lib/eventRequestsListQuery';
 
 interface LowVolumeAlertProps {
   /** Navigate to Event Requests filtered to a pipeline week (0 = this week). */
@@ -118,6 +119,7 @@ export function LowVolumeAlert({ onNavigateToWeek }: LowVolumeAlertProps) {
       const data = await response.json();
       return Array.isArray(data) ? data : [];
     },
+    ...EVENT_REQUEST_LIST_FRESHNESS,
   });
 
   // Fetch historical collection data to calculate baseline and current week actuals

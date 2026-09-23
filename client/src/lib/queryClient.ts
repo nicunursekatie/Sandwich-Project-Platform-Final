@@ -307,7 +307,7 @@ export function findEventInListCaches(
   return undefined;
 }
 
-/** Invalidate + refetch list queries and tab status-counts (not volunteer hub / map). */
+/** Mark list + status-count queries stale and refetch only the ones that are mounted. */
 export async function refreshEventRequestListAndCounts(qc: QueryClient): Promise<void> {
   const predicate = (query: { queryKey: unknown }) => {
     const key = query.queryKey;
@@ -315,8 +315,10 @@ export async function refreshEventRequestListAndCounts(qc: QueryClient): Promise
     return key[0] === EVENT_LIST_QUERY_PREFIX || key[0] === EVENT_STATUS_COUNTS_KEY;
   };
 
+  // invalidateQueries already refetches active matches (refetchType: 'active').
+  // A second refetchQueries would double-fetch the open tab and wake every
+  // cached inactive tab.
   await qc.invalidateQueries({ predicate });
-  await qc.refetchQueries({ predicate });
 }
 
 async function invalidateVolunteerHubQueries(qc: QueryClient): Promise<void> {
@@ -363,10 +365,16 @@ export async function applyEventRequestSaveToCache(
   if (options.statusChanged) {
     await refreshEventRequestListAndCounts(qc);
   } else {
-    patchEventInListCaches(qc, id, (existing) => ({
+    const cachesPatched = patchEventInListCaches(qc, id, (existing) => ({
       ...existing,
       ...eventData,
     }));
+    // Event is not in any mounted/cached list (e.g. a `new` row just became
+    // `scheduled` while only scheduled-filtered dashboard widgets are loaded).
+    // Patching in place cannot insert it; refetch so the row and counts appear.
+    if (cachesPatched === 0) {
+      await refreshEventRequestListAndCounts(qc);
+    }
   }
 
   const touched = options.touchedFields ?? Object.keys(eventData);
@@ -421,9 +429,8 @@ export async function applyEventRequestUpdateById(
       return;
     }
     const statusChanged =
-      !!previous?.status &&
-      !!fresh.status &&
-      previous.status !== fresh.status;
+      !previous ||
+      (!!previous.status && !!fresh.status && previous.status !== fresh.status);
     await applyEventRequestSaveToCache(qc, fresh, { statusChanged });
   } catch {
     await refreshEventRequestListAndCounts(qc);
