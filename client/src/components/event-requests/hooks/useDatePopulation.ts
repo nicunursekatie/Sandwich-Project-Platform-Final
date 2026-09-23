@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import type { EventRequest } from '@shared/schema';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { EVENT_REQUEST_LIST_FRESHNESS } from '../lib/eventRequestsListQuery';
 
 export interface DatePopulationInfo {
   scheduledCount: number;
@@ -57,8 +58,8 @@ export function useDatePopulation() {
       if (!response.ok) throw new Error('Failed to fetch active events for date population');
       return response.json();
     },
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    refetchOnWindowFocus: false,
+    staleTime: 2 * 60 * 1000,
+    ...EVENT_REQUEST_LIST_FRESHNESS,
   });
 
   // Pre-compute date population map for efficiency

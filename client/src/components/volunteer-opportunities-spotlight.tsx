@@ -8,6 +8,7 @@ import type { EventRequest } from '@shared/schema';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
 import { parseDateOnly, getTodayString } from '@shared/date-utils';
+import { EVENT_REQUEST_LIST_FRESHNESS } from '@/components/event-requests/lib/eventRequestsListQuery';
 
 // Whole-day difference between an event's date and today, parsing the
 // date-only value as a local date (parseDateOnly) so YYYY-MM-DD isn't shifted
@@ -85,6 +86,7 @@ export function VolunteerOpportunitiesSpotlight({ onNavigate }: VolunteerOpportu
       return Array.isArray(data) ? data : [];
     },
     staleTime: 60 * 1000,
+    ...EVENT_REQUEST_LIST_FRESHNESS,
   });
 
   const understaffedUpcoming = (Array.isArray(eventRequests) ? eventRequests : [])
