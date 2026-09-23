@@ -18,6 +18,7 @@ import { createEventCollaborationRouter } from './event-collaboration';
 import { createEventPostEventNotesRouter } from './event-post-event-notes';
 import eventMapRouter from './event-map';
 import directionsRouter from './directions';
+import mapTilesRouter from './map-tiles';
 import importCollectionsRouter from './import-collections';
 import notificationsRouter from './notifications';
 import reportsRouter from './reports';
@@ -733,6 +734,11 @@ export function createMainRoutes(deps: RouterDependencies) {
     directionsRouter
   );
   router.use('/api/directions', createErrorHandler('directions'));
+
+  // Map tiles stay on the server so GOOGLE_MAPS_API_KEY is never sent to the browser.
+  // Skip the request logger — a single map view requests dozens of tiles.
+  router.use('/api/maps', deps.isAuthenticated, mapTilesRouter);
+  router.use('/api/maps', createErrorHandler('map-tiles'));
 
   // Expenses routes - expense and receipt tracking
   router.use(

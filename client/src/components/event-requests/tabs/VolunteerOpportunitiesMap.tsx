@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -11,6 +11,7 @@ import type { EventRequest } from '@shared/schema';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
+import { BaseMapTiles } from '@/components/maps/BaseMapTiles';
 
 // Marker color constants
 const COLORS = {
@@ -338,12 +339,7 @@ export function VolunteerOpportunitiesMap({ events, onEventClick }: VolunteerOpp
         style={{ height: '100%', width: '100%' }}
         className="z-0"
       >
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-          subdomains="abcd"
-          maxZoom={20}
-        />
+        <BaseMapTiles />
         <MapBounds events={eventsWithCoordinates} />
 
         <MarkerClusterGroup

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, Marker, Popup, useMap } from 'react-leaflet';
 import MarkerClusterGroup from 'react-leaflet-cluster';
 import {
   MapPin, Search, Calendar, Users, Package, Phone, Mail, AlertCircle,
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useLocation } from 'wouter';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
+import { BaseMapTiles } from '@/components/maps/BaseMapTiles';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
@@ -1287,12 +1288,7 @@ export default function EventMapView() {
               style={{ height: '100%', width: '100%' }}
               className="z-0"
             >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-                subdomains="abcd"
-                maxZoom={20}
-              />
+              <BaseMapTiles />
               <MapBounds events={filteredEvents} />
               
               {clusteringEnabled ? (

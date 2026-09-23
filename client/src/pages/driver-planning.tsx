@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents, Polyline, Tooltip } from 'react-leaflet';
+import { MapContainer, Marker, Popup, useMap, useMapEvents, Polyline, Tooltip } from 'react-leaflet';
 import { useLocation } from 'wouter';
 
 import {
@@ -22,6 +22,7 @@ import 'react-leaflet-cluster/dist/assets/MarkerCluster.css';
 import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import { format, addWeeks, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
+import { BaseMapTiles } from '@/components/maps/BaseMapTiles';
 import {
   getDriverIds, getDriverCount, getTotalDriverCount, hasDriver,
   getSpeakerIds, getSpeakerCount,
@@ -3121,12 +3122,7 @@ export default function DriverPlanningDashboard() {
             zoom={10}
             className="absolute inset-0 z-0"
           >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-              subdomains="abcd"
-              maxZoom={20}
-            />
+            <BaseMapTiles />
             <MapController
               selectedEvent={effectiveSelectedEvent}
               events={upcomingEventsWithCoords}
@@ -5331,12 +5327,7 @@ export default function DriverPlanningDashboard() {
             style={{ height: '100%', width: '100%' }}
             className="z-0"
           >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-              subdomains="abcd"
-              maxZoom={20}
-            />
+            <BaseMapTiles />
             <MapController
               selectedEvent={effectiveSelectedEvent}
               events={upcomingEventsWithCoords}
@@ -5726,12 +5717,7 @@ export default function DriverPlanningDashboard() {
             style={{ height: '100%', width: '100%' }}
             className="z-0"
           >
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-              url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-              subdomains="abcd"
-              maxZoom={20}
-            />
+            <BaseMapTiles />
             <MapController
               selectedEvent={effectiveSelectedEvent}
               events={upcomingEventsWithCoords}
