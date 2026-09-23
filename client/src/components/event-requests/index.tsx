@@ -27,7 +27,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plus, Users, Package, HelpCircle, Calendar, Sheet, X, RefreshCw, ArrowUp, Car, Truck, MapPin, Shield, LayoutGrid, Table2, Download, Filter, ChevronDown, FileSpreadsheet } from 'lucide-react';
-import { WEEK_SCOPE_LABELS } from './lib/eventRequestsListQuery';
+import { WEEK_SCOPE_LABELS, EVENT_REQUEST_LIST_FRESHNESS } from './lib/eventRequestsListQuery';
 import { exportEventRequestsToExcel } from '@/lib/excel-export';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { FloatingAIChat } from '@/components/floating-ai-chat';
@@ -92,7 +92,7 @@ import NextActionDialog from './NextActionDialog';
 import { StatusDefinitionsPanel } from './StatusDefinitionsPanel';
 import { OnboardingTooltip } from '@/components/ui/onboarding-tooltip';
 import { logger } from '@/lib/logger';
-import { apiRequest, queryClient, invalidateEventRequestQueries } from '@/lib/queryClient';
+import { apiRequest, queryClient, invalidateEventRequestQueries, refreshEventRequestListAndCounts } from '@/lib/queryClient';
 import { getRoleViewDescription } from '@shared/role-view-defaults';
 import { Info } from 'lucide-react';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
@@ -231,8 +231,8 @@ const EventRequestsManagementContent: React.FC = () => {
       if (!response.ok) throw new Error('Failed to fetch active events');
       return response.json();
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000,
+    ...EVENT_REQUEST_LIST_FRESHNESS,
   });
 
   const {
@@ -791,6 +791,19 @@ const EventRequestsManagementContent: React.FC = () => {
               Map
             </button>
           </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="min-h-11"
+            onClick={() => {
+              void refreshEventRequestListAndCounts(queryClient);
+            }}
+            title="Refresh event list"
+          >
+            <RefreshCw className="w-4 h-4 sm:mr-1.5" />
+            <span className="hidden sm:inline">Refresh</span>
+          </Button>
           </div>
 
           {/* Export was previously slotted here between Map and Driver Planning,

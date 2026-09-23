@@ -89,6 +89,12 @@ import { NavViewModeProvider } from '@/contexts/nav-view-mode-context';
 import { NavViewModeToggle } from '@/components/nav-view-mode-toggle';
 import { PermissionDenied } from '@/components/permission-denied';
 import { Button } from '@/components/ui/button';
+import { useEventRequestSocket } from '@/hooks/useEventRequestSocket';
+
+function EventRequestLiveUpdates() {
+  useEventRequestSocket();
+  return null;
+}
 
 // Lazy load all page/section components with automatic retry on failure
 const ProjectList = lazyWithRetry(() => import('@/components/project-list'));
@@ -1026,6 +1032,7 @@ export default function Dashboard({
       {/* Real-Time Kudos Notifier */}
       <RealTimeKudosNotifier />
       <LoginMessageNotifier />
+      {canViewEventRequests && <EventRequestLiveUpdates />}
       <FirstLoginTourPrompt />
       <TextIdeaAnnouncementModal />
       <WhatsNewModal />

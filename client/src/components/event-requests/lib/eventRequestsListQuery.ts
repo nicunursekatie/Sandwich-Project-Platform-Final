@@ -146,4 +146,21 @@ export function buildEventRequestsListQuery(
   return { queryKey, listUrl, fullUrl, filterParams, queryString };
 }
 
+/**
+ * Shared freshness for Event Requests list / counts.
+ *
+ * Saves already broadcast `event_request_updated` over the default socket.
+ * Phones still miss those events when Safari suspends the tab, and the old
+ * 5-minute staleTime + refetchOnWindowFocus:false left them looking at the
+ * laptop's last save until cache expired. Always refetch on focus/mount, and
+ * poll only while the tab is visible as a fallback when the socket is dead.
+ */
+export const EVENT_REQUEST_LIST_FRESHNESS = {
+  refetchOnWindowFocus: 'always' as const,
+  refetchOnReconnect: true,
+  refetchOnMount: 'always' as const,
+  refetchInterval: 45_000,
+  refetchIntervalInBackground: false,
+};
+
 
