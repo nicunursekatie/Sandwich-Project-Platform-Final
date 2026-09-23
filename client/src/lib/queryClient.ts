@@ -365,10 +365,16 @@ export async function applyEventRequestSaveToCache(
   if (options.statusChanged) {
     await refreshEventRequestListAndCounts(qc);
   } else {
-    patchEventInListCaches(qc, id, (existing) => ({
+    const cachesPatched = patchEventInListCaches(qc, id, (existing) => ({
       ...existing,
       ...eventData,
     }));
+    // Event is not in any mounted/cached list (e.g. a `new` row just became
+    // `scheduled` while only scheduled-filtered dashboard widgets are loaded).
+    // Patching in place cannot insert it; refetch so the row and counts appear.
+    if (cachesPatched === 0) {
+      await refreshEventRequestListAndCounts(qc);
+    }
   }
 
   const touched = options.touchedFields ?? Object.keys(eventData);
@@ -423,9 +429,8 @@ export async function applyEventRequestUpdateById(
       return;
     }
     const statusChanged =
-      !!previous?.status &&
-      !!fresh.status &&
-      previous.status !== fresh.status;
+      !previous ||
+      (!!previous.status && !!fresh.status && previous.status !== fresh.status);
     await applyEventRequestSaveToCache(qc, fresh, { statusChanged });
   } catch {
     await refreshEventRequestListAndCounts(qc);
