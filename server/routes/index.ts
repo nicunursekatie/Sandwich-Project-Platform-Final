@@ -736,7 +736,8 @@ export function createMainRoutes(deps: RouterDependencies) {
   router.use('/api/directions', createErrorHandler('directions'));
 
   // Map tiles stay on the server so GOOGLE_MAPS_API_KEY is never sent to the browser.
-  // Skip the request logger — a single map view requests dozens of tiles.
+  // Skip the request logger here, and skip /api/maps/tiles in the activity logger,
+  // because one map view requests dozens of tiles.
   router.use('/api/maps', deps.isAuthenticated, mapTilesRouter);
   router.use('/api/maps', createErrorHandler('map-tiles'));
 

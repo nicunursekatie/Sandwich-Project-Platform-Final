@@ -609,6 +609,9 @@ const skipPaths = [
   '/api/stream/credentials',
   '/api/stream/token',
 
+  // Map tiles: one view requests dozens of images. Config and copyright stay logged.
+  '/api/maps/tiles',
+
   // Dashboard data polling
   '/api/dashboard',
   '/recent',
