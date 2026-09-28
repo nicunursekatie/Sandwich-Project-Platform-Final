@@ -7,4 +7,4 @@
 - [Type-check OOM workaround](typecheck-oom.md) — full tsc needs NODE_OPTIONS=--max-old-space-size=6144; a silent zero-error result means the run crashed (repo has ~1.4k pre-existing errors).
 - [Planning sheet write attribution](planning-sheet-writers.md) — "mystery rows" in the planning sheet = manual push button; check added_to_official_sheet_at timestamps first, import/bg-sync are read-only.
 - [Event lead-time data boundary](event-lead-time-data-boundary.md) — request lead-time analysis is reliable only from late August 2025; older event records were bulk-imported after their event dates.
-- [Weekly monitoring interpretation](weekly-monitoring-interpretation.md) — accountability is regional; Dunwoody any logger, UGA exempt, Collective Learning needs a separate 275/week estimate.
+- [Weekly monitoring interpretation](weekly-monitoring-interpretation.md) — regional leads; Dunwoody requires Lisa and a separate Marcy-group log, UGA exempt, Collective Learning 275/week estimate.
