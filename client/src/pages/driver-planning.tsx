@@ -3984,151 +3984,101 @@ export default function DriverPlanningDashboard() {
           {(fullTripRoute && selectedDriver && selectedDestination) ||
           (((selectedDriver && !selectedDestination) || (!selectedDriver && selectedDestination)) && !fullTripRoute) ||
           (drivingRoute && !fullTripRoute && !selectedDriver && !selectedDestination) ? (
-          <div className="border-t bg-white px-4 py-2 overflow-x-auto flex-shrink-0">
-            <div className="flex flex-nowrap items-start gap-3 min-w-max">
+          <div className="border-t bg-white px-3 py-1.5 flex-shrink-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
 
               {fullTripRoute && selectedDriver && selectedDestination && (
-                <div className="bg-white rounded-xl shadow-sm border p-4 min-w-[280px] flex-shrink-0">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold text-gray-800">Full Trip Route</span>
-                    <button
-                      onClick={() => {
-                        // Check if driver/destination are pre-assigned - only clear what wasn't pre-assigned
-                        const driverIsAssigned = selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id));
-                        const destIsAssigned = selectedDestination && selectedDestination.type === 'recipient' &&
-                          designatedRecipients.some(r => r.id === selectedDestination.id);
-
-                        // Keep pre-assigned items, clear the rest
-                        if (!driverIsAssigned) setSelectedDriver(null);
-                        if (!destIsAssigned) setSelectedDestination(null);
-                        setFullTripRoute(null);
-                      }}
-                      className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded"
-                      title="Clear non-assigned selections"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-sm font-semibold text-gray-800 shrink-0">Full Trip</span>
+                  <div className="flex items-center gap-1.5 bg-amber-50 rounded-md px-2 py-1 text-xs">
+                    <Home className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span className="font-medium text-gray-700 max-w-[140px] truncate">{selectedDriver.name}</span>
+                    <span className="text-gray-400">→</span>
+                    <span className="text-gray-600">Event</span>
+                    <Truck className="w-3.5 h-3.5 text-amber-600" />
+                    <span className="font-medium text-gray-700">{(fullTripRoute.leg1.distance / 1609.34).toFixed(1)} mi</span>
+                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                    <span className="font-medium text-gray-700">
+                      {(() => {
+                        const dur = formatDuration(fullTripRoute.leg1.duration, fullTripRoute.leg1.durationInTraffic);
+                        return dur.hasTraffic ? (
+                          <span className="inline-flex items-center gap-1">
+                            {dur.text} min
+                            {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
+                              <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
+                            )}
+                          </span>
+                        ) : `~${dur.text} min`;
+                      })()}
+                    </span>
                   </div>
-
-                  {/* Leg 1: Driver to Event */}
-                  <div className="mb-3">
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-1.5">
-                      <Home className="w-3.5 h-3.5 text-amber-600" />
-                      <span className="font-medium">{selectedDriver.name}</span>
-                      <Navigation className="w-3 h-3 text-gray-400" />
-                      <span>Event</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="flex items-center gap-2 bg-amber-50 rounded-lg px-2.5 py-1.5 flex-1">
-                        <Truck className="w-4 h-4 text-amber-600" />
-                        <span className="text-sm font-medium text-gray-700">{(fullTripRoute.leg1.distance / 1609.34).toFixed(1)} mi</span>
-                      </div>
-                      <div className="flex items-center gap-2 bg-amber-50 rounded-lg px-2.5 py-1.5 flex-1">
-                        <Clock className="w-4 h-4 text-amber-600" />
-                        <span className="text-sm font-medium text-gray-700">
-                          {(() => {
-                            const dur = formatDuration(fullTripRoute.leg1.duration, fullTripRoute.leg1.durationInTraffic);
-                            return dur.hasTraffic ? (
-                              <span className="flex items-center gap-1">
-                                {dur.text} min
-                                <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
-                              </span>
-                            ) : `~${dur.text} min`;
-                          })()}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="text-[10px] text-gray-400 mt-1 italic">
-                      {fullTripRoute.leg1.durationInTraffic ? 'Traffic estimate for event time' : 'Estimate from driver\'s home'}
-                    </div>
+                  <div className="flex items-center gap-1.5 bg-purple-50 rounded-md px-2 py-1 text-xs">
+                    <MapPin className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+                    <span className="text-gray-600">Event</span>
+                    <span className="text-gray-400">→</span>
+                    <span className="font-medium text-gray-700 max-w-[140px] truncate">{selectedDestination.name}</span>
+                    <Truck className="w-3.5 h-3.5 text-purple-600" />
+                    <span className="font-medium text-gray-700">{(fullTripRoute.leg2.distance / 1609.34).toFixed(1)} mi</span>
+                    <Clock className="w-3.5 h-3.5 text-purple-600" />
+                    <span className="font-medium text-gray-700">
+                      {(() => {
+                        const dur = formatDuration(fullTripRoute.leg2.duration, fullTripRoute.leg2.durationInTraffic);
+                        return dur.hasTraffic ? (
+                          <span className="inline-flex items-center gap-1">
+                            {dur.text} min
+                            {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
+                              <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
+                            )}
+                          </span>
+                        ) : `~${dur.text} min`;
+                      })()}
+                    </span>
                   </div>
-
-                  {/* Leg 2: Event to Destination */}
-                  <div className="mb-3">
-                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-1.5">
-                      <MapPin className="w-3.5 h-3.5 text-purple-600" />
-                      <span>Event</span>
-                      <Navigation className="w-3 h-3 text-gray-400" />
-                      <span className="font-medium">{selectedDestination.name}</span>
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="flex items-center gap-2 bg-purple-50 rounded-lg px-2.5 py-1.5 flex-1">
-                        <Truck className="w-4 h-4 text-purple-600" />
-                        <span className="text-sm font-medium text-gray-700">{(fullTripRoute.leg2.distance / 1609.34).toFixed(1)} mi</span>
-                      </div>
-                      <div className="flex items-center gap-2 bg-purple-50 rounded-lg px-2.5 py-1.5 flex-1">
-                        <Clock className="w-4 h-4 text-purple-600" />
-                        <span className="text-sm font-medium text-gray-700">
-                          {(() => {
-                            const dur = formatDuration(fullTripRoute.leg2.duration, fullTripRoute.leg2.durationInTraffic);
-                            return dur.hasTraffic ? (
-                              <span className="flex items-center gap-1">
-                                {dur.text} min
-                                <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
-                              </span>
-                            ) : `~${dur.text} min`;
-                          })()}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Total */}
-                  <div className="border-t pt-2 mt-2">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Total trip:</span>
-                      <span className="font-semibold text-gray-800">
-                        {((fullTripRoute.leg1.distance + fullTripRoute.leg2.distance) / 1609.34).toFixed(1)} mi,{' '}
-                        {(() => {
-                          const totalDuration = fullTripRoute.leg1.duration + fullTripRoute.leg2.duration;
-                          const totalTrafficDuration = (fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg1.duration) +
-                                                       (fullTripRoute.leg2.durationInTraffic || fullTripRoute.leg2.duration);
-                          const hasTraffic = fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg2.durationInTraffic;
-                          if (hasTraffic && totalTrafficDuration > totalDuration) {
-                            return `${Math.round(totalTrafficDuration / 60)} min`;
-                          }
-                          return `~${Math.round(totalDuration / 60)} min`;
-                        })()}
-                      </span>
-                    </div>
-                    {(fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg2.durationInTraffic) && (
-                      <div className="text-[10px] text-green-600 mt-0.5 text-right">✓ Includes traffic estimate</div>
-                    )}
-                  </div>
-
-                  {isLoadingFullTrip && (
-                    <div className="flex items-center gap-2 mt-3 text-sm text-gray-500">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Calculating routes...
-                    </div>
+                  <span className="text-xs text-gray-700 shrink-0">
+                    <span className="text-gray-500">Total </span>
+                    <span className="font-semibold text-gray-800">
+                      {((fullTripRoute.leg1.distance + fullTripRoute.leg2.distance) / 1609.34).toFixed(1)} mi,{' '}
+                      {(() => {
+                        const totalDuration = fullTripRoute.leg1.duration + fullTripRoute.leg2.duration;
+                        const totalTrafficDuration = (fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg1.duration) +
+                                                     (fullTripRoute.leg2.durationInTraffic || fullTripRoute.leg2.duration);
+                        const hasTraffic = fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg2.durationInTraffic;
+                        if (hasTraffic && totalTrafficDuration > totalDuration) {
+                          return `${Math.round(totalTrafficDuration / 60)} min`;
+                        }
+                        return `~${Math.round(totalDuration / 60)} min`;
+                      })()}
+                    </span>
+                  </span>
+                  {(fullTripRoute.leg1.durationInTraffic || fullTripRoute.leg2.durationInTraffic) && (
+                    <span className="text-[10px] text-green-600 shrink-0">✓ traffic</span>
                   )}
-
+                  {isLoadingFullTrip && (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400 shrink-0" />
+                  )}
                   <button
                     onClick={() => {
-                      // Check if driver/destination are pre-assigned - only clear what wasn't pre-assigned
                       const driverIsAssigned = selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id));
                       const destIsAssigned = selectedDestination && selectedDestination.type === 'recipient' &&
                         designatedRecipients.some(r => r.id === selectedDestination.id);
-
-                      // Keep pre-assigned items, clear the rest
                       if (!driverIsAssigned) setSelectedDriver(null);
                       if (!destIsAssigned) setSelectedDestination(null);
                       setFullTripRoute(null);
                     }}
-                    className="w-full mt-3 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded shrink-0"
+                    title="Clear trip"
                   >
-                    Clear Trip
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               )}
 
               {((selectedDriver && !selectedDestination) || (!selectedDriver && selectedDestination)) && !fullTripRoute && (
-                <div className={`bg-white rounded-xl shadow-sm border flex-shrink-0 transition-all duration-200 ${tripPlanningCollapsed ? 'p-2 w-auto' : 'min-w-[280px] p-4'}`}>
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {tripPlanningCollapsed ? (
-                    /* Collapsed state - just show a small expand button */
                     <button
                       onClick={() => setTripPlanningCollapsed(false)}
-                      className="flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-xl"
+                      className="flex items-center gap-2 px-2 py-1 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
                       title="Expand trip planning"
                     >
                       <Target className="w-4 h-4 text-[#007E8C]" />
@@ -4136,184 +4086,132 @@ export default function DriverPlanningDashboard() {
                       <ChevronUp className="w-4 h-4" />
                     </button>
                   ) : (
-                    /* Expanded state */
                     <>
-                      <div className="flex items-center justify-between mb-3">
-                        <span className="text-sm font-semibold text-gray-800">Trip Planning</span>
-                        <div className="flex items-center gap-1">
-                          <button
-                            onClick={() => setTripPlanningCollapsed(true)}
-                            className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded"
-                            title="Minimize"
-                          >
-                            <ChevronDown className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              // Check if driver/destination are pre-assigned - only clear what wasn't pre-assigned
-                              const driverIsAssigned = selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id));
-                              const destIsAssigned = selectedDestination && selectedDestination.type === 'recipient' &&
-                                designatedRecipients.some(r => r.id === selectedDestination.id);
-
-                              // Keep pre-assigned items, clear the rest
-                              if (!driverIsAssigned) setSelectedDriver(null);
-                              if (!destIsAssigned) setSelectedDestination(null);
-                              setDrivingRoute(null);
-                              setFocusedItem(null);
-                            }}
-                            className="text-gray-400 hover:text-red-500 p-1 hover:bg-gray-100 rounded"
-                            title="Clear selections"
-                          >
-                            <X className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Selected Driver */}
+                      <Target className="w-4 h-4 text-[#007E8C] shrink-0" />
+                      <span className="text-sm font-semibold text-gray-800 shrink-0">Trip Planning</span>
                       {selectedDriver && (
-                        <div className="mb-3">
-                          <div className="flex items-center gap-2 text-xs text-gray-500 mb-1.5">
-                            <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[8px] border-b-yellow-400" />
-                            <span className="font-medium">Driver Selected</span>
-                          </div>
-                          <div className="flex items-center justify-between bg-amber-50 rounded-lg px-3 py-2">
-                            <div className="flex items-center gap-2">
-                              <Truck className="w-4 h-4 text-amber-600" />
-                              <span className="text-sm font-medium text-gray-800">{selectedDriver.name}</span>
-                              {assignedDrivers.some(d => String(d.id) === String(selectedDriver.id)) && (
-                                <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
-                                  Assigned
-                                </span>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => setSelectedDriver(null)}
-                              className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                              title="Unselect driver"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                        <div className="flex items-center gap-1.5 bg-amber-50 rounded-md px-2 py-1">
+                          <div className="w-0 h-0 border-l-[4px] border-l-transparent border-r-[4px] border-r-transparent border-b-[7px] border-b-yellow-400 shrink-0" />
+                          <span className="text-xs font-medium text-gray-800">{selectedDriver.name}</span>
+                          {assignedDrivers.some(d => String(d.id) === String(selectedDriver.id)) && (
+                            <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+                              Assigned
+                            </span>
+                          )}
+                          <button
+                            onClick={() => setSelectedDriver(null)}
+                            className="text-gray-400 hover:text-red-500 transition-colors"
+                            title="Unselect driver"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
                         </div>
                       )}
-
-                      {/* Selected Destination */}
                       {selectedDestination && (
-                        <div className="mb-3">
-                          <div className="flex items-center gap-2 text-xs text-gray-500 mb-1.5">
-                            <div className="w-2.5 h-2.5 bg-purple-500 rotate-45" style={{ borderRadius: '1px' }} />
-                            <span className="font-medium">Destination Selected</span>
-                          </div>
-                          <div className="flex items-center justify-between bg-purple-50 rounded-lg px-3 py-2">
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-4 h-4 text-purple-600" />
-                              <span className="text-sm font-medium text-gray-800">{selectedDestination.name}</span>
-                              {selectedDestination.type === 'recipient' &&
-                                designatedRecipients.some(r => r.id === selectedDestination.id) && (
-                                  <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
-                                    Designated
-                                  </span>
-                              )}
-                            </div>
-                            <button
-                              onClick={() => setSelectedDestination(null)}
-                              className="text-gray-400 hover:text-red-500 transition-colors p-1"
-                              title="Unselect destination"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
+                        <div className="flex items-center gap-1.5 bg-purple-50 rounded-md px-2 py-1">
+                          <div className="w-2.5 h-2.5 bg-purple-500 rotate-45 shrink-0" style={{ borderRadius: '1px' }} />
+                          <span className="text-xs font-medium text-gray-800">{selectedDestination.name}</span>
+                          {selectedDestination.type === 'recipient' &&
+                            designatedRecipients.some(r => r.id === selectedDestination.id) && (
+                              <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">
+                                Designated
+                              </span>
+                          )}
+                          <button
+                            onClick={() => setSelectedDestination(null)}
+                            className="text-gray-400 hover:text-red-500 transition-colors"
+                            title="Unselect destination"
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
                         </div>
                       )}
-
-                      {/* Route Preview */}
                       {drivingRoute && (
-                        <div className="bg-blue-50 rounded-lg p-3 mb-3">
-                          <div className="text-xs text-blue-700 font-medium mb-1">Route Preview</div>
-                          <div className="flex gap-3 text-sm">
-                            <span className="flex items-center gap-1">
-                              <Truck className="w-3.5 h-3.5 text-blue-600" />
-                              {(drivingRoute.distance / 1609.34).toFixed(1)} mi
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3.5 h-3.5 text-blue-600" />
-                              {(() => {
-                                const dur = formatDuration(drivingRoute.duration, drivingRoute.durationInTraffic);
-                                return dur.hasTraffic ? (
-                                  <span className="flex items-center gap-1">
-                                    {dur.text} min
-                                    {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
-                                      <span className="text-[10px] text-red-500">+{dur.trafficDelay}</span>
-                                    )}
-                                  </span>
-                                ) : `~${dur.text} min`;
-                              })()}
-                            </span>
-                          </div>
+                        <div className="flex items-center gap-2 bg-blue-50 rounded-md px-2 py-1 text-xs">
+                          <span className="text-blue-700 font-medium">Route</span>
+                          <span className="inline-flex items-center gap-1 font-medium text-gray-800">
+                            <Truck className="w-3.5 h-3.5 text-blue-600" />
+                            {(drivingRoute.distance / 1609.34).toFixed(1)} mi
+                          </span>
+                          <span className="inline-flex items-center gap-1 font-medium text-gray-800">
+                            <Clock className="w-3.5 h-3.5 text-blue-600" />
+                            {(() => {
+                              const dur = formatDuration(drivingRoute.duration, drivingRoute.durationInTraffic);
+                              return dur.hasTraffic ? (
+                                <span className="inline-flex items-center gap-1">
+                                  {dur.text} min
+                                  {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
+                                    <span className="text-[10px] text-red-500">+{dur.trafficDelay}</span>
+                                  )}
+                                </span>
+                              ) : `~${dur.text} min`;
+                            })()}
+                          </span>
                           {drivingRoute.durationInTraffic && (
-                            <div className="text-[10px] text-green-600 mt-1">✓ Includes traffic estimate</div>
+                            <span className="text-[10px] text-green-600">✓ traffic</span>
                           )}
                         </div>
                       )}
-
-                      <div className="text-xs text-gray-500">
-                        {selectedDriver && !selectedDestination && 'Select a destination to see full trip route.'}
-                        {!selectedDriver && selectedDestination && 'Select a driver to see full trip route.'}
-                      </div>
+                      <span className="text-xs text-gray-500 shrink-0">
+                        {selectedDriver && !selectedDestination && 'Select a destination to see the full trip.'}
+                        {!selectedDriver && selectedDestination && 'Select a driver to see the full trip.'}
+                      </span>
+                      <button
+                        onClick={() => setTripPlanningCollapsed(true)}
+                        className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded shrink-0"
+                        title="Minimize"
+                      >
+                        <ChevronDown className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          const driverIsAssigned = selectedDriver && assignedDrivers.some(d => String(d.id) === String(selectedDriver.id));
+                          const destIsAssigned = selectedDestination && selectedDestination.type === 'recipient' &&
+                            designatedRecipients.some(r => r.id === selectedDestination.id);
+                          if (!driverIsAssigned) setSelectedDriver(null);
+                          if (!destIsAssigned) setSelectedDestination(null);
+                          setDrivingRoute(null);
+                          setFocusedItem(null);
+                        }}
+                        className="text-gray-400 hover:text-red-500 p-1 hover:bg-gray-100 rounded shrink-0"
+                        title="Clear selections"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
                     </>
                   )}
                 </div>
               )}
 
               {drivingRoute && !fullTripRoute && !selectedDriver && !selectedDestination && (
-                <div className="bg-white rounded-xl shadow-sm border p-4 min-w-[220px] flex-shrink-0">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-sm font-semibold text-gray-800">Route Preview</span>
-                    <button
-                      onClick={() => {
-                        setDrivingRoute(null);
-                        setFocusedItem(null);
-                      }}
-                      className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded"
-                      title="Close route"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-2.5">
-                      <Truck className="w-5 h-5 text-blue-600" />
-                      <span className="text-base font-medium text-gray-800">{(drivingRoute.distance / 1609.34).toFixed(1)} miles</span>
-                    </div>
-                    <div className="flex items-center gap-3 bg-blue-50 rounded-lg p-2.5">
-                      <Clock className="w-5 h-5 text-blue-600" />
-                      <span className="text-base font-medium text-gray-800">
-                        {(() => {
-                          const dur = formatDuration(drivingRoute.duration, drivingRoute.durationInTraffic);
-                          return dur.hasTraffic ? (
-                            <span className="flex items-center gap-1">
-                              {dur.text} min drive
-                              {/* Coerce to boolean so React doesn't render literal `0` when trafficDelay is 0/null */}
-                              {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
-                                <span className="text-xs text-red-500" title="Traffic delay">(+{dur.trafficDelay} traffic)</span>
-                              )}
-                            </span>
-                          ) : `${dur.text} min drive`;
-                        })()}
-                      </span>
-                    </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <span className="text-sm font-semibold text-gray-800 shrink-0">Route Preview</span>
+                  <div className="flex items-center gap-2 bg-blue-50 rounded-md px-2 py-1 text-xs">
+                    <span className="inline-flex items-center gap-1 font-medium text-gray-800">
+                      <Truck className="w-3.5 h-3.5 text-blue-600" />
+                      {(drivingRoute.distance / 1609.34).toFixed(1)} mi
+                    </span>
+                    <span className="inline-flex items-center gap-1 font-medium text-gray-800">
+                      <Clock className="w-3.5 h-3.5 text-blue-600" />
+                      {(() => {
+                        const dur = formatDuration(drivingRoute.duration, drivingRoute.durationInTraffic);
+                        return dur.hasTraffic ? (
+                          <span className="inline-flex items-center gap-1">
+                            {dur.text} min
+                            {!!(dur.trafficDelay && dur.trafficDelay > 0) && (
+                              <span className="text-[10px] text-red-500" title="Traffic delay">+{dur.trafficDelay}</span>
+                            )}
+                          </span>
+                        ) : `~${dur.text} min`;
+                      })()}
+                    </span>
                     {drivingRoute.durationInTraffic && (
-                      <div className="text-xs text-green-600 text-center">✓ Includes traffic estimate</div>
+                      <span className="text-[10px] text-green-600">✓ traffic</span>
                     )}
                   </div>
                   {isLoadingRoute && (
-                    <div className="flex items-center gap-2 mt-3 text-sm text-gray-500">
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                      Loading route...
-                    </div>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-400 shrink-0" />
                   )}
-
-                  {/* Select button for previewed item */}
                   {focusedItem && (
                     <button
                       onClick={() => {
@@ -4336,21 +4234,21 @@ export default function DriverPlanningDashboard() {
                         setDrivingRoute(null);
                         setFocusedItem(null);
                       }}
-                      className="w-full mt-3 px-3 py-2 text-sm font-medium text-white bg-[#007E8C] hover:bg-[#006670] rounded-lg transition-colors flex items-center justify-center gap-2"
+                      className="px-2 py-1 text-xs font-medium text-white bg-[#007E8C] hover:bg-[#006670] rounded-md transition-colors inline-flex items-center gap-1 shrink-0"
                     >
-                      <Check className="w-4 h-4" />
+                      <Check className="w-3.5 h-3.5" />
                       Select {focusedItem.type === 'driver' ? 'Driver' : 'Destination'}
                     </button>
                   )}
-
                   <button
                     onClick={() => {
                       setDrivingRoute(null);
                       setFocusedItem(null);
                     }}
-                    className="w-full mt-2 px-3 py-2 text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                    className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded shrink-0"
+                    title="Close preview"
                   >
-                    Close Preview
+                    <X className="w-4 h-4" />
                   </button>
                 </div>
               )}
