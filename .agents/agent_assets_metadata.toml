@@ -56,3 +56,59 @@ mtime_ms = 1788984919214
 storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb1d30f8-d852-4bae-abcd-b7c4521e3d85/e570f478-1399-4218-9661-448245766f4f/c9ca91e7-dc29-42c6-adb0-0721db6bf3e4"
 storage_version_token = "1788984920069287"
 content_type = "text/csv"
+
+[[outputs]]
+id = "4-sJf_ZdpkS-CxHJfGy3g"
+uri = "file://reports/Peak_Sandwich_Collection_Weeks_Corrected.pdf"
+type = "pdf"
+title = "Download corrected report (PDF)"
+description = "Verified two-page peak collection report."
+logical_id = "2d463e5f-cf42-44fc-afa2-f0b18b474227"
+content_hash = "sha256:0d6b6a4b54f6ca8d9aa5389dcc5b87210cb1dd09f8912dc8db348c132e6a1f60"
+size = 5732
+mtime_ms = 1790639980073
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb1d30f8-d852-4bae-abcd-b7c4521e3d85/2d463e5f-cf42-44fc-afa2-f0b18b474227/016ac08d-1931-4bb8-9f05-286581b12ef7"
+storage_version_token = "1790640158071742"
+content_type = "application/pdf"
+
+[[outputs]]
+id = "kXRGGfBEZTppZO7skJjX4"
+uri = "file://reports/Peak_Sandwich_Collection_Weeks_Corrected.docx"
+type = "word_document"
+title = "Download corrected report (Word)"
+description = "Editable copy of the same corrected report."
+logical_id = "51b56e95-eb18-447a-aaff-b0c41e23b7f5"
+content_hash = "sha256:748af3b9a8a64c0a416c7b6aebebd7d8dfdbc0b141ce1c393a51b423dbf88a4e"
+size = 39423
+mtime_ms = 1790639980058
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb1d30f8-d852-4bae-abcd-b7c4521e3d85/51b56e95-eb18-447a-aaff-b0c41e23b7f5/a3488384-1bc5-4c9c-b62e-98bd0ff3cf94"
+storage_version_token = "1790640158706085"
+content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+[[outputs]]
+id = "JUx7NhiqVk4IlR3aOS_q2"
+uri = "file://reports/Peak_Sandwich_Collection_Weeks_Full_Corrected.docx"
+type = "word_document"
+title = "Full corrected collection report — Word"
+description = "Expanded editable report covering growth, locations, seasonality, peak weeks, regular weeks, and interpretation."
+logical_id = "060f41a5-1420-4e0f-a121-c4c9265d31b4"
+content_hash = "sha256:a381830ee2fd56a7acd09c00039726fcac0d8ee855d0b09faefcbf6c990ee47d"
+size = 40573
+mtime_ms = 1790640441982
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb1d30f8-d852-4bae-abcd-b7c4521e3d85/060f41a5-1420-4e0f-a121-c4c9265d31b4/229d82db-ecb8-4884-a49a-1dcf59b0ec22"
+storage_version_token = "1790640457164850"
+content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+
+[[outputs]]
+id = "8lpByYiIDtBhm0M1NwMAt"
+uri = "file://reports/Peak_Sandwich_Collection_Weeks_Full_Corrected.pdf"
+type = "pdf"
+title = "Full corrected collection report — PDF"
+description = "Three-page PDF of the full corrected report, matching the Word document."
+logical_id = "90c4e33d-c022-4e18-a81a-96f18f97f41b"
+content_hash = "sha256:85b3c83d9d14cec325b5e020458d71ec469a1fb3e972345b4fc6bc8dfeb274a9"
+size = 8717
+mtime_ms = 1790640442009
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb1d30f8-d852-4bae-abcd-b7c4521e3d85/90c4e33d-c022-4e18-a81a-96f18f97f41b/cf55213d-cabf-49ce-b33b-dd8acd96d5da"
+storage_version_token = "1790640457827078"
+content_type = "application/pdf"

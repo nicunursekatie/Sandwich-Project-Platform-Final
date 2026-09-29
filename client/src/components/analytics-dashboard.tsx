@@ -26,6 +26,7 @@ import {
   Trophy,
   HelpCircle,
   HandHeart,
+  Download,
 } from 'lucide-react';
 import type { SandwichCollection } from '@shared/schema';
 import { useAnnualSandwichGoal } from '@/hooks/useAppSettings';
@@ -46,6 +47,7 @@ import { getCollectionMonthKey } from '@/lib/date-utils';
 import { useAuth } from '@/hooks/useAuth';
 import { logger } from '@/lib/logger';
 import { useCollectionsData } from '@/hooks/useCollectionsData';
+import { downloadCsv } from '@/lib/csv-download';
 
 export default function AnalyticsDashboard() {
   // Get authenticated user - CRITICAL for API calls
@@ -339,6 +341,87 @@ export default function AnalyticsDashboard() {
     );
   }
 
+  const handleExportCsv = () => {
+    const periodLabel =
+      periodLabels[selectedPeriod as keyof typeof periodLabels] ?? 'Period Summary';
+    const rows: unknown[][] = [
+      ['Analytics Overview'],
+      ['Generated', new Date().toLocaleString()],
+      ['Period', periodLabel],
+      [
+        'Note',
+        'The period buttons label this summary. Sandwich totals, yearly breakdown, and monthly trends are not filtered by that selection.',
+      ],
+      [],
+      ['SUMMARY'],
+      ['Metric', 'Value'],
+      ['Total sandwiches', analyticsData.totalSandwiches],
+      ['Weekly average', analyticsData.avgWeekly],
+      ['Best week sandwiches', analyticsData.recordWeek.total],
+      ['Best week', analyticsData.recordWeek.weekLabel],
+      ['Total hosts', analyticsData.totalHosts],
+      ['Active hosts', analyticsData.activeHosts],
+      ['Estimated volunteer engagements', analyticsData.estimatedEngagements],
+      ['Engagement range low', analyticsData.lowEngagements],
+      ['Engagement range high', analyticsData.highEngagements],
+      ['Annual goal', annualGoal],
+      [],
+      ['YEARLY BREAKDOWN'],
+    ];
+
+    const yearHeaders = [
+      'Year',
+      'Total sandwiches',
+      'Collections',
+      'Individual sandwiches',
+      'Group sandwiches',
+      'Peak year',
+      'Incomplete',
+    ];
+    if (analyticsData.hasCompleteCollections) {
+      yearHeaders.push('Estimated volunteer engagements');
+    }
+    rows.push(yearHeaders);
+
+    for (const yearData of analyticsData.yearlyBreakdown) {
+      const row: unknown[] = [
+        yearData.year,
+        yearData.totalSandwiches,
+        yearData.totalCollections,
+        yearData.individualSandwiches,
+        yearData.groupSandwiches,
+        yearData.isPeakYear ? 'Yes' : '',
+        yearData.isIncomplete ? 'Yes' : '',
+      ];
+      if (analyticsData.hasCompleteCollections) {
+        row.push(
+          roundEngagementsForDisplay(
+            estimateVolunteerEngagement({
+              groupSandwiches: yearData.groupSandwiches,
+              individualSandwiches: yearData.individualSandwiches,
+            }).centralEngagements
+          )
+        );
+      }
+      rows.push(row);
+    }
+
+    if (!analyticsData.hasCompleteCollections) {
+      rows.push([]);
+      rows.push([
+        `Yearly totals use the ${collections.length.toLocaleString()} most recent of ${totalAvailable.toLocaleString()} collections, so earlier years are undercounted.`,
+      ]);
+    }
+
+    rows.push([], ['MONTHLY TRENDS (last 12 complete months)'], ['Month', 'Sandwiches']);
+    for (const point of analyticsData.trendData) {
+      rows.push([point.month, point.sandwiches]);
+    }
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(`analytics-overview-${stamp}.csv`, rows);
+  };
+
   return (
     <TooltipProvider>
       <div className="space-y-6 lg:space-y-8 min-w-0 overflow-hidden">
@@ -366,7 +449,7 @@ export default function AnalyticsDashboard() {
         </div>
 
       {/* Period Selection Buttons */}
-      <div className="flex flex-wrap justify-center gap-2 mb-4 px-2">
+      <div className="flex flex-wrap items-center justify-center gap-2 mb-4 px-2">
         <Button
           variant={selectedPeriod === '3months' ? 'default' : 'outline'}
           onClick={() => setSelectedPeriod('3months')}
@@ -398,6 +481,15 @@ export default function AnalyticsDashboard() {
           className="text-xs sm:text-sm"
         >
           All Time
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={handleExportCsv}
+          className="text-xs sm:text-sm"
+        >
+          <Download className="w-4 h-4 mr-1.5" />
+          Export CSV
         </Button>
       </div>
 

@@ -1403,14 +1403,23 @@ export default function SandwichCollectionLog() {
         queryKey: ['/api/sandwich-collections/stats'],
       });
 
-      // Wait briefly for the refetch to complete, then check if the item still exists
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Get the current collections from the cache
-      const cachedData = queryClient.getQueryData<{ collections: Array<{ id: number }> }>(['/api/sandwich-collections']);
-      const stillExists = cachedData?.collections?.some(c => c.id === id);
+      // The list query key includes page, filters, and sort — an exact lookup
+      // of ['/api/sandwich-collections'] always misses and used to report a
+      // failed delete as a success while the row stayed on screen. Only the
+      // active list matters; older cached pages can still contain the id.
+      const lists = queryClient
+        .getQueryCache()
+        .findAll({ queryKey: ['/api/sandwich-collections'], type: 'active' })
+        .map((query) => query.state.data as { collections?: Array<{ id: number }> } | undefined)
+        .filter(
+          (data): data is { collections: Array<{ id: number }> } =>
+            Array.isArray(data?.collections)
+        );
+      const stillExists = lists.some((data) =>
+        data.collections.some((c) => c.id === id)
+      );
 
-      if (!stillExists) {
+      if (lists.length > 0 && !stillExists) {
         // The deletion actually worked! Show success message instead of error
         trackDelete('sandwich_collection', 'Collections', 'Collection Log', id.toString());
         toast({
@@ -3435,28 +3444,36 @@ export default function SandwichCollectionLog() {
                           </Tooltip>
                         )}
                         {canDeleteCollection(user, collection) && (
-                          <ConfirmationDialog
-                            trigger={
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    aria-label="Delete this entry"
-                                    className="h-11 w-11 sm:h-8 sm:w-8 p-0 text-gray-600 hover:text-[#A31C41] hover:bg-red-50 bg-white border-gray-300"
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Delete this entry</TooltipContent>
-                              </Tooltip>
-                            }
-                            title="Delete Collection Entry"
-                            description="Are you sure you want to delete this collection? You can undo this action within 5 seconds."
-                            confirmText="Delete"
-                            variant="destructive"
-                            onConfirm={() => handleDelete(collection.id)}
-                          />
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              {/* Span, not the button: the confirm dialog must
+                                  own the button so its click handler actually
+                                  lands on a DOM node. Tooltip.Root drops
+                                  unknown props, so nesting it inside the
+                                  dialog trigger swallowed the click. */}
+                              <span className="inline-flex">
+                                <ConfirmationDialog
+                                  trigger={
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="sm"
+                                      aria-label="Delete this entry"
+                                      className="h-11 w-11 sm:h-8 sm:w-8 p-0 text-gray-600 hover:text-[#A31C41] hover:bg-red-50 bg-white border-gray-300"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  }
+                                  title="Delete Collection Entry"
+                                  description="Are you sure you want to delete this collection? You can undo this action within 5 seconds."
+                                  confirmText="Delete"
+                                  variant="destructive"
+                                  onConfirm={() => handleDelete(collection.id)}
+                                />
+                              </span>
+                            </TooltipTrigger>
+                            <TooltipContent>Delete this entry</TooltipContent>
+                          </Tooltip>
                         )}
                       </div>
                     </TooltipProvider>

@@ -26,6 +26,11 @@ User reports a page/component (e.g. the events view) "stalling out / failing to 
 - CSP `connect-src` violations — usually just Google Analytics (`www.google.com/g/collect`, `region1.google-analytics.com`) being denied; not the cause of stalling.
 - socket.io `ERR_NAME_NOT_RESOLVED` / `ERR_NETWORK_CHANGED` — these two specifically mean the **client's own network** dropped/changed mid-session (socket connects to `window.location.origin`), not a server bug.
 
+## Repeated forced logouts can be a DB symptom
+- A brief DB outage can make a signed-in user lookup fail while the session still exists. If that error is treated as "user not found/inactive", the app destroys the session and sends the user back to login. Look for a user-lookup failure immediately before `AUTH REJECTED` in deployment logs; repeated browser cookie clearing will not solve it.
+- **Why:** During a September 2026 production blip, session-store timeouts and user-lookup failures coincided with auth rejections seconds after successful logins, without a fresh login-code release.
+- **How to apply:** Distinguish a confirmed missing/inactive user from a transient lookup failure; preserve the session during temporary DB errors and return a retryable error instead.
+
 ## Disposition
 - These incidents are usually **transient and self-recover**. Confirm recovery by log silence (no new DB errors) + resumed normal endpoint traffic, then have the user reload.
 - Only consider code work if it recurs: graceful error/retry UI instead of an infinite spinner, and/or hardening the session-store TCP pool (the chronic low-grade source of heartbeat 500s).

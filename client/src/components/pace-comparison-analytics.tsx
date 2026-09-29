@@ -12,7 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { TrendingUp, TrendingDown, Target, Calendar, Pencil, Check, X, Minus, ArrowRight } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, Calendar, Pencil, Check, X, Minus, ArrowRight, Download } from 'lucide-react';
 import { useAnnualSandwichGoal, useUpdateAppSetting } from '@/hooks/useAppSettings';
 import { useAuth } from '@/hooks/useAuth';
 import { ANNUAL_SANDWICH_GOAL_KEY } from '@shared/schema';
@@ -33,6 +33,7 @@ import {
   calculateTotalSandwiches,
   parseCollectionDate,
 } from '@/lib/analytics-utils';
+import { downloadCsv } from '@/lib/csv-download';
 
 
 type PresetKey = 'ytd' | 'mtd' | 'qtd' | 'last7' | 'last30' | 'last90' | 'custom';
@@ -399,6 +400,93 @@ export default function PaceComparisonAnalytics() {
   const monthlyYtdPrior = monthly?.reduce((sum, m) => sum + m.prior, 0) ?? 0;
   const monthlyYtdPct = pct(monthlyYtdCurrent, monthlyYtdPrior);
 
+  const handleExportCsv = () => {
+    const rows: unknown[][] = [
+      ['Pace & Comparison'],
+      ['Generated', new Date().toLocaleString()],
+      ['Period', currentPeriod.label],
+      ['Current window', currentRangeLabel],
+      ['Same dates last year', lyRangeLabel],
+      ['Prior period', ppRangeLabel],
+      [],
+      ['SUMMARY'],
+      [
+        'Metric',
+        'This period',
+        'Same dates last year',
+        'Change vs last year',
+        `Prior ${ppDayCount} days`,
+        'Change vs prior period',
+      ],
+      [
+        'Total sandwiches',
+        curr.total,
+        ly.total,
+        fmtPct(yoyPctTotal),
+        pp.total,
+        fmtPct(ppPctTotal),
+      ],
+      [
+        'Individual',
+        curr.individual,
+        ly.individual,
+        fmtPct(pct(curr.individual, ly.individual)),
+        pp.individual,
+        fmtPct(pct(curr.individual, pp.individual)),
+      ],
+      [
+        'Group events',
+        curr.group,
+        ly.group,
+        fmtPct(pct(curr.group, ly.group)),
+        pp.group,
+        fmtPct(pct(curr.group, pp.group)),
+      ],
+      ['Collection entries', curr.entries, ly.entries, '', pp.entries, ''],
+    ];
+
+    if (projection) {
+      rows.push(
+        [],
+        ['YEAR-END PACE'],
+        ['Projected total', projection.projected],
+        ['Annual goal', ANNUAL_GOAL],
+        ['Day of year', projection.dayOfYear],
+        ['Days in year', projection.daysInYear],
+        [
+          'Percent of goal',
+          `${((projection.projected / ANNUAL_GOAL) * 100).toFixed(0)}%`,
+        ]
+      );
+    }
+
+    if (monthly) {
+      rows.push(
+        [],
+        ['MONTHLY COMPARISON'],
+        ['Month', String(now.getFullYear()), String(now.getFullYear() - 1), 'Change']
+      );
+      for (const bucket of monthly) {
+        rows.push([
+          bucket.month,
+          bucket.current,
+          bucket.prior,
+          fmtPct(pct(bucket.current, bucket.prior)),
+        ]);
+      }
+      rows.push(['Year to date', monthlyYtdCurrent, monthlyYtdPrior, fmtPct(monthlyYtdPct)]);
+    }
+
+    if (narrative.length > 0) {
+      rows.push([], ['NOTES']);
+      for (const line of narrative) {
+        rows.push([line]);
+      }
+    }
+
+    downloadCsv(`pace-comparison-${toISODate(now)}.csv`, rows);
+  };
+
   return (
     <div className="space-y-5">
       {/* Period picker — compact */}
@@ -413,9 +501,15 @@ export default function PaceComparisonAnalytics() {
                 Pick a window, then compare totals to the same dates last year and the immediately preceding period.
               </CardDescription>
             </div>
-            <Badge variant="outline" className="w-fit shrink-0 bg-slate-50 text-slate-700 font-normal">
-              {currentPeriod.label} · {currentRangeLabel}
-            </Badge>
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <Button variant="outline" size="sm" onClick={handleExportCsv}>
+                <Download className="w-4 h-4 mr-1.5" />
+                Export CSV
+              </Button>
+              <Badge variant="outline" className="w-fit shrink-0 bg-slate-50 text-slate-700 font-normal">
+                {currentPeriod.label} · {currentRangeLabel}
+              </Badge>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
