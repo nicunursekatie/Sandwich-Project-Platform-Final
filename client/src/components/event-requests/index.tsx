@@ -560,11 +560,13 @@ const EventRequestsManagementContent: React.FC = () => {
 
   return (
     <TooltipProvider>
-      <div className="space-y-4 premium-gradient-subtle min-h-screen p-2 sm:p-4" data-event-requests-root>
-        {/* Header — title left, admin actions right */}
-        <div className="premium-card p-4 sm:p-6">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div>
+      <div className="space-y-4 premium-gradient-subtle min-h-screen min-w-0 max-w-full p-2 sm:p-4" data-event-requests-root>
+        {/* Header — title left, admin actions right. The action group wraps
+            onto its own line when it no longer fits beside the title, so the
+            buttons stay inside the card. */}
+        <div className="premium-card p-4 sm:p-6 min-w-0 max-w-full">
+          <div className="flex min-w-0 flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 max-w-full">
               <div className="flex items-center gap-2">
                 <h1 className="premium-text-h1">Event Requests Management</h1>
                 <Tooltip>
@@ -584,13 +586,13 @@ const EventRequestsManagementContent: React.FC = () => {
               </p>
             </div>
 
-            {/* Admin/utility actions — grouped right */}
-            <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+            {/* Admin/utility actions — grouped right, wrapping inside the card */}
+            <div className="flex min-w-[min(100%,20rem)] max-w-full flex-1 flex-wrap items-center justify-end gap-2">
               {canSyncEvents && (
                 <button
                   onClick={() => syncFromSheetsMutation.mutate()}
                   disabled={syncFromSheetsMutation.isPending}
-                  className="premium-btn-outline text-sm"
+                  className="premium-btn-outline text-sm whitespace-nowrap shrink-0"
                   title="Sync new event requests from Google Sheets (safe - won't create duplicates)"
                 >
                   <RefreshCw className={`w-4 h-4 ${syncFromSheetsMutation.isPending ? 'animate-spin' : ''}`} />
@@ -600,7 +602,7 @@ const EventRequestsManagementContent: React.FC = () => {
               {canSyncEvents && (
                 <button
                   onClick={() => setPlanningImportOpen(true)}
-                  className="premium-btn-outline text-sm"
+                  className="premium-btn-outline text-sm whitespace-nowrap shrink-0"
                   title="Compare the planning sheet with the app and import missing events (review first — nothing is added until you approve)"
                   data-testid="button-planning-sheet-import"
                 >
@@ -615,7 +617,7 @@ const EventRequestsManagementContent: React.FC = () => {
               {user?.role === 'super_admin' && (
                 <button
                   onClick={() => setPlanningGapsOpen(true)}
-                  className="premium-btn-outline text-sm"
+                  className="premium-btn-outline text-sm whitespace-nowrap shrink-0"
                   title="Read-only report: planning-sheet group events not represented in the app (nothing is changed)"
                   data-testid="button-planning-sheet-gaps"
                 >
@@ -660,7 +662,7 @@ const EventRequestsManagementContent: React.FC = () => {
                       toast({ title: 'Export complete' });
                     } catch { toast({ title: 'Export failed', variant: 'destructive' }); }
                   }}
-                  className="premium-btn-outline text-sm disabled:opacity-50"
+                  className="premium-btn-outline text-sm whitespace-nowrap shrink-0 disabled:opacity-50"
                   data-testid="button-export-events"
                   title="Download a spreadsheet of the events shown on this tab"
                 >
@@ -670,7 +672,7 @@ const EventRequestsManagementContent: React.FC = () => {
               )}
               <button
                 onClick={openManualEventRequest}
-                className="premium-btn-outline text-sm"
+                className="premium-btn-outline text-sm whitespace-nowrap shrink-0"
                 data-testid="button-add-manual-event"
               >
                 <Plus className="w-4 h-4" />
@@ -678,7 +680,7 @@ const EventRequestsManagementContent: React.FC = () => {
               </button>
               <button
                 onClick={() => setShowVolunteerOpportunities(true)}
-                className="premium-btn-primary flex-shrink-0"
+                className="premium-btn-primary whitespace-nowrap shrink-0"
                 style={{ backgroundColor: '#007E8C' }}
               >
                 <Users className="w-4 h-4" />

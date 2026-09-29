@@ -183,7 +183,7 @@ export function VanConflictsButton({ isMobile = false }: VanConflictsButtonProps
     <>
       <button
         onClick={() => setOpen(true)}
-        className="premium-btn-outline text-sm"
+        className="premium-btn-outline text-sm whitespace-nowrap shrink-0"
         title="Check for dates with multiple van-needed events"
       >
         <Truck className="w-4 h-4" />
