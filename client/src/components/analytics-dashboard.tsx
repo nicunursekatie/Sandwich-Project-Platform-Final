@@ -342,9 +342,16 @@ export default function AnalyticsDashboard() {
   }
 
   const handleExportCsv = () => {
+    const periodLabel =
+      periodLabels[selectedPeriod as keyof typeof periodLabels] ?? 'Period Summary';
     const rows: unknown[][] = [
       ['Analytics Overview'],
       ['Generated', new Date().toLocaleString()],
+      ['Period', periodLabel],
+      [
+        'Note',
+        'The period buttons label this summary. Sandwich totals, yearly breakdown, and monthly trends are not filtered by that selection.',
+      ],
       [],
       ['SUMMARY'],
       ['Metric', 'Value'],

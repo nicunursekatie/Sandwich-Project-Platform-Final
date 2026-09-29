@@ -1,7 +1,7 @@
 /** Escape a cell for CSV, including spreadsheet formula injection. */
 export function escapeCsvCell(value: unknown): string {
   let str = String(value ?? '');
-  if (/^[=+\-@\t\r]/.test(str)) {
+  if (/^[=+\-@\t\r\n]/.test(str)) {
     str = `'${str}`;
   }
   return `"${str.replace(/"/g, '""')}"`;

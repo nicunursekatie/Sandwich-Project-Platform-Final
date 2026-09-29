@@ -309,12 +309,15 @@ interface PanelProps {
   description: string;
 }
 
+/** Matches the ranked lists shown on the tab. */
+const DISPLAYED_WEEK_COUNT = 20;
+
 function Panel({ title, icon, weeks, variant, description }: PanelProps) {
   // Top 20, sorted by avg (asc for low, desc for high)
   const sorted = [...weeks].sort((a, b) =>
     variant === 'low' ? a.avgTotal - b.avgTotal : b.avgTotal - a.avgTotal,
   );
-  const top = sorted.slice(0, 20);
+  const top = sorted.slice(0, DISPLAYED_WEEK_COUNT);
 
   // Chart data
   const chartData = top.map((w) => ({
@@ -485,12 +488,12 @@ export default function LowHighWeeksTab() {
         : `${Array.from(selectedYears).sort((a, b) => a - b).join(', ')}`;
 
   const handleExportCsv = () => {
-    const lowWeeks = [...prepared.aggregatedWeeks].sort(
-      (a, b) => a.avgTotal - b.avgTotal,
-    );
-    const highWeeks = [...prepared.aggregatedWeeks].sort(
-      (a, b) => b.avgTotal - a.avgTotal,
-    );
+    const lowWeeks = [...prepared.aggregatedWeeks]
+      .sort((a, b) => a.avgTotal - b.avgTotal)
+      .slice(0, DISPLAYED_WEEK_COUNT);
+    const highWeeks = [...prepared.aggregatedWeeks]
+      .sort((a, b) => b.avgTotal - a.avgTotal)
+      .slice(0, DISPLAYED_WEEK_COUNT);
 
     const weekHeaders = [
       'Rank',
