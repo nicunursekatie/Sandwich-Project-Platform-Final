@@ -1,6 +1,9 @@
 import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { TileLayer, useMap } from 'react-leaflet';
+import { installLeafletTeardownGuard } from '@/components/maps/leaflet-teardown';
+
+installLeafletTeardownGuard();
 
 type MapTileConfig =
   | { provider: 'google'; attribution: string }
