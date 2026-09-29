@@ -8,7 +8,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { ChevronsUpDown, TrendingDown, TrendingUp } from 'lucide-react';
+import { ChevronsUpDown, Download, TrendingDown, TrendingUp } from 'lucide-react';
 import {
   Bar,
   BarChart,
@@ -25,6 +25,7 @@ import {
   getWeekStartFriday,
 } from '@/lib/analytics-utils';
 import type { SandwichCollection } from '@shared/schema';
+import { downloadCsv } from '@/lib/csv-download';
 
 // Color palette
 const COLORS = {
@@ -483,6 +484,99 @@ export default function LowHighWeeksTab() {
         ? Array.from(selectedYears)[0].toString()
         : `${Array.from(selectedYears).sort((a, b) => a - b).join(', ')}`;
 
+  const handleExportCsv = () => {
+    const lowWeeks = [...prepared.aggregatedWeeks].sort(
+      (a, b) => a.avgTotal - b.avgTotal,
+    );
+    const highWeeks = [...prepared.aggregatedWeeks].sort(
+      (a, b) => b.avgTotal - a.avgTotal,
+    );
+
+    const weekHeaders = [
+      'Rank',
+      'ISO week',
+      'Typical dates',
+      'Avg total',
+      'Avg individual',
+      'Avg group',
+      'Years counted',
+      'Times in this band',
+      'Percent of years',
+      'Label',
+    ];
+
+    const rows: unknown[][] = [
+      ['Historically Low & High Collection Weeks'],
+      ['Generated', new Date().toLocaleString()],
+      ['Years included', yearsLabel],
+      ['Average weekly total', prepared.overallAvg],
+      ['Low threshold (33rd percentile)', prepared.lowThreshold],
+      ['High threshold (67th percentile)', prepared.highThreshold],
+      ['Note', 'Weeks with fewer than 3 records are excluded as incomplete.'],
+      [],
+    ];
+
+    const pushWeeks = (
+      title: string,
+      weeks: AggregatedWeek[],
+      variant: 'low' | 'high',
+    ) => {
+      rows.push([title]);
+      rows.push(weekHeaders);
+      weeks.forEach((week, index) => {
+        const share = variant === 'low' ? week.pctLow : week.pctHigh;
+        const times = variant === 'low' ? week.lowYearsCount : week.highYearsCount;
+        rows.push([
+          index + 1,
+          week.isoWeek,
+          week.sampleDateRange,
+          week.avgTotal,
+          week.avgIndividual,
+          week.avgGroup,
+          week.yearsCount,
+          times,
+          `${share}%`,
+          riskInfo(share, variant).label,
+        ]);
+      });
+      rows.push([]);
+      rows.push([`${title} — per year`]);
+      rows.push([
+        'ISO week',
+        'Typical dates',
+        'Year',
+        'Week start',
+        'Individual',
+        'Group',
+        'Total',
+      ]);
+      for (const week of weeks) {
+        for (const instance of week.instances) {
+          rows.push([
+            week.isoWeek,
+            week.sampleDateRange,
+            instance.year,
+            instance.weekStart,
+            instance.individual,
+            instance.group,
+            instance.total,
+          ]);
+        }
+      }
+      rows.push([]);
+    };
+
+    if (viewMode === 'both' || viewMode === 'low') {
+      pushWeeks('HISTORICALLY LOW WEEKS', lowWeeks, 'low');
+    }
+    if (viewMode === 'both' || viewMode === 'high') {
+      pushWeeks('HISTORICALLY HIGH WEEKS', highWeeks, 'high');
+    }
+
+    const stamp = new Date().toISOString().slice(0, 10);
+    downloadCsv(`low-high-weeks-${stamp}.csv`, rows);
+  };
+
   return (
     <div className="space-y-4">
       {/* Header */}
@@ -559,6 +653,15 @@ export default function LowHighWeeksTab() {
         </div>
 
         <div className="flex items-center gap-1 ml-auto">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportCsv}
+            className="text-xs"
+          >
+            <Download className="w-3.5 h-3.5 mr-1" />
+            Export CSV
+          </Button>
           <span className="text-xs font-medium text-slate-600 mr-1">View:</span>
           <Button
             variant={viewMode === 'both' ? 'default' : 'outline'}
