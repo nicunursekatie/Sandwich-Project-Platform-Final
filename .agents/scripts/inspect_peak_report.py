@@ -14,3 +14,9 @@ for index, page in enumerate(corrected):
     path = output.parent / f"peak_report_corrected_page_{index + 1}.png"
     page.get_pixmap(matrix=fitz.Matrix(1.5, 1.5), alpha=False).save(path)
     print(path)
+
+full = fitz.open("reports/Peak_Sandwich_Collection_Weeks_Full_Corrected.pdf")
+for index, page in enumerate(full):
+    path = output.parent / f"peak_report_full_page_{index + 1}.png"
+    page.get_pixmap(matrix=fitz.Matrix(1.2, 1.2), alpha=False).save(path)
+    print(path)
