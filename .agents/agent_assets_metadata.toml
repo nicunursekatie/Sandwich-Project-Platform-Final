@@ -56,3 +56,31 @@ mtime_ms = 1788984919214
 storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb1d30f8-d852-4bae-abcd-b7c4521e3d85/e570f478-1399-4218-9661-448245766f4f/c9ca91e7-dc29-42c6-adb0-0721db6bf3e4"
 storage_version_token = "1788984920069287"
 content_type = "text/csv"
+
+[[outputs]]
+id = "4-sJf_ZdpkS-CxHJfGy3g"
+uri = "file://reports/Peak_Sandwich_Collection_Weeks_Corrected.pdf"
+type = "pdf"
+title = "Corrected peak sandwich collection report (PDF)"
+description = "Two-page fact-checked report using production collection logs through September 22, 2026."
+logical_id = "2d463e5f-cf42-44fc-afa2-f0b18b474227"
+content_hash = "sha256:0d6b6a4b54f6ca8d9aa5389dcc5b87210cb1dd09f8912dc8db348c132e6a1f60"
+size = 5732
+mtime_ms = 1790639980073
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb1d30f8-d852-4bae-abcd-b7c4521e3d85/2d463e5f-cf42-44fc-afa2-f0b18b474227/6700dd66-3bdf-47d1-8160-12d9ce007019"
+storage_version_token = "1790640058283988"
+content_type = "application/pdf"
+
+[[outputs]]
+id = "kXRGGfBEZTppZO7skJjX4"
+uri = "file://reports/Peak_Sandwich_Collection_Weeks_Corrected.docx"
+type = "word_document"
+title = "Corrected peak sandwich collection report (Word)"
+description = "Editable Word version of the corrected report, with data-source and counting notes."
+logical_id = "51b56e95-eb18-447a-aaff-b0c41e23b7f5"
+content_hash = "sha256:748af3b9a8a64c0a416c7b6aebebd7d8dfdbc0b141ce1c393a51b423dbf88a4e"
+size = 39423
+mtime_ms = 1790639980058
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb1d30f8-d852-4bae-abcd-b7c4521e3d85/51b56e95-eb18-447a-aaff-b0c41e23b7f5/af5bb2db-45ad-40e2-be06-5600e04dcaed"
+storage_version_token = "1790640058982515"
+content_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
