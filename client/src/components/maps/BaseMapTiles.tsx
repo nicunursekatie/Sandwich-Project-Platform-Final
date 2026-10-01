@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { TileLayer, useMap } from 'react-leaflet';
 import { installLeafletTeardownGuard } from '@/components/maps/leaflet-teardown';
+import { isMapReady } from '@/components/maps/map-coords';
 
 installLeafletTeardownGuard();
 
@@ -68,13 +69,33 @@ function GoogleMapCredits({ initialCopyright }: { initialCopyright: string }) {
     const schedule = () => {
       if (timer) clearTimeout(timer);
       timer = setTimeout(async () => {
-        const bounds = map.getBounds();
+        if (cancelled || !isMapReady(map)) return;
+
+        // getBounds() uses layerPointToLatLng. On a zero-size or not-yet-loaded
+        // map that throws "Invalid LatLng object: (NaN, NaN)" and crashes the page.
+        let north: number;
+        let south: number;
+        let east: number;
+        let west: number;
+        let zoom: number;
+        try {
+          const bounds = map.getBounds();
+          north = bounds.getNorth();
+          south = bounds.getSouth();
+          east = bounds.getEast();
+          west = bounds.getWest();
+          zoom = map.getZoom();
+        } catch {
+          return;
+        }
+        if (![north, south, east, west, zoom].every(Number.isFinite)) return;
+
         const params = new URLSearchParams({
-          north: bounds.getNorth().toFixed(4),
-          south: bounds.getSouth().toFixed(4),
-          east: bounds.getEast().toFixed(4),
-          west: bounds.getWest().toFixed(4),
-          zoom: String(Math.round(map.getZoom())),
+          north: north.toFixed(4),
+          south: south.toFixed(4),
+          east: east.toFixed(4),
+          west: west.toFixed(4),
+          zoom: String(Math.round(zoom)),
         });
         try {
           const response = await fetch(`/api/maps/copyright?${params}`, {
