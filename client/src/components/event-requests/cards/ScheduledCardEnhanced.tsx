@@ -556,7 +556,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     return null;
   }, [request.customTspContact, request.tspContactAssigned, request.tspContact, resolveUserName]);
 
-  const missingInfo = getMissingIntakeInfo(request);
+  // Address is flagged by the dedicated top-right "No Location" badge, so drop
+  // it here to avoid doubling up (the shared check also only flags it when
+  // drivers are needed, which made it show inconsistently).
+  const missingInfo = getMissingIntakeInfo(request).filter((item) => item !== 'Address');
 
   const formatDateForInput = (dateStr: string) => {
     if (!dateStr) return '';
