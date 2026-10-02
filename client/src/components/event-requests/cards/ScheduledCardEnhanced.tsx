@@ -111,7 +111,7 @@ import { RefreshCw, Copy, Ban, MapPinOff } from 'lucide-react';
 import type { RecipientAllocation } from '../RecipientAllocationEditor';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
-import { CardActionRow, ActionRowSpacer } from './card-ui';
+import { CardActionRow, ActionRowSpacer, InfoBadge } from './card-ui';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -1102,29 +1102,19 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
             </div>
 
             {/* No-location flag — pinned top-right so a scheduled event missing
-                its address stands out when scanning the list. */}
-            {!request.eventAddress?.trim() && (
-              <Badge
+                its address stands out when scanning the list. Hidden while the
+                address is being edited so re-clicking it can't wipe the draft. */}
+            {!request.eventAddress?.trim() && !(isEditingThisCard && editingField === 'eventAddress') && (
+              <InfoBadge
+                tone="urgent"
+                icon={MapPinOff}
                 onClick={canEdit ? (e) => { e.stopPropagation(); startEditing('eventAddress', ''); } : undefined}
-                role={canEdit ? 'button' : undefined}
-                tabIndex={canEdit ? 0 : undefined}
-                onKeyDown={
-                  canEdit
-                    ? (e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
-                          e.preventDefault();
-                          e.currentTarget.click();
-                        }
-                      }
-                    : undefined
-                }
-                className={`self-end sm:self-start shrink-0 order-first sm:order-none bg-red-600 hover:bg-red-600 text-white border border-red-700 shadow-sm text-xs sm:text-sm font-semibold inline-flex items-center gap-1 whitespace-nowrap ${canEdit ? 'cursor-pointer hover:opacity-90' : ''}`}
+                className={`self-end sm:self-start shrink-0 order-first sm:order-none bg-red-600 hover:bg-red-600 text-white border-red-700 shadow-sm text-xs sm:text-sm font-semibold whitespace-nowrap sm:whitespace-nowrap ${canEdit ? 'hover:opacity-90' : ''}`}
                 title={canEdit ? 'No event location — click to add an address' : 'No event location'}
                 data-testid="badge-no-location"
               >
-                <MapPinOff className="w-3.5 h-3.5" aria-hidden="true" />
                 No Location
-              </Badge>
+              </InfoBadge>
             )}
           </div>
 
