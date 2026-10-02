@@ -107,11 +107,11 @@ import { Flag } from 'lucide-react';
 import { ProposeToSheetButton } from '@/components/propose-to-sheet-button';
 import { InlineRecipientAllocationEditor } from '../InlineRecipientAllocationEditor';
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
-import { RefreshCw, Copy, Ban } from 'lucide-react';
+import { RefreshCw, Copy, Ban, MapPinOff } from 'lucide-react';
 import type { RecipientAllocation } from '../RecipientAllocationEditor';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
-import { CardActionRow, ActionRowSpacer } from './card-ui';
+import { CardActionRow, ActionRowSpacer, InfoBadge } from './card-ui';
 
 interface ScheduledCardEnhancedProps {
   request: EventRequest;
@@ -556,7 +556,10 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
     return null;
   }, [request.customTspContact, request.tspContactAssigned, request.tspContact, resolveUserName]);
 
-  const missingInfo = getMissingIntakeInfo(request);
+  // Address is flagged by the dedicated top-right "No Location" badge, so drop
+  // it here to avoid doubling up (the shared check also only flags it when
+  // drivers are needed, which made it show inconsistently).
+  const missingInfo = getMissingIntakeInfo(request).filter((item) => item !== 'Address');
 
   const formatDateForInput = (dateStr: string) => {
     if (!dateStr) return '';
@@ -1098,6 +1101,21 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               ) : null}
             </div>
 
+            {/* No-location flag — pinned top-right so a scheduled event missing
+                its address stands out when scanning the list. Hidden while the
+                address is being edited so re-clicking it can't wipe the draft. */}
+            {!request.eventAddress?.trim() && !(isEditingThisCard && editingField === 'eventAddress') && (
+              <InfoBadge
+                tone="urgent"
+                icon={MapPinOff}
+                onClick={canEdit ? (e) => { e.stopPropagation(); startEditing('eventAddress', ''); } : undefined}
+                className={`self-end sm:self-start shrink-0 order-first sm:order-none bg-red-600 hover:bg-red-600 text-white border-red-700 shadow-sm text-xs sm:text-sm font-semibold whitespace-nowrap sm:whitespace-nowrap ${canEdit ? 'hover:opacity-90' : ''}`}
+                title={canEdit ? 'No event location — click to add an address' : 'No event location'}
+                data-testid="badge-no-location"
+              >
+                No Location
+              </InfoBadge>
+            )}
           </div>
 
           {/* Rescheduled Badge */}
