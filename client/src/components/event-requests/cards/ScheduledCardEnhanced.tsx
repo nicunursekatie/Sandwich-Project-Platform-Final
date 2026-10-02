@@ -107,7 +107,7 @@ import { Flag } from 'lucide-react';
 import { ProposeToSheetButton } from '@/components/propose-to-sheet-button';
 import { InlineRecipientAllocationEditor } from '../InlineRecipientAllocationEditor';
 import { useReturningOrganization } from '@/hooks/use-returning-organization';
-import { RefreshCw, Copy, Ban } from 'lucide-react';
+import { RefreshCw, Copy, Ban, MapPinOff } from 'lucide-react';
 import type { RecipientAllocation } from '../RecipientAllocationEditor';
 import { getEffectiveEventDate } from '@shared/event-validation-utils';
 import { isScheduledOrRescheduled } from '@shared/event-status-workflow';
@@ -1098,6 +1098,19 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
               ) : null}
             </div>
 
+            {/* No-location flag — pinned top-right so a scheduled event missing
+                its address stands out when scanning the list. */}
+            {!request.eventAddress?.trim() && (
+              <Badge
+                onClick={(e) => { e.stopPropagation(); if (canEdit) startEditing('eventAddress', ''); }}
+                className={`self-end sm:self-start shrink-0 order-first sm:order-none bg-red-600 hover:bg-red-600 text-white border border-red-700 shadow-sm text-xs sm:text-sm font-semibold inline-flex items-center gap-1 whitespace-nowrap ${canEdit ? 'cursor-pointer hover:opacity-90' : ''}`}
+                title={canEdit ? 'No event location — click to add an address' : 'No event location'}
+                data-testid="badge-no-location"
+              >
+                <MapPinOff className="w-3.5 h-3.5" aria-hidden="true" />
+                No Location
+              </Badge>
+            )}
           </div>
 
           {/* Rescheduled Badge */}
