@@ -1105,7 +1105,19 @@ export const ScheduledCardEnhanced: React.FC<ScheduledCardEnhancedProps> = ({
                 its address stands out when scanning the list. */}
             {!request.eventAddress?.trim() && (
               <Badge
-                onClick={(e) => { e.stopPropagation(); if (canEdit) startEditing('eventAddress', ''); }}
+                onClick={canEdit ? (e) => { e.stopPropagation(); startEditing('eventAddress', ''); } : undefined}
+                role={canEdit ? 'button' : undefined}
+                tabIndex={canEdit ? 0 : undefined}
+                onKeyDown={
+                  canEdit
+                    ? (e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault();
+                          e.currentTarget.click();
+                        }
+                      }
+                    : undefined
+                }
                 className={`self-end sm:self-start shrink-0 order-first sm:order-none bg-red-600 hover:bg-red-600 text-white border border-red-700 shadow-sm text-xs sm:text-sm font-semibold inline-flex items-center gap-1 whitespace-nowrap ${canEdit ? 'cursor-pointer hover:opacity-90' : ''}`}
                 title={canEdit ? 'No event location — click to add an address' : 'No event location'}
                 data-testid="badge-no-location"
