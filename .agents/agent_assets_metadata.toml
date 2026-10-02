@@ -112,3 +112,17 @@ mtime_ms = 1790640442009
 storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb1d30f8-d852-4bae-abcd-b7c4521e3d85/90c4e33d-c022-4e18-a81a-96f18f97f41b/cf55213d-cabf-49ce-b33b-dd8acd96d5da"
 storage_version_token = "1790640457827078"
 content_type = "application/pdf"
+
+[[outputs]]
+id = "l5S57BSFlDC2LmcjUgqVz"
+uri = "file://exports/2026-missing-week-estimates-through-september.csv"
+type = "table"
+title = "2026 missing-week estimates — excluding Flowery Branch"
+description = "Week-by-week estimates through the completed September 23–29 reporting week. Estimated additions total 20,227 sandwiches; no collection records were changed."
+logical_id = "e3db4f33-335a-42db-9a86-4848bf4ff720"
+content_hash = "sha256:2fb867d6737e9c4ceb5979791222e0928fd1935e592562621a905d6dc42e97a9"
+size = 5425
+mtime_ms = 1790962587068
+storage_uri = "gcs://replit-rams-assets-worf/rams/assets/repl:bb1d30f8-d852-4bae-abcd-b7c4521e3d85/e3db4f33-335a-42db-9a86-4848bf4ff720/f52b1d1b-33b7-449c-bc2c-72368d155c23"
+storage_version_token = "1790962612284459"
+content_type = "text/csv"
