@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { z } from 'zod';
-import { eq, desc, sql } from 'drizzle-orm';
+import { eq, desc, sql, and, or, lt, getTableColumns } from 'drizzle-orm';
 import { workLogs, workLogTimers } from '@shared/schema';
 import { db, executeRawSql } from '../db';
 import { canEditWorkLog, PERMISSIONS } from '@shared/auth-utils';
@@ -87,6 +87,74 @@ router.get('/', async (req, res) => {
         .json({ error: 'Insufficient permissions to view work logs' });
     }
 
+    if (!canViewAll && !isAdmin && !userId) {
+      return res.status(400).json({ error: 'User context missing' });
+    }
+    const scope = canViewAll || isAdmin ? sql`true` : eq(workLogs.userId, userId!);
+    if (req.query.summary === 'true') {
+      const beforeWeek = req.query.beforeWeek;
+      if (beforeWeek !== undefined && (typeof beforeWeek !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(beforeWeek) || !Number.isFinite(Date.parse(beforeWeek)))) {
+        return res.status(400).json({ error: 'Invalid week cursor' });
+      }
+      // Aggregate the full authorized history, but return at most 50 week headings.
+      const [report] = await executeRawSql<{
+        totals: { week: number; month: number; all: number };
+        currentWeek: string;
+        groups: { key: string; minutes: number; count: number }[];
+      }>(sql`
+        WITH dates AS (
+          SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date AS today
+        ), periods AS (
+          SELECT today, (date_trunc('week', today - interval '2 days') + interval '2 days')::date AS week FROM dates
+        ), entries AS (
+          SELECT (${workLogs.workDate} AT TIME ZONE 'America/New_York')::date AS day,
+                 ${workLogs.hours} * 60 + ${workLogs.minutes} AS minutes
+          FROM ${workLogs} WHERE ${scope}
+        ), weeks AS (
+          SELECT (date_trunc('week', day - interval '2 days') + interval '2 days')::date AS week,
+                 SUM(minutes) AS minutes, COUNT(*) AS count FROM entries GROUP BY 1
+        ), page AS (
+          SELECT * FROM weeks
+          WHERE ${beforeWeek === undefined ? sql`true` : sql`week < ${beforeWeek}::date`}
+          ORDER BY week DESC LIMIT 51
+        )
+        SELECT json_build_object(
+          'week', COALESCE(SUM(minutes) FILTER (WHERE day >= periods.week AND day < periods.week + 7), 0),
+          'month', COALESCE(SUM(minutes) FILTER (WHERE date_trunc('month', day) = date_trunc('month', periods.today)), 0),
+          'all', COALESCE(SUM(minutes), 0)
+        ) AS totals,
+        to_char(periods.week, 'YYYY-MM-DD') AS "currentWeek",
+        COALESCE((SELECT json_agg(json_build_object('key', to_char(week, 'YYYY-MM-DD'), 'minutes', minutes, 'count', count) ORDER BY week DESC) FROM page), '[]'::json) AS groups
+        FROM periods LEFT JOIN entries ON true GROUP BY periods.week, periods.today
+      `);
+      const groups = report.groups.slice(0, 50);
+      return res.json({ ...report, groups, nextWeek: report.groups.length > 50 ? groups[groups.length - 1].key : null });
+    }
+
+    if (req.query.week !== undefined) {
+      const week = req.query.week;
+      const beforeDate = req.query.beforeDate;
+      const beforeId = Number(req.query.beforeId);
+      if (typeof week !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(week) || !Number.isFinite(Date.parse(week)) || new Date(week).getUTCDay() !== 3 ||
+          (beforeDate !== undefined && (typeof beforeDate !== 'string' || !Number.isFinite(Date.parse(beforeDate)) || !Number.isSafeInteger(beforeId) || beforeId < 1))) {
+        return res.status(400).json({ error: 'Invalid week or entry cursor' });
+      }
+      const localDate = sql`(${workLogs.workDate} AT TIME ZONE 'America/New_York')::date`;
+      const logs = await db
+        .select({ ...getTableColumns(workLogs), cursorDate: sql<string>`to_char(${workLogs.workDate} AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')` })
+        .from(workLogs)
+        .where(and(scope, sql`${localDate} >= ${week}::date AND ${localDate} < ${week}::date + 7`,
+          beforeDate !== undefined ? or(sql`${workLogs.workDate} < ${beforeDate}::timestamptz`, and(sql`${workLogs.workDate} = ${beforeDate}::timestamptz`, lt(workLogs.id, beforeId))) : undefined))
+        .orderBy(desc(workLogs.workDate), desc(workLogs.id))
+        .limit(101);
+      const data = logs.slice(0, 100);
+      const last = data[data.length - 1];
+      return res.json({
+        data: data.map(({ cursorDate, ...log }) => log),
+        nextCursor: logs.length > 100 ? { date: last.cursorDate, id: last.id } : null,
+      });
+    }
+
     // Only users with explicit WORK_LOGS_VIEW_ALL permission can see ALL work logs
     if (canViewAll || isAdmin) {
       logger.log(`[WORK LOGS] ViewAll permission - fetching logs with limit ${limit}, offset ${offset}`);
@@ -98,7 +166,7 @@ router.get('/', async (req, res) => {
       const logs = await db
         .select()
         .from(workLogs)
-        .orderBy(desc(workLogs.workDate))
+        .orderBy(desc(workLogs.workDate), desc(workLogs.id))
         .limit(limit)
         .offset(offset);
       logger.log(
@@ -132,7 +200,7 @@ router.get('/', async (req, res) => {
       .select()
       .from(workLogs)
       .where(eq(workLogs.userId, userId))
-      .orderBy(desc(workLogs.workDate))
+      .orderBy(desc(workLogs.workDate), desc(workLogs.id))
       .limit(limit)
       .offset(offset);
     logger.log(
