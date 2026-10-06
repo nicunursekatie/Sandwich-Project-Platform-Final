@@ -87,6 +87,25 @@ router.get('/', async (req, res) => {
         .json({ error: 'Insufficient permissions to view work logs' });
     }
 
+    if (req.query.fullHistory === 'true') {
+      if (!canViewAll && !isAdmin && !userId) {
+        return res.status(400).json({ error: 'User context missing' });
+      }
+      // One SELECT provides a consistent snapshot even during concurrent edits.
+      const logs = await db
+        .select()
+        .from(workLogs)
+        .where(canViewAll || isAdmin ? undefined : eq(workLogs.userId, userId!))
+        .orderBy(desc(workLogs.workDate), desc(workLogs.id));
+      return res.json({
+        data: logs,
+        total: logs.length,
+        limit: logs.length,
+        offset: 0,
+        hasMore: false,
+      });
+    }
+
     // Only users with explicit WORK_LOGS_VIEW_ALL permission can see ALL work logs
     if (canViewAll || isAdmin) {
       logger.log(`[WORK LOGS] ViewAll permission - fetching logs with limit ${limit}, offset ${offset}`);
@@ -98,7 +117,7 @@ router.get('/', async (req, res) => {
       const logs = await db
         .select()
         .from(workLogs)
-        .orderBy(desc(workLogs.workDate))
+        .orderBy(desc(workLogs.workDate), desc(workLogs.id))
         .limit(limit)
         .offset(offset);
       logger.log(
@@ -132,7 +151,7 @@ router.get('/', async (req, res) => {
       .select()
       .from(workLogs)
       .where(eq(workLogs.userId, userId))
-      .orderBy(desc(workLogs.workDate))
+      .orderBy(desc(workLogs.workDate), desc(workLogs.id))
       .limit(limit)
       .offset(offset);
     logger.log(

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +37,8 @@ import {
   formatWorkMinutes,
   workLogDate,
 } from '@/lib/work-log-summary';
+
+const EMPTY_LOGS: WorkLog[] = [];
 
 function formatElapsed(totalSeconds: number) {
   const safeSeconds = Math.max(0, totalSeconds);
@@ -103,31 +105,24 @@ export default function WorkLogPage() {
     queryKey: ['/api/work-logs'],
     queryFn: async () => {
       logger.log('🚀 Work logs query function called');
-      const logs: WorkLog[] = [];
-      let offset = 0;
-      while (true) {
-        const page = await apiRequest(
-          'GET',
-          `/api/work-logs?limit=1000&offset=${offset}`
-        );
-        if (Array.isArray(page)) return page;
-        const entries = Array.isArray(page.data) ? page.data : [];
-        logs.push(...entries);
-        if (!page.hasMore) return logs;
-        if (!entries.length)
-          throw new Error(
-            'Could not load the complete work log. Please refresh.'
-          );
-        offset += entries.length;
+      const page = await apiRequest('GET', '/api/work-logs?fullHistory=true');
+      if (Array.isArray(page)) return page;
+      if (!Array.isArray(page.data) || page.hasMore) {
+        throw new Error('Could not load the complete work log. Please refresh.');
       }
+      return page.data as WorkLog[];
     },
     enabled: !!user, // Only fetch when user is authenticated
     staleTime: 2 * 60 * 1000, // 2 minutes - work logs need reasonable freshness for collaborative updates
     refetchOnWindowFocus: true, // Refetch when user returns to see updates from other team members
   });
 
-  const safelogs = logsResponse || [];
-  const summary = summarizeWorkLogs(safelogs, todayDateInputValue());
+  const safelogs = logsResponse || EMPTY_LOGS;
+  const today = todayDateInputValue();
+  const summary = useMemo(
+    () => summarizeWorkLogs(safelogs, today),
+    [safelogs, today]
+  );
 
   const createLog = useMutation({
     mutationFn: async () => {
