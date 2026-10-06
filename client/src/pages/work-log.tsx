@@ -18,11 +18,25 @@ import { canDeleteWorkLog, canEditWorkLog } from '@shared/auth-utils';
 import type { UserForPermissions } from '@shared/types';
 import { useActivityTracker } from '@/hooks/useActivityTracker';
 import { logger } from '@/lib/logger';
-import { useResourcePermissions, usePermissions } from '@/hooks/useResourcePermissions';
+import {
+  useResourcePermissions,
+  usePermissions,
+} from '@/hooks/useResourcePermissions';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import { useToast } from '@/hooks/use-toast';
 import type { WorkLog } from '@shared/schema';
 import { APP_TIMEZONE } from '@/lib/date-utils';
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from '@/components/ui/accordion';
+import {
+  summarizeWorkLogs,
+  formatWorkMinutes,
+  workLogDate,
+} from '@/lib/work-log-summary';
 
 function formatElapsed(totalSeconds: number) {
   const safeSeconds = Math.max(0, totalSeconds);
@@ -59,8 +73,12 @@ export default function WorkLogPage() {
   }, [trackView]);
 
   // Simplified permissions: CREATE_WORK_LOGS automatically includes edit/delete own permissions
-  const { canAdd, canView, canEdit, canDelete } = useResourcePermissions('WORK_LOGS');
-  const { WORK_LOGS_EDIT_ALL: canEditAllLogs, WORK_LOGS_DELETE_ALL: canDeleteAllLogs } = usePermissions(['WORK_LOGS_EDIT_ALL', 'WORK_LOGS_DELETE_ALL']);
+  const { canAdd, canView, canEdit, canDelete } =
+    useResourcePermissions('WORK_LOGS');
+  const {
+    WORK_LOGS_EDIT_ALL: canEditAllLogs,
+    WORK_LOGS_DELETE_ALL: canDeleteAllLogs,
+  } = usePermissions(['WORK_LOGS_EDIT_ALL', 'WORK_LOGS_DELETE_ALL']);
 
   const canCreateLogs = canAdd;
   const canEditOwnLogs = canAdd; // Automatically included
@@ -85,19 +103,31 @@ export default function WorkLogPage() {
     queryKey: ['/api/work-logs'],
     queryFn: async () => {
       logger.log('🚀 Work logs query function called');
-      const data = await apiRequest('GET', '/api/work-logs');
-      logger.log('🚀 Work logs API response data:', data);
-      return data;
+      const logs: WorkLog[] = [];
+      let offset = 0;
+      while (true) {
+        const page = await apiRequest(
+          'GET',
+          `/api/work-logs?limit=1000&offset=${offset}`
+        );
+        if (Array.isArray(page)) return page;
+        const entries = Array.isArray(page.data) ? page.data : [];
+        logs.push(...entries);
+        if (!page.hasMore) return logs;
+        if (!entries.length)
+          throw new Error(
+            'Could not load the complete work log. Please refresh.'
+          );
+        offset += entries.length;
+      }
     },
     enabled: !!user, // Only fetch when user is authenticated
     staleTime: 2 * 60 * 1000, // 2 minutes - work logs need reasonable freshness for collaborative updates
     refetchOnWindowFocus: true, // Refetch when user returns to see updates from other team members
   });
 
-  // Handle both old array format and new paginated format { data, total, ... }
-  const safelogs = Array.isArray(logsResponse)
-    ? logsResponse
-    : (logsResponse?.data && Array.isArray(logsResponse.data) ? logsResponse.data : []);
+  const safelogs = logsResponse || [];
+  const summary = summarizeWorkLogs(safelogs, todayDateInputValue());
 
   const createLog = useMutation({
     mutationFn: async () => {
@@ -210,7 +240,9 @@ export default function WorkLogPage() {
     }
     const startedAtMs = new Date(activeTimer.startedAt).getTime();
     const tick = () =>
-      setElapsedSeconds(Math.max(0, Math.round((Date.now() - startedAtMs) / 1000)));
+      setElapsedSeconds(
+        Math.max(0, Math.round((Date.now() - startedAtMs) / 1000))
+      );
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
@@ -228,7 +260,8 @@ export default function WorkLogPage() {
       invalidateTimer();
       toast({
         title: 'Timer started',
-        description: 'Your time is being tracked. Click "Stop Work" when you finish.',
+        description:
+          'Your time is being tracked. Click "Stop Work" when you finish.',
       });
     },
     onError: (err: any) => {
@@ -295,15 +328,38 @@ export default function WorkLogPage() {
 
   return (
     <div className="max-w-4xl mx-auto py-6 space-y-6">
-      <PageBreadcrumbs segments={[
-        { label: 'Operations' },
-        { label: 'Work Log' }
-      ]} />
+      <PageBreadcrumbs
+        segments={[{ label: 'Operations' }, { label: 'Work Log' }]}
+      />
 
       {/* Debug info - minimized and subtle */}
       <div className="text-xs text-gray-400 px-2">
         Debug: {safelogs.length} logs loaded • User:{' '}
         {(user as any)?.email || 'Unknown'}
+      </div>
+
+      <div
+        className="grid grid-cols-1 sm:grid-cols-3 gap-4"
+        aria-label="Work log totals"
+      >
+        {[
+          ['This Week', summary.totals.week],
+          ['This Month', summary.totals.month],
+          ['All Time', summary.totals.all],
+        ].map(([label, total]) => (
+          <Card key={label} className="shadow-sm">
+            <CardContent className="pt-4 pb-4">
+              <div className="text-sm text-gray-600">{label}</div>
+              <div className="text-xl font-semibold text-brand-primary tabular-nums">
+                {isLoading
+                  ? 'Loading...'
+                  : error
+                    ? 'Unavailable'
+                    : formatWorkMinutes(Number(total))}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {canCreateLogs && (
@@ -531,65 +587,82 @@ export default function WorkLogPage() {
                 </div>
               )}
 
-              {safelogs.map((log: any) => (
-                <div
-                  key={log?.id || Math.random()}
-                  className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3"
-                >
-                  {/* Main work description - emphasized */}
-                  <div className="text-gray-900 font-medium leading-relaxed">
-                    {log.description}
-                  </div>
-
-                  {/* Metadata row - secondary information */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span className="font-medium text-brand-orange">
-                        {log.hours}h {log.minutes}m
-                      </span>
-                      <span>
-                        {log.workDate
-                          ? new Date(log.workDate).toLocaleDateString()
-                          : new Date(log.createdAt).toLocaleDateString()}
-                      </span>
-                      {log?.userId !== (user as any)?.id && (
-                        <span className="text-brand-primary text-xs px-2 py-1 bg-brand-primary-lighter rounded-full">
-                          Other user
+              <Accordion type="multiple" defaultValue={[summary.currentWeek]}>
+                {summary.groups.map((week) => (
+                  <AccordionItem key={week.key} value={week.key}>
+                    <AccordionTrigger className="gap-3 text-left hover:no-underline">
+                      <span className="flex flex-1 flex-wrap items-center justify-between gap-2 pr-2">
+                        <span>{week.label}</span>
+                        <span className="text-sm text-brand-orange">
+                          {formatWorkMinutes(week.minutes)} · {week.logs.length}{' '}
+                          {week.logs.length === 1 ? 'entry' : 'entries'}
                         </span>
-                      )}
-                    </div>
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-4">
+                      {week.logs.map((log: any) => (
+                        <div
+                          key={log?.id || Math.random()}
+                          className="bg-gray-50 border border-gray-200 rounded-lg p-4 space-y-3"
+                        >
+                          {/* Main work description - emphasized */}
+                          <div className="text-gray-900 font-medium leading-relaxed">
+                            {log.description}
+                          </div>
 
-                    <div className="flex items-center gap-1">
-                      {(canEditWorkLog(permissionUser, log) ||
-                        (canEditOwnLogs && log?.userId === (user as any)?.id) ||
-                        canEditAllLogs) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => openEditDialog(log)}
-                          disabled={updateLog.isPending}
-                          className="text-gray-500 hover:text-brand-primary hover:bg-brand-primary-lighter text-xs px-2 py-1"
-                        >
-                          Edit
-                        </Button>
-                      )}
-                      {(canDeleteWorkLog(permissionUser, log) ||
-                        (canDeleteOwnLogs && log?.userId === (user as any)?.id) ||
-                        canDeleteAllLogs) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => deleteLog.mutate(log?.id)}
-                          disabled={deleteLog.isPending}
-                          className="text-gray-400 hover:text-red-600 hover:bg-red-50 text-xs px-2 py-1"
-                        >
-                          Remove
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
+                          {/* Metadata row - secondary information */}
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
+                              <span className="font-medium text-brand-orange">
+                                {log.hours}h {log.minutes}m
+                              </span>
+                              <span>
+                                {workLogDate(log.workDate || log.createdAt)}
+                              </span>
+                              {log?.userId !== (user as any)?.id && (
+                                <span className="text-brand-primary text-xs px-2 py-1 bg-brand-primary-lighter rounded-full">
+                                  Other user
+                                </span>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1">
+                              {(canEditWorkLog(permissionUser, log) ||
+                                (canEditOwnLogs &&
+                                  log?.userId === (user as any)?.id) ||
+                                canEditAllLogs) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => openEditDialog(log)}
+                                  disabled={updateLog.isPending}
+                                  className="text-gray-500 hover:text-brand-primary hover:bg-brand-primary-lighter text-xs px-2 py-1"
+                                >
+                                  Edit
+                                </Button>
+                              )}
+                              {(canDeleteWorkLog(permissionUser, log) ||
+                                (canDeleteOwnLogs &&
+                                  log?.userId === (user as any)?.id) ||
+                                canDeleteAllLogs) && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => deleteLog.mutate(log?.id)}
+                                  disabled={deleteLog.isPending}
+                                  className="text-gray-400 hover:text-red-600 hover:bg-red-50 text-xs px-2 py-1"
+                                >
+                                  Remove
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
             </div>
           )}
         </CardContent>
@@ -661,7 +734,10 @@ export default function WorkLogPage() {
                     aria-label="Hours"
                     className="w-16 text-center bg-white"
                   />
-                  <label htmlFor="edit-hours" className="text-sm text-gray-600 font-medium">
+                  <label
+                    htmlFor="edit-hours"
+                    className="text-sm text-gray-600 font-medium"
+                  >
                     hours
                   </label>
                 </div>
@@ -677,7 +753,10 @@ export default function WorkLogPage() {
                     aria-label="Minutes"
                     className="w-16 text-center bg-white"
                   />
-                  <label htmlFor="edit-minutes" className="text-sm text-gray-600 font-medium">
+                  <label
+                    htmlFor="edit-minutes"
+                    className="text-sm text-gray-600 font-medium"
+                  >
                     minutes
                   </label>
                 </div>
