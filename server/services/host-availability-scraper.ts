@@ -1,7 +1,7 @@
 /**
  * Host Availability Scraper Service
  *
- * Scrapes https://nicunursekatie.github.io/sandwichprojectcollectionsites/
+ * Scrapes https://the-sandwich-project.github.io/sandwichprojectcollectionsites/
  * to get weekly host availability and updates the database.
  *
  * Runs every Monday at 1pm via cron job.
@@ -10,7 +10,7 @@
 import { storage } from '../storage-wrapper';
 import { createServiceLogger, logError } from '../utils/logger';
 
-const EXTERNAL_SITE_URL = 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/';
+const EXTERNAL_SITE_URL = 'https://the-sandwich-project.github.io/sandwichprojectcollectionsites/';
 const scraperLogger = createServiceLogger('host-scraper');
 
 interface ScrapeResult {

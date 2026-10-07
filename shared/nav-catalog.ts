@@ -108,7 +108,7 @@ const SIGNUP_GENIUS_URL =
   'https://www.signupgenius.com/go/5080A4BA5AA22A7F94-50444894-thesandwich#/';
 const VOLUNTEER_HANDBOOK_URL = 'https://tsp-host-handbook-ylfb92u.gamma.site/';
 const INVENTORY_CALCULATOR_URL =
-  'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html';
+  'https://the-sandwich-project.github.io/sandwichinventory/inventorycalculator.html';
 
 export const NAV_CATALOG: NavCatalogItem[] = [
   // HOME

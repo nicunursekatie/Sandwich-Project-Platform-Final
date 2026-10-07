@@ -540,7 +540,7 @@ export function createMainRoutes(deps: RouterDependencies) {
 
   // Proxy for GitHub Pages content (bypasses X-Frame-Options restrictions)
   const ALLOWED_PROXY_ORIGINS = [
-    'https://nicunursekatie.github.io',
+    'https://the-sandwich-project.github.io',
     'https://receipt-gen--katielong2316.replit.app',
     'https://bread-and-butter-donors.lovable.app',
     'https://tsp-host-handbook-ylfb92u.gamma.site',

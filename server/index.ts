@@ -59,7 +59,7 @@ app.use(
       : {
           directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdnjs.cloudflare.com', 'https://unpkg.com', 'https://www.googletagmanager.com', 'https://nicunursekatie.github.io'],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", 'https://cdnjs.cloudflare.com', 'https://unpkg.com', 'https://www.googletagmanager.com', 'https://the-sandwich-project.github.io'],
             styleSrc: ["'self'", "'unsafe-inline'", 'https://cdnjs.cloudflare.com', 'https://unpkg.com', 'https://fonts.googleapis.com'],
             imgSrc: ["'self'", 'data:', 'blob:', 'https:', 'http:'],
             fontSrc: ["'self'", 'https://fonts.gstatic.com', 'https://cdnjs.cloudflare.com'],
@@ -72,9 +72,9 @@ app.use(
             //      tabs in important-links.tsx for examples).
             //   3. If the embed also fetches API data from the same origin,
             //      add it to connectSrc below too.
-            frameSrc: ["'self'", 'https://*.stream-io-api.com', 'https://*.getstream.io', 'https://docs.google.com', 'https://nicunursekatie.github.io'],
+            frameSrc: ["'self'", 'https://*.stream-io-api.com', 'https://*.getstream.io', 'https://docs.google.com', 'https://the-sandwich-project.github.io'],
             objectSrc: ["'self'"],
-            baseUri: ["'self'", 'https://nicunursekatie.github.io'],
+            baseUri: ["'self'", 'https://the-sandwich-project.github.io'],
             formAction: ["'self'"],
             upgradeInsecureRequests: [],
           },

@@ -35,13 +35,13 @@ export default function Flyers() {
     {
       id: 'digital',
       name: 'Digital Flyer - Social Media & QR Codes',
-      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/NCLflyer.html',
+      url: 'https://the-sandwich-project.github.io/sandwichprojectcollectionsites/Flyers/NCLflyer.html',
       description: 'Social media QR codes, newsletter signup, and Amazon wishlist',
     },
     {
       id: 'qr-margins',
       name: 'QR Code Flyer with Margins (PDF)',
-      url: 'https://nicunursekatie.github.io/sandwichprojectcollectionsites/Flyers/QR%20Code%20flyer%20with%20margins.pdf',
+      url: 'https://the-sandwich-project.github.io/sandwichprojectcollectionsites/Flyers/QR%20Code%20flyer%20with%20margins.pdf',
       description: 'Printable QR code flyer with margins for easy printing',
     },
   ];

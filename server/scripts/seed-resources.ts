@@ -184,7 +184,7 @@ const initialResources = [
       'Interactive tool for calculating sandwich inventory and planning quantities for collections',
     type: 'link' as const,
     category: 'forms_templates',
-    url: 'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html',
+    url: 'https://the-sandwich-project.github.io/sandwichinventory/inventorycalculator.html',
     isPinnedGlobal: false,
   },
   {
