@@ -105,13 +105,13 @@ router.get('/', async (req, res) => {
         WITH dates AS (
           SELECT (CURRENT_TIMESTAMP AT TIME ZONE 'America/New_York')::date AS today
         ), periods AS (
-          SELECT today, (date_trunc('week', today - interval '2 days') + interval '2 days')::date AS week FROM dates
+          SELECT today, date_trunc('week', today)::date AS week FROM dates
         ), entries AS (
           SELECT (${workLogs.workDate} AT TIME ZONE 'America/New_York')::date AS day,
                  ${workLogs.hours} * 60 + ${workLogs.minutes} AS minutes
           FROM ${workLogs} WHERE ${scope}
         ), weeks AS (
-          SELECT (date_trunc('week', day - interval '2 days') + interval '2 days')::date AS week,
+          SELECT date_trunc('week', day)::date AS week,
                  SUM(minutes) AS minutes, COUNT(*) AS count FROM entries GROUP BY 1
         ), page AS (
           SELECT * FROM weeks
@@ -135,7 +135,7 @@ router.get('/', async (req, res) => {
       const week = req.query.week;
       const beforeDate = req.query.beforeDate;
       const beforeId = Number(req.query.beforeId);
-      if (typeof week !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(week) || !Number.isFinite(Date.parse(week)) || new Date(week).getUTCDay() !== 3 ||
+      if (typeof week !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(week) || !Number.isFinite(Date.parse(week)) || new Date(week).getUTCDay() !== 1 ||
           (beforeDate !== undefined && (typeof beforeDate !== 'string' || !Number.isFinite(Date.parse(beforeDate)) || !Number.isSafeInteger(beforeId) || beforeId < 1))) {
         return res.status(400).json({ error: 'Invalid week or entry cursor' });
       }
