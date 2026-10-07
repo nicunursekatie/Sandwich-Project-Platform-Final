@@ -229,7 +229,7 @@ rules: {
 - `3a43265` - Phase 1: Remove TypeScript any types (initial work)
 
 ### Pull Request
-- https://github.com/nicunursekatie/Sandwich-Project-Platform-Final/pull/new/claude/remove-typescript-any-types-011CURUPBqRdKrY2NBNcd75f
+- https://github.com/The-Sandwich-Project/Sandwich-Project-Platform-Final/pull/new/claude/remove-typescript-any-types-011CURUPBqRdKrY2NBNcd75f
 
 ## Contact
 
