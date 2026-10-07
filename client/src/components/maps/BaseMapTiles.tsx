@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { TileLayer, useMap } from 'react-leaflet';
 import { installLeafletTeardownGuard } from '@/components/maps/leaflet-teardown';
 import { isMapReady } from '@/components/maps/map-coords';
+import { BASEMAP_MAX_ZOOM, ensureZoomCeiling } from '@/components/maps/zoom-ceiling';
 
 installLeafletTeardownGuard();
 
@@ -131,7 +132,7 @@ function GoogleMapCredits({ initialCopyright }: { initialCopyright: string }) {
     <TileLayer
       attribution=""
       url="/api/maps/tiles/{z}/{x}/{y}"
-      maxZoom={20}
+      maxZoom={BASEMAP_MAX_ZOOM}
     />
   );
 }
@@ -148,7 +149,7 @@ function CartoTiles({ reason }: { reason?: string }) {
         attribution={CARTO_ATTRIBUTION}
         url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
         subdomains="abcd"
-        maxZoom={20}
+        maxZoom={BASEMAP_MAX_ZOOM}
       />
       {reason ? <FallbackNotice reason={reason} /> : null}
     </>
@@ -187,6 +188,10 @@ function FallbackNotice({ reason }: { reason: string }) {
  * can reach the Map Tiles API, and the previous CARTO tiles when it cannot.
  */
 export function BaseMapTiles() {
+  // Runs during render so the ceiling is in place before sibling map
+  // controllers' effects call fitBounds, even while no tile layer exists yet.
+  ensureZoomCeiling(useMap());
+
   const { data, isLoading, isError } = useQuery<MapTileConfig>({
     queryKey: ['/api/maps/config'],
     staleTime: 60 * 1000,
