@@ -2,7 +2,7 @@
 
 > **Status of this doc:** Phase 1 of the onboarding docs. Written 2026-10-07 against `main` at that date.
 > Everything here was checked against the code. Anything marked **(unverified)** could not be confirmed from source alone.
-> Where this doc disagrees with `CLAUDE.md`, this doc reflects what the code actually does — see [Known discrepancies](#7-known-discrepancies-with-claudemd).
+> Some earlier `CLAUDE.md` claims were wrong and have been corrected — see [Known discrepancies](#7-known-discrepancies-with-claudemd).
 
 ---
 
@@ -338,7 +338,7 @@ There is no SendGrid event or inbound-parse webhook. SendGrid is send-only.
 
 ## 7. Known discrepancies with CLAUDE.md
 
-These were found while writing this doc. The code is the source of truth. `CLAUDE.md` was **not** edited as part of this work.
+These were found while writing this doc and have since been **corrected in `CLAUDE.md`** (2026-10-07). They're kept here as a record, so anyone who learned the old version knows what changed.
 
 | CLAUDE.md says | What the code does |
 |---|---|
