@@ -1348,7 +1348,13 @@ const EventSchedulingForm: React.FC<EventSchedulingFormProps> = ({
       onOpenChange={(open) => { if (!open && !anyNestedDialogOpen) onClose(); }}
       modal={false}
     >
-      <DialogContent className="w-[95vw] max-w-4xl max-h-[85vh] flex flex-col p-0">
+      {/* z-[9999] sits one step below the shared dialog layer (z-[10001]) so
+          every nested dialog/confirmation and toast always stacks above this
+          form. At equal z-index the browser falls back to DOM order, and
+          whenever this content re-mounts while a child is open it re-appends
+          to <body> last and covers the child ("popup hidden behind the edit
+          form"). Non-modal, so no overlay of its own to sit under. */}
+      <DialogContent className="z-[9999] w-[95vw] max-w-4xl max-h-[85vh] flex flex-col p-0">
         <DialogHeader className="flex-shrink-0 px-4 sm:px-6 pt-4 sm:pt-6 pb-3">
           <div className="flex items-center justify-between">
             <DialogTitle className="text-xl font-bold text-[#236383]">
