@@ -23,6 +23,7 @@ import 'react-leaflet-cluster/dist/assets/MarkerCluster.Default.css';
 import { format, addWeeks, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { PageBreadcrumbs } from '@/components/page-breadcrumbs';
 import { BaseMapTiles } from '@/components/maps/BaseMapTiles';
+import { isMapReady, parseLatLng } from '@/components/maps/map-coords';
 import {
   getDriverIds, getDriverCount, getTotalDriverCount, hasDriver,
   getSpeakerIds, getSpeakerCount,
@@ -813,22 +814,35 @@ function MapController({
 
   // Handle full trip route - fit bounds to show all three points (driver, event, destination)
   useEffect(() => {
-    if (fullTripRoute) {
-      const allCoords = [
-        ...fullTripRoute.leg1.coordinates,
-        ...fullTripRoute.leg2.coordinates,
-      ];
-      if (allCoords.length > 0) {
-        const bounds = L.latLngBounds(allCoords);
-        map.fitBounds(bounds, { padding: [50, 50], animate: true });
-      }
+    if (!fullTripRoute || !isMapReady(map)) return;
+    const allCoords = [
+      ...fullTripRoute.leg1.coordinates,
+      ...fullTripRoute.leg2.coordinates,
+    ].filter(
+      (coord): coord is [number, number] =>
+        Array.isArray(coord) &&
+        coord.length >= 2 &&
+        Number.isFinite(coord[0]) &&
+        Number.isFinite(coord[1])
+    );
+    if (allCoords.length > 0) {
+      const bounds = L.latLngBounds(allCoords);
+      map.fitBounds(bounds, { padding: [50, 50], animate: true });
     }
   }, [fullTripRoute, map]);
 
   // Handle driving route - fit bounds to show both endpoints
   useEffect(() => {
-    if (!fullTripRoute && drivingRoute && drivingRoute.coordinates.length > 0) {
-      const bounds = L.latLngBounds(drivingRoute.coordinates);
+    if (!fullTripRoute && drivingRoute && drivingRoute.coordinates.length > 0 && isMapReady(map)) {
+      const coords = drivingRoute.coordinates.filter(
+        (coord): coord is [number, number] =>
+          Array.isArray(coord) &&
+          coord.length >= 2 &&
+          Number.isFinite(coord[0]) &&
+          Number.isFinite(coord[1])
+      );
+      if (coords.length === 0) return;
+      const bounds = L.latLngBounds(coords);
       map.fitBounds(bounds, { padding: [50, 50], animate: true });
     }
   }, [drivingRoute, fullTripRoute, map]);
@@ -836,66 +850,61 @@ function MapController({
   // Handle focused item when no route (fallback behavior)
   useEffect(() => {
     // Only pan to focused item if there's no driving route or full trip being shown
-    if (!drivingRoute && !fullTripRoute && focusedItem?.latitude && focusedItem?.longitude) {
-      map.setView(
-        [parseFloat(focusedItem.latitude), parseFloat(focusedItem.longitude)],
-        15,
-        { animate: true }
-      );
+    if (!drivingRoute && !fullTripRoute && focusedItem && isMapReady(map)) {
+      const center = parseLatLng(focusedItem.latitude, focusedItem.longitude);
+      if (center) {
+        map.setView(center, 15, { animate: true });
+      }
     }
   }, [focusedItem, drivingRoute, fullTripRoute, map]);
 
   // Center on selected event with bounds that include at least one host and one recipient
   const selectedEventId = selectedEvent?.id;
   useEffect(() => {
-    if (selectedEvent?.latitude && selectedEvent?.longitude) {
-      const points: [number, number][] = [
-        [parseFloat(selectedEvent.latitude), parseFloat(selectedEvent.longitude)]
-      ];
+    if (!isMapReady(map)) return;
+    const eventCenter = parseLatLng(selectedEvent?.latitude, selectedEvent?.longitude);
+    if (!eventCenter) return;
 
-      // Add closest host if available
-      if (nearbyHosts.length > 0) {
-        points.push([
-          parseFloat(nearbyHosts[0].latitude),
-          parseFloat(nearbyHosts[0].longitude)
-        ]);
-      }
+    const points: [number, number][] = [eventCenter];
 
-      // Add designated recipient if available, otherwise add closest recipient
-      if (designatedRecipients.length > 0) {
-        points.push([
-          parseFloat(designatedRecipients[0].latitude),
-          parseFloat(designatedRecipients[0].longitude)
-        ]);
-      } else if (nearbyRecipients.length > 0) {
-        points.push([
-          parseFloat(nearbyRecipients[0].latitude),
-          parseFloat(nearbyRecipients[0].longitude)
-        ]);
-      }
+    // Add closest host if available
+    if (nearbyHosts.length > 0) {
+      const hostPoint = parseLatLng(nearbyHosts[0].latitude, nearbyHosts[0].longitude);
+      if (hostPoint) points.push(hostPoint);
+    }
 
-      if (points.length > 1) {
-        // Compute zoom that includes event + closest host + closest recipient, but
-        // clamp it: never zoom OUT past 14 (otherwise the event pin gets buried in
-        // a wide bounds-fit when the closest host/recipient is far away — user
-        // reported this making the selected event hard to find). Cap the max at 15
-        // so we don't over-zoom either when everything is right on top of each other.
-        const bounds = L.latLngBounds(points);
-        const rawZoom = map.getBoundsZoom(bounds, false, L.point(60, 60));
-        const zoomForBounds = Math.min(Math.max(rawZoom, 14), 15);
-        map.setView(
-          [parseFloat(selectedEvent.latitude), parseFloat(selectedEvent.longitude)],
-          zoomForBounds,
-          { animate: true }
-        );
-      } else {
-        // Fallback to just centering on event if no hosts/recipients
-        map.setView(
-          [parseFloat(selectedEvent.latitude), parseFloat(selectedEvent.longitude)],
-          15,
-          { animate: true }
-        );
+    // Add designated recipient if available, otherwise add closest recipient
+    if (designatedRecipients.length > 0) {
+      const recipientPoint = parseLatLng(
+        designatedRecipients[0].latitude,
+        designatedRecipients[0].longitude
+      );
+      if (recipientPoint) points.push(recipientPoint);
+    } else if (nearbyRecipients.length > 0) {
+      const recipientPoint = parseLatLng(
+        nearbyRecipients[0].latitude,
+        nearbyRecipients[0].longitude
+      );
+      if (recipientPoint) points.push(recipientPoint);
+    }
+
+    if (points.length > 1) {
+      // Compute zoom that includes event + closest host + closest recipient, but
+      // clamp it: never zoom OUT past 14 (otherwise the event pin gets buried in
+      // a wide bounds-fit when the closest host/recipient is far away — user
+      // reported this making the selected event hard to find). Cap the max at 15
+      // so we don't over-zoom either when everything is right on top of each other.
+      const bounds = L.latLngBounds(points);
+      const rawZoom = map.getBoundsZoom(bounds, false, L.point(60, 60));
+      if (!Number.isFinite(rawZoom)) {
+        map.setView(eventCenter, 15, { animate: true });
+        return;
       }
+      const zoomForBounds = Math.min(Math.max(rawZoom, 14), 15);
+      map.setView(eventCenter, zoomForBounds, { animate: true });
+    } else {
+      // Fallback to just centering on event if no hosts/recipients
+      map.setView(eventCenter, 15, { animate: true });
     }
   }, [
     selectedEventId,
@@ -909,12 +918,12 @@ function MapController({
 
   // Fit bounds to all events on initial load (when no event selected)
   useEffect(() => {
-    if (!selectedEvent && events.length > 0) {
-      const validEvents = events.filter(e => e.latitude && e.longitude);
-      if (validEvents.length > 0) {
-        const bounds = L.latLngBounds(
-          validEvents.map(e => [parseFloat(e.latitude!), parseFloat(e.longitude!)])
-        );
+    if (!selectedEvent && events.length > 0 && isMapReady(map)) {
+      const validPoints = events
+        .map((e) => parseLatLng(e.latitude, e.longitude))
+        .filter((p): p is [number, number] => p != null);
+      if (validPoints.length > 0) {
+        const bounds = L.latLngBounds(validPoints);
         map.fitBounds(bounds, { padding: [50, 50] });
       }
     }
@@ -929,7 +938,7 @@ function MapResizeObserver() {
   useEffect(() => {
     const container = map.getContainer();
     if (!container || typeof ResizeObserver === 'undefined') {
-      map.invalidateSize();
+      if (isMapReady(map)) map.invalidateSize();
       return;
     }
 
@@ -937,7 +946,9 @@ function MapResizeObserver() {
     const observer = new ResizeObserver(() => {
       if (frame) cancelAnimationFrame(frame);
       frame = requestAnimationFrame(() => {
-        map.invalidateSize();
+        // invalidateSize on a 0×0 container can leave Leaflet's pixel origin as NaN,
+        // and later layerPointToLatLng calls then throw Invalid LatLng (NaN, NaN).
+        if (isMapReady(map)) map.invalidateSize();
         frame = null;
       });
     });
@@ -1881,14 +1892,7 @@ export default function DriverPlanningDashboard() {
 
   // Map-safe subset: only events with coordinates
   const upcomingEventsWithCoords = useMemo(() => {
-    return upcomingEvents.filter((e) => {
-      const lat = (e.latitude || '').trim();
-      const lng = (e.longitude || '').trim();
-      if (!lat || !lng) return false;
-      const latNum = Number.parseFloat(lat);
-      const lngNum = Number.parseFloat(lng);
-      return Number.isFinite(latNum) && Number.isFinite(lngNum);
-    });
+    return upcomingEvents.filter((e) => parseLatLng(e.latitude, e.longitude) != null);
   }, [upcomingEvents]);
 
   // When an event is selected, only show events on the same date on the map
@@ -1960,22 +1964,26 @@ export default function DriverPlanningDashboard() {
   // Only exclude drivers who are explicitly busy or off-duty
   // Note: Uses effectiveSelectedEvent which can be either a real event or custom location
   const nearbyDriversAll = useMemo(() => {
-    if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) return [];
+    if (!effectiveSelectedEvent) return [];
+    const eventPoint = parseLatLng(
+      effectiveSelectedEvent.latitude,
+      effectiveSelectedEvent.longitude
+    );
+    if (!eventPoint) return [];
 
-    const eventLat = parseFloat(effectiveSelectedEvent.latitude);
-    const eventLng = parseFloat(effectiveSelectedEvent.longitude);
+    const [eventLat, eventLng] = eventPoint;
 
     return driverCandidates
-      .filter((c) => c.latitude && c.longitude && c.availability !== 'busy' && c.availability !== 'off-duty')
+      .filter((c) => c.availability !== 'busy' && c.availability !== 'off-duty')
       .map((driver) => {
-        const distance = calculateDistanceInMiles(
-          eventLat,
-          eventLng,
-          parseFloat(driver.latitude),
-          parseFloat(driver.longitude)
-        );
-        return { driver, distance };
+        const point = parseLatLng(driver.latitude, driver.longitude);
+        if (!point) return null;
+        return {
+          driver,
+          distance: calculateDistanceInMiles(eventLat, eventLng, point[0], point[1]),
+        };
       })
+      .filter((entry): entry is NonNullable<typeof entry> => entry != null)
       .sort((a, b) => a.distance - b.distance);
   }, [driverCandidates, effectiveSelectedEvent]);
 
@@ -2085,26 +2093,29 @@ export default function DriverPlanningDashboard() {
   // Get nearby host contacts near the selected/custom location (show individual contacts, not locations)
   // Dynamically expands search radius if not enough hosts found nearby
   const nearbyHosts = useMemo(() => {
-    if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) return [];
+    if (!effectiveSelectedEvent) return [];
+    const eventPoint = parseLatLng(
+      effectiveSelectedEvent.latitude,
+      effectiveSelectedEvent.longitude
+    );
+    if (!eventPoint) return [];
 
-    const eventLat = parseFloat(effectiveSelectedEvent.latitude);
-    const eventLng = parseFloat(effectiveSelectedEvent.longitude);
+    const [eventLat, eventLng] = eventPoint;
 
     const hostsWithDistance = hostContacts
-      .filter(contact => contact.latitude && contact.longitude)
-      .map(contact => ({
-        id: contact.id,
-        contactName: contact.contactName,
-        hostLocationName: contact.hostLocationName,
-        latitude: contact.latitude,
-        longitude: contact.longitude,
-        distance: calculateDistanceInMiles(
-          eventLat,
-          eventLng,
-          parseFloat(contact.latitude),
-          parseFloat(contact.longitude)
-        ),
-      }))
+      .map((contact) => {
+        const point = parseLatLng(contact.latitude, contact.longitude);
+        if (!point) return null;
+        return {
+          id: contact.id,
+          contactName: contact.contactName,
+          hostLocationName: contact.hostLocationName,
+          latitude: contact.latitude,
+          longitude: contact.longitude,
+          distance: calculateDistanceInMiles(eventLat, eventLng, point[0], point[1]),
+        };
+      })
+      .filter((h): h is NonNullable<typeof h> => h != null)
       .sort((a, b) => a.distance - b.distance);
 
     // Try progressively larger radii until we have at least 3 hosts (or run out of options)
@@ -2124,22 +2135,25 @@ export default function DriverPlanningDashboard() {
   // Dynamically expands search radius if not enough recipients found nearby
   // All recipients with distance, sorted by distance (used for map markers — no limit)
   const allRecipientsWithDistance = useMemo(() => {
-    if (!effectiveSelectedEvent?.latitude || !effectiveSelectedEvent?.longitude) return [];
+    if (!effectiveSelectedEvent) return [];
+    const eventPoint = parseLatLng(
+      effectiveSelectedEvent.latitude,
+      effectiveSelectedEvent.longitude
+    );
+    if (!eventPoint) return [];
 
-    const eventLat = parseFloat(effectiveSelectedEvent.latitude);
-    const eventLng = parseFloat(effectiveSelectedEvent.longitude);
+    const [eventLat, eventLng] = eventPoint;
 
     return recipientMapData
-      .filter(recipient => recipient.latitude && recipient.longitude)
-      .map(recipient => ({
-        ...recipient,
-        distance: calculateDistanceInMiles(
-          eventLat,
-          eventLng,
-          parseFloat(recipient.latitude),
-          parseFloat(recipient.longitude)
-        ),
-      }))
+      .map((recipient) => {
+        const point = parseLatLng(recipient.latitude, recipient.longitude);
+        if (!point) return null;
+        return {
+          ...recipient,
+          distance: calculateDistanceInMiles(eventLat, eventLng, point[0], point[1]),
+        };
+      })
+      .filter((r): r is NonNullable<typeof r> => r != null)
       .sort((a, b) => a.distance - b.distance);
   }, [effectiveSelectedEvent, recipientMapData]);
 
@@ -2174,7 +2188,7 @@ export default function DriverPlanningDashboard() {
       .filter((v) => v.length > 0);
 
     const matches = recipientMapData.filter((r) => {
-      if (!r.latitude || !r.longitude) return false;
+      if (!parseLatLng(r.latitude, r.longitude)) return false;
       if (numericIds.length > 0 && numericIds.includes(r.id)) return true;
       if (normalizedNames.length > 0) {
         const name = (r.name || '').trim().toLowerCase();
@@ -2398,7 +2412,7 @@ export default function DriverPlanningDashboard() {
     // Filter to volunteers that have coordinates and are assigned to events
     return volunteers
       .filter(v => {
-        if (!v.latitude || !v.longitude) return false;
+        if (!parseLatLng(v.latitude, v.longitude)) return false;
         if (!v.isActive) return false;
         return assignedVolunteerIds.has(String(v.id));
       })
@@ -2423,7 +2437,7 @@ export default function DriverPlanningDashboard() {
     const hostContactEmails = new Set(hostContacts.filter(h => h.email).map(h => h.email!.toLowerCase()));
 
     return teamMembersMap.filter(member => {
-      if (!member.latitude || !member.longitude) return false;
+      if (!parseLatLng(member.latitude, member.longitude)) return false;
       const email = member.email?.toLowerCase();
       if (!email) return true; // No email to dedup on, show them
       // Skip if already showing as driver candidate, volunteer, or host contact
@@ -2479,7 +2493,7 @@ export default function DriverPlanningDashboard() {
       // Auto-populate destination if there's exactly one designated recipient with coordinates
       if (currentDesignatedRecipients.length === 1) {
         const recipient = currentDesignatedRecipients[0];
-        if (recipient.latitude && recipient.longitude) {
+        if (parseLatLng(recipient.latitude, recipient.longitude)) {
           setSelectedDestination({
             type: 'recipient',
             id: recipient.id,
@@ -3332,10 +3346,10 @@ export default function DriverPlanningDashboard() {
             ))}
 
             {/* Selected driver marker - show on map when a driver is selected for trip planning */}
-            {layerVisibility.drivers && selectedDriver && selectedDriver.latitude && selectedDriver.longitude && (
+            {layerVisibility.drivers && selectedDriver && parseLatLng(selectedDriver.latitude, selectedDriver.longitude) && (
               <Marker
                 key={`selected-driver-${selectedDriver.id}`}
-                position={[parseFloat(selectedDriver.latitude), parseFloat(selectedDriver.longitude)]}
+                position={parseLatLng(selectedDriver.latitude, selectedDriver.longitude)!}
                 icon={driverIcon}
               >
                 <Tooltip
@@ -5366,10 +5380,10 @@ export default function DriverPlanningDashboard() {
               </Marker>
             ))}
             {/* Selected driver marker - show on map when a driver is selected for trip planning */}
-            {layerVisibility.drivers && selectedDriver && selectedDriver.latitude && selectedDriver.longitude && (
+            {layerVisibility.drivers && selectedDriver && parseLatLng(selectedDriver.latitude, selectedDriver.longitude) && (
               <Marker
                 key={`selected-driver-${selectedDriver.id}`}
-                position={[parseFloat(selectedDriver.latitude), parseFloat(selectedDriver.longitude)]}
+                position={parseLatLng(selectedDriver.latitude, selectedDriver.longitude)!}
                 icon={driverIcon}
               >
                 <Tooltip
@@ -5762,10 +5776,10 @@ export default function DriverPlanningDashboard() {
             ))}
 
             {/* Selected driver marker - show on mobile map when a driver is selected */}
-            {layerVisibility.drivers && selectedDriver && selectedDriver.latitude && selectedDriver.longitude && (
+            {layerVisibility.drivers && selectedDriver && parseLatLng(selectedDriver.latitude, selectedDriver.longitude) && (
               <Marker
                 key={`selected-driver-${selectedDriver.id}`}
-                position={[parseFloat(selectedDriver.latitude), parseFloat(selectedDriver.longitude)]}
+                position={parseLatLng(selectedDriver.latitude, selectedDriver.longitude)!}
                 icon={driverIcon}
               >
                 <Tooltip
