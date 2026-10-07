@@ -551,9 +551,15 @@ export function createMainRoutes(deps: RouterDependencies) {
       if (!url) {
         return res.status(400).json({ message: 'Missing url parameter' });
       }
-      // Only allow proxying from trusted origins
-      const allowed = ALLOWED_PROXY_ORIGINS.some((origin) => url.startsWith(origin));
-      if (!allowed) {
+      // Only allow proxying from trusted origins (compare parsed origins, not
+      // string prefixes, so lookalikes like https://allowed.io.evil.example fail)
+      let requestedOrigin: string;
+      try {
+        requestedOrigin = new URL(url).origin;
+      } catch {
+        return res.status(400).json({ message: 'Invalid url parameter' });
+      }
+      if (!ALLOWED_PROXY_ORIGINS.includes(requestedOrigin)) {
         return res.status(403).json({ message: 'URL not in allowlist' });
       }
       const response = await fetch(url);
