@@ -126,7 +126,7 @@ const sandwichMakingDocuments: ToolkitDocument[] = [
   },
   {
     name: 'Inventory Calculator',
-    path: 'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html',
+    path: 'https://the-sandwich-project.github.io/sandwichinventory/inventorycalculator.html',
     type: 'link',
     category: 'Sandwich Making',
     description:
@@ -134,7 +134,7 @@ const sandwichMakingDocuments: ToolkitDocument[] = [
   },
   {
     name: 'Event Estimator',
-    path: 'https://nicunursekatie.github.io/sandwichinventory/eventestimator/sandwichprojecteventestimator.html',
+    path: 'https://the-sandwich-project.github.io/sandwichinventory/eventestimator/sandwichprojecteventestimator.html',
     type: 'link',
     category: 'Sandwich Making',
     description:

@@ -281,7 +281,7 @@ export const adminDocuments: AdminDocument[] = [
     name: 'Inventory Calculator',
     description: 'Interactive tool for calculating sandwich inventory and planning quantities for collections',
     category: 'Tools',
-    path: 'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html',
+    path: 'https://the-sandwich-project.github.io/sandwichinventory/inventorycalculator.html',
     type: 'link',
     importance: 'high',
   },

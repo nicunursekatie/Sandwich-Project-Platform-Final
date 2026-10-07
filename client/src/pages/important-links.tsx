@@ -45,17 +45,17 @@ export default function ImportantLinks() {
 
   // URLs for all the important links (original URLs for "open in new tab" buttons)
   const inventoryCalculatorUrl =
-    'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html';
+    'https://the-sandwich-project.github.io/sandwichinventory/inventorycalculator.html';
   const eventEstimatorUrl =
-    'https://nicunursekatie.github.io/sandwichinventory/eventestimator/sandwichprojecteventestimator.html';
+    'https://the-sandwich-project.github.io/sandwichinventory/eventestimator/sandwichprojecteventestimator.html';
   const eventToolkitUrl =
-    'https://nicunursekatie.github.io/sandwichinventory/toolkit.html';
+    'https://the-sandwich-project.github.io/sandwichinventory/toolkit.html';
   const donationReceiptUrl =
     'https://receipt-gen--katielong2316.replit.app/';
   const donorManagementUrl =
     'https://bread-and-butter-donors.lovable.app/';
   const internalHubUrl =
-    'https://nicunursekatie.github.io/tsp-internal/index.html';
+    'https://the-sandwich-project.github.io/tsp-internal/index.html';
   const volunteerHandbookUrl =
     'https://tsp-host-handbook-ylfb92u.gamma.site/';
 

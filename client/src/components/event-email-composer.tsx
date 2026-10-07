@@ -262,8 +262,8 @@ ${plainIntro}
 
       plainTextContent += `In the meantime, here are some helpful resources:
 
-- Event Toolkit (food safety guides, labels, instructions): https://nicunursekatie.github.io/sandwichinventory/toolkit.html
-- Inventory Calculator: https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
+- Event Toolkit (food safety guides, labels, instructions): https://the-sandwich-project.github.io/sandwichinventory/toolkit.html
+- Inventory Calculator: https://the-sandwich-project.github.io/sandwichinventory/inventorycalculator.html
 - We typically serve groups of 50-200 people
 - Events usually last 1-2 hours
 
@@ -417,7 +417,7 @@ ${userEmail}`;
                     <!-- Header -->
                     <tr>
                         <td style="background-color: #ffffff; padding: 30px 30px 20px 30px; text-align: center; border-bottom: 4px solid #007E8C;">
-                            <img src="https://nicunursekatie.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
+                            <img src="https://the-sandwich-project.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
                         </td>
                     </tr>
 
@@ -464,7 +464,7 @@ ${userEmail}`;
                                             <li style="margin: 8px 0; color: #444444; font-size: 16px;">Loaf bag labels (print & use)</li>
                                         </ul>
                                         <p style="margin: 15px 0 0 0; font-size: 16px;">
-                                            <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" style="color: #007E8C; text-decoration: underline; font-weight: bold;">🧮 Use our Budget & Shopping Planner</a>
+                                            <a href="https://the-sandwich-project.github.io/sandwichinventory/inventorycalculator.html" style="color: #007E8C; text-decoration: underline; font-weight: bold;">🧮 Use our Budget & Shopping Planner</a>
                                         </p>
                                     </td>
                                 </tr>
@@ -591,7 +591,7 @@ ${userEmail}`;
                     <!-- Header -->
                     <tr>
                         <td style="background-color: #ffffff; padding: 30px 30px 20px 30px; text-align: center; border-bottom: 4px solid #007E8C;">
-                            <img src="https://nicunursekatie.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
+                            <img src="https://the-sandwich-project.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
                         </td>
                     </tr>
 
@@ -638,7 +638,7 @@ ${userEmail}`;
                                             <li style="margin: 8px 0; color: #444444; font-size: 16px;">Loaf bag labels (print & use)</li>
                                         </ul>
                                         <p style="margin: 15px 0 0 0; font-size: 16px;">
-                                            <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" style="color: #007E8C; text-decoration: underline; font-weight: bold;">🧮 Use our Budget & Shopping Planner</a>
+                                            <a href="https://the-sandwich-project.github.io/sandwichinventory/inventorycalculator.html" style="color: #007E8C; text-decoration: underline; font-weight: bold;">🧮 Use our Budget & Shopping Planner</a>
                                         </p>
                                     </td>
                                 </tr>
@@ -764,7 +764,7 @@ ${userEmail}`;
                     <!-- Header -->
                     <tr>
                         <td style="background-color: #ffffff; padding: 30px 30px 20px 30px; text-align: center; border-bottom: 4px solid #007E8C;">
-                            <img src="https://nicunursekatie.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
+                            <img src="https://the-sandwich-project.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
                         </td>
                     </tr>
 
@@ -778,7 +778,7 @@ ${userEmail}`;
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                 <tr>
                                     <td align="center" style="padding: 20px 0;">
-                                        <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" style="display: inline-block; background-color: #47B3CB; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px; font-size: 16px;">🧮 Budget & Shopping Planner</a>
+                                        <a href="https://the-sandwich-project.github.io/sandwichinventory/inventorycalculator.html" style="display: inline-block; background-color: #47B3CB; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px; font-size: 16px;">🧮 Budget & Shopping Planner</a>
                                     </td>
                                 </tr>
                             </table>
@@ -912,7 +912,7 @@ ${userEmail}`;
                     <!-- Header -->
                     <tr>
                         <td style="background-color: #ffffff; padding: 30px 30px 20px 30px; text-align: center; border-bottom: 4px solid #007E8C;">
-                            <img src="https://nicunursekatie.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
+                            <img src="https://the-sandwich-project.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
                         </td>
                     </tr>
 
@@ -926,7 +926,7 @@ ${userEmail}`;
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                 <tr>
                                     <td align="center" style="padding: 20px 0;">
-                                        <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" style="display: inline-block; background-color: #47B3CB; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px; font-size: 16px;">🧮 Budget & Shopping Planner</a>
+                                        <a href="https://the-sandwich-project.github.io/sandwichinventory/inventorycalculator.html" style="display: inline-block; background-color: #47B3CB; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px; font-size: 16px;">🧮 Budget & Shopping Planner</a>
                                     </td>
                                 </tr>
                             </table>
@@ -1049,7 +1049,7 @@ ${userEmail}`;
                     <!-- Header -->
                     <tr>
                         <td style="background-color: #ffffff; padding: 30px 30px 20px 30px; text-align: center; border-bottom: 4px solid #007E8C;">
-                            <img src="https://nicunursekatie.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
+                            <img src="https://the-sandwich-project.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
                         </td>
                     </tr>
 
@@ -1096,7 +1096,7 @@ ${userEmail}`;
                                             <li style="margin: 8px 0; color: #444444; font-size: 16px;">Loaf bag labels (print & use)</li>
                                         </ul>
                                         <p style="margin: 15px 0 0 0; font-size: 16px;">
-                                            <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" style="color: #007E8C; text-decoration: underline; font-weight: bold;">🧮 Use our Budget & Shopping Planner</a>
+                                            <a href="https://the-sandwich-project.github.io/sandwichinventory/inventorycalculator.html" style="color: #007E8C; text-decoration: underline; font-weight: bold;">🧮 Use our Budget & Shopping Planner</a>
                                         </p>
                                     </td>
                                 </tr>
@@ -1222,7 +1222,7 @@ ${userEmail}`;
                     <!-- Header -->
                     <tr>
                         <td style="background-color: #ffffff; padding: 30px 30px 20px 30px; text-align: center; border-bottom: 4px solid #007E8C;">
-                            <img src="https://nicunursekatie.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
+                            <img src="https://the-sandwich-project.github.io/sandwichinventory/CMYK_PRINT_TSP-01-01.jpg" alt="The Sandwich Project" width="280" style="display: block; margin: 0 auto; max-width: 280px; height: auto; border: 0;" />
                         </td>
                     </tr>
 
@@ -1236,7 +1236,7 @@ ${userEmail}`;
                             <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
                                 <tr>
                                     <td align="center" style="padding: 20px 0;">
-                                        <a href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html" style="display: inline-block; background-color: #47B3CB; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px; font-size: 16px;">🧮 Budget & Shopping Planner</a>
+                                        <a href="https://the-sandwich-project.github.io/sandwichinventory/inventorycalculator.html" style="display: inline-block; background-color: #47B3CB; color: #ffffff; padding: 14px 30px; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 10px; font-size: 16px;">🧮 Budget & Shopping Planner</a>
                                     </td>
                                 </tr>
                             </table>
@@ -1937,7 +1937,7 @@ ${userEmail}`;
               {emailFormat === 'plaintext' && (
                 <div className="text-xs text-gray-500 mb-2 p-2 bg-blue-50 rounded border border-blue-200">
                   💡 <strong>Quick Links:</strong> Inventory Calculator:
-                  https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html
+                  https://the-sandwich-project.github.io/sandwichinventory/inventorycalculator.html
                   | Please reply with your phone number and best times to call
                 </div>
               )}

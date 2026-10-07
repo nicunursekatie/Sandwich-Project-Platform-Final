@@ -629,7 +629,7 @@ export default function Dashboard({
       case 'inventory-calculator':
         // Open the inventory calculator in a new tab and return to dashboard
         window.open(
-          'https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html',
+          'https://the-sandwich-project.github.io/sandwichinventory/inventorycalculator.html',
           '_blank'
         );
         setActiveSection('dashboard');
