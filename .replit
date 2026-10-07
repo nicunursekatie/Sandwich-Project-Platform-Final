@@ -75,6 +75,7 @@ integrations = ["javascript_sendgrid:1.0.0", "javascript_database:1.0.0", "twili
 
 [userenv.development]
 APP_ENV = "development"
+PLANNING_SHEET_ID = "1LQV0CNCsqNvBmSSnruP2MrsLSx1DzCjUQ9W8rjKbyuE"
 
 [userenv.production]
 APP_ENV = "production"
