@@ -137,7 +137,7 @@ This is heuristic. It intentionally ignores the broad `/api` catch-all because t
 | /api/predictions | 2 | server/routes/index.ts |
 | /api/projects | 2 | server/routes/index.ts |
 | /api/promotion-graphics | 2 | server/routes/index.ts |
-| /api/proxy/page | 1 | server/routes/index.ts |
+| /api/proxy/page | 2 | server/__tests__/page-proxy.test.ts<br>server/routes/index.ts |
 | /api/quick-sms | 2 | server/routes/index.ts |
 | /api/recipient-tsp-contacts | 2 | server/routes/index.ts |
 | /api/recipients | 2 | server/routes/index.ts |
