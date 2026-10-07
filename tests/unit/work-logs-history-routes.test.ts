@@ -33,7 +33,7 @@ const mockSelect = jest.fn(() => ({
 }));
 const mockReport = {
   totals: { week: 60060, month: 60060, all: 60060 },
-  currentWeek: '2026-09-30',
+  currentWeek: '2026-10-05',
   groups: Array.from({ length: 51 }, (_, index) => ({
     key: `week-${index}`,
     minutes: 60,
@@ -82,20 +82,23 @@ it('returns full-history totals with at most 50 headings from a single aggregate
   expect(query.params).toContain('user-1');
   expect(query.sql).toContain('LIMIT 51');
   expect(query.sql).toContain("AT TIME ZONE 'America/New_York'");
+  expect(query.sql).toContain("date_trunc('week', today)::date AS week");
+  expect(query.sql).toContain("SELECT date_trunc('week', day)::date AS week");
+  expect(query.sql).not.toContain("interval '2 days'");
 });
 
 it('uses a week cursor without narrowing the all-time aggregate', async () => {
   await request(appFor(ownUser)).get(
-    '/api/work-logs?summary=true&beforeWeek=2026-09-30'
+    '/api/work-logs?summary=true&beforeWeek=2026-09-28'
   );
   const query = dialect.sqlToQuery(mockExecute.mock.calls[0][0] as any);
-  expect(query.params).toEqual(['user-1', '2026-09-30']);
+  expect(query.params).toEqual(['user-1', '2026-09-28']);
   expect(query.sql).toMatch(/SELECT \* FROM weeks\s+WHERE week </);
 });
 
 it('bounds week entries and returns a stable timestamp/ID cursor', async () => {
   const response = await request(appFor(ownUser)).get(
-    '/api/work-logs?week=2026-09-30'
+    '/api/work-logs?week=2026-10-05'
   );
   expect(response.status).toBe(200);
   expect(response.body.data).toHaveLength(100);
@@ -118,7 +121,7 @@ it('bounds week entries and returns a stable timestamp/ID cursor', async () => {
 
 it('filters tied timestamps by ID on the next entry page', async () => {
   const response = await request(appFor(ownUser)).get(
-    '/api/work-logs?week=2026-09-30&beforeDate=2026-10-06T12:00:00Z&beforeId=902'
+    '/api/work-logs?week=2026-10-05&beforeDate=2026-10-06T12:00:00Z&beforeId=902'
   );
   expect(response.status).toBe(200);
   const query = dialect.sqlToQuery(mockWhere.mock.calls[0][0]);
@@ -140,7 +143,7 @@ it('rejects malformed cursors and dates before querying', async () => {
   for (const params of [
     'summary=true&beforeWeek=bad',
     'week=2026-10-06',
-    'week=2026-09-30&beforeDate=bad&beforeId=1',
+    'week=2026-10-05&beforeDate=bad&beforeId=1',
   ]) {
     expect(
       (await request(appFor(ownUser)).get(`/api/work-logs?${params}`)).status
