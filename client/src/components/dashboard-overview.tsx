@@ -842,7 +842,7 @@ export default function DashboardOverview({
         <div className="mx-4 mb-8 max-w-full">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-full">
             <a
-              href="https://nicunursekatie.github.io/sandwichinventory/inventorycalculator.html"
+              href="https://the-sandwich-project.github.io/sandwichinventory/inventorycalculator.html"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-white hover:border-[#236383] hover:bg-[#e8f4f8]/40 transition-colors group"
@@ -855,7 +855,7 @@ export default function DashboardOverview({
             </a>
 
             <a
-              href="https://nicunursekatie.github.io/sandwichinventory/toolkit.html"
+              href="https://the-sandwich-project.github.io/sandwichinventory/toolkit.html"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-white hover:border-[#FBAD3F] hover:bg-[#FBAD3F]/10 transition-colors group"
@@ -868,7 +868,7 @@ export default function DashboardOverview({
             </a>
 
             <a
-              href="https://nicunursekatie.github.io/sandwichprojectcollectionsites/"
+              href="https://the-sandwich-project.github.io/sandwichprojectcollectionsites/"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-3 px-4 py-3 rounded-lg border border-gray-200 bg-white hover:border-[#007E8C] hover:bg-[#e8f4f8]/40 transition-colors group"
